@@ -1,0 +1,43 @@
+#!/usr/bin/make -if
+# vim:syntax=make
+SELF=MAKELEVEL=0 ./make.devel
+
+# You should copy make.inc from make.inc.default
+include make.inc
+
+all: opcode_spec_def const_string tags
+
+clean: clean_const_string
+	rm -f tags opcode_spec_def.h
+
+const_string:
+	@-$(SELF) const_string_opcodes_php4.x.h
+	@-$(SELF) const_string_opcodes_php5.0.h
+	@-$(SELF) const_string_opcodes_php5.1.h
+	@-$(SELF) const_string_opcodes_php6.x.h
+
+clean_const_string:
+	rm -f const_string_opcodes_php4.x.h const_string_opcodes_php5.0.h const_string_opcodes_php5.1.h const_string_opcodes_php6.x.h
+
+const_string_opcodes_php4.x.h: $(PHP4_x_DIR)/Zend/zend_compile.h
+	./mkopcode.awk <       $(PHP4_x_DIR)/Zend/zend_compile.h > const_string_opcodes_php4.x.h
+
+const_string_opcodes_php5.0.h: $(PHP5_0_DIR)/Zend/zend_vm_def.h
+	./mkopcode.awk <       $(PHP5_0_DIR)/Zend/zend_vm_def.h  > const_string_opcodes_php5.0.h
+
+const_string_opcodes_php5.1.h: $(PHP5_1_DIR)/Zend/zend_vm_def.h
+	./mkopcode.awk <       $(PHP5_1_DIR)/Zend/zend_vm_def.h  > const_string_opcodes_php5.1.h
+
+const_string_opcodes_php6.x.h: $(PHP6_x_DIR)/Zend/zend_vm_def.h
+	./mkopcode.awk <       $(PHP6_x_DIR)/Zend/zend_vm_def.h  > const_string_opcodes_php6.x.h
+
+tags:
+	test -d $(PHP_DEVEL_DIR) && ctags -R . $(PHP_DEVEL_DIR)/main $(PHP_DEVEL_DIR)/Zend $(PHP_DEVEL_DIR)/TSRM $(PHP_DEVEL_DIR)/ext/standard || ctags -R .
+
+opcode_spec_def:
+	@-$(SELF) opcode_spec_def.h
+
+opcode_spec_def.h: $(EA_DIR)/opcodes.c
+	./mkopcode_spec.awk < $(EA_DIR)/opcodes.c > opcode_spec_def.h \
+
+.PHONY: const_string opcode_spec_def
