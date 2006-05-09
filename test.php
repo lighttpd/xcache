@@ -1,0 +1,2 @@
+<?php
+xcache_coredump();

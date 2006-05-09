@@ -1,0 +1,26 @@
+# vim:ts=4:sw=4
+Installtion:
+
+    $ phpize --clean && phpize
+    $ ./configure --help
+    $ CFLAGS='your cflags' ./configure --enable-xcache --enable...
+    $ make
+    $ su
+    # make install
+	(update php.ini, restart php)
+
+Reinstall:
+
+	$ mv config.nice conf
+	$ make distclean && phpize --clean && phpize
+	$ mv conf config.nice
+	$ ./config.nice
+	$ make
+	$ su
+	# make install
+	(update php.ini, restart php)
+
+Update php.ini:
+	$ su
+	# cat xcache.ini >> /etc/php.ini
+	# $EDITOR /etc/php.ini

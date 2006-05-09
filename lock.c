@@ -1,0 +1,129 @@
+#include <stdio.h>
+#include <string.h>
+#include <malloc.h>
+
+#include <php.h>
+#ifndef ZEND_WIN32
+typedef int HANDLE;
+#endif
+#include "lock.h"
+
+struct _xc_lock_t {
+	HANDLE fd;
+	char *pathname;
+};
+
+#ifndef ZEND_WIN32
+#	include <unistd.h>
+#	include <fcntl.h>
+#	include <errno.h>
+static inline int dolock(xc_lock_t *lck, int type) /* {{{ */
+{ 
+	int ret;
+	struct flock lock;
+
+	lock.l_type = type;
+	lock.l_start = 0;
+	lock.l_whence = SEEK_SET;
+	lock.l_len = 1;
+	lock.l_pid = 0;
+
+	do {
+		ret = fcntl(lck->fd, F_SETLKW, &lock);
+	} while (ret < 0 && errno == EINTR);
+	return ret;
+}
+/* }}} */
+#define LCK_WR F_WRLCK
+#define LCK_RD F_RDLCK
+#define LCK_UN F_UNLCK
+#define LCK_NB 0
+#else
+
+#	include <win32/flock.h>
+#	include <io.h>
+#	include <fcntl.h>
+#	include <sys/types.h>
+#	include <sys/stat.h>
+#	define errno GetLastError()
+static inline int dolock(xc_lock_t *lck, int type) /* {{{ */
+{ 
+	static OVERLAPPED offset = {0, 0, 0, 0, NULL};
+
+	if (type == LCK_UN) {
+		return UnlockFileEx((HANDLE)fd, 0, 1, 0, &offset);
+	}
+	else {
+		return LockFileEx((HANDLE)fd, type, 0, 1, 0, &offset);
+	}
+}
+/* }}} */
+#define LCK_WR LOCKFILE_EXCLUSIVE_LOCK
+#define LCK_RD 0
+#define LCK_UN 0
+#define LCK_NB LOCKFILE_FAIL_IMMEDIATELY
+#endif
+
+xc_lock_t *xc_fcntl_init(const char *pathname) /* {{{ */
+{
+	HANDLE fd;
+	char myname[sizeof("/tmp/.xcache.lock") - 1 + 20];
+
+	if (pathname == NULL) {
+		static int i = 0;
+		snprintf(myname, sizeof(myname) - 1, "/tmp/.xcache.%d.%d.lock", (int) getuid(), i ++);
+		pathname = myname;
+	}
+
+	fd = open(pathname, O_RDWR|O_CREAT, 0666);
+
+	if (fd > 0) {
+		xc_lock_t *lck = malloc(sizeof(lck[0]));
+		int size;
+
+#ifndef __CYGWIN__
+		unlink(pathname);
+#endif
+		lck->fd = fd;
+		size = strlen(pathname) + 1;
+		lck->pathname = malloc(size);
+		memcpy(lck->pathname, pathname, size);
+		return lck;
+	}
+	else {
+		fprintf(stderr, "xc_fcntl_create: open(%s, O_RDWR|O_CREAT, 0666) failed:", pathname);
+		return NULL;
+	}
+}
+/* }}} */
+void xc_fcntl_destroy(xc_lock_t *lck) /* {{{ */
+{   
+	close(lck->fd);
+#ifdef __CYGWIN__
+	unlink(lck->pathname);
+#endif
+	free(lck->pathname);
+	free(lck);
+}
+/* }}} */
+void xc_fcntl_lock(xc_lock_t *lck) /* {{{ */
+{   
+	if (dolock(lck, LCK_WR) < 0) {
+		fprintf(stderr, "xc_fcntl_lock failed errno:%d", errno);
+	}
+}
+/* }}} */
+void xc_fcntl_rdlock(xc_lock_t *lck) /* {{{ */
+{   
+	if (dolock(lck, LCK_RD) < 0) {
+		fprintf(stderr, "xc_fcntl_lock failed errno:%d", errno);
+	}
+}
+/* }}} */
+void xc_fcntl_unlock(xc_lock_t *lck) /* {{{ */
+{   
+	if (dolock(lck, LCK_UN) < 0) {
+		fprintf(stderr, "xc_fcntl_unlock failed errno:%d", errno);
+	}
+}
+/* }}} */
