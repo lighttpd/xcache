@@ -1,43 +1,99 @@
-#!/usr/bin/make -if
-# vim:syntax=make
-SELF=MAKELEVEL=0 ./make.devel
+#!/bin/bash
 
-# You should copy make.inc from make.inc.default
-include make.inc
+if test -e make.inc ; then
+	. make.inc
+else
+	echo make.inc is required, see make.inc.example >&2
+	exit
+fi
 
-all: opcode_spec_def const_string tags
+CTAGS=`which ctags 2>/dev/null || which exuberant-ctags 2>/dev/null `
+AWK=`which gawk 2>/dev/null || which awk 2>/dev/null `
 
-clean: clean_const_string
+make_all() {
+	make_opcode_spec_def.h
+	make_const_string
+	make_tags
+}
+
+make_clean() {
+ 	make_clean_const_string
+	echo "*" rm -f tags opcode_spec_def.h
 	rm -f tags opcode_spec_def.h
+}
 
-const_string:
-	@-$(SELF) const_string_opcodes_php4.x.h
-	@-$(SELF) const_string_opcodes_php5.0.h
-	@-$(SELF) const_string_opcodes_php5.1.h
-	@-$(SELF) const_string_opcodes_php6.x.h
+make_const_string() {
+	make_const_string_opcodes_php4.x.h
+	make_const_string_opcodes_php5.0.h
+	make_const_string_opcodes_php5.1.h
+	make_const_string_opcodes_php6.x.h
+}
 
-clean_const_string:
-	rm -f const_string_opcodes_php4.x.h const_string_opcodes_php5.0.h const_string_opcodes_php5.1.h const_string_opcodes_php6.x.h
+make_clean_const_string() {
+	echo "*" rm -f const_string_opcodes_php*.h
+	rm -f const_string_opcodes_php*.h
+}
 
-const_string_opcodes_php4.x.h: $(PHP4_x_DIR)/Zend/zend_compile.h
-	./mkopcode.awk <       $(PHP4_x_DIR)/Zend/zend_compile.h > const_string_opcodes_php4.x.h
+make_const_string_opcodes_php4.x.h() {
+	precheck const_string_opcodes_php4.x.h "${PHP4_x_DIR}/Zend/zend_compile.h" && "$AWK" -f ./mkopcode.awk < "$I" > "$O"
+}
 
-const_string_opcodes_php5.0.h: $(PHP5_0_DIR)/Zend/zend_vm_def.h
-	./mkopcode.awk <       $(PHP5_0_DIR)/Zend/zend_vm_def.h  > const_string_opcodes_php5.0.h
+make_const_string_opcodes_php5.0.h() {
+	precheck const_string_opcodes_php5.0.h "${PHP5_0_DIR}/Zend/zend_vm_def.h"  && "$AWK" -f ./mkopcode.awk < "$I" > "$O"
+}
 
-const_string_opcodes_php5.1.h: $(PHP5_1_DIR)/Zend/zend_vm_def.h
-	./mkopcode.awk <       $(PHP5_1_DIR)/Zend/zend_vm_def.h  > const_string_opcodes_php5.1.h
+make_const_string_opcodes_php5.1.h() {
+	precheck const_string_opcodes_php5.1.h "${PHP5_1_DIR}/Zend/zend_vm_def.h"  && "$AWK" -f ./mkopcode.awk < "$I" > "$O"
+}
 
-const_string_opcodes_php6.x.h: $(PHP6_x_DIR)/Zend/zend_vm_def.h
-	./mkopcode.awk <       $(PHP6_x_DIR)/Zend/zend_vm_def.h  > const_string_opcodes_php6.x.h
+make_const_string_opcodes_php6.x.h() {
+	precheck const_string_opcodes_php6.x.h "${PHP6_x_DIR}/Zend/zend_vm_def.h"  && "$AWK" -f ./mkopcode.awk < "$I" > "$O"
+}
 
-tags:
-	test -d $(PHP_DEVEL_DIR) && ctags -R . $(PHP_DEVEL_DIR)/main $(PHP_DEVEL_DIR)/Zend $(PHP_DEVEL_DIR)/TSRM $(PHP_DEVEL_DIR)/ext/standard || ctags -R .
+make_opcode_spec_def.h() {
+	precheck "opcode_spec_def.h" "${EA_DIR}/opcodes.c" && "$AWK" -f ./mkopcode_spec.awk < "$I" > "$O"
+}
 
-opcode_spec_def:
-	@-$(SELF) opcode_spec_def.h
+make_tags() {
+	if test -z "$CTAGS" ; then
+		echo ctags not found, skip building tags >&2
+		return
+	fi
 
-opcode_spec_def.h: $(EA_DIR)/opcodes.c
-	./mkopcode_spec.awk < $(EA_DIR)/opcodes.c > opcode_spec_def.h \
+	if test -d "${PHP_DEVEL_DIR}" ; then
+		echo "* Making tags with ${PHP_DEVEL_DIR}"
+		"$CTAGS" -R . "${PHP_DEVEL_DIR}/main" "${PHP_DEVEL_DIR}/Zend" "${PHP_DEVEL_DIR}/TSRM" "${PHP_DEVEL_DIR}/ext/standard"
+	else
+		echo "* Making tags without php source files"
+		"$CTAGS" -R .
+	fi
+}
 
-.PHONY: const_string opcode_spec_def
+error() {
+	echo "$@" >&2
+}
+
+precheck() {
+	if ! test -e "$2" ; then
+		error X skipping "$1" because "$2" not found
+		return 1
+	fi
+	if ! test "$1" -ot "$2" ; then
+		echo O "$1" is up to date.
+		return 1
+	fi
+	O="$1"
+	I="$2"
+	echo "* Making $1 from $2"
+	return 0
+}
+
+if test -z "$1" ; then
+	make_all
+else
+	while ! test -z "$1" ; do
+		eval "make_$1"
+		shift
+	done
+fi
+
