@@ -2,6 +2,7 @@
 #include "opcode_spec.h"
 #include "const_string.h"
 
+#ifdef HAVE_XCACHE_OPCODE_SPEC_DEF
 /* {{{ opcode_spec */
 #define OPSPEC(ext, op1, op2, res) { OPSPEC_##ext, OPSPEC_##op1, OPSPEC_##op2, OPSPEC_##res },
 #ifdef ZEND_ENGINE_2
@@ -23,6 +24,7 @@ const xc_opcode_spec_t *xc_get_opcode_spec(zend_uchar opcode)
 	return &xc_opcode_spec[opcode];
 }
 /* }}} */
+#endif
 /* {{{ op_spec */
 
 #define OPSPECS_DEF_NAME(name) #name,

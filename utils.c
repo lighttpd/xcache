@@ -197,6 +197,7 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
+#ifdef HAVE_XCACHE_OPCODE_SPEC_DEF
 static void xc_fix_opcode_ex_znode(int tofix, xc_op_spec_t spec, znode *znode, int type TSRMLS_DC) /* {{{ */
 {
 #ifdef ZEND_ENGINE_2
@@ -261,6 +262,7 @@ int xc_undo_fix_opcode(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	return 0;
 }
 /* }}} */
+#endif
 
 void xc_install_function(char *filename, zend_function *func, zend_uchar type, char *key, uint len TSRMLS_DC) /* {{{ */
 {

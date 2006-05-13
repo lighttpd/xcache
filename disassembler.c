@@ -5,6 +5,9 @@
 
 #define return_value dst
 
+#ifndef HAVE_XCACHE_OPCODE_SPEC_DEF
+#error disassembler cannot be built without xcache/opcode_spec_def.h
+#endif
 static void xc_dasm(zval *dst, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
 	Bucket *b;

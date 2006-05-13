@@ -7,7 +7,10 @@ AC_DEFUN([XCACHE_OPTION], [
   [  --enable-xcache-$2    XCACHE: $4], no, no)
   if test "$PHP_$3" = "yes"; then
     xcache_sources="$xcache_sources $1.c"
+    HAVE_$3=1
     AC_DEFINE([HAVE_$3], 1, [Define for XCACHE: $4])
+  else
+    HAVE_$3=
   fi
 ])dnl
 
@@ -56,6 +59,23 @@ if test "$PHP_XCACHE" != "no"; then
   esac
   PHP_SUBST([XCACHE_INDENT])
 
+  dnl $ac_srcdir etc require PHP_NEW_EXTENSION
   XCACHE_PROC_SOURCES=`ls $ac_srcdir/processor/*.m4`
   PHP_SUBST([XCACHE_PROC_SOURCES])
+
+  AC_MSG_CHECKING(if you have opcode_spec_def.h for xcache)
+  if test -e "$ac_srcdir/opcode_spec_def.h" ; then
+    AC_DEFINE([HAVE_XCACHE_OPCODE_SPEC_DEF], 1, [Define if you have opcode_spec_def.h for xcache])
+    AC_MSG_RESULT(yes)
+  else
+    dnl check for features depend on opcode_spec_def.h
+    AC_MSG_RESULT(no)
+    define([ERROR], [
+      AC_MSG_ERROR([cannot build with $1, $ac_srcdir/opcode_spec_def.h required])
+    ])
+    if test "$HAVE_XCACHE_DISASSEMBLER" = "1" ; then
+      ERROR(disassembler)
+    fi
+    undefine([ERROR])
+  fi
 fi

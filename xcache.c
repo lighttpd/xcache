@@ -1505,6 +1505,7 @@ PHP_FUNCTION(xcache_get_op_spec)
 	xc_call_getter(xc_get_op_spec, xc_get_op_spec_count(), INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 /* }}} */
+#ifdef HAVE_XCACHE_OPCODE_SPEC_DEF
 /* {{{ proto string xcache_get_opcode_spec(int opcode) */
 PHP_FUNCTION(xcache_get_opcode_spec)
 {
@@ -1528,6 +1529,7 @@ PHP_FUNCTION(xcache_get_opcode_spec)
 	RETURN_NULL();
 }
 /* }}} */
+#endif
 /* {{{ proto mixed xcache_get_special_value(zval value) */
 PHP_FUNCTION(xcache_get_special_value)
 {
@@ -1600,7 +1602,9 @@ static function_entry xcache_functions[] = /* {{{ */
 	PHP_FE(xcache_get_op_type,       NULL)
 	PHP_FE(xcache_get_data_type,     NULL)
 	PHP_FE(xcache_get_opcode,        NULL)
+#ifdef HAVE_XCACHE_OPCODE_SPEC_DEF
 	PHP_FE(xcache_get_opcode_spec,   NULL)
+#endif
 	PHP_FE(xcache_is_autoglobal,     NULL)
 	PHP_FE(xcache_inc,               NULL)
 	PHP_FE(xcache_dec,               NULL)
