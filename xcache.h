@@ -50,7 +50,11 @@
 #define BUCKET_KEY(b) (UNISW((b)->arKey, (b)->key.u.string))
 #define BUCKET_UKEY(b) (UNISW((b)->arKey, (b)->key.u.unicode))
 #define BUCKET_KEY_TYPE(b) (UNISW(0, (b)->key.type))
-#define BUCKET_HEAD_SIZE(b) XtOffsetOf(UNISW(sizeof((b)->arKey), sizeof((b)->key.u)))
+#ifdef IS_UNICODE
+#	define BUCKET_HEAD_SIZE(b) XtOffsetOf(typeof(b[0]), key)
+#else
+#	define BUCKET_HEAD_SIZE(b) XtOffsetOf(typeof(b[0]), arKey)
+#endif
 #define BUCKET_SIZE(b) (BUCKET_HEAD_SIZE(b) + BUCKET_KEY_SIZE(b))
 
 #ifndef IS_UNICODE
