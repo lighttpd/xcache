@@ -183,7 +183,7 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 			IFCOPY(`
 				dnl fprintf(stderr, "copy from %p to %p\n", src[0], dst[0]);
 			')
-			STRUCT_P_EX(zval, dst[0], src[0], `', ` ')
+			STRUCT_P_EX(zval, dst[0], src[0], `[0]', `', ` ')
 		} while (0);
 	')
 	DONE_SIZE(sizeof(zval_ptr))
@@ -283,9 +283,10 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	IFRESTORE(`
 		if (src->num_interfaces) {
 			CALLOC(dst->interfaces, zend_class_entry*, src->num_interfaces)
+			DONE(`interfaces')
 		}
 		else {
-			COPYNULL_EX(dst->interfaces)
+			COPYNULL(interfaces)
 		}
 	')
 	IFDASM(`
@@ -301,12 +302,17 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 			}
 			add_assoc_zval_ex(dst, ZEND_STRS("interfaces"), arr);
 			*/
+			DONE(`interfaces')
 		}
 		else {
-			COPYNULL_EX(dst->interfaces)
+			COPYNULL(interfaces)
 		}
 	')
-	DONE(`interfaces')
+	IFRESTORE(`', `
+		IFDASM(`', `
+			DONE(`interfaces')
+		')
+	')
 	DISPATCH(zend_uint, num_interfaces)
 
 	IFRESTORE(`COPY(filename)', `PROC_STRING(filename)')
@@ -533,7 +539,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 #else
 	dnl zend_cv.m4 is illegal to be made public, don not ask me for it
 	IFDASM(`
-		sinclude(`zend_cv.m4')
+		sinclude(srcdir`/processor/zend_cv.m4')
 		')
 #endif
 
@@ -646,7 +652,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_var_t', , `dnl {{{
 			}
 		}
 	')
-	STRUCT_P_EX(zval_ptr, dst->value, src->value, `', `&')
+	STRUCT_P_EX(zval_ptr, dst->value, src->value, `value', `', `&')
 	DONE(value)
 ')
 dnl }}}

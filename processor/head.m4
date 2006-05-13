@@ -6,6 +6,7 @@ divert(0)
 #include "php.h"
 #include "zend_compile.h"
 #include "zend_API.h"
+#include "zend_ini.h"
 
 #include "xcache.h"
 #include "align.h"
@@ -28,7 +29,7 @@ define(`COUNTOF_xc_entry_name_t', `1')
 ifdef(`XCACHE_ENABLE_TEST', `
 #undef NDEBUG
 #include <assert.h>
-include(structinfo.m4)
+include(builddir`/structinfo.m4')
 ')
 #ifndef NDEBUG
 #	undef inline

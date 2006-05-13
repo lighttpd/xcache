@@ -100,10 +100,10 @@ define(`DEF_HASH_TABLE_FUNC', `
 			if (sizeof(void *) == sizeof($2)) {
 				IFCOPY(`pnew->pData = &pnew->pDataPtr;')
 				dnl no alloc
-				STRUCT_P_EX(`$2', pnew->pData, (($2*)b->pData), `$3', ` ')
+				STRUCT_P_EX(`$2', pnew->pData, (($2*)b->pData), `', `$3', ` ')
 			}
 			else {
-				STRUCT_P_EX(`$2', pnew->pData, (($2*)b->pData), `$3')
+				STRUCT_P_EX(`$2', pnew->pData, (($2*)b->pData), `', `$3')
 				IFCOPY(`pnew->pDataPtr = NULL;')
 			}
 
