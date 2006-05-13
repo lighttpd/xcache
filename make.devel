@@ -1,4 +1,5 @@
 #!/bin/bash
+SELF="$0"
 
 if test -e make.inc ; then
 	. make.inc
@@ -13,7 +14,7 @@ AWK=`which gawk 2>/dev/null || which awk 2>/dev/null `
 make_all() {
 	make_opcode_spec_def.h
 	make_const_string
-	make_tags
+	test -e tags && echo tags exists, skipping. use \""$0" tags\" to rebuild || make_tags
 }
 
 make_clean() {
@@ -56,7 +57,7 @@ make_opcode_spec_def.h() {
 
 make_tags() {
 	if test -z "$CTAGS" ; then
-		echo ctags not found, skip building tags >&2
+		echo tool ctags not found, skip building tags >&2
 		return
 	fi
 
