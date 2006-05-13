@@ -86,16 +86,17 @@ define(`PROC_INT', `
 	DONE(`$1')
 ')
 dnl }}}
-dnl {{{ PROC_CLASS_ENTRY_P
-define(`PROC_CLASS_ENTRY_P', `PROC_CLASS_ENTRY_P_EX(`dst->$1', `src->$1')`'DONE(`$1')')
+dnl {{{ PROC_CLASS_ENTRY_P(1:elm)
+define(`PROC_CLASS_ENTRY_P', `PROC_CLASS_ENTRY_P_EX(`dst->$1', `src->$1', `$1')`'DONE(`$1')')
+dnl PROC_CLASS_ENTRY_P_EX(1:dst, 2:src, 3:elm-name)
 define(`PROC_CLASS_ENTRY_P_EX', `
 	if ($2) {
 		IFSTORE(`$1 = (zend_class_entry *) xc_get_class_num(processor, $2);')
 		IFRESTORE(`$1 = xc_get_class(processor, (zend_uint) $2);')
-		IFDASM(`add_assoc_stringl_ex(dst, ZEND_STRS("patsubst(`$1', `dst->')"), $2->name, strlen($2->name), 1);')
+		IFDASM(`add_assoc_stringl_ex(dst, ZEND_STRS("$3"), $2->name, strlen($2->name), 1);')
 	}
 	else {
-		COPYNULL_EX($1)
+		COPYNULL_EX(`$1', `$3')
 	}
 ')
 dnl }}}
@@ -131,13 +132,41 @@ dnl {{{ SETNULL_EX
 define(`SETNULL_EX', `IFCOPY(`$1 = NULL;')')
 define(`SETNULL', `SETNULL_EX(`dst->$1')DONE(`$1')')
 dnl }}}
-dnl {{{ COPYNULL_EX
+dnl {{{ COPYNULL_EX(1:dst, 2:elm-name)
 define(`COPYNULL_EX', `
-	IFDASM(`add_assoc_null_ex(dst, ZEND_STRS("patsubst(`$1', `dst->')"));')
+	IFDASM(`add_assoc_null_ex(dst, ZEND_STRS("$2"));')
 	IFNOTMEMCPY(`IFCOPY(`$1 = NULL;')')
 ')
+dnl }}}
+dnl {{{ COPYNULL(1:elm)
+# foreach(VAR, (LIST), STMT)
+m4_define([foreach],
+       [m4_pushdef([$1])_foreach([$1], [$2], [$3])m4_popdef([$1])])
+m4_define([_arg1], [$1])
+m4_define([_foreach],
+       [ifelse([$2], [()], ,
+       [m4_define([$1], _arg1$2)$3[]_foreach([$1],
+                                                       (shift$2),
+                                                       [$3])])])
 define(`COPYNULL', `
-	COPYNULL_EX(`dst->$1')DONE(`$1')
+	COPYNULL_EX(`dst->$1', `$2')DONE(`$1')
+')
+dnl }}}
+dnl {{{ LIST_DIFF(1:left-list, 2:right-list)
+define(`foreach',
+       `pushdef(`$1')_foreach(`$1', `$2', `$3')popdef(`$1')')
+define(`_arg1', `$1')
+define(`_foreach',                             
+       `ifelse(`$2', `()', ,                       
+       `define(`$1', _arg1$2)$3`'_foreach(`$1',
+                                                       (shift$2),
+                                                       `$3')')')
+define(`LIST_DIFF', `dnl
+foreach(`i', `($1)', `pushdef(`item_'defn(`i'))')dnl allocate variable for items in $1 
+foreach(`i', `($2)', `pushdef(`item_'defn(`i'))undefine(`item_'defn(`i'))')dnl allocate variable for items in $2, and undefine it 
+foreach(`i', `($1)', `ifdef(`item_'defn(`i'), `defn(`i') ')')dnl see what is still defined
+foreach(`i', `($2)', `popdef(`item_'defn(`i'))')dnl
+foreach(`i', `($1)', `popdef(`item_'defn(`i'))')dnl
 ')
 dnl }}}
 dnl {{{ DONE_*
@@ -146,8 +175,7 @@ define(`DONE_SIZE', `IFASSERT(`
 	done_count ++;
 ')')
 define(`DONE', `
-	dnl ifelse(regexp(defn(`ELEMENTS'), ` $1'), -1, m4_errprint(`Unknown $1') m4exit(1))
-	define(`ELEMENTS', patsubst(defn(`ELEMENTS'), ` $1\>'))
+	define(`ELEMENTS_DONE', defn(`ELEMENTS_DONE')`,$1')
 	DONE_SIZE(`sizeof(src->$1)')
 ')
 define(`DISABLECHECK', `
@@ -185,26 +213,26 @@ EXPORT(`xc_funcinfo_t')
 EXPORT(`xc_entry_t')
 EXPORT(`zval')
 
-include(hashtable.m4)
-include(string.m4)
-include(struct.m4)
-include(dispatch.m4)
-include(head.m4)
+include(srcdir`/processor/hashtable.m4')
+include(srcdir`/processor/string.m4')
+include(srcdir`/processor/struct.m4')
+include(srcdir`/processor/dispatch.m4')
+include(srcdir`/processor/head.m4')
 
 define(`IFNOTMEMCPY', `ifdef(`USEMEMCPY', `', `$1')')
-REDEF(`KIND', `calc') include(processor.m4)
-REDEF(`KIND', `store') include(processor.m4)
-REDEF(`KIND', `restore') include(processor.m4)
+REDEF(`KIND', `calc') include(srcdir`/processor/processor.m4')
+REDEF(`KIND', `store') include(srcdir`/processor/processor.m4')
+REDEF(`KIND', `restore') include(srcdir`/processor/processor.m4')
 
 REDEF(`IFNOTMEMCPY', `$1')
 #ifdef HAVE_XCACHE_DPRINT
-REDEF(`KIND', `dprint') include(processor.m4)
+REDEF(`KIND', `dprint') include(srcdir`/processor/processor.m4')
 #endif /* HAVE_XCACHE_DPRINT */
 #ifdef HAVE_XCACHE_DISASSEMBLER
-REDEF(`KIND', `dasm') include(processor.m4)
+REDEF(`KIND', `dasm') include(srcdir`/processor/processor.m4')
 #endif /* HAVE_XCACHE_DISASSEMBLER */
 #ifdef HAVE_XCACHE_ASSEMBLER
-REDEF(`KIND', `asm') include(processor.m4)
+REDEF(`KIND', `asm') include(srcdir`/processor/processor.m4')
 #endif /* HAVE_XCACHE_ASSEMBLER */
 
 ifdef(`EXIT_PENDING', `m4exit(EXIT_PENDING)')

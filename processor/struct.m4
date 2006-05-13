@@ -2,7 +2,7 @@ define(`pushdefFUNC_NAME', `
 	pushdef(`FUNC_NAME', `xc_`'KIND`'_`'ifelse(`$2', `', `$1', `$2')')
 ')
 dnl {{{ DECL_STRUCT_P_FUNC(1:type, 2:name, 3:comma=;)
-define(`DECL_STRUCT_P_FUNC', `patsubst(
+define(`DECL_STRUCT_P_FUNC', `translit(
 	pushdefFUNC_NAME(`$1', `$2')
 	define(`DEFINED_'ifelse(`$2', `', `$1', `$2'), `')
 	ifdef(`EXPORT_'ifelse(`$2', `', `$1', `$2'), `void', `static void inline')
@@ -16,8 +16,8 @@ define(`DECL_STRUCT_P_FUNC', `patsubst(
 		TSRMLS_DC
 	)ifelse(`$3', `', `;')
 	popdef(`FUNC_NAME')dnl
-, `[
-	 ]+', ` ')')
+, `
+', ` ')')
 dnl }}}
 dnl {{{ DEF_STRUCT_P_FUNC(1:type, 2:name, 3:body)
 define(`DEF_STRUCT_P_FUNC', `
@@ -34,9 +34,7 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 			ifdef(`COUNTOF_$1', , `m4_errprint(`missing COUNTOF_$1, safe to ignore')define(`COUNTOF_$1', 0)')
 			int assert_size = SIZEOF_$1, assert_count = COUNTOF_$1;
 			int done_size = 0, done_count = 0;
-			ifdef(`ELEMENTSOF_$1', `
-				define(`ELEMENTS', defn(`ELEMENTSOF_$1'))
-			')
+			pushdef(`ELEMENTS_DONE')
 			/* }}} */
 			IFRESTORE(`assert(xc_is_shm(src));')
 			IFCALCSTORE(`assert(!xc_is_shm(src));')
@@ -74,59 +72,63 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 					abort();
 				}
 				ifdef(`ELEMENTSOF_$1', `
-					ifelse(ELEMENTS, , , `
+					pushdef(`ELEMENTS_UNDONE', LIST_DIFF(defn(`ELEMENTSOF_$1'), defn(`ELEMENTS_DONE')))
+					ifelse(defn(`ELEMENTS_UNDONE'), , , `
 						m4_errprint(`====' KIND `$1 =================')
-						m4_errprint(`expected:' ELEMENTSOF_$1)
-						m4_errprint(`missing :' ELEMENTS)
+						m4_errprint(`expected:' defn(`ELEMENTSOF_$1'))
+						m4_errprint(`missing :' defn(`ELEMENTS_UNDONE'))
 						define(`EXIT_PENDING', 1)
 					')
+					popdef(`ELEMENTS_UNDONE')
 				')
-				undefine(`ELEMENTS')
 				/* }}} */
 		')')
+		IFASSERT(`
+			undefine(`ELEMENTS_DONE')
+		')
 	}
 /* }`}'} */
 	popdef(`FUNC_NAME')
 ')
 dnl }}}
-dnl {{{ STRUCT_P_EX(1:type, 2:dst, 3:src, 4:name=type, 5:&)
+dnl {{{ STRUCT_P_EX(1:type, 2:dst, 3:src, 4:elm-name, 5:name=type, 6:&)
 define(`STRUCT_P_EX', `
 	DBG(`$0($*)')
-	pushdefFUNC_NAME(`$1', `$4')
-	ifdef(`DEFINED_'ifelse(`$4', `', `$1', `$4'), `', `m4_errprint(`Unknown struct "'ifelse(`$4', `', `$1', `$4')`"')')
-	assert(sizeof($1) == sizeof(($5 $3)[0]));
-	ifelse(`$5', `', `ALLOC(`$2', `$1')')
+	pushdefFUNC_NAME(`$1', `$5')
+	ifdef(`DEFINED_'ifelse(`$5', `', `$1', `$5'), `', `m4_errprint(`Unknown struct "'ifelse(`$5', `', `$1', `$5')`"')')
+	assert(sizeof($1) == sizeof(($6 $3)[0]));
+	ifelse(`$6', `', `ALLOC(`$2', `$1')')
 	IFDASM(`do {
 		zval *zv;
 		ALLOC_INIT_ZVAL(zv);
 		array_init(zv);
 	')
 	FUNC_NAME`'(
-		IFDPRINT( `           $5 $3, indent')
-		IFCALC(   `processor, $5 $3')
-		IFSTORE(  `processor, $5 $2, $5 $3')
-		IFRESTORE(`processor, $5 $2, $5 $3')
-		IFDASM(   `zv, $5 $3')
-		IFASM(    `$5 $2, $5 $3')
+		IFDPRINT( `           $6 $3, indent')
+		IFCALC(   `processor, $6 $3')
+		IFSTORE(  `processor, $6 $2, $6 $3')
+		IFRESTORE(`processor, $6 $2, $6 $3')
+		IFDASM(   `zv, $6 $3')
+		IFASM(    `$6 $2, $6 $3')
 		TSRMLS_CC
 	);
 	IFDASM(`
-		add_assoc_zval_ex(dst, ZEND_STRS("patsubst(`$2', `dst->')"), zv);
+		add_assoc_zval_ex(dst, ZEND_STRS("$4"), zv);
 	} while (0);
 	')
 	popdef(`FUNC_NAME')
-	ifelse(`$5', , `FIXPOINTER_EX(`$1', `$2')')
+	ifelse(`$6', , `FIXPOINTER_EX(`$1', `$2')')
 ')
 dnl }}}
 dnl {{{ STRUCT_P(1:type, 2:elm, 3:name=type)
 define(`STRUCT_P', `
 	DBG(`$0($*)')
 	if (src->$2) {
-		STRUCT_P_EX(`$1', `dst->$2', `src->$2', `$3')
+		STRUCT_P_EX(`$1', `dst->$2', `src->$2', `$2', `$3')
 		IFDPRINT(`INDENT()`'fprintf(stderr, "$1:$2");')
 	}
 	else {
-		COPYNULL_EX(dst->$2)
+		COPYNULL_EX(`dst->$2', `$2')
 		IFDPRINT(`INDENT()`'fprintf(stderr, "$1:$2:\tNULL\n");')
 	}
 	DONE(`$2')
@@ -137,7 +139,7 @@ define(`STRUCT', `
 	DBG(`$0($*)')
 	assert(sizeof($1) == sizeof(src->$2));
 	IFDPRINT(`INDENT()`'fprintf(stderr, "$1:$2");')
-	STRUCT_P_EX(`$1', `dst->$2', `src->$2', `$3', `&')
+	STRUCT_P_EX(`$1', `dst->$2', `src->$2', `$2', `$3', `&')
 	DONE(`$2')
 ')
 dnl }}}

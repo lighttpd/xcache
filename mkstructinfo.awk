@@ -21,7 +21,13 @@ BEGIN {
 			# elm = elm "sizeof(((`" instruct "'*)NULL)->`" buffer[i] "')";
 			# elms = elms " `" buffer[i] "'";
 			elm = elm "sizeof(((" instruct "*)NULL)->" buffer[i] ")";
-			elms = elms " " buffer[i] "";
+
+			if (elms == "") {
+				elms = buffer[i];
+			}
+			else {
+				elms = elms "," buffer[i];
+			}
 		}
 		printf "define(`ELEMENTSOF_%s', `%s')\n", instruct, elms;
 		printf "define(`COUNTOF_%s', `%s')\n", instruct, i;
