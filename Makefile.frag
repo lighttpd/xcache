@@ -13,7 +13,7 @@ $(XCACHE_STRUCT_OUT): $(XCACHE_INCLUDES_I) $(srcdir)/mkstructinfo.awk
 	$(AWK) -f $(srcdir)/mkstructinfo.awk < $(XCACHE_INCLUDES_I) > $(XCACHE_STRUCT_OUT)
 
 $(XCACHE_PROC_OUT): $(XCACHE_PROC_SRC) $(XCACHE_STRUCT_OUT) $(XCACHE_PROC_SOURCES)
-	m4 -I$(srcdir)/processor/ -I$(builddir)/ -I$(srcdir)/ $(XCACHE_ENABLE_TEST) -E $(XCACHE_PROC_SRC) > $(XCACHE_PROC_OUT).tmp && mv -f $(XCACHE_PROC_OUT).tmp $(XCACHE_PROC_OUT)
+	m4 -D srcdir="$(srcdir)/" -D builddir="$(builddir)" $(XCACHE_ENABLE_TEST) -E $(XCACHE_PROC_SRC) > $(XCACHE_PROC_OUT).tmp && mv -f $(XCACHE_PROC_OUT).tmp $(XCACHE_PROC_OUT)
 
 $(XCACHE_PROC_H): $(XCACHE_PROC_OUT)
 	grep -F 'export: ' $(XCACHE_PROC_OUT) | sed -r 's/.*export:(.*):export.*/\1/g' | $(XCACHE_INDENT) > $(XCACHE_PROC_H).tmp && mv -f $(XCACHE_PROC_H).tmp $(XCACHE_PROC_H)
