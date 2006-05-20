@@ -1151,25 +1151,29 @@ static void xcache_op(xcache_op_type optype, INTERNAL_FUNCTION_PARAMETERS)
 	}
 }
 /* }}} */
-/* {{{ proto array xcache_count(int type) */
+/* {{{ proto int xcache_count(int type)
+   Return count of cache on specified cache type */
 PHP_FUNCTION(xcache_count)
 {
 	xcache_op(XC_OP_COUNT, INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 /* }}} */
-/* {{{ proto array xcache_info(int type, int id) */
+/* {{{ proto array xcache_info(int type, int id)
+   Get cache info by id on specified cache type */
 PHP_FUNCTION(xcache_info)
 {
 	xcache_op(XC_OP_INFO, INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 /* }}} */
-/* {{{ proto array xcache_list(int type, int id) */
+/* {{{ proto array xcache_list(int type, int id)
+   Get cache entries list by id on specified cache type */
 PHP_FUNCTION(xcache_list)
 {
 	xcache_op(XC_OP_LIST, INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 /* }}} */
-/* {{{ proto array xcache_clear_cache(int type, int id) */
+/* {{{ proto array xcache_clear_cache(int type, int id)
+   Clear cache by id on specified cache type */
 PHP_FUNCTION(xcache_clear_cache)
 {
 	xcache_op(XC_OP_CLEAR, INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -1211,7 +1215,8 @@ static int xc_entry_init_key_var(xc_entry_t *xce, zval *name TSRMLS_DC) /* {{{ *
 }
 /* }}} */
 #define TIME_MAX (sizeof(time_t) == sizeof(long) ? LONG_MAX : INT_MAX)
-/* {{{ proto mixed xcache_get(string name) */
+/* {{{ proto mixed xcache_get(string name)
+   Get cached data by specified name */
 PHP_FUNCTION(xcache_get)
 {
 	xc_entry_t xce, *stored_xce;
@@ -1241,7 +1246,8 @@ PHP_FUNCTION(xcache_get)
 	} LEAVE_LOCK(xce.cache);
 }
 /* }}} */
-/* {{{ proto bool  xcache_set(string name, mixed value [, int ttl]) */
+/* {{{ proto bool  xcache_set(string name, mixed value [, int ttl])
+   Store data to cache by specified name */
 PHP_FUNCTION(xcache_set)
 {
 	xc_entry_t xce, *stored_xce;
@@ -1267,7 +1273,8 @@ PHP_FUNCTION(xcache_set)
 	} LEAVE_LOCK(xce.cache);
 }
 /* }}} */
-/* {{{ proto mixed xcache_isset(string name) */
+/* {{{ proto bool  xcache_isset(string name)
+   Check if an entry exists in cache by specified name */
 PHP_FUNCTION(xcache_isset)
 {
 	xc_entry_t xce, *stored_xce;
@@ -1297,7 +1304,8 @@ PHP_FUNCTION(xcache_isset)
 	} LEAVE_LOCK(xce.cache);
 }
 /* }}} */
-/* {{{ proto bool  xcache_unset(string name) */
+/* {{{ proto bool  xcache_unset(string name)
+   Unset existing data in cache by specified name */
 PHP_FUNCTION(xcache_unset)
 {
 	xc_entry_t xce, *stored_xce;
@@ -1397,19 +1405,22 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 	} LEAVE_LOCK(xce.cache);
 }
 /* }}} */
-/* {{{ proto int xcache_inc(string name [, int value [, int ttl]]) */
+/* {{{ proto int xcache_inc(string name [, int value [, int ttl]])
+   Increase an int counter in cache by specified name, create it if not exists */
 PHP_FUNCTION(xcache_inc)
 {
 	xc_var_inc_dec(1, INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 /* }}} */
-/* {{{ proto int xcache_dec(string name [, int value [, int ttl]]) */
+/* {{{ proto int xcache_dec(string name [, int value [, int ttl]])
+   Decrease an int counter in cache by specified name, create it if not exists */
 PHP_FUNCTION(xcache_dec)
 {
 	xc_var_inc_dec(-1, INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 /* }}} */
-/* {{{ proto string xcache_asm(string filename) */
+/* {{{ proto string xcache_asm(string filename)
+ */
 #ifdef HAVE_XCACHE_ASSEMBLER
 PHP_FUNCTION(xcache_asm)
 {
@@ -1417,7 +1428,8 @@ PHP_FUNCTION(xcache_asm)
 #endif
 /* }}} */
 #ifdef HAVE_XCACHE_DISASSEMBLER
-/* {{{ proto string xcache_dasm_file(string filename) */
+/* {{{ proto array  xcache_dasm_file(string filename)
+   Disassemble file into opcode array by filename */
 PHP_FUNCTION(xcache_dasm_file)
 {
 	char *filename;
@@ -1431,7 +1443,8 @@ PHP_FUNCTION(xcache_dasm_file)
 	xc_dasm_file(return_value, filename TSRMLS_CC);
 }
 /* }}} */
-/* {{{ proto string xcache_dasm_string(string code) */
+/* {{{ proto array  xcache_dasm_string(string code)
+   Disassemble php code into opcode array */
 PHP_FUNCTION(xcache_dasm_string)
 {
 	zval *code;
@@ -1443,16 +1456,26 @@ PHP_FUNCTION(xcache_dasm_string)
 }
 /* }}} */
 #endif
-/* {{{ proto string xcache_encode(string filename) */
+/* {{{ proto string xcache_encode(string filename)
+   Encode php file into XCache opcode encoded format */
 #ifdef HAVE_XCACHE_ENCODER
 PHP_FUNCTION(xcache_encode)
 {
 }
 #endif
 /* }}} */
-/* {{{ proto bool xcache_decode(string filename) */
+/* {{{ proto bool xcache_decode_file(string filename)
+   Decode(load) opcode from XCache encoded format file */
 #ifdef HAVE_XCACHE_DECODER
-PHP_FUNCTION(xcache_decode)
+PHP_FUNCTION(xcache_decode_file)
+{
+}
+#endif
+/* }}} */
+/* {{{ proto bool xcache_decode_string(string data)
+   Decode(load) opcode from XCache encoded format data */
+#ifdef HAVE_XCACHE_DECODER
+PHP_FUNCTION(xcache_decode_string)
 {
 }
 #endif
@@ -1559,7 +1582,12 @@ PHP_FUNCTION(xcache_get_special_value)
 /* {{{ proto string xcache_coredump(int op_type) */
 PHP_FUNCTION(xcache_coredump)
 {
-	raise(SIGSEGV);
+	if (xc_test) {
+		raise(SIGSEGV);
+	}
+	else {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "xcache.test must be enabled to test xcache_coredump()");
+	}
 }
 /* }}} */
 /* {{{ proto string xcache_is_autoglobal(string name) */
@@ -1593,7 +1621,8 @@ static function_entry xcache_functions[] = /* {{{ */
 	PHP_FE(xcache_encode,            NULL)
 #endif
 #ifdef HAVE_XCACHE_DECODER
-	PHP_FE(xcache_decode,            NULL)
+	PHP_FE(xcache_decode_file,       NULL)
+	PHP_FE(xcache_decode_string,     NULL)
 #endif
 #ifdef HAVE_XCACHE_COVERAGE
 	PHP_FE(xcache_coverage_decode,   NULL)
@@ -1622,7 +1651,8 @@ static void xcache_sigsegv_handler(int dummy) /* {{{ */
 {
 	if (original_sigsegv_handler == xcache_sigsegv_handler) {
 		signal(SIGSEGV, original_sigsegv_handler);
-	} else {
+	}
+	else {
 		signal(SIGSEGV, SIG_DFL);
 	}
 	if (xc_coredump_dir && xc_coredump_dir[0]) {
