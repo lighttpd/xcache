@@ -6,12 +6,27 @@
 #include <limits.h>
 #include <string.h>
 #include <stdlib.h>
+
 /* mmap */
-#include <unistd.h>
+#ifdef ZEND_WIN32
+#	define ftruncate chsize
+#	define getuid() 0
+#	define XcacheCreateFileMapping(size, perm, name) \
+		CreateFileMapping(INVALID_HANDLE_VALUE, NULL, perm, (sizeof(xc_shmsize_t) > 4) ? size >> 32 : 0, size & 0xffffffff, name)
+#	define XCACHE_MAP_FAILED NULL
+#	define munmap(p, s) UnmapViewOfFile(p)
+#else
+#	include <unistd.h>
+#	define XCACHE_MAP_FAILED MAP_FAILED
+#endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
+#ifndef ZEND_WIN32
 #include <sys/mman.h>
+#endif
 
 #include "php.h"
 #include "myshm.h"
@@ -26,10 +41,15 @@ struct _xc_shm_t {
 	void *ptr_ro;
 	long  diff;
 	xc_shmsize_t size;
+	char *name;
+#ifdef ZEND_WIN32
+	HANDLE hmap;
+	HANDLE hmap_ro;
+#endif
 };
 
+#undef NDEBUG
 #ifdef ALLOC_DEBUG
-#	undef NDEBUG
 #	define inline
 #else
 #	define NDEBUG
@@ -37,6 +57,8 @@ struct _xc_shm_t {
 #include <assert.h>
 /* }}} */
 #define CHECK(x, e) do { if ((x) == NULL) { zend_error(E_ERROR, "XCache: " e); goto err; } } while (0)
+#define PTR_ADD(ptr, v) (((char *) (ptr)) + (v))
+#define PTR_SUB(ptr, v) (((char *) (ptr)) - (v))
 
 int xc_shm_can_readonly(xc_shm_t *shm) /* {{{ */
 {
@@ -57,7 +79,7 @@ void *xc_shm_to_readwrite(xc_shm_t *shm, void *p) /* {{{ */
 {
 	if (shm->diff) {
 		assert(xc_shm_is_readonly(p));
-		p = p - shm->diff;
+		p = PTR_SUB(p, -shm->diff);
 	}
 	assert(xc_shm_is_readwrite(p));
 	return p;
@@ -67,7 +89,7 @@ void *xc_shm_to_readonly(xc_shm_t *shm, void *p) /* {{{ */
 {
 	assert(xc_shm_is_readwrite(p));
 	if (shm->diff) {
-		p = p + shm->diff;
+		p = PTR_ADD(p, shm->diff);
 		assert(xc_shm_is_readonly(p));
 	}
 	return p;
@@ -89,6 +111,21 @@ void xc_shm_destroy(xc_shm_t *shm) /* {{{ */
 		shm->ptr = NULL;
 		*/
 	}
+#ifdef ZEND_WIN32
+	if (shm->hmap) {
+		CloseHandle(shm->hmap);
+	}
+	if (shm->hmap_ro) {
+		CloseHandle(shm->hmap_ro);
+	}
+#endif
+
+	if (shm->name) {
+#ifdef __CYGWIN__
+		unlink(shm->name);
+#endif
+		free(shm->name);
+	}
 	/*
 	shm->size = NULL;
 	shm->diff = 0;
@@ -101,47 +138,59 @@ void xc_shm_destroy(xc_shm_t *shm) /* {{{ */
 xc_shm_t *xc_shm_init(const char *path, xc_shmsize_t size, zend_bool readonly_protection) /* {{{ */
 {
 	xc_shm_t *shm = NULL;
-	int fd;
+	int fd = -1;
 	int ro_ok;
 	volatile void *romem;
-	int created = 0;
+	char tmpname[sizeof("/tmp/xcache") - 1 + 100];
 
 	CHECK(shm = calloc(1, sizeof(xc_shm_t)), "shm OOM");
 	shm->size = size;
+
 	if (path == NULL || !path[0]) {
-		path = "/tmp/xcache";
+		static int inc = 0;
+		snprintf(tmpname, sizeof(tmpname) - 1, "/tmp/xcache.%d.%d.%d", (int) getuid(), inc ++, rand());
+		path = tmpname;
 	}
-	fd = open(path, O_RDWR, S_IRUSR | S_IWUSR);
+
+	shm->name = strdup(path);
+
+#ifndef ZEND_WIN32
+#	define XCACHE_MMAP_PERMISSION (S_IRUSR | S_IWUSR)
+	fd = open(shm->name, O_RDWR, XCACHE_MMAP_PERMISSION);
 	if (fd == -1) {
-		created = 1;
-		fd = open(path, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+		fd = open(shm->name, O_CREAT | O_RDWR, XCACHE_MMAP_PERMISSION);
 		if (fd == -1) {
-			if (created) {
-				unlink(path);
-			}
 			goto err;
 		}
 	}
 	ftruncate(fd, size);
+#endif
 
+#ifdef ZEND_WIN32
+	shm->hmap = XcacheCreateFileMapping(size, PAGE_READWRITE, shm->name);
+	shm->ptr = (LPSTR) MapViewOfFile(shm->hmap, FILE_MAP_WRITE, 0, 0, 0);
+#else
 	shm->ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	if (shm->ptr == MAP_FAILED) {
+#endif
+
+	if (shm->ptr == XCACHE_MAP_FAILED) {
 		shm->ptr = NULL;
-		close(fd);
-		if (created) {
-			unlink(path);
-		}
 		goto err;
 	}
 
 	ro_ok = 0;
 	if (readonly_protection) {
+#ifdef ZEND_WIN32
+		shm->hmap_ro = XcacheCreateFileMapping(size, PAGE_READONLY, shm->name);
+		shm->ptr_ro = (LPSTR) MapViewOfFile(shm->hmap_ro, FILE_MAP_READ, 0, 0, 0);
+#else
 		shm->ptr_ro = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+#endif
 		romem = shm->ptr_ro;
 
 		/* {{{ check if ptr_ro works */
 		do {
-			if (shm->ptr_ro == MAP_FAILED || shm->ptr_ro == shm->ptr) {
+			if (shm->ptr_ro == XCACHE_MAP_FAILED || shm->ptr_ro == shm->ptr) {
 				break;
 			}
 			*(char *)shm->ptr = 1;
@@ -157,11 +206,11 @@ xc_shm_t *xc_shm_init(const char *path, xc_shmsize_t size, zend_bool readonly_pr
 	}
 
 	if (ro_ok) {
-		shm->diff = shm->ptr_ro - shm->ptr;
+		shm->diff = PTR_SUB(shm->ptr_ro, (char *) shm->ptr);
 		assert(abs(shm->diff) >= size);
 	}
 	else {
-		if (shm->ptr_ro != MAP_FAILED) {
+		if (shm->ptr_ro != XCACHE_MAP_FAILED) {
 			munmap(shm->ptr_ro, size);
 		}
 		shm->ptr_ro = NULL;
@@ -170,13 +219,16 @@ xc_shm_t *xc_shm_init(const char *path, xc_shmsize_t size, zend_bool readonly_pr
 	/* }}} */
 
 	close(fd);
-	if (created) {
-		unlink(path);
-	}
+#ifndef __CYGWIN__
+	unlink(shm->name);
+#endif
 
 	return shm;
 
 err:
+	if (fd != -1) {
+		close(fd);
+	}
 	if (shm) {
 		xc_shm_destroy(shm);
 	}

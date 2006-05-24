@@ -1,5 +1,5 @@
 typedef struct _xc_shm_t xc_shm_t;
-typedef unsigned int xc_shmsize_t;
+typedef size_t xc_shmsize_t;
 
 int xc_shm_can_readonly(xc_shm_t *shm);
 int xc_shm_is_readwrite(xc_shm_t *shm, const void *p);

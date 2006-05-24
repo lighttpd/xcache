@@ -51,9 +51,9 @@
 #define BUCKET_UKEY(b) (UNISW((b)->arKey, (b)->key.u.unicode))
 #define BUCKET_KEY_TYPE(b) (UNISW(0, (b)->key.type))
 #ifdef IS_UNICODE
-#	define BUCKET_HEAD_SIZE(b) XtOffsetOf(typeof(b[0]), key)
+#	define BUCKET_HEAD_SIZE(b) XtOffsetOf(Bucket, key)
 #else
-#	define BUCKET_HEAD_SIZE(b) XtOffsetOf(typeof(b[0]), arKey)
+#	define BUCKET_HEAD_SIZE(b) XtOffsetOf(Bucket, arKey)
 #endif
 #define BUCKET_SIZE(b) (BUCKET_HEAD_SIZE(b) + BUCKET_KEY_SIZE(b))
 
@@ -116,11 +116,11 @@ typedef zend_op_array *(zend_compile_file_t)(zend_file_handle *h, int type TSRML
 
 /* {{{ xc_cache_t */
 typedef struct _xc_entry_t xc_entry_t;
-typedef volatile struct {
+typedef struct {
 	int cacheid;
 	xc_hash_t  *hcache; /* hash to cacheid */
 
-	zend_bool  compiling;
+	time_t     compiling;
 	zend_ulong misses;
 	zend_ulong hits;
 	zend_ulong clogs;

@@ -1,0 +1,131 @@
+// vim:ft=javascript
+
+
+ARG_ENABLE("xcache", "Include XCache support", "yes,shared");
+
+if (PHP_XCACHE != "no") {
+	var xcache_sources = "processor.c \
+	                      xcache.c \
+	                      mmap.c \
+	                      mem.c \
+	                      const_string.c \
+	                      opcode_spec.c \
+	                      stack.c \
+	                      utils.c \
+	                      lock.c \
+	                      ";
+	// {{{ add sources on enabled
+	ARG_ENABLE("xcache-optimizer",    "(N/A)", "no");
+	ARG_ENABLE("xcache-coverage",     "Enable code coverage dumper, NOT for production server", "no");
+	ARG_ENABLE("xcache-assembler",    "(N/A)", "no");
+	ARG_ENABLE("xcache-disassembler", "Enable opcode to php variable dumper, NOT for production server", "no");
+	ARG_ENABLE("xcache-encoder",      "(N/A)", "no");
+	ARG_ENABLE("xcache-decoder",      "(N/A)", "no");
+
+	var options = ["optimizer",
+	               "coverage",
+	               "assembler", "disassembler",
+	               "encoder", "decoder"];
+	for (var i in options) {
+		var name = options[i];
+		var uname = name.toUpperCase();
+		var withval = eval("PHP_XCACHE_" + uname);
+		if (withval != "no") {
+			xcache_sources += " " + name + ".c";
+			STDOUT.WriteLine("Enabling XCache Module: " + name);
+			AC_DEFINE("HAVE_XCACHE_" + uname, 1, "Define for XCache: " + name)
+		}
+	}
+	// }}}
+	// {{{ check for programs needed
+	var apps = ["m4", "grep", "sed"];
+	for (var i in apps) {
+		if (!PATH_PROG(apps[i])) {
+			ERROR(apps[i] + " is currently required to build XCache");
+		}
+	}
+	PATH_PROG("gawk", null, "AWK") || PATH_PROG("awk", null, "AWK");
+
+	// the cygwin indent is known broken on our output
+	var indent = false; // PATH_PROG("indent");
+	if (indent) {
+		indent += " -kr --use-tabs --tab-size 4 -sob -nce";
+	}
+	else {
+		indent = PATH_PROG("cat");
+		if (!indent) {
+			indent = '';
+		}
+	}
+	DEFINE("XCACHE_INDENT", indent);
+	// }}}
+	// {{{ create extension
+	EXTENSION("xcache", xcache_sources);
+	var srcdir = configure_module_dirname;
+	// it's a bit harder to get builddir
+	var mfofile = "Makefile.objects";
+	MFO.Close();
+
+	var mfo = file_get_contents(mfofile);
+	mfo.match(/(.*\\xcache)\\xcache.obj/);
+	var builddir = RegExp.$1;
+	mfo.match(/(.*\$\(CC\).* )\/c.*\\xcache\\xcache.c.*/i);
+	var ccrule = RegExp.$1;
+
+	MFO = FSO.OpenTextFile(mfofile, 8);
+	mfo = null;
+	// }}}
+	// {{{ add make fragments
+	var file = srcdir + "\\Makefile.frag";
+	STDOUT.WriteLine("Adding Makefile.frag: " + file);
+	var frag = file_get_contents(file);
+	frag = frag.replace(/\$\(srcdir\)\//g,   srcdir + '\\');
+	frag = frag.replace(/\$\(srcdir\)/g,     srcdir);
+	frag = frag.replace(/\$\(builddir\)\//g, builddir + '\\');
+	frag = frag.replace(/\$\(builddir\)/g,   builddir);
+	frag = frag.replace(/processor\//g,      "processor\\");
+	frag = frag.replace(/\.lo:/g, ".obj:");
+	frag = frag.replace(/.*\$\(CC\).* -E (.*) -o (.*)/, ccrule + " /E $1 > $2");
+	frag = frag.replace(/ -o /g, " /Fo");
+	frag = frag.replace(/ -E /g, " /E ");
+	frag = frag.replace(/mv -f /g, "move ");
+	if (indent == '') {
+		frag = frag.replace(/\| +\$\(XCACHE_INDENT\)/, '');
+		frag = frag.replace(/\$\(XCACHE_INDENT\) < /, 'type ');
+	}
+	MFO.WriteLine(frag);
+	ADD_FLAG("CFLAGS_XCACHE", "/I " + builddir);
+	/// }}}
+	// {{{ check for xcache-test
+	ARG_ENABLE("xcache-test", "XCache: Enable self test - FOR DEVELOPERS ONLY!!", "no");
+	if (PHP_XCACHE_TEST != "no") {
+		ADD_FLAG("XCACHE_ENABLE_TEST", "-DXCACHE_ENABLE_TEST");
+		AC_DEFINE("HAVE_XCACHE_TEST", 1, "Define to enable XCache self test");
+	}
+	else {
+		ADD_FLAG("XCACHE_ENABLE_TEST", "");
+	}
+
+	XCACHE_PROC_SOURCES=glob(srcdir + "\\processor\\*.m4").join(' ');
+	ADD_FLAG("XCACHE_PROC_SOURCES", XCACHE_PROC_SOURCES);
+	// }}}
+	// {{{ check for opcode_spec_def.h
+	STDOUT.Write("Checking if you have opcode_spec_def.h for XCache ... ");
+	var file = srcdir + "\\opcode_spec_def.h";
+	if (FSO.FileExists(file)) {
+		STDOUT.WriteLine("yes");
+		AC_DEFINE("HAVE_XCACHE_OPCODE_SPEC_DEF", 1, "Define if you have opcode_spec_def.h for XCache");
+	}
+	else {
+		STDOUT.WriteLine("no");
+
+		// check for features depend on opcode_spec_def.h
+		var xcache_require_opcode_spec_def = function(withval, name) {
+			if (withval != "no") {
+				ERROR(file + " is required to enable XCache " + name);
+			}
+		}
+		xcache_require_opcode_spec_def(PHP_XCACHE_DISASSEMBLER, "disassembler");
+	}
+	// }}}
+}

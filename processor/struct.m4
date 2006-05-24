@@ -38,10 +38,12 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 			/* }}} */
 			IFRESTORE(`assert(xc_is_shm(src));')
 			IFCALCSTORE(`assert(!xc_is_shm(src));')
+			do {
 		')
 
 		ifdef(`USEMEMCPY', `IFCOPY(`
 			memcpy(dst, src, sizeof($1));
+			do {
 		')')
 
 		IFDPRINT(`
@@ -83,7 +85,11 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 				')
 				/* }}} */
 		')')
+		ifdef(`USEMEMCPY', `IFCOPY(`
+			} while (0);
+		')')
 		IFASSERT(`
+			} while (0);
 			undefine(`ELEMENTS_DONE')
 		')
 	}
@@ -141,6 +147,13 @@ define(`STRUCT', `
 	IFDPRINT(`INDENT()`'fprintf(stderr, "$1:$2");')
 	STRUCT_P_EX(`$1', `dst->$2', `src->$2', `$2', `$3', `&')
 	DONE(`$2')
+')
+dnl }}}
+dnl {{{ STRUCT_ARRAY_I(1:count, 2:type, 3:elm, 4:name=type)
+define(`STRUCT_ARRAY_I', `
+pushdef(`i', `ii')
+STRUCT_ARRAY(`$1', `$2', `$3', `$4')
+popdef(`i')
 ')
 dnl }}}
 dnl {{{ STRUCT_ARRAY(1:count, 2:type, 3:elm, 4:name=type)

@@ -4,6 +4,10 @@
 #ifdef HAVE_SYS_FILE_H
 #	include <sys/file.h>
 #endif
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include "stack.h"
 #include "xcache_globals.h"
 #include "coverage.h"
@@ -304,15 +308,15 @@ static int xc_coverage_init_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ *
 {
 	zend_uint size;
 	coverage_t cov;
-	int i;
+	zend_uint i;
 
 	if (op_array->type != ZEND_USER_FUNCTION) {
 		return 0;
 	}
 
 	size = xc_coverage_get_op_array_size_no_tail(op_array);
-	cov = xc_coverage_get(op_array->filename);
-	for (i = 0; i < size; i++) {
+	cov = xc_coverage_get(op_array->filename TSRMLS_CC);
+	for (i = 0; i < size; i ++) {
 		switch (op_array->opcodes[i].opcode) {
 			case ZEND_EXT_STMT:
 #if 0
@@ -350,12 +354,13 @@ static zend_op_array *xc_compile_file_for_coverage(zend_file_handle *h, int type
 /* hits */
 void xc_coverage_handle_ext_stmt(zend_op_array *op_array, zend_uchar op) /* {{{ */
 {
+	TSRMLS_FETCH();
+
 	if (XG(coveragedumper) && XG(coverages)) {
-		TSRMLS_FETCH();
 		int size = xc_coverage_get_op_array_size_no_tail(op_array);
 		int oplineno = (*EG(opline_ptr)) - op_array->opcodes;
 		if (oplineno < size) {
-			xc_coverage_add_hits(xc_coverage_get(op_array->filename), (*EG(opline_ptr))->lineno, 1 TSRMLS_CC);
+			xc_coverage_add_hits(xc_coverage_get(op_array->filename TSRMLS_CC), (*EG(opline_ptr))->lineno, 1 TSRMLS_CC);
 		}
 	}
 }

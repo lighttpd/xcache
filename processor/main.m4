@@ -14,7 +14,6 @@ dnl ============
 define(`INDENT', `xc_dprint_indent(indent);')
 dnl }}}
 dnl {{{ ALLOC(1:dst, 2:type, 3:count=1, 4:clean=false, 5:forcetype=$2)
-dnl don't use typeof(dst) as we need the compiler warning
 define(`ALLOC', `
 	pushdef(`COUNT', `ifelse(`$3', `', `1', `$3')')
 	pushdef(`SIZE', `sizeof($2)ifelse(`$3', `', `', ` * $3')')
