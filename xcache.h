@@ -136,7 +136,9 @@ typedef struct {
 /* }}} */
 /* {{{ xc_classinfo_t */
 typedef struct {
-	UNISW(,zend_uchar type;)
+#ifdef IS_UNICODE
+	zend_uchar type;
+#endif
 	char *key;
 	zend_uint key_size;
 	xc_cest_t cest;
@@ -144,7 +146,9 @@ typedef struct {
 /* }}} */
 /* {{{ xc_funcinfo_t */
 typedef struct {
-	UNISW(,zend_uchar type;)
+#ifdef IS_UNICODE
+	zend_uchar type;
+#endif
 	char *key;
 	zend_uint key_size;
 	zend_function func;
