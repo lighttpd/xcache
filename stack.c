@@ -50,7 +50,7 @@ int xc_stack_size(S stack)
 
 void xc_stack_reverse(S stack)
 {
-	typeof(stack->cnt) i, j;
+	int i, j;
 	void *tmp;
 
 	assert(stack != NULL);

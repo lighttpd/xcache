@@ -233,7 +233,7 @@ static void xc_fix_opcode_ex_znode(int tofix, xc_op_spec_t spec, znode *znode, i
 static void xc_fix_opcode_ex(zend_op_array *op_array, int tofix TSRMLS_DC) /* {{{ */
 {
 	zend_op *opline;
-	int i;
+	zend_uint i;
 
 	opline = op_array->opcodes;
 	for (i = 0; i < op_array->last; i ++, opline ++) {
@@ -281,8 +281,8 @@ void xc_install_function(char *filename, zend_function *func, zend_uchar type, c
 /* }}} */
 ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, zend_uchar type, void *key, uint len TSRMLS_DC) /* {{{ */
 {
-	ZESW(void *stored_ce_ptr, );
 	zend_class_entry *cep = CestToCePtr(*cest);
+	ZESW(void *stored_ce_ptr, );
 
 	if (zend_u_hash_add(CG(class_table), type, key, len,
 				cest, sizeof(xc_cest_t),

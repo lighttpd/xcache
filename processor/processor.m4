@@ -364,15 +364,18 @@ dnl }}}
 DEF_STRUCT_P_FUNC(`znode', , `dnl {{{
 	DISPATCH(int, op_type)
 
+#ifdef IS_CV
+#	define XCACHE_IS_CV IS_CV
+#else
+/* compatible with zend optimizer */
+#	define XCACHE_IS_CV 16
+#endif
 	assert(src->op_type == IS_CONST ||
 		src->op_type == IS_VAR ||
-#ifdef IS_CV
-		src->op_type == IS_CV ||
-#else
-		src->op_type == 16 || /* zend optimizer */
-#endif
+		src->op_type == XCACHE_IS_CV ||
 		src->op_type == IS_TMP_VAR ||
 		src->op_type == IS_UNUSED);
+#undef XCACHE_IS_CV
 	dnl dirty dispatch
 	DISABLECHECK(`
 	switch (src->op_type) {
@@ -462,6 +465,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	')
 	do {
 	dnl RESTORE is done above!
+	zend_uint ii;
 	int i;
 
 	/* Common elements */
@@ -480,7 +484,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	DISPATCH(zend_uint, fn_flags)
 	/* useless */
 	COPY(prototype)
-	STRUCT_ARRAY(num_args, zend_arg_info, arg_info)
+	STRUCT_ARRAY_I(num_args, zend_arg_info, arg_info)
 	DISPATCH(zend_uint, num_args)
 	DISPATCH(zend_uint, required_num_args)
 	DISPATCH(zend_bool, pass_rest_by_reference)
@@ -489,6 +493,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		ALLOC(dst->arg_types, zend_uchar, src->arg_types[0] + 1)
 		IFCOPY(`memcpy(dst->arg_types, src->arg_types, sizeof(src->arg_types[0]) * (src->arg_types[0]+1));')
 		IFDASM(`do {
+			zend_uint ii;
 			int i;
 			zval *zv;
 			ALLOC_INIT_ZVAL(zv);
@@ -527,7 +532,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		processor->active_opcodes_dst = dst->opcodes;
 		processor->active_opcodes_src = src->opcodes;
 	')')
-	STRUCT_ARRAY(last, zend_op, opcodes)
+	STRUCT_ARRAY_I(last, zend_op, opcodes)
 	popdef(`AFTER_ALLOC')
 	DISPATCH(zend_uint, last)
 	IFCOPY(`dst->size = src->last;DONE(size)', `DISPATCH(zend_uint, size)')
@@ -545,7 +550,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 
 	DISPATCH(zend_uint, T)
 
-	STRUCT_ARRAY(last_brk_cont, zend_brk_cont_element, brk_cont_array)
+	STRUCT_ARRAY_I(last_brk_cont, zend_brk_cont_element, brk_cont_array)
 	DISPATCH(zend_uint, last_brk_cont)
 	DISPATCH(zend_uint, current_brk_cont)
 #ifndef ZEND_ENGINE_2

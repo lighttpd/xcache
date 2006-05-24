@@ -5,6 +5,7 @@
 #include <php.h>
 #ifndef ZEND_WIN32
 typedef int HANDLE;
+#	define CloseHandle(h) close(h)
 #endif
 #include "lock.h"
 
@@ -17,6 +18,10 @@ struct _xc_lock_t {
 #	include <unistd.h>
 #	include <fcntl.h>
 #	include <errno.h>
+#	define LCK_WR F_WRLCK
+#	define LCK_RD F_RDLCK
+#	define LCK_UN F_UNLCK
+#	define LCK_NB 0
 static inline int dolock(xc_lock_t *lck, int type) /* {{{ */
 { 
 	int ret;
@@ -34,10 +39,6 @@ static inline int dolock(xc_lock_t *lck, int type) /* {{{ */
 	return ret;
 }
 /* }}} */
-#define LCK_WR F_WRLCK
-#define LCK_RD F_RDLCK
-#define LCK_UN F_UNLCK
-#define LCK_NB 0
 #else
 
 #	include <win32/flock.h>
@@ -45,37 +46,40 @@ static inline int dolock(xc_lock_t *lck, int type) /* {{{ */
 #	include <fcntl.h>
 #	include <sys/types.h>
 #	include <sys/stat.h>
-#	define errno GetLastError()
+#	ifndef errno
+#		define errno GetLastError()
+#	endif
+#	define getuid() 0
+#	define LCK_WR LOCKFILE_EXCLUSIVE_LOCK
+#	define LCK_RD 0
+#	define LCK_UN 0
+#	define LCK_NB LOCKFILE_FAIL_IMMEDIATELY
 static inline int dolock(xc_lock_t *lck, int type) /* {{{ */
 { 
 	static OVERLAPPED offset = {0, 0, 0, 0, NULL};
 
 	if (type == LCK_UN) {
-		return UnlockFileEx((HANDLE)fd, 0, 1, 0, &offset);
+		return UnlockFileEx((HANDLE)lck->fd, 0, 1, 0, &offset);
 	}
 	else {
-		return LockFileEx((HANDLE)fd, type, 0, 1, 0, &offset);
+		return LockFileEx((HANDLE)lck->fd, type, 0, 1, 0, &offset);
 	}
 }
 /* }}} */
-#define LCK_WR LOCKFILE_EXCLUSIVE_LOCK
-#define LCK_RD 0
-#define LCK_UN 0
-#define LCK_NB LOCKFILE_FAIL_IMMEDIATELY
 #endif
 
 xc_lock_t *xc_fcntl_init(const char *pathname) /* {{{ */
 {
 	HANDLE fd;
-	char myname[sizeof("/tmp/.xcache.lock") - 1 + 20];
+	char myname[sizeof("/tmp/.xcache.lock") - 1 + 100];
 
 	if (pathname == NULL) {
 		static int i = 0;
-		snprintf(myname, sizeof(myname) - 1, "/tmp/.xcache.%d.%d.lock", (int) getuid(), i ++);
+		snprintf(myname, sizeof(myname) - 1, "/tmp/.xcache.%d.%d.%d.lock", (int) getuid(), i ++, rand());
 		pathname = myname;
 	}
 
-	fd = open(pathname, O_RDWR|O_CREAT, 0666);
+	fd = (HANDLE) open(pathname, O_RDWR|O_CREAT, 0666);
 
 	if (fd > 0) {
 		xc_lock_t *lck = malloc(sizeof(lck[0]));
@@ -98,7 +102,7 @@ xc_lock_t *xc_fcntl_init(const char *pathname) /* {{{ */
 /* }}} */
 void xc_fcntl_destroy(xc_lock_t *lck) /* {{{ */
 {   
-	close(lck->fd);
+	CloseHandle(lck->fd);
 #ifdef __CYGWIN__
 	unlink(lck->pathname);
 #endif
