@@ -87,7 +87,6 @@ if (PHP_XCACHE != "no") {
 	frag = frag.replace(/\.lo:/g, ".obj:");
 	frag = frag.replace(/.*\$\(CC\).* -E (.*) -o (.*)/, ccrule + " /E $1 > $2");
 	frag = frag.replace(/ -o /g, " /Fo");
-	frag = frag.replace(/ -E /g, " /E ");
 	frag = frag.replace(/mv -f /g, "move ");
 	if (indent == '') {
 		frag = frag.replace(/\| +\$\(XCACHE_INDENT\)/, '');
