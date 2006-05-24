@@ -1,6 +1,6 @@
 divert(-1)
 dnl ================ start ======================
-define(`XCACHE_ENABLE_TEST')
+dnl define(`XCACHE_ENABLE_TEST')
 define(`USEMEMCPY')
 
 dnl ================ main
