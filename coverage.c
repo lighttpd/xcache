@@ -30,7 +30,7 @@ static void xc_destroy_coverage(void *pDest) /* {{{ */
 	efree(cov);
 }
 /* }}} */
-PHPAPI void xcache_mkdirs_ex(char *root, int rootlen, char *path, int pathlen TSRMLS_DC) /* {{{ */
+void xcache_mkdirs_ex(char *root, int rootlen, char *path, int pathlen TSRMLS_DC) /* {{{ */
 {
 	char *fullpath;
 	struct stat st;
