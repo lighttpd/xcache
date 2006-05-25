@@ -12,7 +12,7 @@
 #endif
 #include "opcode_spec_def.h"
 
-int xc_get_opcode_spec_count()
+zend_uchar xc_get_opcode_spec_count()
 {
 	return sizeof(xc_opcode_spec) / sizeof(xc_opcode_spec[0]);
 }
@@ -30,7 +30,7 @@ const xc_opcode_spec_t *xc_get_opcode_spec(zend_uchar opcode)
 #define OPSPECS_DEF_NAME(name) #name,
 static const char *xc_op_spec[] = { OPSPECS(OPSPECS_DEF_NAME) };
 
-int xc_get_op_spec_count()
+zend_uchar xc_get_op_spec_count()
 {
 	return sizeof(xc_op_spec) / sizeof(xc_op_spec[0]);
 }

@@ -829,7 +829,7 @@ static int xc_init_constant(int module_number TSRMLS_DC) /* {{{ */
 {
 	typedef struct {
 		const char *prefix;
-		int (*getsize)();
+		zend_uchar (*getsize)();
 		const char *(*get)(zend_uchar i);
 	} xc_meminfo_t;
 	xc_meminfo_t nameinfos[] = {
@@ -840,13 +840,14 @@ static int xc_init_constant(int module_number TSRMLS_DC) /* {{{ */
 		{ NULL, NULL, NULL }
 	};
 	xc_meminfo_t* p;
-	int i;
+	zend_uchar i, count;
 	char const_name[96];
 	int const_name_len;
 	int undefdone = 0;
 
 	for (p = nameinfos; p->getsize; p ++) {
-		for (i = p->getsize() - 1; i >= 0; i --) {
+		count = p->getsize();
+		for (i = 0; i < count; i ++) {
 			const char *name = p->get(i);
 			if (!name) continue;
 			if (strcmp(name, "UNDEF") == 0) {

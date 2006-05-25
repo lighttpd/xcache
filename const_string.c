@@ -24,7 +24,7 @@ static const char *const op_type_names[] = {
 #endif
 };
 
-int xc_get_op_type_count()
+zend_uchar xc_get_op_type_count()
 {
 	return sizeof(op_type_names) / sizeof(op_type_names[0]);
 }
@@ -70,7 +70,7 @@ static const char *const data_type_names[] = {
 #endif
 };
 
-int xc_get_data_type_count()
+zend_uchar xc_get_data_type_count()
 {
 	return sizeof(data_type_names) / sizeof(data_type_names[0]);
 }
@@ -101,7 +101,7 @@ const char *xc_get_data_type(zend_uchar data_type)
 #	endif
 #endif
 
-int xc_get_opcode_count()
+zend_uchar xc_get_opcode_count()
 {
 	return sizeof(xc_opcode_names) / sizeof(xc_opcode_names[0]);
 }
