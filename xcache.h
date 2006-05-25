@@ -27,6 +27,7 @@
 #	define ZEND_ENGINE_2_1
 #endif
 
+#define NOTHING
 /* ZendEngine code Switcher */
 #ifndef ZEND_ENGINE_2
 #	define ZESW(v1, v2) v1

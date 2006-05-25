@@ -498,7 +498,7 @@ static int xc_stat(const char *filename, const char *include_path, struct stat *
 #define HASH_NUM(n) HASH(n)
 static inline xc_hash_value_t xc_entry_hash_var(xc_entry_t *xce) /* {{{ */
 {
-	return UNISW(, UG(unicode) ? HASH_USTR_L(xce->name_type, (char *)xce->name.ustr.val, xce->name.ustr.len) :)
+	return UNISW(NOTHING, UG(unicode) ? HASH_USTR_L(xce->name_type, (char *)xce->name.ustr.val, xce->name.ustr.len) :)
 		HASH_STR_L(xce->name.str.val, xce->name.str.len);
 }
 /* }}} */
@@ -548,7 +548,7 @@ static int xc_entry_init_key_php(xc_entry_t *xce, char *filename TSRMLS_DC) /* {
 		return 0;
 	}
 
-	UNISW(, xce->name_type = IS_STRING;)
+	UNISW(NOTHING, xce->name_type = IS_STRING;)
 	xce->name.str.val = filename;
 	xce->name.str.len = strlen(filename);
 
@@ -707,7 +707,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 			assert(i < php.funcinfo_cnt);
 			assert(b->pData);
 			memcpy(&fi->func, b->pData, sizeof(zend_function));
-			UNISW(, fi->type = b->key.type;)
+			UNISW(NOTHING, fi->type = b->key.type;)
 			fi->key        = BUCKET_KEY(b);
 			fi->key_size   = b->nKeyLength;
 		}
@@ -719,7 +719,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 			assert(i < php.classinfo_cnt);
 			assert(b->pData);
 			memcpy(&ci->cest, b->pData, sizeof(xc_cest_t));
-			UNISW(, ci->type = b->key.type;)
+			UNISW(NOTHING, ci->type = b->key.type;)
 			ci->key        = BUCKET_KEY(b);
 			ci->key_size   = b->nKeyLength;
 			/* need to fix inside store */
