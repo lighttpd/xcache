@@ -38,6 +38,6 @@ typedef struct {
 } xc_opcode_spec_t;
 
 const xc_opcode_spec_t *xc_get_opcode_spec(zend_uchar opcode);
-int xc_get_opcode_spec_count();
-int xc_get_op_spec_count();
+zend_uchar xc_get_opcode_spec_count();
+zend_uchar xc_get_op_spec_count();
 const char *xc_get_op_spec(zend_uchar spec);
