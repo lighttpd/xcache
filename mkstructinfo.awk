@@ -2,7 +2,6 @@
 # vim:ts=4:sw=4
 BEGIN {
 	brace = 0;
-	delete buffer;
 	buffer_len = 0;
 }
 /^}.*;/ {
@@ -33,14 +32,16 @@ BEGIN {
 		printf "define(`COUNTOF_%s', `%s')\n", instruct, i;
 		printf "define(`SIZEOF_%s', `(  %s  )')\n", instruct, elm;
 		print "\n";
-		delete buffer;
+		for (i in buffer) {
+			delete buffer[i];
+		}
 		buffer_len = 0;
 		instruct = 0;
 	}
 	next;
 }
 
-/.{/ {
+/.\{/ {
 	brace = brace + 1;
 }
 /.}/ {
@@ -75,13 +76,13 @@ BEGIN {
 	typedefs[$3] = $4;
 	next;
 }
-/^typedef struct .*{/ {
+/^typedef struct .*\{/ {
 	brace = 1;
 	instruct = 1;
 	next;
 }
 
-/^struct .*{/ {
+/^struct .*\{/ {
 	instruct = $2;
 	brace = 1;
 	next;
