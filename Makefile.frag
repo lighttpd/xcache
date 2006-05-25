@@ -4,15 +4,15 @@ XCACHE_PROC_C=$(builddir)/processor_real.c
 XCACHE_PROC_H=$(builddir)/processor.h
 XCACHE_INCLUDES_SRC=$(srcdir)/includes.c
 XCACHE_INCLUDES_I=$(builddir)/includes.i
-XCACHE_STRUCT_OUT=$(builddir)/structinfo.m4
+XCACHE_STRUCTINFO_OUT=$(builddir)/structinfo.m4
 
 $(XCACHE_INCLUDES_I): $(XCACHE_INCLUDES_SRC) $(srcdir)/xcache.h
 	$(CC) -I. -I$(srcdir) $(COMMON_FLAGS) $(CFLAGS_CLEAN) $(EXTRA_CFLAGS) -E $(XCACHE_INCLUDES_SRC) -o $(XCACHE_INCLUDES_I)
 
-$(XCACHE_STRUCT_OUT): $(XCACHE_INCLUDES_I) $(srcdir)/mkstructinfo.awk
-	$(AWK) -f $(srcdir)/mkstructinfo.awk < $(XCACHE_INCLUDES_I) > $(XCACHE_STRUCT_OUT)
+$(XCACHE_STRUCTINFO_OUT): $(XCACHE_INCLUDES_I) $(srcdir)/mkstructinfo.awk
+	$(AWK) -W posix -f $(srcdir)/mkstructinfo.awk < $(XCACHE_INCLUDES_I) > $(XCACHE_STRUCTINFO_OUT)
 
-$(XCACHE_PROC_OUT): $(XCACHE_PROC_SRC) $(XCACHE_STRUCT_OUT) $(XCACHE_PROC_SOURCES)
+$(XCACHE_PROC_OUT): $(XCACHE_PROC_SRC) $(XCACHE_STRUCTINFO) $(XCACHE_PROC_SOURCES)
 	$(M4) -D srcdir="$(srcdir)" -D builddir="$(builddir)" $(XCACHE_ENABLE_TEST) -E $(XCACHE_PROC_SRC) > $(XCACHE_PROC_OUT).tmp
 	mv -f $(XCACHE_PROC_OUT).tmp $(XCACHE_PROC_OUT)
 

@@ -41,15 +41,22 @@ if test "$PHP_XCACHE" != "no"; then
   if test "$PHP_XCACHE_TEST" != "no"; then
     XCACHE_ENABLE_TEST=-DXCACHE_ENABLE_TEST
     AC_DEFINE([HAVE_XCACHE_TEST], 1, [Define to enable XCache self test])
+    XCACHE_STRUCTINFO='$(XCACHE_STRUCTINFO_OUT)'
   else
     XCACHE_ENABLE_TEST=
+    XCACHE_STRUCTINFO=
   fi
   PHP_SUBST([XCACHE_ENABLE_TEST])
+  PHP_SUBST([XCACHE_STRUCTINFO])
 
   AC_PATH_PROGS([AWK], [gawk awk])
+  PHP_SUBST([AWK])
   AC_PATH_PROGS([M4], [m4])
+  PHP_SUBST([M4])
   AC_PATH_PROGS([GREP], [grep])
+  PHP_SUBST([GREP])
   AC_PATH_PROGS([SED], [sed])
+  PHP_SUBST([SED])
 
   AC_PATH_PROGS([INDENT], [indent cat])
   case $INDENT in
