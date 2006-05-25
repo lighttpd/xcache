@@ -137,18 +137,23 @@ void xc_shm_destroy(xc_shm_t *shm) /* {{{ */
 /* }}} */
 xc_shm_t *xc_shm_init(const char *path, xc_shmsize_t size, zend_bool readonly_protection) /* {{{ */
 {
+#ifdef ZEND_WIN32
+#	define TMP_PATH "XCache"
+#else
+#	define TMP_PATH "/tmp/XCache"
+#endif
 	xc_shm_t *shm = NULL;
 	int fd = -1;
 	int ro_ok;
 	volatile void *romem;
-	char tmpname[sizeof("/tmp/xcache") - 1 + 100];
+	char tmpname[sizeof(TMP_PATH) - 1 + 100];
 
 	CHECK(shm = calloc(1, sizeof(xc_shm_t)), "shm OOM");
 	shm->size = size;
 
 	if (path == NULL || !path[0]) {
 		static int inc = 0;
-		snprintf(tmpname, sizeof(tmpname) - 1, "/tmp/xcache.%d.%d.%d", (int) getuid(), inc ++, rand());
+		snprintf(tmpname, sizeof(tmpname) - 1, "%s.%d.%d.%d", TMP_PATH, (int) getuid(), inc ++, rand());
 		path = tmpname;
 	}
 

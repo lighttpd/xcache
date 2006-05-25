@@ -1711,6 +1711,11 @@ static PHP_INI_MH(xc_OnUpdateString)
 #define OnUpdateInt OnUpdateLong
 #endif
 
+#ifdef ZEND_WIN32
+#	define DEFAULT_PATH "xcache"
+#else
+#	define DEFAULT_PATH "/dev/zero"
+#endif
 PHP_INI_BEGIN()
 	PHP_INI_ENTRY1     ("xcache.size",                   "0", PHP_INI_SYSTEM, xc_OnUpdateLong,     &xc_php_size)
 	PHP_INI_ENTRY1     ("xcache.count",                  "1", PHP_INI_SYSTEM, xc_OnUpdateHashInfo, &xc_php_hcache)
@@ -1720,7 +1725,7 @@ PHP_INI_BEGIN()
 	PHP_INI_ENTRY1     ("xcache.var_count",              "1", PHP_INI_SYSTEM, xc_OnUpdateHashInfo, &xc_var_hcache)
 	PHP_INI_ENTRY1     ("xcache.var_slots",             "8K", PHP_INI_SYSTEM, xc_OnUpdateHashInfo, &xc_var_hentry)
 
-	PHP_INI_ENTRY1     ("xcache.mmap_path",      "/dev/zero", PHP_INI_SYSTEM, xc_OnUpdateString,   &xc_mmap_path)
+	PHP_INI_ENTRY1     ("xcache.mmap_path",     DEFAULT_PATH, PHP_INI_SYSTEM, xc_OnUpdateString,   &xc_mmap_path)
 	PHP_INI_ENTRY1     ("xcache.coredump_directory",      "", PHP_INI_SYSTEM, xc_OnUpdateString,   &xc_coredump_dir)
 	PHP_INI_ENTRY1     ("xcache.test",                   "0", PHP_INI_SYSTEM, xc_OnUpdateBool,     &xc_test)
 	PHP_INI_ENTRY1     ("xcache.readonly_protection",    "0", PHP_INI_SYSTEM, xc_OnUpdateBool,     &xc_readonly_protection)
@@ -1820,7 +1825,7 @@ static PHP_MINIT_FUNCTION(xcache)
 
 	if ((xc_php_size || xc_var_size) && xc_mmap_path && xc_mmap_path[0]) {
 		if (!xc_init(module_number TSRMLS_CC)) {
-			zend_error(E_ERROR, "XCache: Cannot init xcache");
+			zend_error(E_ERROR, "XCache: Cannot init");
 			goto err_init;
 		}
 		xc_initized = 1;
@@ -1891,7 +1896,7 @@ static ZEND_MODULE_POST_ZEND_DEACTIVATE_D(xcache)
 
 zend_module_entry xcache_module_entry = {
 	STANDARD_MODULE_HEADER,
-	"xcache",
+	"XCache",
 	xcache_functions,
 	PHP_MINIT(xcache),
 	PHP_MSHUTDOWN(xcache),
