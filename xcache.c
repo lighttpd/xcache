@@ -989,6 +989,22 @@ err:
 /* }}} */
 static void xc_request_init(TSRMLS_D) /* {{{ */
 {
+	int i;
+
+	if (xc_php_hcache.size && !XG(php_holds)) {
+		XG(php_holds) = calloc(xc_php_hcache.size, sizeof(xc_stack_t));
+		for (i = 0; i < xc_php_hcache.size; i ++) {
+			xc_stack_init(&XG(php_holds[i]));
+		}
+	}
+
+	if (xc_var_hcache.size && !XG(var_holds)) {
+		XG(var_holds) = calloc(xc_var_hcache.size, sizeof(xc_stack_t));
+		for (i = 0; i < xc_var_hcache.size; i ++) {
+			xc_stack_init(&XG(var_holds[i]));
+		}
+	}
+
 	if (XG(cacher)) {
 #if PHP_API_VERSION <= 20041225
 		XG(request_time) = time(NULL);
@@ -1011,31 +1027,7 @@ static void xc_request_shutdown(TSRMLS_D) /* {{{ */
 /* }}} */
 static void xc_init_globals(zend_xcache_globals* xc_globals TSRMLS_DC) /* {{{ */
 {
-	int i;
-
-	if (xc_php_hcache.size) {
-		xc_globals->php_holds = calloc(xc_php_hcache.size, sizeof(xc_stack_t));
-		for (i = 0; i < xc_php_hcache.size; i ++) {
-			xc_stack_init(&xc_globals->php_holds[i]);
-		}
-	}
-	else {
-		xc_globals->php_holds = NULL;
-	}
-
-	if (xc_var_hcache.size) {
-		xc_globals->var_holds = calloc(xc_var_hcache.size, sizeof(xc_stack_t));
-		for (i = 0; i < xc_var_hcache.size; i ++) {
-			xc_stack_init(&xc_globals->var_holds[i]);
-		}
-	}
-	else {
-		xc_globals->var_holds = NULL;
-	}
-
-#ifdef HAVE_XCACHE_COVERAGE
-	xc_globals->coverages = NULL;
-#endif
+	memset(xc_globals, 0, sizeof(zend_xcache_globals));
 }
 /* }}} */
 static void xc_shutdown_globals(zend_xcache_globals* xc_globals TSRMLS_DC) /* {{{ */
@@ -1539,7 +1531,7 @@ PHP_FUNCTION(xcache_get_opcode_spec)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &spec) == FAILURE) {
 		return;
 	}
-	if (spec <= xc_get_opcode_spec_count()) {
+	if ((zend_uchar) spec <= xc_get_opcode_spec_count()) {
 		opspec = xc_get_opcode_spec((zend_uchar) spec);
 		if (opspec) {
 			array_init(return_value);
@@ -1791,8 +1783,6 @@ static PHP_MINIT_FUNCTION(xcache)
 {
 	char *env;
 
-	REGISTER_INI_ENTRIES();
-
 	xc_module_gotup = 1;
 	if (!xc_zend_extension_gotup) {
 		if (zend_get_extension(XCACHE_NAME) == NULL) {
@@ -1800,6 +1790,9 @@ static PHP_MINIT_FUNCTION(xcache)
 			xc_zend_extension_startup(&zend_extension_entry);
 		}
 	}
+
+	ZEND_INIT_MODULE_GLOBALS(xcache, xc_init_globals, xc_shutdown_globals);
+	REGISTER_INI_ENTRIES();
 
 	if (strcmp(sapi_module.name, "cli") == 0) {
 		if ((env = getenv("XCACHE_TEST")) != NULL) {
@@ -1817,9 +1810,6 @@ static PHP_MINIT_FUNCTION(xcache)
 	if (xc_var_size <= 0) {
 		xc_var_size = xc_var_hcache.size = 0;
 	}
-	/* xc_init_globals depends on all the aboves */
-
-	ZEND_INIT_MODULE_GLOBALS(xcache, xc_init_globals, xc_shutdown_globals);
 
 	original_sigsegv_handler = signal(SIGSEGV, xcache_sigsegv_handler);
 
