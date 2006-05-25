@@ -100,9 +100,11 @@ if (PHP_XCACHE != "no") {
 	if (PHP_XCACHE_TEST != "no") {
 		ADD_FLAG("XCACHE_ENABLE_TEST", "-DXCACHE_ENABLE_TEST");
 		AC_DEFINE("HAVE_XCACHE_TEST", 1, "Define to enable XCache self test");
+		ADD_FLAG("XCACHE_STRUCTINFO", "$(XCACHE_STRUCTINFO_OUT)");
 	}
 	else {
 		ADD_FLAG("XCACHE_ENABLE_TEST", "");
+		ADD_FLAG("XCACHE_STRUCTINFO", "");
 	}
 
 	XCACHE_PROC_SOURCES=glob(srcdir + "\\processor\\*.m4").join(' ');
