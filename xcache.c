@@ -26,12 +26,14 @@
 #include "const_string.h"
 #include "opcode_spec.h"
 
-#undef NDEBUG
 #ifdef DEBUG
+#	undef NDEBUG
 #	undef inline
 #	define inline
 #else
-#	define NDEBUG
+#	ifndef NDEBUG
+#		define NDEBUG
+#	endif
 #endif
 #include <assert.h>
 
@@ -1876,7 +1878,9 @@ static PHP_RSHUTDOWN_FUNCTION(xcache)
 static ZEND_MODULE_POST_ZEND_DEACTIVATE_D(xcache)
 #endif
 {
+#ifdef ZEND_ENGINE_2
 	TSRMLS_FETCH();
+#endif
 
 	xc_request_shutdown(TSRMLS_C);
 	return SUCCESS;
