@@ -282,7 +282,7 @@ void xc_install_function(char *filename, zend_function *func, zend_uchar type, c
 ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, zend_uchar type, void *key, uint len TSRMLS_DC) /* {{{ */
 {
 	zend_class_entry *cep = CestToCePtr(*cest);
-	ZESW(void *stored_ce_ptr, );
+	ZESW(void *stored_ce_ptr, NOTHING);
 
 	if (zend_u_hash_add(CG(class_table), type, key, len,
 				cest, sizeof(xc_cest_t),
@@ -293,7 +293,7 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, zend_u
 		CG(zend_lineno) = ZESW(0, cep->line_start);
 		zend_error(E_ERROR, "Cannot redeclare class %s", (char *) cep->name);
 	}
-	ZESW(return (xc_cest_t *) stored_ce_ptr, );
+	ZESW(return (xc_cest_t *) stored_ce_ptr, NOTHING);
 }
 /* }}} */
 
