@@ -10,9 +10,9 @@
 
 #include "stack.h"
 #include "xcache_globals.h"
-#include "coverage.h"
+#include "coverager.h"
 #include "utils.h"
-typedef HashTable *coverage_t;
+typedef HashTable *coverager_t;
 #define PCOV_HEADER_MAGIC 0x564f4350
 
 char *xc_coveragedump_dir = NULL;
@@ -22,7 +22,7 @@ static zend_compile_file_t *origin_compile_file;
 /* dumper */
 static void xc_destroy_coverage(void *pDest) /* {{{ */
 {
-	coverage_t cov = *(coverage_t*) pDest;
+	coverager_t cov = *(coverager_t*) pDest;
 #ifdef DEBUG
 	fprintf(stderr, "destroy %p\n", cov);
 #endif
@@ -64,7 +64,7 @@ void xcache_mkdirs_ex(char *root, int rootlen, char *path, int pathlen TSRMLS_DC
 	free_alloca(fullpath);
 }
 /* }}} */
-static void xc_coverage_save_cov(char *srcfile, char *outfilename, coverage_t cov TSRMLS_DC) /* {{{ */
+static void xc_coverager_save_cov(char *srcfile, char *outfilename, coverager_t cov TSRMLS_DC) /* {{{ */
 {
 	long *buf = NULL, *p;
 	long covlines, *phits;
@@ -192,7 +192,7 @@ bailout:
 	if (buf) efree(buf);
 }
 /* }}} */
-void xc_coverage_request_init(TSRMLS_D) /* {{{ */
+void xc_coverager_request_init(TSRMLS_D) /* {{{ */
 {
 	if (XG(coveragedumper)) {
 		XG(coverages) = emalloc(sizeof(HashTable));
@@ -200,9 +200,9 @@ void xc_coverage_request_init(TSRMLS_D) /* {{{ */
 	}
 }
 /* }}} */
-void xc_coverage_request_shutdown(TSRMLS_D) /* {{{ */
+void xc_coverager_request_shutdown(TSRMLS_D) /* {{{ */
 {
-	coverage_t *pcov;
+	coverager_t *pcov;
 	zstr s;
 	char *outfilename;
 	int dumpdir_len, outfilelen, size, alloc_len = 0;
@@ -230,7 +230,7 @@ void xc_coverage_request_shutdown(TSRMLS_D) /* {{{ */
 #ifdef DEBUG
 			fprintf(stderr, "outfilename %s\n", outfilename);
 #endif
-			xc_coverage_save_cov(ZSTR_S(s), outfilename, *pcov TSRMLS_CC);
+			xc_coverager_save_cov(ZSTR_S(s), outfilename, *pcov TSRMLS_CC);
 			zend_hash_move_forward(XG(coverages));
 		}
 	}
@@ -242,10 +242,10 @@ void xc_coverage_request_shutdown(TSRMLS_D) /* {{{ */
 /* }}} */
 
 /* helper func to store hits into coverages */
-static coverage_t xc_coverage_get(char *filename TSRMLS_DC) /* {{{ */
+static coverager_t xc_coverager_get(char *filename TSRMLS_DC) /* {{{ */
 {
 	int len = strlen(filename) + 1;
-	coverage_t cov, *pcov;
+	coverager_t cov, *pcov;
 
 	if (zend_hash_find(XG(coverages), filename, len, (void **) &pcov) == SUCCESS) {
 #ifdef DEBUG
@@ -264,7 +264,7 @@ static coverage_t xc_coverage_get(char *filename TSRMLS_DC) /* {{{ */
 	}
 }
 /* }}} */
-static void xc_coverage_add_hits(HashTable *cov, long line, long hits TSRMLS_DC) /* {{{ */
+static void xc_coverager_add_hits(HashTable *cov, long line, long hits TSRMLS_DC) /* {{{ */
 {
 	long *poldhits;
 
@@ -284,7 +284,7 @@ static void xc_coverage_add_hits(HashTable *cov, long line, long hits TSRMLS_DC)
 }
 /* }}} */
 
-static int xc_coverage_get_op_array_size_no_tail(zend_op_array *op_array) /* {{{ */
+static int xc_coverager_get_op_array_size_no_tail(zend_op_array *op_array) /* {{{ */
 {
 	zend_uint size;
 
@@ -308,18 +308,18 @@ static int xc_coverage_get_op_array_size_no_tail(zend_op_array *op_array) /* {{{
 /* }}} */
 
 /* prefill */
-static int xc_coverage_init_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
+static int xc_coverager_init_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
 	zend_uint size;
-	coverage_t cov;
+	coverager_t cov;
 	zend_uint i;
 
 	if (op_array->type != ZEND_USER_FUNCTION) {
 		return 0;
 	}
 
-	size = xc_coverage_get_op_array_size_no_tail(op_array);
-	cov = xc_coverage_get(op_array->filename TSRMLS_CC);
+	size = xc_coverager_get_op_array_size_no_tail(op_array);
+	cov = xc_coverager_get(op_array->filename TSRMLS_CC);
 	for (i = 0; i < size; i ++) {
 		switch (op_array->opcodes[i].opcode) {
 			case ZEND_EXT_STMT:
@@ -327,19 +327,19 @@ static int xc_coverage_init_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ *
 			case ZEND_EXT_FCALL_BEGIN:
 			case ZEND_EXT_FCALL_END:
 #endif
-				xc_coverage_add_hits(cov, op_array->opcodes[i].lineno, -1 TSRMLS_CC);
+				xc_coverager_add_hits(cov, op_array->opcodes[i].lineno, -1 TSRMLS_CC);
 				break;
 		}
 	}
 	return 0;
 }
 /* }}} */
-static void xc_coverage_init_compile_result(zend_op_array *op_array TSRMLS_DC) /* {{{ */
+static void xc_coverager_init_compile_result(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
 	xc_compile_result_t cr;
 
 	xc_compile_result_init_cur(&cr, op_array TSRMLS_CC);
-	xc_apply_op_array(&cr, (apply_func_t) xc_coverage_init_op_array TSRMLS_CC);
+	xc_apply_op_array(&cr, (apply_func_t) xc_coverager_init_op_array TSRMLS_CC);
 	xc_compile_result_free(&cr);
 }
 /* }}} */
@@ -349,29 +349,29 @@ static zend_op_array *xc_compile_file_for_coverage(zend_file_handle *h, int type
 
 	op_array = origin_compile_file(h, type TSRMLS_CC);
 	if (XG(coveragedumper) && XG(coverages)) {
-		xc_coverage_init_compile_result(op_array TSRMLS_CC);
+		xc_coverager_init_compile_result(op_array TSRMLS_CC);
 	}
 	return op_array;
 }
 /* }}} */
 
 /* hits */
-void xc_coverage_handle_ext_stmt(zend_op_array *op_array, zend_uchar op) /* {{{ */
+void xc_coverager_handle_ext_stmt(zend_op_array *op_array, zend_uchar op) /* {{{ */
 {
 	TSRMLS_FETCH();
 
 	if (XG(coveragedumper) && XG(coverages)) {
-		int size = xc_coverage_get_op_array_size_no_tail(op_array);
+		int size = xc_coverager_get_op_array_size_no_tail(op_array);
 		int oplineno = (*EG(opline_ptr)) - op_array->opcodes;
 		if (oplineno < size) {
-			xc_coverage_add_hits(xc_coverage_get(op_array->filename TSRMLS_CC), (*EG(opline_ptr))->lineno, 1 TSRMLS_CC);
+			xc_coverager_add_hits(xc_coverager_get(op_array->filename TSRMLS_CC), (*EG(opline_ptr))->lineno, 1 TSRMLS_CC);
 		}
 	}
 }
 /* }}} */
 
 /* init/destroy */
-int xc_coverage_init(int module_number TSRMLS_DC) /* {{{ */
+int xc_coverager_init(int module_number TSRMLS_DC) /* {{{ */
 {
 	if (xc_coveragedump_dir) {
 		int len = strlen(xc_coveragedump_dir);
@@ -389,7 +389,7 @@ int xc_coverage_init(int module_number TSRMLS_DC) /* {{{ */
 	return SUCCESS;
 }
 /* }}} */
-void xc_coverage_destroy() /* {{{ */
+void xc_coverager_destroy() /* {{{ */
 {
 	if (origin_compile_file == xc_compile_file_for_coverage) {
 		zend_compile_file = origin_compile_file;
@@ -402,7 +402,7 @@ void xc_coverage_destroy() /* {{{ */
 /* }}} */
 
 /* user api */
-PHP_FUNCTION(xcache_coverage_decode) /* {{{ */
+PHP_FUNCTION(xcache_coverager_decode) /* {{{ */
 {
 	char *str;
 	int len;
@@ -421,7 +421,7 @@ PHP_FUNCTION(xcache_coverage_decode) /* {{{ */
 	}
 	if (*p++ != PCOV_HEADER_MAGIC) {
 #ifdef DEBUG
-		fprintf(stderr, "wrong magic in xcache_coverage_decode");
+		fprintf(stderr, "wrong magic in xcache_coverager_decode");
 #endif
 		return;
 	}
