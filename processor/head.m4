@@ -29,8 +29,12 @@ define(`COUNTOF_xc_entry_name_t', `1')
 ifdef(`XCACHE_ENABLE_TEST', `
 #undef NDEBUG
 #include <assert.h>
-include(builddir`/structinfo.m4')
+m4_errprint(`AUTOCHECK INFO: runtime autocheck Enabled (debug build)')
+', `
+m4_errprint(`AUTOCHECK INFO: runtime autocheck Disabled (optimized build)')
 ')
+sinclude(builddir`/structinfo.m4')
+
 #ifndef NDEBUG
 #	undef inline
 #define inline

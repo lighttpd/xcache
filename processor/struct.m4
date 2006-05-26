@@ -28,13 +28,25 @@ define(`DEF_STRUCT_P_FUNC', `
 	')
 DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 	{
+		pushdef(`ELEMENTS_DONE')
+		ifdef(`SIZEOF_$1', , `m4_errprint(`AUTOCHECK WARN: $1: missing structinfo, dont panic')define(`SIZEOF_$1', 0)')
 		IFASSERT(`
 			/* {{{ init assert */
 			ifdef(`SIZEOF_$1', , `m4_errprint(`missing SIZEOF_$1, safe to ignore')define(`SIZEOF_$1', 0)')
 			ifdef(`COUNTOF_$1', , `m4_errprint(`missing COUNTOF_$1, safe to ignore')define(`COUNTOF_$1', 0)')
+			dnl SIZEOF_x COUNTOF_x can be both defined or both not
+			ifdef(`SIZEOF_$1', `
+				ifdef(`COUNTOF_$1', , `m4_errprint(`AUTOCHECK WARN: missing COUNTOF_$1')')
+			', `
+				define(`SIZEOF_$1', 0)
+			')
+			ifdef(`COUNTOF_$1', `
+				ifdef(`SIZEOF_$1', , `m4_errprint(`AUTOCHECK WARN: missing SIZEOF_$1')')
+			', `
+				define(`COUNTOF_$1', 0)
+			')
 			int assert_size = SIZEOF_$1, assert_count = COUNTOF_$1;
 			int done_size = 0, done_count = 0;
-			pushdef(`ELEMENTS_DONE')
 			/* }}} */
 			IFRESTORE(`assert(xc_is_shm(src));')
 			IFCALCSTORE(`assert(!xc_is_shm(src));')
@@ -55,7 +67,8 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 			indent --;
 			INDENT()fprintf(stderr, "}\n");
 		')
-		ifdef(`SKIPASSERT_ONCE', `undefine(`SKIPASSERT_ONCE')', `IFASSERT(`
+		ifdef(`SKIPASSERT_ONCE', `undefine(`SKIPASSERT_ONCE')', `
+			IFASSERT(`
 				/* {{{ check assert */
 				if (done_count != assert_count) {
 					fprintf(stderr
@@ -73,25 +86,26 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 						);
 					abort();
 				}
-				ifdef(`ELEMENTSOF_$1', `
-					pushdef(`ELEMENTS_UNDONE', LIST_DIFF(defn(`ELEMENTSOF_$1'), defn(`ELEMENTS_DONE')))
-					ifelse(defn(`ELEMENTS_UNDONE'), , , `
-						m4_errprint(`====' KIND `$1 =================')
-						m4_errprint(`expected:' defn(`ELEMENTSOF_$1'))
-						m4_errprint(`missing :' defn(`ELEMENTS_UNDONE'))
-						define(`EXIT_PENDING', 1)
-					')
-					popdef(`ELEMENTS_UNDONE')
-				')
 				/* }}} */
-		')')
+			')
+			ifdef(`ELEMENTSOF_$1', `
+				pushdef(`ELEMENTS_UNDONE', LIST_DIFF(defn(`ELEMENTSOF_$1'), defn(`ELEMENTS_DONE')))
+				ifelse(defn(`ELEMENTS_UNDONE'), , `m4_errprint(`AUTOCHECK INFO: $1: processor looks good')', `
+					m4_errprint(`AUTOCHECK ERROR: ====' KIND `$1 =================')
+					m4_errprint(`AUTOCHECK expected:' defn(`ELEMENTSOF_$1'))
+					m4_errprint(`AUTOCHECK missing :' defn(`ELEMENTS_UNDONE'))
+					define(`EXIT_PENDING', 1)
+				')
+				popdef(`ELEMENTS_UNDONE')
+			')
+		')
 		ifdef(`USEMEMCPY', `IFCOPY(`
 			} while (0);
 		')')
 		IFASSERT(`
 			} while (0);
-			undefine(`ELEMENTS_DONE')
 		')
+		popdef(`ELEMENTS_DONE')
 	}
 /* }`}'} */
 	popdef(`FUNC_NAME')
