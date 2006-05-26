@@ -91,7 +91,7 @@ if (PHP_XCACHE != "no") {
 	frag = frag.replace(/.*\$\(CC\).* -E (.*) -o (.*)/, ccrule + " /E $1 > $2");
 	frag = frag.replace(/ -o /g, " /Fo");
 	frag = frag.replace(/mv -f /g, "move ");
-	frag = frag.replace(/ || /g, "\r\n\tif errorlevel 1 ");
+	frag = frag.replace(/ \|\| /g, "\r\n\tif errorlevel 1 ");
 	frag = frag.replace(/ && /g, "\r\n\tif not errorlevel 1 ");
 	if (indent == '') {
 		frag = frag.replace(/\| +\$\(XCACHE_INDENT\)/, '');
