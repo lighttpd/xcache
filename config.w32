@@ -91,6 +91,8 @@ if (PHP_XCACHE != "no") {
 	frag = frag.replace(/.*\$\(CC\).* -E (.*) -o (.*)/, ccrule + " /E $1 > $2");
 	frag = frag.replace(/ -o /g, " /Fo");
 	frag = frag.replace(/mv -f /g, "move ");
+	frag = frag.replace(/ || /g, "\r\n\tif errorlevel 1 ");
+	frag = frag.replace(/ && /g, "\r\n\tif not errorlevel 1 ");
 	if (indent == '') {
 		frag = frag.replace(/\| +\$\(XCACHE_INDENT\)/, '');
 		frag = frag.replace(/\$\(XCACHE_INDENT\) < /, 'type ');
@@ -103,11 +105,9 @@ if (PHP_XCACHE != "no") {
 	if (PHP_XCACHE_TEST != "no") {
 		ADD_FLAG("XCACHE_ENABLE_TEST", "-DXCACHE_ENABLE_TEST");
 		AC_DEFINE("HAVE_XCACHE_TEST", 1, "Define to enable XCache self test");
-		ADD_FLAG("XCACHE_STRUCTINFO", "$(XCACHE_STRUCTINFO_OUT)");
 	}
 	else {
 		ADD_FLAG("XCACHE_ENABLE_TEST", "");
-		ADD_FLAG("XCACHE_STRUCTINFO", "");
 	}
 
 	XCACHE_PROC_SOURCES=glob(srcdir + "\\processor\\*.m4").join(' ');
