@@ -1862,7 +1862,9 @@ static PHP_MSHUTDOWN_FUNCTION(xcache)
 		pefree(xc_coredump_dir, 1);
 		xc_coredump_dir = NULL;
 	}
-#ifndef ZTS
+#ifdef ZTS
+	ts_free_id(xcache_globals_id);
+#else
 	xc_shutdown_globals(&xcache_globals TSRMLS_CC);
 #endif
 
