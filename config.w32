@@ -22,6 +22,7 @@ if (PHP_XCACHE != "no") {
 	ARG_ENABLE("xcache-encoder",      "(N/A)", "no");
 	ARG_ENABLE("xcache-decoder",      "(N/A)", "no");
 
+	var XCACHE_MODULES = "cacher";
 	var options = ["optimizer",
 	               "coverage",
 	               "assembler", "disassembler",
@@ -32,10 +33,12 @@ if (PHP_XCACHE != "no") {
 		var withval = eval("PHP_XCACHE_" + uname);
 		if (withval != "no") {
 			xcache_sources += " " + name + ".c";
+			XCACHE_MODULES += " " + name;
 			STDOUT.WriteLine("Enabling XCache Module: " + name);
 			AC_DEFINE("HAVE_XCACHE_" + uname, 1, "Define for XCache: " + name)
 		}
 	}
+	AC_DEFINE("XCACHE_MODULES", XCACHE_MODULES);
 	// }}}
 	// {{{ check for programs needed
 	var apps = ["m4", "grep", "sed"];

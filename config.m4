@@ -5,6 +5,7 @@ AC_DEFUN([XCACHE_OPTION], [
   [  --enable-xcache-$2    XCache: $4], no, no)
   if test "$PHP_$3" != "no"; then
     xcache_sources="$xcache_sources $1.c"
+    XCACHE_MODULES="$XCACHE_MODULES $1"
     HAVE_$3=1
     AC_DEFINE([HAVE_$3], 1, [Define for XCache: $4])
   else
@@ -26,12 +27,14 @@ if test "$PHP_XCACHE" != "no"; then
                   utils.c \
                   lock.c \
                   "
+  XCACHE_MODULES="cacher"
   XCACHE_OPTION([optimizer],    [optimizer   ], [XCACHE_OPTIMIZER],    [(N/A)])
   XCACHE_OPTION([coverage],     [coverage    ], [XCACHE_COVERAGE],     [Enable code coverage dumper, NOT for production server])
   XCACHE_OPTION([assembler],    [assembler   ], [XCACHE_ASSEMBLER],    [(N/A)])
   XCACHE_OPTION([disassembler], [disassembler], [XCACHE_DISASSEMBLER], [Enable opcode to php variable dumper, NOT for production server])
   XCACHE_OPTION([encoder],      [encoder     ], [XCACHE_ENCODER],      [(N/A)])
   XCACHE_OPTION([decoder],      [decoder     ], [XCACHE_DECODER],      [(N/A)])
+  AC_DEFINE_UNQUOTED([XCACHE_MODULES], "$XCACHE_MODULES", [Define what modules is built with XCache])
 
   PHP_NEW_EXTENSION(xcache, $xcache_sources, $ext_shared)
   PHP_ADD_MAKEFILE_FRAGMENT()
