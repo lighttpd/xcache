@@ -16,7 +16,7 @@
 
 #include "xcache.h"
 #include "optimizer.h"
-#include "coverage.h"
+#include "coverager.h"
 #include "disassembler.h"
 #include "align.h"
 #include "stack.h"
@@ -1015,16 +1015,16 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 		XG(request_time) = sapi_get_request_time(TSRMLS_C);
 #endif
 	}
-#ifdef HAVE_XCACHE_COVERAGE
-	xc_coverage_request_init(TSRMLS_C);
+#ifdef HAVE_XCACHE_COVERAGER
+	xc_coverager_request_init(TSRMLS_C);
 #endif
 }
 /* }}} */
 static void xc_request_shutdown(TSRMLS_D) /* {{{ */
 {
 	xc_entry_unholds(TSRMLS_C);
-#ifdef HAVE_XCACHE_COVERAGE
-	xc_coverage_request_shutdown(TSRMLS_C);
+#ifdef HAVE_XCACHE_COVERAGER
+	xc_coverager_request_shutdown(TSRMLS_C);
 #endif
 }
 /* }}} */
@@ -1620,8 +1620,8 @@ static function_entry xcache_functions[] = /* {{{ */
 	PHP_FE(xcache_decode_file,       NULL)
 	PHP_FE(xcache_decode_string,     NULL)
 #endif
-#ifdef HAVE_XCACHE_COVERAGE
-	PHP_FE(xcache_coverage_decode,   NULL)
+#ifdef HAVE_XCACHE_COVERAGER
+	PHP_FE(xcache_coverager_decode,  NULL)
 #endif
 	PHP_FE(xcache_get_special_value, NULL)
 	PHP_FE(xcache_get_op_type,       NULL)
@@ -1734,7 +1734,7 @@ PHP_INI_BEGIN()
 #ifdef HAVE_XCACHE_OPTIMIZER
 	STD_PHP_INI_BOOLEAN("xcache.optimizer",              "0", PHP_INI_ALL,    OnUpdateBool,        optimizer,         zend_xcache_globals, xcache_globals)
 #endif
-#ifdef HAVE_XCACHE_COVERAGE
+#ifdef HAVE_XCACHE_COVERAGER
 	PHP_INI_ENTRY1     ("xcache.coveragedump_directory",  "", PHP_INI_SYSTEM, xc_OnUpdateString,   &xc_coveragedump_dir)
 	STD_PHP_INI_BOOLEAN("xcache.coveragedumper" ,        "1", PHP_INI_ALL,    OnUpdateBool,        coveragedumper,    zend_xcache_globals, xcache_globals)
 #endif
@@ -1835,8 +1835,8 @@ static PHP_MINIT_FUNCTION(xcache)
 		xc_initized = 1;
 	}
 
-#ifdef HAVE_XCACHE_COVERAGE
-	xc_coverage_init(module_number TSRMLS_CC);
+#ifdef HAVE_XCACHE_COVERAGER
+	xc_coverager_init(module_number TSRMLS_CC);
 #endif
 
 	return SUCCESS;
@@ -1857,8 +1857,8 @@ static PHP_MSHUTDOWN_FUNCTION(xcache)
 		xc_mmap_path = NULL;
 	}
 
-#ifdef HAVE_XCACHE_COVERAGE
-	xc_coverage_destroy();
+#ifdef HAVE_XCACHE_COVERAGER
+	xc_coverager_destroy();
 #endif
 
 	signal(SIGSEGV, original_sigsegv_handler);
@@ -1946,22 +1946,22 @@ ZEND_DLEXPORT void xcache_zend_shutdown(zend_extension *extension) /* {{{ */
 /* }}} */
 ZEND_DLEXPORT void xcache_statement_handler(zend_op_array *op_array) /* {{{ */
 {
-#ifdef HAVE_XCACHE_COVERAGE
-	xc_coverage_handle_ext_stmt(op_array, ZEND_EXT_STMT);
+#ifdef HAVE_XCACHE_COVERAGER
+	xc_coverager_handle_ext_stmt(op_array, ZEND_EXT_STMT);
 #endif
 }
 /* }}} */
 ZEND_DLEXPORT void xcache_fcall_begin_handler(zend_op_array *op_array) /* {{{ */
 {
 #if 0
-	xc_coverage_handle_ext_stmt(op_array, ZEND_EXT_FCALL_BEGIN);
+	xc_coverager_handle_ext_stmt(op_array, ZEND_EXT_FCALL_BEGIN);
 #endif
 }
 /* }}} */
 ZEND_DLEXPORT void xcache_fcall_end_handler(zend_op_array *op_array) /* {{{ */
 {
 #if 0
-	xc_coverage_handle_ext_stmt(op_array, ZEND_EXT_FCALL_END);
+	xc_coverager_handle_ext_stmt(op_array, ZEND_EXT_FCALL_END);
 #endif
 }
 /* }}} */

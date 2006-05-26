@@ -16,7 +16,7 @@ if (PHP_XCACHE != "no") {
 	                      ";
 	// {{{ add sources on enabled
 	ARG_ENABLE("xcache-optimizer",    "(N/A)", "no");
-	ARG_ENABLE("xcache-coverage",     "Enable code coverage dumper, NOT for production server", "no");
+	ARG_ENABLE("xcache-coverager",    "Enable code coverage dumper, NOT for production server", "no");
 	ARG_ENABLE("xcache-assembler",    "(N/A)", "no");
 	ARG_ENABLE("xcache-disassembler", "Enable opcode to php variable dumper, NOT for production server", "no");
 	ARG_ENABLE("xcache-encoder",      "(N/A)", "no");
@@ -24,7 +24,7 @@ if (PHP_XCACHE != "no") {
 
 	var XCACHE_MODULES = "cacher";
 	var options = ["optimizer",
-	               "coverage",
+	               "coverager",
 	               "assembler", "disassembler",
 	               "encoder", "decoder"];
 	for (var i in options) {
