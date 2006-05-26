@@ -1746,9 +1746,13 @@ static PHP_MINFO_FUNCTION(xcache)
 	php_info_print_table_start();
 	php_info_print_table_header(2, "XCache Support", (xc_php_size || xc_var_size) ? "enabled" : "disabled");
 	php_info_print_table_row(2, "Version", XCACHE_VERSION);
+	php_info_print_table_row(2, "Modules Built", XCACHE_MODULES);
 	php_info_print_table_row(2, "Readonly Protection", xc_readonly_protection ? "enabled" : "N/A");
 	php_info_print_table_row(2, "Opcode Cache", xc_php_size ? "enabled" : "disabled");
 	php_info_print_table_row(2, "Variable Cache", xc_var_size ? "enabled" : "disabled");
+#ifdef HAVE_XCACHE_COVERAGER
+	php_info_print_table_row(2, "Coverage Dumper", XG(coveragedumper) && xc_coveragedump_dir && xc_coveragedump_dir[0] ? "enabled" : "disabled");
+#endif
 	php_info_print_table_end();
 	DISPLAY_INI_ENTRIES();
 }
