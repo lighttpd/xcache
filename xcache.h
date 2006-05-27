@@ -131,7 +131,9 @@ typedef struct {
 	xc_mem_t   *mem; /* to which mem contains us */
 
 	xc_entry_t **entries;
+	int entries_count;
 	xc_entry_t *deletes;
+	int deletes_count;
 	xc_hash_t  *hentry; /* hash to entry */
 } xc_cache_t;
 /* }}} */

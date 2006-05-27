@@ -139,6 +139,7 @@ static void xc_entry_add_dmz(xc_entry_t *xce) /* {{{ */
 	xc_entry_t **head = &(xce->cache->entries[xce->hvalue]);
 	xce->next = *head;
 	*head = xce;
+	xce->cache->entries_count ++;
 }
 /* }}} */
 static xc_entry_t *xc_entry_store_dmz(xc_entry_t *xce TSRMLS_DC) /* {{{ */
@@ -166,6 +167,7 @@ static void xc_entry_remove_dmz(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 	for (p = *last; p; last = &(p->next), p = p->next) {
 		if (xc_entry_equal_dmz(xce, p)) {
 			*last = p->next;
+			xce->cache->entries_count ++;
 			if (p->refcount == 0) {
 				xc_entry_free_dmz(p);
 			}
@@ -173,6 +175,7 @@ static void xc_entry_remove_dmz(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 				p->next = p->cache->deletes;
 				p->cache->deletes = p;
 				p->dtime = XG(request_time);
+				xce->cache->deletes_count ++;
 			}
 			return;
 		}
@@ -223,8 +226,6 @@ static void xc_fillinfo_dmz(xc_cache_t *cache, zval *return_value TSRMLS_DC) /* 
 	xc_memsize_t avail = 0;
 #endif
 	xc_mem_t *mem = cache->mem;
-	int i, c, count;
-	xc_entry_t *e;
 
 	add_assoc_long_ex(return_value, ZEND_STRS("slots"),     cache->hentry->size);
 	add_assoc_long_ex(return_value, ZEND_STRS("compiling"), cache->compiling);
@@ -233,19 +234,8 @@ static void xc_fillinfo_dmz(xc_cache_t *cache, zval *return_value TSRMLS_DC) /* 
 	add_assoc_long_ex(return_value, ZEND_STRS("clogs"),     cache->clogs);
 	add_assoc_long_ex(return_value, ZEND_STRS("ooms"),      cache->ooms);
 
-	count = 0;
-	for (i = 0, c = cache->hentry->size; i < c; i ++) {
-		for (e = cache->entries[i]; e; e = e->next) {
-			count ++;
-		}
-	}
-	add_assoc_long_ex(return_value, ZEND_STRS("cached"), count);
-
-	count = 0;
-	for (e = cache->deletes; e; e = e->next) {
-		count ++;
-	}
-	add_assoc_long_ex(return_value, ZEND_STRS("deleted"), count);
+	add_assoc_long_ex(return_value, ZEND_STRS("cached"), cache->entries_count);
+	add_assoc_long_ex(return_value, ZEND_STRS("deleted"), cache->deletes_count);
 
 	MAKE_STD_ZVAL(blocks);
 	array_init(blocks);
@@ -418,6 +408,7 @@ static void xc_entry_gc_real(xc_cache_t **caches, int size TSRMLS_DC) /* {{{ */
 					}
 					if (p->refcount == 0) {
 						*last = p->next;
+						cache->deletes_count --;
 						xc_entry_free_dmz(p);
 					}
 					else {
