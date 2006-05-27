@@ -18,7 +18,7 @@ $(XCACHE_PROC_OUT): $(XCACHE_PROC_SRC) $(XCACHE_STRUCTINFO_OUT) $(XCACHE_PROC_SO
 	mv -f $(XCACHE_PROC_OUT).tmp $(XCACHE_PROC_OUT)
 
 $(XCACHE_PROC_H): $(XCACHE_PROC_OUT)
-	$(GREP) -F 'export: ' $(XCACHE_PROC_OUT) | $(SED) -r 's/.*export:(.*):export.*/\1/g' | $(XCACHE_INDENT) > $(XCACHE_PROC_H).tmp
+	$(GREP) -F 'export: ' $(XCACHE_PROC_OUT) | $(SED) 's/.*export:\(.*\):export.*/\1/g' | $(XCACHE_INDENT) > $(XCACHE_PROC_H).tmp
 	mv -f $(XCACHE_PROC_H).tmp $(XCACHE_PROC_H)
 
 $(XCACHE_PROC_C): $(XCACHE_PROC_OUT) $(XCACHE_PROC_H)

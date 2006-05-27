@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <malloc.h>
 #include <signal.h>
 
 #include "php.h"
