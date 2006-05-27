@@ -1,5 +1,6 @@
 #ifndef __ALIGN_H
 #define __ALIGN_H
+#ifndef ALIGN
 typedef union align_union {
 	double d;
 	void *v;
@@ -14,5 +15,5 @@ typedef union align_union {
 #endif
 
 #define ALIGN(n) ((((size_t)(n)-1) & ~(XCACHE_PLATFORM_ALIGNMENT-1)) + XCACHE_PLATFORM_ALIGNMENT)
-
+#endif
 #endif /* __ALIGN_H */
