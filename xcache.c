@@ -11,6 +11,7 @@
 
 #include "php.h"
 #include "ext/standard/info.h"
+#include "ext/standard/md5.h"
 #include "zend_extensions.h"
 #include "SAPI.h"
 
@@ -1047,9 +1048,82 @@ static void xc_shutdown_globals(zend_xcache_globals* xc_globals TSRMLS_DC) /* {{
 /* }}} */
 
 /* user functions */
-/* {{{ xcache_op */
+static int xcache_admin_auth_check(TSRMLS_C) /* {{{ */
+{
+	zval **server = NULL;
+	zval **user = NULL;
+	zval **pass = NULL;
+	char *admin_user = NULL;
+	char *admin_pass = NULL;
+	HashTable *ht;
+
+	if (cfg_get_string("xcache.admin.user", &admin_user) == FAILURE || !admin_user[0]) {
+		admin_user = NULL;
+	}
+	if (cfg_get_string("xcache.admin.pass", &admin_pass) == FAILURE || !admin_pass[0]) {
+		admin_pass = NULL;
+	}
+
+	if (admin_user == NULL || admin_pass == NULL) {
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "xcache.admin.user and xcache.admin.pass is required");
+		zend_bailout();
+	}
+	if (strlen(admin_pass) != 32) {
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "unexpect %d bytes of xcache.admin.pass, expected 32 bytes, the password after md5()", strlen(admin_pass));
+		zend_bailout();
+	}
+
+	if (zend_hash_find(&EG(symbol_table), "_SERVER", sizeof("_SERVER"), (void **) &server) != SUCCESS || Z_TYPE_PP(server) != IS_ARRAY) {
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "_SERVER is corrupted");
+		zend_bailout();
+	}
+	ht = HASH_OF((*server));
+
+	if (zend_hash_find(ht, "PHP_AUTH_USER", sizeof("PHP_AUTH_USER"), (void **) &user) == FAILURE) {
+	 	user = NULL;
+	}
+	else if (Z_TYPE_PP(user) != IS_STRING) {
+		user = NULL;
+	}
+
+	if (zend_hash_find(ht, "PHP_AUTH_PW", sizeof("PHP_AUTH_PW"), (void **) &pass) == FAILURE) {
+	 	pass = NULL;
+	}
+	else if (Z_TYPE_PP(pass) != IS_STRING) {
+		pass = NULL;
+	}
+
+	if (user != NULL && pass != NULL && strcmp(admin_user, Z_STRVAL_PP(user)) == 0) {
+		PHP_MD5_CTX context;
+		char md5str[33];
+		unsigned char digest[16];
+
+		PHP_MD5Init(&context);
+		PHP_MD5Update(&context, Z_STRVAL_PP(pass), Z_STRLEN_PP(pass));
+		PHP_MD5Final(digest, &context);
+
+		md5str[0] = '\0';
+		make_digest(md5str, digest);
+		if (strcmp(admin_pass, md5str) == 0) {
+			return 1;
+		}
+	}
+
+#define STR "WWW-authenticate: basic realm='XCache Administration'"
+	sapi_add_header_ex(STR, sizeof(STR) - 1, 1, 1 TSRMLS_CC);
+#undef STR
+#define STR "HTTP/1.0 401 Unauthorized"
+	sapi_add_header_ex(STR, sizeof(STR) - 1, 1, 1 TSRMLS_CC);
+#undef STR
+	ZEND_PUTS("XCache Auth Failed. User and Password is case sense\n");
+
+	zend_bailout();
+	return 0;
+}
+/* }}} */
+/* {{{ xcache_admin_operate */
 typedef enum { XC_OP_COUNT, XC_OP_INFO, XC_OP_LIST, XC_OP_CLEAR } xcache_op_type;
-static void xcache_op(xcache_op_type optype, INTERNAL_FUNCTION_PARAMETERS)
+static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAMETERS)
 {
 	long type;
 	int size;
@@ -1060,6 +1134,8 @@ static void xcache_op(xcache_op_type optype, INTERNAL_FUNCTION_PARAMETERS)
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "XCache is not initized");
 		RETURN_FALSE;
 	}
+
+	xcache_admin_auth_check(TSRMLS_C);
 
 	if (optype == XC_OP_COUNT) {
 		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &type) == FAILURE) {
@@ -1142,28 +1218,28 @@ static void xcache_op(xcache_op_type optype, INTERNAL_FUNCTION_PARAMETERS)
    Return count of cache on specified cache type */
 PHP_FUNCTION(xcache_count)
 {
-	xcache_op(XC_OP_COUNT, INTERNAL_FUNCTION_PARAM_PASSTHRU);
+	xcache_admin_operate(XC_OP_COUNT, INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 /* }}} */
 /* {{{ proto array xcache_info(int type, int id)
    Get cache info by id on specified cache type */
 PHP_FUNCTION(xcache_info)
 {
-	xcache_op(XC_OP_INFO, INTERNAL_FUNCTION_PARAM_PASSTHRU);
+	xcache_admin_operate(XC_OP_INFO, INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 /* }}} */
 /* {{{ proto array xcache_list(int type, int id)
    Get cache entries list by id on specified cache type */
 PHP_FUNCTION(xcache_list)
 {
-	xcache_op(XC_OP_LIST, INTERNAL_FUNCTION_PARAM_PASSTHRU);
+	xcache_admin_operate(XC_OP_LIST, INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 /* }}} */
 /* {{{ proto array xcache_clear_cache(int type, int id)
    Clear cache by id on specified cache type */
 PHP_FUNCTION(xcache_clear_cache)
 {
-	xcache_op(XC_OP_CLEAR, INTERNAL_FUNCTION_PARAM_PASSTHRU);
+	xcache_admin_operate(XC_OP_CLEAR, INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 /* }}} */
 
