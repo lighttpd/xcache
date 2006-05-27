@@ -29,7 +29,7 @@ if test "$PHP_XCACHE" != "no"; then
                   "
   XCACHE_MODULES="cacher"
   XCACHE_OPTION([optimizer],    [optimizer   ], [XCACHE_OPTIMIZER],    [(N/A)])
-  XCACHE_OPTION([coverager],    [coverager   ], [XCACHE_COVERAGER],    [Enable code coverage dumper, NOT for production server])
+  XCACHE_OPTION([coverager],    [coverager   ], [XCACHE_COVERAGER],    [Enable code coverage dumper, useful for testing php scripts])
   XCACHE_OPTION([assembler],    [assembler   ], [XCACHE_ASSEMBLER],    [(N/A)])
   XCACHE_OPTION([disassembler], [disassembler], [XCACHE_DISASSEMBLER], [Enable opcode to php variable dumper, NOT for production server])
   XCACHE_OPTION([encoder],      [encoder     ], [XCACHE_ENCODER],      [(N/A)])
