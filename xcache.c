@@ -1801,8 +1801,8 @@ PHP_INI_BEGIN()
 	STD_PHP_INI_BOOLEAN("xcache.optimizer",              "0", PHP_INI_ALL,    OnUpdateBool,        optimizer,         zend_xcache_globals, xcache_globals)
 #endif
 #ifdef HAVE_XCACHE_COVERAGER
-	PHP_INI_ENTRY1     ("xcache.coveragedump_directory",  "", PHP_INI_SYSTEM, xc_OnUpdateString,   &xc_coveragedump_dir)
-	STD_PHP_INI_BOOLEAN("xcache.coveragedumper" ,        "1", PHP_INI_ALL,    OnUpdateBool,        coveragedumper,    zend_xcache_globals, xcache_globals)
+	PHP_INI_ENTRY1     ("xcache.coveragedump_directory", "/tmp/pcov/", PHP_INI_SYSTEM, xc_OnUpdateString,   &xc_coveragedump_dir)
+	STD_PHP_INI_BOOLEAN("xcache.coveragedumper" ,                 "0", PHP_INI_ALL,    OnUpdateBool,        coveragedumper,    zend_xcache_globals, xcache_globals)
 #endif
 PHP_INI_END()
 /* }}} */
