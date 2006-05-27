@@ -26,7 +26,10 @@ $(XCACHE_PROC_C): $(XCACHE_PROC_OUT) $(XCACHE_PROC_H)
 	mv -f $(XCACHE_PROC_C).tmp $(XCACHE_PROC_C)
 
 $(builddir)/processor.lo: $(XCACHE_PROC_C) $(XCACHE_PROC_H) $(srcdir)/processor.c
+processor.lo: $(XCACHE_PROC_C) $(XCACHE_PROC_H) $(srcdir)/processor.c
 
 $(builddir)/disassembler.lo: $(XCACHE_PROC_H) $(srcdir)/processor.c
+disassembler.lo: $(XCACHE_PROC_H) $(srcdir)/processor.c
 
 $(builddir)/xcache.lo: $(XCACHE_PROC_H) $(srcdir)/myshm.h $(srcdir)/stack.h $(srcdir)/xcache_globals.h $(srcdir)/xcache.c
+xcache.lo: $(XCACHE_PROC_H) $(srcdir)/myshm.h $(srcdir)/stack.h $(srcdir)/xcache_globals.h $(srcdir)/xcache.c
