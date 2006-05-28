@@ -1,10 +1,10 @@
 #!/bin/bash
 SELF="$0"
 
-if test -e make.inc ; then
-	. make.inc
+if test -e prepare.devel.inc ; then
+	. prepare.devel.inc
 else
-	echo make.inc is required, see make.inc.example >&2
+	echo prepare.devel.inc is required, see prepare.devel.inc.example >&2
 	exit
 fi
 
@@ -31,24 +31,24 @@ make_const_string() {
 }
 
 make_clean_const_string() {
-	echo "*" rm -f const_string_opcodes_php*.h
+	echo "*" rm -f const_string_opcodes_php*.h{,.tmp}
 	rm -f const_string_opcodes_php*.h
 }
 
 make_const_string_opcodes_php4.x.h() {
-	precheck const_string_opcodes_php4.x.h "${PHP4_x_DIR}/Zend/zend_compile.h" && "$AWK" -f ./mkopcode.awk < "$I" > "$O"
+	precheck const_string_opcodes_php4.x.h "${PHP4_x_DIR}/Zend/zend_compile.h" && "$AWK" -f ./mkopcode.awk < "$I" > "$O.tmp" && mv "$O.tmp" "$O"
 }
 
 make_const_string_opcodes_php5.0.h() {
-	precheck const_string_opcodes_php5.0.h "${PHP5_0_DIR}/Zend/zend_vm_def.h"  && "$AWK" -f ./mkopcode.awk < "$I" > "$O"
+	precheck const_string_opcodes_php5.0.h "${PHP5_0_DIR}/Zend/zend_vm_def.h"  && "$AWK" -f ./mkopcode.awk < "$I" > "$O.tmp" && mv "$O.tmp" "$O"
 }
 
 make_const_string_opcodes_php5.1.h() {
-	precheck const_string_opcodes_php5.1.h "${PHP5_1_DIR}/Zend/zend_vm_def.h"  && "$AWK" -f ./mkopcode.awk < "$I" > "$O"
+	precheck const_string_opcodes_php5.1.h "${PHP5_1_DIR}/Zend/zend_vm_def.h"  && "$AWK" -f ./mkopcode.awk < "$I" > "$O.tmp" && mv "$O.tmp" "$O"
 }
 
 make_const_string_opcodes_php6.x.h() {
-	precheck const_string_opcodes_php6.x.h "${PHP6_x_DIR}/Zend/zend_vm_def.h"  && "$AWK" -f ./mkopcode.awk < "$I" > "$O"
+	precheck const_string_opcodes_php6.x.h "${PHP6_x_DIR}/Zend/zend_vm_def.h"  && "$AWK" -f ./mkopcode.awk < "$I" > "$O.tmp" && mv "$O.tmp" "$O"
 }
 
 make_opcode_spec_def.h() {
