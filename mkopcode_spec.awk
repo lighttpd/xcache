@@ -5,7 +5,6 @@ BEGIN {
 	FS=" "
 	max = 0;
 	started = 0
-	delete opcodes;
 }
 
 /OPDEF/ {
