@@ -13,15 +13,15 @@ BEGIN {
 		if (instruct in typedefs) {
 			instruct = typedefs[instruct];
 		}
-		elm = "";
+		sizeinfo = "";
 		elms = "";
 		for (i = 0; i in buffer; i ++) {
-			if (i) elm = elm " + ";
-			# elm = elm "sizeof(((`" instruct "'*)NULL)->`" buffer[i] "')";
-			# elms = elms " `" buffer[i] "'";
-			elm = elm "sizeof(((" instruct "*)NULL)->" buffer[i] ")";
+			if (i) {
+				sizeinfo = sizeinfo " + ";
+			}
+			sizeinfo = sizeinfo "sizeof(((" instruct "*)NULL)->" buffer[i] ")";
 
-			if (elms == "") {
+			if (i == 0) {
 				elms = buffer[i];
 			}
 			else {
@@ -30,7 +30,7 @@ BEGIN {
 		}
 		printf "define(`ELEMENTSOF_%s', `%s')\n", instruct, elms;
 		printf "define(`COUNTOF_%s', `%s')\n", instruct, i;
-		printf "define(`SIZEOF_%s', `(  %s  )')\n", instruct, elm;
+		printf "define(`SIZEOF_%s', `(  %s  )')\n", instruct, sizeinfo;
 		print "\n";
 		for (i in buffer) {
 			delete buffer[i];
@@ -51,20 +51,48 @@ BEGIN {
 {
 	if (brace == 1 && instruct) {
 		sub(/.*[{}]/, "");
-		gsub(/\[[^\]]+\]/, "");
-		gsub(/:[0-9]+/, "");
-		str = $0;
-		if (match(str, /\([ ]*\*([^)]+)\)/, a)) {
-			buffer[buffer_len] = a[1];
+		gsub(/\[[^\]]+\]/, ""); # ignore [...]
+		gsub(/:[0-9]+/, ""); # ignore struct bit
+		if (match($0, /^[^(]*\([ ]*\*([^)]+)\)/)) {
+			sub(/ +/, "")
+			sub(/^[^(]*\(\*/, "");
+			sub(/\).*/, "");
+			# function pointer
+			buffer[buffer_len] = $0;
 			buffer_len ++;
 		}
 		else {
-			while (gsub(/(\([^)]*\))/, "", str)) {
+			# ignore any ()s
+			while (gsub(/(\([^)]*\))/, "")) {
 			}
-			while (match(str, /([^*() ]+)[ ]*[,;](.*)/, a)) {
-				buffer[buffer_len] = a[1];
+			if (match($0, /[()]/)) {
+				next;
+			}
+			gsub(/[*]/, " ");
+			gsub(/ +/, " ");
+			gsub(/ *[,;]/, ";");
+			if (!match($0, /;/)) {
+				next;
+			}
+			split($0, chunks, ";");
+			# get var of "int *var, var;" etc
+			for (i in chunks) {
+				if (chunks[i] == "") {
+					delete chunks[i];
+					continue;
+				}
+				split(chunks[i], pieces, " ");
+
+				for (j in pieces) {
+					last_piece = pieces[j];
+					delete pieces[i];
+				}
+				if (last_piece == "") {
+					print "=====" chunks[i];
+				}
+				buffer[buffer_len] = last_piece;
 				buffer_len ++;
-				str = a[2];
+				delete chunks[i];
 			}
 		}
 		next;
