@@ -4,18 +4,23 @@
 BEGIN {
 	FS=" "
 	max = 0;
-	delete opcodes;
 }
 
 /^ZEND_VM_HANDLER\(/ {
 	# regex from php5.1+/Zend/zend_vm_gen.php
 	gsub(/ +/, "");
-	if (!match($0, /^ZEND_VM_HANDLER\(([0-9]+),([A-Z_]+),([A-Z|]+),([A-Z|]+)\)/, array)) {
+	if (!match($0, /^ZEND_VM_HANDLER\(([0-9]+),([A-Z_]+),([A-Z|]+),([A-Z|]+)\)/)) {
 		print "error unmatch $0";
 		exit;
 	}
-	id = 0 + array[1];
-	name = array[2];
+	# life is hard without 3rd argument of match()
+	sub(/^ZEND_VM_HANDLER\(/, "");
+	id = $0;
+	sub(/,.*/, "", id); # chop
+	id = 0 + id;
+	sub(/^([0-9]+),/, "");
+	sub(/,.*/, ""); # chop
+	name = $0;
 	if (max < id) {
 		max = id;
 	}
