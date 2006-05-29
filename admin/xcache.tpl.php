@@ -20,7 +20,7 @@ HEAD;
 $a = new Cycle('class="col1"', 'class="col2"');
 $b = new Cycle('class="col1"', 'class="col2"');
 ?>
-<table cellspacing="1" cellpadding="4" class="cycles">
+<table cellspacing="0" cellpadding="4" class="cycles">
 	<col />
 	<col align="right" />
 	<col align="right" />
@@ -37,7 +37,7 @@ $b = new Cycle('class="col1"', 'class="col2"');
 	<col align="right" />
 	<col />
 	<tr <?php echo $a->next(); ?>>
-		<th></th>
+		<th>-</th>
 		<th>Slots</th>
 		<th>Size</th>
 		<th>Avail</th>
@@ -98,7 +98,7 @@ EOS;
 <?php
 foreach ($cacheinfos as $i => $ci) {
 ?>
-<table cellspacing="1" cellpadding="4" class="cycles freeblocks">
+<table cellspacing="0" cellpadding="4" class="cycles freeblocks">
 	<tr>
 		<th><?php echo $ci['cache_name']; ?> size<br>offset</th>
 	<?php
@@ -131,7 +131,7 @@ if ($cachelist) {
 		<caption>{$cachelist['type_name']} $listname</caption>";
 		?>
 
-	<table cellspacing="1" cellpadding="4" class="cycles entrys" width="100%">
+	<table cellspacing="0" cellpadding="4" class="cycles entrys" width="100%">
 		<col />
 		<col />
 		<col align="right" />
