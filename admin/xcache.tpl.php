@@ -97,6 +97,7 @@ EOS;
 </table>
 <?php
 foreach ($cacheinfos as $i => $ci) {
+	$b->reset();
 ?>
 <table cellspacing="0" cellpadding="4" class="cycles freeblocks">
 	<tr>
