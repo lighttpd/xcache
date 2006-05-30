@@ -10,6 +10,9 @@ define(`DEF_HASH_TABLE_FUNC', `
 			char *buf = emalloc(bufsize);
 			int keysize;
 
+#if defined(HARDENING_PATCH_HASH_PROTECT) && HARDENING_PATCH_HASH_PROTECT
+			DONE(canary)
+#endif
 			DONE(nTableSize)
 			DONE(nTableMask)
 			DONE(nNumOfElements)
@@ -70,6 +73,9 @@ define(`DEF_HASH_TABLE_FUNC', `
 		IFCOPY(`uint n;')
 		IFCALCCOPY(`int bucketsize;')
 
+#if defined(HARDENING_PATCH_HASH_PROTECT) && HARDENING_PATCH_HASH_PROTECT
+		DISPATCH(unsigned int, canary)
+#endif
 		DISPATCH(uint, nTableSize)
 		DISPATCH(uint, nTableMask)
 		DISPATCH(uint, nNumOfElements)
