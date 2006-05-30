@@ -891,14 +891,26 @@ static xc_cache_t **xc_cache_init(xc_shm_t *shm, char *ptr, xc_hash_t *hcache, x
 	xc_cache_t **caches = NULL, *cache;
 	xc_mem_t *mem;
 	int i;
+	xc_memsize_t memsize;
 
-	xc_memsize_t memsize = shmsize / hcache->size;
+	memsize = shmsize / hcache->size;
+
+	/* Don't let it break out of mem after ALIGNed
+	 * This is important for 
+	 * Simply loop until it fit our need
+	 */
+	while (ALIGN(memsize) * hcache->size > shmsize && ALIGN(memsize) != memsize) {
+		if (memsize < ALIGN(1)) {
+			CHECK(NULL, "cache too small");
+		}
+		memsize --;
+	}
 
 	CHECK(caches = calloc(hcache->size, sizeof(xc_cache_t *)), "caches OOM");
 
 	for (i = 0; i < hcache->size; i ++) {
-		mem = xc_mem_init(ptr, memsize);
-		ptr += ALIGN(memsize);
+		CHECK(mem            = xc_mem_init(ptr, memsize), "Failed init memory allocator");
+		ptr += memsize;
 		CHECK(cache          = xc_mem_calloc(mem, 1, sizeof(xc_cache_t)), "cache OOM");
 		CHECK(cache->entries = xc_mem_calloc(mem, hentry->size, sizeof(xc_entry_t*)), "entries OOM");
 		CHECK(cache->lck     = xc_lock_init(NULL), "can't create lock");

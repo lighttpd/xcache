@@ -1,12 +1,34 @@
+#ifdef TEST
+#include <limits.h>
+#include <stdio.h>
+#else
 #include <php.h>
+#endif
+
+#include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 #include "mem.h"
 #include "align.h"
-#define PADD(p, a) (((char*)p) + a)
+
+#ifdef TEST
+#	define ALLOC_DEBUG
+#endif
+#ifdef ALLOC_DEBUG
+#	define ALLOC_DEBUG_BLOCK_CHECK
+#endif
+
+#if 0
+#undef ALLOC_DEBUG_BLOCK_CHECK
+#endif
+
+#define CHAR_PTR(p) ((char *) (p))
+#define PADD(p, a) (CHAR_PTR(p) + a)
+#define PSUB(p1, p2) (CHAR_PTR(p1) - CHAR_PTR(p2))
 
 // {{{ mem
 struct _xc_block_t {
-#ifdef ALLOC_DEBUG
+#ifdef ALLOC_DEBUG_BLOCK_CHECK
 	unsigned int magic;
 #endif
 	xc_memsize_t size; /* reserved even after alloc */
@@ -19,25 +41,27 @@ struct _xc_mem_t {
 	xc_block_t headblock[1];  /* just as a pointer to first block*/
 };
 
-#ifndef offsetof
-#	define offsetof(type, field) ((int) ((char *) &((type *) 0)->field))
+#ifndef XtOffsetOf
+#	include <linux/stddef.h>
+#	define XtOffsetOf(s_type, field) offsetof(s_type, field)
 #endif
+
 #define SizeOf(type, field) sizeof( ((type *) 0)->field )
-#define BLOCK_HEADER_SIZE() (ALIGN( offsetof(xc_block_t, size) + SizeOf(xc_block_t, size) ))
+#define BLOCK_HEADER_SIZE() (ALIGN( XtOffsetOf(xc_block_t, size) + SizeOf(xc_block_t, size) ))
 
 #define BLOCK_MAGIC ((unsigned int) 0x87655678)
 
 /* }}} */
 static inline void xc_block_setup(xc_block_t *b, xc_memsize_t size, xc_block_t *next) /* {{{ */
 {
-#ifdef ALLOC_DEBUG
+#ifdef ALLOC_DEBUG_BLOCK_CHECK
 	b->magic = BLOCK_MAGIC;
 #endif
 	b->size = size;
 	b->next = next;
 }
 /* }}} */
-#ifdef ALLOC_DEBUG
+#ifdef ALLOC_DEBUG_BLOCK_CHECK
 static void xc_block_check(xc_block_t *b) /* {{{ */
 {
 	if (b->magic != BLOCK_MAGIC) {
@@ -62,9 +86,19 @@ void *xc_mem_malloc(xc_mem_t *mem, xc_memsize_t size) /* {{{ */
 	/* realsize is ALIGNed so next block start at ALIGNed address */
 	realsize = ALIGN(realsize);
 
+#ifdef ALLOC_DEBUG
+	fprintf(stderr, "avail: %d (%dKB). Allocate size: %d realsize: %d (%dKB)"
+			, mem->avail, mem->avail / 1024
+			, size
+			, realsize, realsize / 1024
+			);
+#endif
 	do {
 		p = NULL;
 		if (mem->avail < realsize) {
+#ifdef ALLOC_DEBUG
+			fprintf(stderr, " oom\n");
+#endif
 			break;
 		}
 
@@ -93,6 +127,9 @@ void *xc_mem_malloc(xc_mem_t *mem, xc_memsize_t size) /* {{{ */
 		}
 
 		if (b == NULL) {
+#ifdef ALLOC_DEBUG
+			fprintf(stderr, " no fit chunk\n");
+#endif
 			break;
 		}
 
@@ -104,9 +141,12 @@ void *xc_mem_malloc(xc_mem_t *mem, xc_memsize_t size) /* {{{ */
 		/* update the block header */
 		mem->avail -= realsize;
 
-		/*perfect fit, just unlink */
+		/* perfect fit, just unlink */
 		if (cur->size == realsize) {
 			prev->next = cur->next;
+#ifdef ALLOC_DEBUG
+			fprintf(stderr, " perfect fit. Got: %p\n", p);
+#endif
 			break;
 		}
 
@@ -125,12 +165,11 @@ void *xc_mem_malloc(xc_mem_t *mem, xc_memsize_t size) /* {{{ */
 		 */
 
 #ifdef ALLOC_DEBUG
-		fprintf(stderr, "avail: %d (%dKB). size: %d %d (%dKB) new next: %p offset: %d %dKB\n"
-				, mem->avail, mem->avail/1024
-				, size
-				, realsize, realsize/1024
+		fprintf(stderr, " -> avail: %d (%dKB). new next: %p offset: %d %dKB. Got: %p\n"
+				, mem->avail, mem->avail / 1024
 				, newb
-				, ((char*)newb - mem->rw), ((char*)newb - mem->rw) / 1024
+				, PSUB(newb, mem), PSUB(newb, mem) / 1024
+				, p
 				);
 #endif
 		prev->next = newb;
@@ -148,7 +187,11 @@ int xc_mem_free(xc_mem_t *mem, const void *p) /* {{{ return block size freed */
 	xc_block_t *cur, *b;
 	int size;
 
-	cur = (xc_block_t *) (((char *) p) - BLOCK_HEADER_SIZE());
+	cur = (xc_block_t *) (CHAR_PTR(p) - BLOCK_HEADER_SIZE());
+#ifdef ALLOC_DEBUG
+	fprintf(stderr, "freeing: %p", p);
+	fprintf(stderr, ", size=%d", cur->size);
+#endif
 	xc_block_check(cur);
 	assert((char*)mem < (char*)cur && (char*)cur < (char*)mem + mem->size);
 
@@ -163,6 +206,9 @@ int xc_mem_free(xc_mem_t *mem, const void *p) /* {{{ return block size freed */
 	b->next = cur;
 	size = cur->size;
 
+#ifdef ALLOC_DEBUG
+	fprintf(stderr, ", avail %d (%dKB)", mem->avail, mem->avail / 1024);
+#endif
 	mem->avail += size;
 
 	/* combine prev|cur */
@@ -170,6 +216,9 @@ int xc_mem_free(xc_mem_t *mem, const void *p) /* {{{ return block size freed */
 		b->size += cur->size;
 		b->next = cur->next;
 		cur = b;
+#ifdef ALLOC_DEBUG
+		fprintf(stderr, ", combine prev");
+#endif
 	}
 
 	/* combine cur|next */
@@ -177,7 +226,13 @@ int xc_mem_free(xc_mem_t *mem, const void *p) /* {{{ return block size freed */
 	if (PADD(cur, cur->size) == (char *)b) {
 		cur->size += b->size;
 		cur->next = b->next;
+#ifdef ALLOC_DEBUG
+		fprintf(stderr, ", combine next");
+#endif
 	}
+#ifdef ALLOC_DEBUG
+	fprintf(stderr, " -> avail %d (%dKB)\n", mem->avail, mem->avail / 1024);
+#endif
 	return size;
 }
 /* }}} */
@@ -245,19 +300,27 @@ xc_memsize_t xc_mem_block_offset(const xc_mem_t *mem, const xc_block_t *block) /
 
 xc_mem_t *xc_mem_init(void *ptr, xc_memsize_t size) /* {{{ */
 {
-	xc_mem_t *mem = (xc_mem_t *) ptr;
-	xc_block_t  *b;
+	xc_mem_t   *mem;
+	xc_block_t *b;
 
+#define MINSIZE (ALIGN(sizeof(xc_mem_t)) + sizeof(xc_block_t))
+	/* requires at least the header and 1 tail block */
+	if (size < MINSIZE) {
+		fprintf(stderr, "xc_mem_init requires %d bytes at least\n", MINSIZE);
+		return NULL;
+	}
+	mem = (xc_mem_t *) ptr;
 	mem->size = size;
-	mem->avail = size - ALIGN(sizeof(xc_mem_t));
+	mem->avail = size - MINSIZE;
 
-	/* pointer to first block */
+	/* pointer to first block, right after ALIGNed header */
 	b = mem->headblock;
-	xc_block_setup(b, 0, (xc_block_t *)(mem + ALIGN(sizeof(xc_mem_t))));
+	xc_block_setup(b, 0, (xc_block_t *) PADD(mem, ALIGN(sizeof(xc_mem_t))));
 
 	/* first block*/
 	b = b->next;
 	xc_block_setup(b, mem->avail, 0);
+#undef MINSIZE
 
 	return mem;
 }
@@ -266,3 +329,47 @@ void xc_mem_destroy(xc_mem_t *mem) /* {{{ */
 {
 }
 /* }}} */
+
+#ifdef TEST
+/* {{{ */
+#undef CHECK
+#define CHECK(a, msg) do { if ((a) == NULL) { puts(msg); return -1; } } while (0)
+#include <time.h>
+
+int main()
+{
+	int count = 0;
+	void *p;
+	void *memory;
+	xc_mem_t *mem;
+	void **ptrs;
+	int size, i;
+
+#if 0
+	fprintf(stderr, "%s", "Input test size: ");
+	scanf("%d", &size);
+#else
+	size = 100;
+#endif
+	CHECK(memory = malloc(size), "OOM");
+	CHECK(ptrs   = malloc(size * sizeof(void*)), "OOM");
+	CHECK(mem    = xc_mem_init(memory, size), "Failed init memory allocator");
+
+	while ((p = xc_mem_malloc(mem, 1))) {
+		ptrs[count ++] = p;
+	}
+	fprintf(stderr, "count=%d, random freeing\n", count);
+	srandom(time(NULL));
+	while (count) {
+		i = (random() % count);
+		fprintf(stderr, "freeing %d: ", i);
+		xc_mem_free(mem, ptrs[i]);
+		ptrs[i] = ptrs[count - 1];
+		count --;
+	}
+
+	free(memory);
+	return 0;
+}
+/* }}} */
+#endif
