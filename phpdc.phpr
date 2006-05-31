@@ -1,4 +1,4 @@
-#!/usr/bin/php -dopen_basedir=
+#! /usr/bin/php -dopen_basedir=
 <?php
 
 $srcdir = dirname(__FILE__);

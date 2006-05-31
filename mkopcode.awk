@@ -1,4 +1,4 @@
-#!/usr/bin/awk -f
+#! /usr/bin/awk -f
 # vim:ts=4:sw=4
 # process zend_vm_def.h or zend_compile.h
 BEGIN {
