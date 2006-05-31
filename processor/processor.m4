@@ -232,8 +232,10 @@ DEF_STRUCT_P_FUNC(`zend_property_info', , `
 	DISPATCH(int, name_length)
 	PROC_USTRING_L(, name, name_length)
 	DISPATCH(ulong, h)
+#ifdef ZEND_ENGINE_2_1
 	DISPATCH(int, doc_comment_len)
 	PROC_USTRING_L(, doc_comment, doc_comment_len)
+#endif
 ')
 #endif
 dnl }}}
