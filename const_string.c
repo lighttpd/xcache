@@ -87,7 +87,7 @@ const char *xc_get_data_type(zend_uchar data_type)
 }
 /* }}} */
 /* {{{ xc_get_opcode */
-#if PHP_MAJAR_VERSION >= 6
+#if PHP_MAJOR_VERSION >= 6
 #	include     "const_string_opcodes_php6.x.h"
 #else
 #	ifdef ZEND_ENGINE_2_1

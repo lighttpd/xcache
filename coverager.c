@@ -55,7 +55,7 @@ void xcache_mkdirs_ex(char *root, int rootlen, char *path, int pathlen TSRMLS_DC
 #ifdef DEBUG
 		fprintf(stderr, "mkdir %s\n", fullpath);
 #endif
-#if PHP_MAJAR_VERSION > 5
+#if PHP_MAJOR_VERSION > 5
 		php_stream_mkdir(fullpath, 0700, REPORT_ERRORS, NULL);
 #else
 		mkdir(fullpath, 0700);
