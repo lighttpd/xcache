@@ -191,8 +191,10 @@ static void xc_fix_method(processor_t *processor, zend_op_array *dst) /* {{{ */
 
 		SET_IF_SAME_NAME(__get);
 		SET_IF_SAME_NAME(__set);
+#ifdef ZEND_ENGINE_2_1
 		SET_IF_SAME_NAME(__unset);
 		SET_IF_SAME_NAME(__isset);
+#endif
 		SET_IF_SAME_NAME(__call);
 #if PHP_MAJOR_VERSION >= 6
 		SET_IF_SAME_NAME(__tostring);
