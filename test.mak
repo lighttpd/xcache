@@ -1,4 +1,4 @@
-#!/usr/bin/make -f
+#! /usr/bin/make -f
 
 EXES=mem_test
 OBJS=mem.o

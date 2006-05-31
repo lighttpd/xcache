@@ -1,4 +1,4 @@
-#!/bin/bash
+#! /bin/bash
 SELF="$0"
 
 if test -e prepare.devel.inc ; then
@@ -40,7 +40,7 @@ make_const_string_opcodes_php4.x.h() {
 }
 
 make_const_string_opcodes_php5.0.h() {
-	precheck const_string_opcodes_php5.0.h "${PHP5_0_DIR}/Zend/zend_vm_def.h"  && "$AWK" -f ./mkopcode.awk < "$I" > "$O.tmp" && mv "$O.tmp" "$O"
+	precheck const_string_opcodes_php5.0.h "${PHP5_0_DIR}/Zend/zend_compile.h" && "$AWK" -f ./mkopcode.awk < "$I" > "$O.tmp" && mv "$O.tmp" "$O"
 }
 
 make_const_string_opcodes_php5.1.h() {
@@ -75,11 +75,11 @@ error() {
 }
 
 precheck() {
-	if ! test -e "$2" ; then
+	if test -e "$2" ; then :; else
 		error X skipping "$1" because "$2" not found
 		return 1
 	fi
-	if ! test "$1" -ot "$2" ; then
+	if test "$1" -ot "$2" ; then :; else
 		echo O "$1" is up to date.
 		return 1
 	fi

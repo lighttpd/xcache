@@ -1,4 +1,4 @@
-#!/usr/bin/php
+#! /usr/bin/php
 <?php
 
 $srcdir = dirname(__FILE__);
