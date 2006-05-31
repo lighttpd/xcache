@@ -1059,7 +1059,7 @@ static void xc_shutdown_globals(zend_xcache_globals* xc_globals TSRMLS_DC) /* {{
 /* }}} */
 
 /* user functions */
-static int xcache_admin_auth_check(TSRMLS_C) /* {{{ */
+static int xcache_admin_auth_check(TSRMLS_D) /* {{{ */
 {
 	zval **server = NULL;
 	zval **user = NULL;
