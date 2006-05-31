@@ -368,6 +368,7 @@ int main()
 		count --;
 	}
 
+	free(ptrs);
 	free(memory);
 	return 0;
 }
