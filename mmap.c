@@ -11,7 +11,7 @@
 #ifdef ZEND_WIN32
 #	define ftruncate chsize
 #	define getuid() 0
-#	define XcacheCreateFileMapping(size, perm, name) \
+#	define XCacheCreateFileMapping(size, perm, name) \
 		CreateFileMapping(INVALID_HANDLE_VALUE, NULL, perm, (sizeof(xc_shmsize_t) > 4) ? size >> 32 : 0, size & 0xffffffff, name)
 #	define XCACHE_MAP_FAILED NULL
 #	define munmap(p, s) UnmapViewOfFile(p)
@@ -42,6 +42,7 @@ struct _xc_shm_t {
 	long  diff;
 	xc_shmsize_t size;
 	char *name;
+	int newfile;
 #ifdef ZEND_WIN32
 	HANDLE hmap;
 	HANDLE hmap_ro;
@@ -122,7 +123,9 @@ void xc_shm_destroy(xc_shm_t *shm) /* {{{ */
 
 	if (shm->name) {
 #ifdef __CYGWIN__
-		unlink(shm->name);
+		if (shm->newfile) {
+			unlink(shm->name);
+		}
 #endif
 		free(shm->name);
 	}
@@ -164,15 +167,19 @@ xc_shm_t *xc_shm_init(const char *path, xc_shmsize_t size, zend_bool readonly_pr
 	fd = open(shm->name, O_RDWR, XCACHE_MMAP_PERMISSION);
 	if (fd == -1) {
 		fd = open(shm->name, O_CREAT | O_RDWR, XCACHE_MMAP_PERMISSION);
+		shm->newfile = 1;
 		if (fd == -1) {
 			goto err;
 		}
+	}
+	if (strncmp(shm->name, "/tmp", 4) == 0) {
+		shm->newfile = 0;
 	}
 	ftruncate(fd, size);
 #endif
 
 #ifdef ZEND_WIN32
-	shm->hmap = XcacheCreateFileMapping(size, PAGE_READWRITE, shm->name);
+	shm->hmap = XCacheCreateFileMapping(size, PAGE_READWRITE, shm->name);
 	shm->ptr = (LPSTR) MapViewOfFile(shm->hmap, FILE_MAP_WRITE, 0, 0, 0);
 #else
 	shm->ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
@@ -186,7 +193,7 @@ xc_shm_t *xc_shm_init(const char *path, xc_shmsize_t size, zend_bool readonly_pr
 	ro_ok = 0;
 	if (readonly_protection) {
 #ifdef ZEND_WIN32
-		shm->hmap_ro = XcacheCreateFileMapping(size, PAGE_READONLY, shm->name);
+		shm->hmap_ro = XCacheCreateFileMapping(size, PAGE_READONLY, shm->name);
 		shm->ptr_ro = (LPSTR) MapViewOfFile(shm->hmap_ro, FILE_MAP_READ, 0, 0, 0);
 #else
 		shm->ptr_ro = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
@@ -225,7 +232,9 @@ xc_shm_t *xc_shm_init(const char *path, xc_shmsize_t size, zend_bool readonly_pr
 
 	close(fd);
 #ifndef __CYGWIN__
-	unlink(shm->name);
+	if (shm->newfile) {
+		unlink(shm->name);
+	}
 #endif
 
 	return shm;
