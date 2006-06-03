@@ -80,7 +80,7 @@ void *xc_shm_to_readwrite(xc_shm_t *shm, void *p) /* {{{ */
 {
 	if (shm->diff) {
 		assert(xc_shm_is_readonly(p));
-		p = PTR_SUB(p, -shm->diff);
+		p = PTR_SUB(p, shm->diff);
 	}
 	assert(xc_shm_is_readwrite(p));
 	return p;
