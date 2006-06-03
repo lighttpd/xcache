@@ -14,3 +14,4 @@ form {margin: 0; padding: 0}
 .switcher, h1 { text-align: center; display: block; }
 .switcher * { color: blue; }
 .switcher a.active { font-weight: bold; font-size: 130%; color: black; }
+#help { display: block; float: right; }
