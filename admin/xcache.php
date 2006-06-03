@@ -63,12 +63,12 @@ function age($time)
 	}
 	
   	static $seconds = array(1, 60, 3600, 86400, 604800, 2678400, 31536000);
-	static $name = array('sec', 'min', 'hr', 'day', 'week', 'month', 'year');
+	static $name = array('s', 'm', 'h', 'd', 'w', 'M', 'Y');
 
 	for ($i = 6; $i >= 0; $i --) {
 		if ($delta >= $seconds[$i]) {
 			$ret = (int) ($delta / $seconds[$i]);
-			return $ret . ' ' . $name[$i] . ($ret > 1 ? 's' : '');
+			return $ret . ' ' . $name[$i];
 		}
 	}
 }

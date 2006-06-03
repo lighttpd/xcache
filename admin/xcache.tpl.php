@@ -15,11 +15,13 @@ HEAD;
 
 <body>
 <h1>XCache Administration</h1>
+<a href="help.php" target="_blank" id="help">Help &raquo;</a>
 <span class="switcher"><?php echo switcher("type", $types); ?></span>
 <?php
 $a = new Cycle('class="col1"', 'class="col2"');
 $b = new Cycle('class="col1"', 'class="col2"');
 ?>
+Caches:
 <table cellspacing="0" cellpadding="4" class="cycles">
 	<col />
 	<col align="right" />
@@ -46,12 +48,11 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		<th>Compiling</th>
 		<th>Hits</th>
 		<th>Misses</th>
-		<th>CLogs</th>
+		<th>Clogs</th>
 		<th>OOMs</th>
 		<th>Protected</th>
 		<th>Cached</th>
 		<th>Deleted</th>
-		<th>Blocks</th>
 	</tr>
 	<?php
 	$numkeys = explode(',', 'slots,size,avail,hits,misses,clogs,ooms,cached,deleted');
@@ -86,15 +87,14 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		<td>{$ci['can_readonly']}</td>
 		<td>{$ci['cached']}</td>
 		<td>{$ci['deleted']}</td>
-		<td>
 EOS;
 
 			$b->reset();
 			?>
-		</td>
 	</tr>
 	<?php } ?>
 </table>
+Free Blocks:
 <?php
 foreach ($cacheinfos as $i => $ci) {
 	$b->reset();
