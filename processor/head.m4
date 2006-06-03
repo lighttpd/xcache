@@ -15,6 +15,10 @@ divert(0)
 #include "stack.h"
 #include "xcache_globals.h"
 
+#if defined(HARDENING_PATCH_HASH_PROTECT) && HARDENING_PATCH_HASH_PROTECT
+extern unsigned int zend_hash_canary;
+#endif
+
 define(`SIZEOF_zend_uint', `sizeof(zend_uint)')
 define(`COUNTOF_zend_uint', `1')
 define(`SIZEOF_int', `sizeof(int)')

@@ -74,7 +74,13 @@ define(`DEF_HASH_TABLE_FUNC', `
 		IFCALCCOPY(`int bucketsize;')
 
 #if defined(HARDENING_PATCH_HASH_PROTECT) && HARDENING_PATCH_HASH_PROTECT
-		DISPATCH(unsigned int, canary)
+		IFASM(`dst->canary = zend_hash_canary; DONE(canary)', `
+		dnl elseif
+			IFRESTORE(`dst->canary = zend_hash_canary; DONE(canary)', `
+				dnl else
+				DISPATCH(unsigned int, canary)
+			')
+		')
 #endif
 		DISPATCH(uint, nTableSize)
 		DISPATCH(uint, nTableMask)
