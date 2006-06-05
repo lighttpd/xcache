@@ -166,14 +166,15 @@ xc_shm_t *xc_shm_init(const char *path, xc_shmsize_t size, zend_bool readonly_pr
 #	define XCACHE_MMAP_PERMISSION (S_IRUSR | S_IWUSR)
 	fd = open(shm->name, O_RDWR, XCACHE_MMAP_PERMISSION);
 	if (fd == -1) {
+		/* do not create file in /dev */
+		if (strncmp(shm->name, "/dev", 4) == 0) {
+			goto err;
+		}
 		fd = open(shm->name, O_CREAT | O_RDWR, XCACHE_MMAP_PERMISSION);
 		shm->newfile = 1;
 		if (fd == -1) {
 			goto err;
 		}
-	}
-	if (strncmp(shm->name, "/tmp", 4) == 0) {
-		shm->newfile = 0;
 	}
 	ftruncate(fd, size);
 #endif
