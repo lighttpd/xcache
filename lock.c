@@ -5,6 +5,9 @@
 #include <php.h>
 #ifndef ZEND_WIN32
 typedef int HANDLE;
+#	ifndef INVALID_HANDLE_VALUE
+#		define INVALID_HANDLE_VALUE -1
+#	endif
 #	define CloseHandle(h) close(h)
 #endif
 #include "lock.h"
@@ -71,19 +74,35 @@ static inline int dolock(xc_lock_t *lck, int type) /* {{{ */
 xc_lock_t *xc_fcntl_init(const char *pathname) /* {{{ */
 {
 	HANDLE fd;
-	char myname[sizeof("/tmp/.xcache.lock") - 1 + 100];
+	xc_lock_t *lck;
+	int size;
+	char *myname;
 
 	if (pathname == NULL) {
 		static int i = 0;
-		snprintf(myname, sizeof(myname) - 1, "/tmp/.xcache.%d.%d.%d.lock", (int) getuid(), i ++, rand());
+		const char default_tmpdir[] = { DEFAULT_SLASH, 't', 'm', 'p', '\0' };
+		const char *tmpdir;
+
+		tmpdir = getenv("TEMP");
+		if (!tmpdir) {
+			tmpdir = getenv("TMP");
+			if (!tmpdir) {
+				tmpdir = default_tmpdir;
+			}
+		}
+		size = strlen(tmpdir) + sizeof("/.xcache.lock") - 1 + 3 * 10 + 100;
+		myname = do_alloca(size);
+		snprintf(myname, size - 1, "%s%c.xcache.%d.%d.%d.lock", tmpdir, DEFAULT_SLASH, (int) getuid(), i ++, rand());
 		pathname = myname;
+	}
+	else {
+		myname = NULL;
 	}
 
 	fd = (HANDLE) open(pathname, O_RDWR|O_CREAT, 0666);
 
-	if (fd > 0) {
-		xc_lock_t *lck = malloc(sizeof(lck[0]));
-		int size;
+	if (fd != INVALID_HANDLE_VALUE) {
+		lck = malloc(sizeof(lck[0]));
 
 #ifndef __CYGWIN__
 		unlink(pathname);
@@ -92,12 +111,17 @@ xc_lock_t *xc_fcntl_init(const char *pathname) /* {{{ */
 		size = strlen(pathname) + 1;
 		lck->pathname = malloc(size);
 		memcpy(lck->pathname, pathname, size);
-		return lck;
 	}
 	else {
 		fprintf(stderr, "xc_fcntl_create: open(%s, O_RDWR|O_CREAT, 0666) failed:", pathname);
-		return NULL;
+		lck = NULL;
 	}
+
+	if (myname) {
+		free_alloca(myname);
+	}
+
+	return lck;
 }
 /* }}} */
 void xc_fcntl_destroy(xc_lock_t *lck) /* {{{ */
