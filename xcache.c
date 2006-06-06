@@ -1721,9 +1721,9 @@ static function_entry xcache_functions[] = /* {{{ */
 
 /* signal handler */
 static void (*original_sigsegv_handler)(int) = NULL;
-static void xcache_sigsegv_handler(int dummy) /* {{{ */
+static void xcache_sigsegv_handler(int sig) /* {{{ */
 {
-	if (original_sigsegv_handler == xcache_sigsegv_handler) {
+	if (original_sigsegv_handler != xcache_sigsegv_handler) {
 		signal(SIGSEGV, original_sigsegv_handler);
 	}
 	else {
@@ -1732,9 +1732,7 @@ static void xcache_sigsegv_handler(int dummy) /* {{{ */
 	if (xc_coredump_dir && xc_coredump_dir[0]) {
 		chdir(xc_coredump_dir);
 	}
-	if (original_sigsegv_handler != xcache_sigsegv_handler) {
-		original_sigsegv_handler(dummy);
-	}
+	raise(sig);
 }
 /* }}} */
 
@@ -1901,7 +1899,9 @@ static PHP_MINIT_FUNCTION(xcache)
 		xc_var_size = xc_var_hcache.size = 0;
 	}
 
-	original_sigsegv_handler = signal(SIGSEGV, xcache_sigsegv_handler);
+	if (xc_coredump_dir && xc_coredump_dir[0]) {
+		original_sigsegv_handler = signal(SIGSEGV, xcache_sigsegv_handler);
+	}
 
 	xc_init_constant(module_number TSRMLS_CC);
 
@@ -1939,7 +1939,9 @@ static PHP_MSHUTDOWN_FUNCTION(xcache)
 	xc_coverager_destroy();
 #endif
 
-	signal(SIGSEGV, original_sigsegv_handler);
+	if (xc_coredump_dir && xc_coredump_dir[0]) {
+		signal(SIGSEGV, original_sigsegv_handler);
+	}
 	if (xc_coredump_dir) {
 		pefree(xc_coredump_dir, 1);
 		xc_coredump_dir = NULL;
