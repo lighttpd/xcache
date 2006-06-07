@@ -1,0 +1,19 @@
+<?php
+
+// should be named as config.php
+
+$charset = "UTF-8";
+// $include_paths = array("/www/my-php-project/");
+// $exclude_paths = array("/www/my-php-project/tmp/");
+$syntaxhiglight = true;
+$usecache = false;
+//// $datadir is default to ini_get("xcache.coveragedump_directory")
+// $datadir = '';
+
+function ob_filter_path_nicer($o)
+{
+	$o = str_replace("/home/", "{H}/", $o);
+	return $o;
+}
+
+?>
