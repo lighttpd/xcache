@@ -1737,12 +1737,6 @@ static void xcache_sigsegv_handler(int sig) /* {{{ */
 /* }}} */
 
 /* {{{ PHP_INI */
-static PHP_INI_MH(xc_OnUpdateLong)
-{
-	long *p = (long *)mh_arg1;
-	*p = zend_atoi(new_value, new_value_length);
-	return SUCCESS;
-}
 
 static PHP_INI_MH(xc_OnUpdateBool)
 {
@@ -1757,22 +1751,6 @@ static PHP_INI_MH(xc_OnUpdateBool)
 	return SUCCESS;
 }
 
-static PHP_INI_MH(xc_OnUpdateHashInfo)
-{
-	xc_hash_t *p = (xc_hash_t *)mh_arg1;
-	int bits, size;
-
-	p->size = zend_atoi(new_value, new_value_length);
-	for (size = 1, bits = 1; size < p->size; bits ++, size <<= 1) {
-		/* empty body */
-	}
-	p->size = size;
-	p->bits = bits;
-	p->mask = size - 1;
-
-	return SUCCESS;
-}
-
 static PHP_INI_MH(xc_OnUpdateString)
 {
 	char **p = (char**)mh_arg1;
@@ -1783,6 +1761,7 @@ static PHP_INI_MH(xc_OnUpdateString)
 	strcpy(*p, new_value);
 	return SUCCESS;
 }
+
 #ifdef ZEND_ENGINE_2
 #define OnUpdateInt OnUpdateLong
 #endif
@@ -1793,14 +1772,6 @@ static PHP_INI_MH(xc_OnUpdateString)
 #	define DEFAULT_PATH "/dev/zero"
 #endif
 PHP_INI_BEGIN()
-	PHP_INI_ENTRY1     ("xcache.size",                   "0", PHP_INI_SYSTEM, xc_OnUpdateLong,     &xc_php_size)
-	PHP_INI_ENTRY1     ("xcache.count",                  "1", PHP_INI_SYSTEM, xc_OnUpdateHashInfo, &xc_php_hcache)
-	PHP_INI_ENTRY1     ("xcache.slots",                 "8K", PHP_INI_SYSTEM, xc_OnUpdateHashInfo, &xc_php_hentry)
-
-	PHP_INI_ENTRY1     ("xcache.var_size",               "0", PHP_INI_SYSTEM, xc_OnUpdateLong,     &xc_var_size)
-	PHP_INI_ENTRY1     ("xcache.var_count",              "1", PHP_INI_SYSTEM, xc_OnUpdateHashInfo, &xc_var_hcache)
-	PHP_INI_ENTRY1     ("xcache.var_slots",             "8K", PHP_INI_SYSTEM, xc_OnUpdateHashInfo, &xc_var_hentry)
-
 	PHP_INI_ENTRY1     ("xcache.mmap_path",     DEFAULT_PATH, PHP_INI_SYSTEM, xc_OnUpdateString,   &xc_mmap_path)
 	PHP_INI_ENTRY1     ("xcache.coredump_directory",      "", PHP_INI_SYSTEM, xc_OnUpdateString,   &xc_coredump_dir)
 	PHP_INI_ENTRY1     ("xcache.test",                   "0", PHP_INI_SYSTEM, xc_OnUpdateBool,     &xc_test)
@@ -1866,6 +1837,37 @@ static int xc_zend_extension_startup(zend_extension *extension)
 	return SUCCESS;
 }
 /* }}} */
+static int xc_config_hash(xc_hash_t *p, char *name, char *default_value) /* {{{ */
+{
+	int bits, size;
+	char *value;
+
+	if (cfg_get_string(name, &value) != SUCCESS) {
+		value = default_value;
+	}
+
+	p->size = zend_atoi(value, strlen(value));
+	for (size = 1, bits = 1; size < p->size; bits ++, size <<= 1) {
+		/* empty body */
+	}
+	p->size = size;
+	p->bits = bits;
+	p->mask = size - 1;
+
+	return SUCCESS;
+}
+static int xc_config_long(long *p, char *name, char *default_value) /* {{{ */
+{
+	char *value;
+
+	if (cfg_get_string(name, &value) != SUCCESS) {
+		value = default_value;
+	}
+
+	*p = zend_atoi(value, strlen(value));
+	return SUCCESS;
+}
+/* }}} */
 /* {{{ PHP_MINIT_FUNCTION(xcache) */
 static PHP_MINIT_FUNCTION(xcache)
 {
@@ -1891,6 +1893,14 @@ static PHP_MINIT_FUNCTION(xcache)
 			xc_php_size = xc_var_size = 0;
 		}
 	}
+
+	xc_config_long(&xc_php_size,   "xcache.size",       "0");
+	xc_config_hash(&xc_php_hcache, "xcache.count",      "1");
+	xc_config_hash(&xc_php_hentry, "xcache.slots",     "8K");
+
+	xc_config_long(&xc_var_size,   "xcache.var_size",   "0");
+	xc_config_hash(&xc_var_hcache, "xcache.var_count",  "1");
+	xc_config_hash(&xc_var_hentry, "xcache.var_slots", "8K");
 
 	if (xc_php_size <= 0) {
 		xc_php_size = xc_php_hcache.size = 0;
