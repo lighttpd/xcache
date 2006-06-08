@@ -508,6 +508,7 @@ static int xc_entry_init_key_php(xc_entry_t *xce, char *filename TSRMLS_DC) /* {
 	xc_hash_value_t hv;
 	int cacheid;
 	xc_entry_data_php_t *php;
+	char *ptr;
 
 	if (!filename || !SG(request_info).path_translated) {
 		return 0;
@@ -522,16 +523,35 @@ static int xc_entry_init_key_php(xc_entry_t *xce, char *filename TSRMLS_DC) /* {
 			}
 		}
 
+		/* absolute path */
 		pbuf = &buf;
 		if (IS_ABSOLUTE_PATH(filename, strlen(filename))) {
 			if (VCWD_STAT(filename, pbuf) != 0) {
 				return 0;
 			}
+			break;
 		}
-		else {
-			if (xc_stat(filename, PG(include_path), pbuf TSRMLS_CC) != 0) {   
+
+		/* relative path */
+		if (*filename == '.' && (IS_SLASH(filename[1]) || filename[1] == '.')) {
+			ptr = filename + 1;
+			if (*ptr == '.') {
+				while (*(++ptr) == '.');
+				if (!IS_SLASH(*ptr)) {
+					goto not_relative_path;
+				}   
+			}
+
+			if (VCWD_STAT(filename, pbuf) != 0) {
 				return 0;
 			}
+			break;
+		}
+not_relative_path:
+
+		/* use include_path */
+		if (xc_stat(filename, PG(include_path), pbuf TSRMLS_CC) != 0) {   
+			return 0;
 		}
 	} while (0);
 
@@ -606,6 +626,10 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	if (cache->compiling) {
 		cache->clogs ++; /* is it safe here? */
 		return origin_compile_file(h, type TSRMLS_CC);
+	}
+
+	if (php_check_open_basedir(filename TSRMLS_CC) != 0) {
+		return NULL;
 	}
 
 	stored_xce = NULL;
@@ -1719,16 +1743,38 @@ static function_entry xcache_functions[] = /* {{{ */
 };
 /* }}} */
 
-/* signal handler */
-static void (*original_sigsegv_handler)(int) = NULL;
-static void xcache_sigsegv_handler(int sig) /* {{{ */
+/* old signal handlers {{{ */
+typedef void (*xc_sighandler_t)(int);
+#define FOREACH_SIG(sig) static xc_sighandler_t old_##sig##_handler = NULL
+#include "foreachcoresig.h"
+#undef FOREACH_SIG
+/* }}} */
+static void xcache_signal_handler(int sig);
+static void xcache_restore_signal_handler() /* {{{ */
 {
-	if (original_sigsegv_handler != xcache_sigsegv_handler) {
-		signal(SIGSEGV, original_sigsegv_handler);
-	}
-	else {
-		signal(SIGSEGV, SIG_DFL);
-	}
+#define FOREACH_SIG(sig) do { \
+	if (old_##sig##_handler != xcache_signal_handler) { \
+		signal(sig, old_##sig##_handler); \
+	} \
+	else { \
+		signal(sig, SIG_DFL); \
+	} \
+} while (0)
+#include "foreachcoresig.h"
+#undef FOREACH_SIG
+}
+/* }}} */
+static void xcache_init_signal_handler() /* {{{ */
+{
+#define FOREACH_SIG(sig) \
+	old_##sig##_handler = signal(sig, xcache_signal_handler)
+#include "foreachcoresig.h"
+#undef FOREACH_SIG
+}
+/* }}} */
+static void xcache_signal_handler(int sig) /* {{{ */
+{
+	xcache_restore_signal_handler();
 	if (xc_coredump_dir && xc_coredump_dir[0]) {
 		chdir(xc_coredump_dir);
 	}
@@ -1900,7 +1946,7 @@ static PHP_MINIT_FUNCTION(xcache)
 	}
 
 	if (xc_coredump_dir && xc_coredump_dir[0]) {
-		original_sigsegv_handler = signal(SIGSEGV, xcache_sigsegv_handler);
+		xcache_init_signal_handler();
 	}
 
 	xc_init_constant(module_number TSRMLS_CC);
@@ -1940,7 +1986,7 @@ static PHP_MSHUTDOWN_FUNCTION(xcache)
 #endif
 
 	if (xc_coredump_dir && xc_coredump_dir[0]) {
-		signal(SIGSEGV, original_sigsegv_handler);
+		xcache_restore_signal_handler();
 	}
 	if (xc_coredump_dir) {
 		pefree(xc_coredump_dir, 1);
