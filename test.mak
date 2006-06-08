@@ -16,3 +16,6 @@ mem: mem_test
 
 clean:
 	rm -f $(OBJS) $(EXES)
+
+leakcheck:
+	valgrind php -c test.ini test.ini
