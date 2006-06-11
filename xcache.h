@@ -26,6 +26,9 @@
 #if !defined(ZEND_ENGINE_2_1) && (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 1 || PHP_MAJOR_VERSION > 5)
 #	define ZEND_ENGINE_2_1
 #endif
+#if !defined(ZEND_ENGINE_2_2) && (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 2 || PHP_MAJOR_VERSION > 5)
+#	define ZEND_ENGINE_2_2
+#endif
 
 #define NOTHING
 /* ZendEngine code Switcher */

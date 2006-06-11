@@ -236,6 +236,10 @@ DEF_STRUCT_P_FUNC(`zend_property_info', , `
 	DISPATCH(int, doc_comment_len)
 	PROC_USTRING_L(, doc_comment, doc_comment_len)
 #endif
+	dnl isnt in php6 yet
+#if defined(ZEND_ENGINE_2_2) && !defined(IS_UNICODE)
+	PROC_CLASS_ENTRY_P(ce)
+#endif
 ')
 #endif
 dnl }}}
