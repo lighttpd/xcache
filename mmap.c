@@ -199,11 +199,14 @@ xc_shm_t *xc_shm_init(const char *path, xc_shmsize_t size, zend_bool readonly_pr
 #else
 		shm->ptr_ro = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
 #endif
+		if (shm->ptr_ro == XCACHE_MAP_FAILED) {
+			shm->ptr_ro = NULL;
+		}
 		romem = shm->ptr_ro;
 
 		/* {{{ check if ptr_ro works */
 		do {
-			if (shm->ptr_ro == XCACHE_MAP_FAILED || shm->ptr_ro == shm->ptr) {
+			if (shm->ptr_ro == NULL || shm->ptr_ro == shm->ptr) {
 				break;
 			}
 			*(char *)shm->ptr = 1;
@@ -223,7 +226,7 @@ xc_shm_t *xc_shm_init(const char *path, xc_shmsize_t size, zend_bool readonly_pr
 		assert(abs(shm->diff) >= size);
 	}
 	else {
-		if (shm->ptr_ro != XCACHE_MAP_FAILED) {
+		if (shm->ptr_ro) {
 			munmap(shm->ptr_ro, size);
 		}
 		shm->ptr_ro = NULL;
