@@ -17,6 +17,7 @@
 #	define munmap(p, s) UnmapViewOfFile(p)
 #else
 #	include <unistd.h>
+/* make sure to mark(change) it to NULL to keep consistent */
 #	define XCACHE_MAP_FAILED MAP_FAILED
 #endif
 
@@ -191,19 +192,23 @@ xc_shm_t *xc_shm_init(const char *path, xc_shmsize_t size, zend_bool readonly_pr
 		goto err;
 	}
 
-	ro_ok = 0;
+	/* {{{ readonly protection, mmap it readonly and check if ptr_ro works */
 	if (readonly_protection) {
+		ro_ok = 0;
+
 #ifdef ZEND_WIN32
 		shm->hmap_ro = XCacheCreateFileMapping(size, PAGE_READONLY, shm->name);
 		shm->ptr_ro = (LPSTR) MapViewOfFile(shm->hmap_ro, FILE_MAP_READ, 0, 0, 0);
 #else
 		shm->ptr_ro = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
 #endif
+		if (shm->ptr_ro == XCACHE_MAP_FAILED) {
+			shm->ptr_ro = NULL;
+		}
 		romem = shm->ptr_ro;
 
-		/* {{{ check if ptr_ro works */
 		do {
-			if (shm->ptr_ro == XCACHE_MAP_FAILED || shm->ptr_ro == shm->ptr) {
+			if (romem == NULL || romem == shm->ptr) {
 				break;
 			}
 			*(char *)shm->ptr = 1;
@@ -216,19 +221,26 @@ xc_shm_t *xc_shm_init(const char *path, xc_shmsize_t size, zend_bool readonly_pr
 			}
 			ro_ok = 1;
 		} while (0);
+
+		if (ro_ok) {
+			shm->diff = PTR_SUB(shm->ptr_ro, (char *) shm->ptr);
+			/* no overlap */
+			assert(abs(shm->diff) >= size);
+		}
+		else {
+			if (shm->ptr_ro) {
+				munmap(shm->ptr_ro, size);
+			}
+#ifdef ZEND_WIN32
+			if (shm->hmap_ro) {
+				CloseHandle(shm->hmap_ro);
+			}
+#endif
+			shm->ptr_ro = NULL;
+			shm->diff = 0;
+		}
 	}
 
-	if (ro_ok) {
-		shm->diff = PTR_SUB(shm->ptr_ro, (char *) shm->ptr);
-		assert(abs(shm->diff) >= size);
-	}
-	else {
-		if (shm->ptr_ro != XCACHE_MAP_FAILED) {
-			munmap(shm->ptr_ro, size);
-		}
-		shm->ptr_ro = NULL;
-		shm->diff = 0;
-	}
 	/* }}} */
 
 	close(fd);
