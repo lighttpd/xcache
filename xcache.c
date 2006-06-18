@@ -11,6 +11,7 @@
 #include "php.h"
 #include "ext/standard/info.h"
 #include "ext/standard/md5.h"
+#include "ext/standard/php_math.h"
 #include "zend_extensions.h"
 #include "SAPI.h"
 
@@ -1787,20 +1788,69 @@ PHP_INI_BEGIN()
 #endif
 PHP_INI_END()
 /* }}} */
+static int xc_config_long_disp(char *name, char *default_value) /* {{{ */
+{
+	char *value;
+	char buf[100];
+
+	if (cfg_get_string(name, &value) != SUCCESS) {
+		sprintf(buf, "%s (default)", default_value);
+		php_info_print_table_row(2, name, buf);
+	}
+	else {
+		php_info_print_table_row(2, name, value);
+	}
+
+	return SUCCESS;
+}
+/* }}} */
+#define xc_config_hash_disp xc_config_long_disp
 /* {{{ PHP_MINFO_FUNCTION(xcache) */
 static PHP_MINFO_FUNCTION(xcache)
 {
+	char buf[100];
+	char *ptr;
+
 	php_info_print_table_start();
 	php_info_print_table_header(2, "XCache Support", (xc_php_size || xc_var_size) ? "enabled" : "disabled");
 	php_info_print_table_row(2, "Version", XCACHE_VERSION);
 	php_info_print_table_row(2, "Modules Built", XCACHE_MODULES);
-	php_info_print_table_row(2, "Readonly Protection", xc_readonly_protection ? "enabled" : "N/A");
-	php_info_print_table_row(2, "Opcode Cache", xc_php_size ? "enabled" : "disabled");
-	php_info_print_table_row(2, "Variable Cache", xc_var_size ? "enabled" : "disabled");
+	php_info_print_table_row(2, "Readonly Protection", xc_readonly_protection ? "enabled" : "N/A or disabled");
+
+	if (xc_php_size) {
+		ptr = _php_math_number_format(xc_php_size, 0, '.', ',');
+		sprintf(buf, "enabled, %s bytes, %d split(s), with %d slots each", ptr, xc_php_hcache.size, xc_php_hentry.size);
+		php_info_print_table_row(2, "Opcode Cache", buf);
+		efree(ptr);
+	}
+	else {
+		php_info_print_table_row(2, "Opcode Cache", "disabled");
+	}
+	if (xc_var_size) {
+		ptr = _php_math_number_format(xc_var_size, 0, '.', ',');
+		sprintf(buf, "enabled, %s bytes, %d split(s), with %d slots each", ptr, xc_var_hcache.size, xc_var_hentry.size);
+		php_info_print_table_row(2, "Variable Cache", buf);
+		efree(ptr);
+	}
+	else {
+		php_info_print_table_row(2, "Variable Cache", "disabled");
+	}
 #ifdef HAVE_XCACHE_COVERAGER
 	php_info_print_table_row(2, "Coverage Dumper", XG(coveragedumper) && xc_coveragedump_dir && xc_coveragedump_dir[0] ? "enabled" : "disabled");
 #endif
 	php_info_print_table_end();
+
+	php_info_print_table_start();
+	php_info_print_table_header(2, "Directive ", "Value");
+	xc_config_long_disp("xcache.size",       "0");
+	xc_config_hash_disp("xcache.count",      "1");
+	xc_config_hash_disp("xcache.slots",     "8K");
+
+	xc_config_long_disp("xcache.var_size",   "0");
+	xc_config_hash_disp("xcache.var_count",  "1");
+	xc_config_hash_disp("xcache.var_slots", "8K");
+	php_info_print_table_end();
+
 	DISPLAY_INI_ENTRIES();
 }
 /* }}} */
@@ -1856,6 +1906,7 @@ static int xc_config_hash(xc_hash_t *p, char *name, char *default_value) /* {{{ 
 
 	return SUCCESS;
 }
+/* }}} */
 static int xc_config_long(long *p, char *name, char *default_value) /* {{{ */
 {
 	char *value;
