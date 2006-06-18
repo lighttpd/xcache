@@ -163,8 +163,10 @@ if ($cachelist) {
 			<?php if ($isphp) { ?>
 			<th><a href="javascript:" onclick="resort(this); return false">SrcSize</a></th>
 			<th><a href="javascript:" onclick="resort(this); return false">Modify</a></th>
+			<?php if ($haveinode) { ?>
 			<th><a href="javascript:" onclick="resort(this); return false">device</a></th>
 			<th><a href="javascript:" onclick="resort(this); return false">inode</a></th>
+			<?php } ?>
 			<?php } ?>
 			<th><a href="javascript:" onclick="resort(this); return false">Access</a></th>
 			<th><a href="javascript:" onclick="resort(this); return false">Create</a></th>
@@ -202,9 +204,13 @@ ENTRY;
 				echo <<<ENTRY
 				<td int="{$entry['sourcesize']}">{$sourcesize}</td>
 				<td int="{$entry['mtime']}">{$mtime}</td>
-				<td int="{$entry['device']}">{$entry['device']}</td>
-				<td int="{$entry['inode']}">{$entry['inode']}</td>
 ENTRY;
+				if (isset($entry['inode'])) {
+					echo <<<ENTRY
+					<td int="{$entry['device']}">{$entry['device']}</td>
+					<td int="{$entry['inode']}">{$entry['inode']}</td>
+ENTRY;
+				}
 			}
 			echo <<<ENTRY
 			<td int="{$entry['atime']}">{$atime}</td>
