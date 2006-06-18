@@ -11,6 +11,7 @@
 #ifdef ZEND_WIN32
 #	define ftruncate chsize
 #	define getuid() 0
+#	include <process.h>
 #	define XCacheCreateFileMapping(size, perm, name) \
 		CreateFileMapping(INVALID_HANDLE_VALUE, NULL, perm, (sizeof(xc_shmsize_t) > 4) ? size >> 32 : 0, size & 0xffffffff, name)
 #	define XCACHE_MAP_FAILED NULL
@@ -157,9 +158,16 @@ xc_shm_t *xc_shm_init(const char *path, xc_shmsize_t size, zend_bool readonly_pr
 
 	if (path == NULL || !path[0]) {
 		static int inc = 0;
-		snprintf(tmpname, sizeof(tmpname) - 1, "%s.%d.%d.%d", TMP_PATH, (int) getuid(), inc ++, rand());
+		snprintf(tmpname, sizeof(tmpname) - 1, "%s.%d.%d.%d.%d", TMP_PATH, (int) getuid(), (int) getpid(), inc ++, rand());
 		path = tmpname;
 	}
+#ifdef ZEND_WIN32
+	else {
+		static int inc2 = 0;
+		snprintf(tmpname, sizeof(tmpname) - 1, "%s.%d.%d.%d.%d", path, (int) getuid(), (int) getpid(), inc2 ++, rand());
+		path = tmpname;
+	}
+#endif
 
 	shm->name = strdup(path);
 
