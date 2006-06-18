@@ -11,6 +11,7 @@
 #include "php.h"
 #include "ext/standard/info.h"
 #include "ext/standard/md5.h"
+#include "ext/standard/php_math.h"
 #include "zend_extensions.h"
 #include "SAPI.h"
 
@@ -1783,12 +1784,6 @@ static void xcache_signal_handler(int sig) /* {{{ */
 /* }}} */
 
 /* {{{ PHP_INI */
-static PHP_INI_MH(xc_OnUpdateLong)
-{
-	long *p = (long *)mh_arg1;
-	*p = zend_atoi(new_value, new_value_length);
-	return SUCCESS;
-}
 
 static PHP_INI_MH(xc_OnUpdateBool)
 {
@@ -1803,22 +1798,6 @@ static PHP_INI_MH(xc_OnUpdateBool)
 	return SUCCESS;
 }
 
-static PHP_INI_MH(xc_OnUpdateHashInfo)
-{
-	xc_hash_t *p = (xc_hash_t *)mh_arg1;
-	int bits, size;
-
-	p->size = zend_atoi(new_value, new_value_length);
-	for (size = 1, bits = 1; size < p->size; bits ++, size <<= 1) {
-		/* empty body */
-	}
-	p->size = size;
-	p->bits = bits;
-	p->mask = size - 1;
-
-	return SUCCESS;
-}
-
 static PHP_INI_MH(xc_OnUpdateString)
 {
 	char **p = (char**)mh_arg1;
@@ -1829,6 +1808,7 @@ static PHP_INI_MH(xc_OnUpdateString)
 	strcpy(*p, new_value);
 	return SUCCESS;
 }
+
 #ifdef ZEND_ENGINE_2
 #define OnUpdateInt OnUpdateLong
 #endif
@@ -1839,14 +1819,6 @@ static PHP_INI_MH(xc_OnUpdateString)
 #	define DEFAULT_PATH "/dev/zero"
 #endif
 PHP_INI_BEGIN()
-	PHP_INI_ENTRY1     ("xcache.size",                   "0", PHP_INI_SYSTEM, xc_OnUpdateLong,     &xc_php_size)
-	PHP_INI_ENTRY1     ("xcache.count",                  "1", PHP_INI_SYSTEM, xc_OnUpdateHashInfo, &xc_php_hcache)
-	PHP_INI_ENTRY1     ("xcache.slots",                 "8K", PHP_INI_SYSTEM, xc_OnUpdateHashInfo, &xc_php_hentry)
-
-	PHP_INI_ENTRY1     ("xcache.var_size",               "0", PHP_INI_SYSTEM, xc_OnUpdateLong,     &xc_var_size)
-	PHP_INI_ENTRY1     ("xcache.var_count",              "1", PHP_INI_SYSTEM, xc_OnUpdateHashInfo, &xc_var_hcache)
-	PHP_INI_ENTRY1     ("xcache.var_slots",             "8K", PHP_INI_SYSTEM, xc_OnUpdateHashInfo, &xc_var_hentry)
-
 	PHP_INI_ENTRY1     ("xcache.mmap_path",     DEFAULT_PATH, PHP_INI_SYSTEM, xc_OnUpdateString,   &xc_mmap_path)
 	PHP_INI_ENTRY1     ("xcache.coredump_directory",      "", PHP_INI_SYSTEM, xc_OnUpdateString,   &xc_coredump_dir)
 	PHP_INI_ENTRY1     ("xcache.test",                   "0", PHP_INI_SYSTEM, xc_OnUpdateBool,     &xc_test)
@@ -1862,20 +1834,69 @@ PHP_INI_BEGIN()
 #endif
 PHP_INI_END()
 /* }}} */
+static int xc_config_long_disp(char *name, char *default_value) /* {{{ */
+{
+	char *value;
+	char buf[100];
+
+	if (cfg_get_string(name, &value) != SUCCESS) {
+		sprintf(buf, "%s (default)", default_value);
+		php_info_print_table_row(2, name, buf);
+	}
+	else {
+		php_info_print_table_row(2, name, value);
+	}
+
+	return SUCCESS;
+}
+/* }}} */
+#define xc_config_hash_disp xc_config_long_disp
 /* {{{ PHP_MINFO_FUNCTION(xcache) */
 static PHP_MINFO_FUNCTION(xcache)
 {
+	char buf[100];
+	char *ptr;
+
 	php_info_print_table_start();
-	php_info_print_table_header(2, "XCache Support", (xc_php_size || xc_var_size) ? "enabled" : "disabled");
+	php_info_print_table_header(2, "XCache Support", XCACHE_MODULES);
 	php_info_print_table_row(2, "Version", XCACHE_VERSION);
 	php_info_print_table_row(2, "Modules Built", XCACHE_MODULES);
 	php_info_print_table_row(2, "Readonly Protection", xc_readonly_protection ? "enabled" : "N/A");
-	php_info_print_table_row(2, "Opcode Cache", xc_php_size ? "enabled" : "disabled");
-	php_info_print_table_row(2, "Variable Cache", xc_var_size ? "enabled" : "disabled");
+
+	if (xc_php_size) {
+		ptr = _php_math_number_format(xc_php_size, 0, '.', ',');
+		sprintf(buf, "enabled, %s bytes, %d split(s), with %d slots each", ptr, xc_php_hcache.size, xc_php_hentry.size);
+		php_info_print_table_row(2, "Opcode Cache", buf);
+		efree(ptr);
+	}
+	else {
+		php_info_print_table_row(2, "Opcode Cache", "disabled");
+	}
+	if (xc_var_size) {
+		ptr = _php_math_number_format(xc_var_size, 0, '.', ',');
+		sprintf(buf, "enabled, %s bytes, %d split(s), with %d slots each", ptr, xc_var_hcache.size, xc_var_hentry.size);
+		php_info_print_table_row(2, "Variable Cache", buf);
+		efree(ptr);
+	}
+	else {
+		php_info_print_table_row(2, "Variable Cache", "disabled");
+	}
 #ifdef HAVE_XCACHE_COVERAGER
 	php_info_print_table_row(2, "Coverage Dumper", XG(coveragedumper) && xc_coveragedump_dir && xc_coveragedump_dir[0] ? "enabled" : "disabled");
 #endif
 	php_info_print_table_end();
+
+	php_info_print_table_start();
+	php_info_print_table_header(2, "Directive ", "Value");
+	xc_config_long_disp("xcache.size",       "0");
+	xc_config_hash_disp("xcache.count",      "1");
+	xc_config_hash_disp("xcache.slots",     "8K");
+
+	xc_config_long_disp("xcache.var_size",   "0");
+	xc_config_hash_disp("xcache.var_count",  "1");
+	xc_config_hash_disp("xcache.var_slots", "8K");
+	php_info_print_table_end();
+
 	DISPLAY_INI_ENTRIES();
 }
 /* }}} */
@@ -1912,6 +1933,38 @@ static int xc_zend_extension_startup(zend_extension *extension)
 	return SUCCESS;
 }
 /* }}} */
+static int xc_config_hash(xc_hash_t *p, char *name, char *default_value) /* {{{ */
+{
+	int bits, size;
+	char *value;
+
+	if (cfg_get_string(name, &value) != SUCCESS) {
+		value = default_value;
+	}
+
+	p->size = zend_atoi(value, strlen(value));
+	for (size = 1, bits = 1; size < p->size; bits ++, size <<= 1) {
+		/* empty body */
+	}
+	p->size = size;
+	p->bits = bits;
+	p->mask = size - 1;
+
+	return SUCCESS;
+}
+/* }}} */
+static int xc_config_long(long *p, char *name, char *default_value) /* {{{ */
+{
+	char *value;
+
+	if (cfg_get_string(name, &value) != SUCCESS) {
+		value = default_value;
+	}
+
+	*p = zend_atoi(value, strlen(value));
+	return SUCCESS;
+}
+/* }}} */
 /* {{{ PHP_MINIT_FUNCTION(xcache) */
 static PHP_MINIT_FUNCTION(xcache)
 {
@@ -1937,6 +1990,14 @@ static PHP_MINIT_FUNCTION(xcache)
 			xc_php_size = xc_var_size = 0;
 		}
 	}
+
+	xc_config_long(&xc_php_size,   "xcache.size",       "0");
+	xc_config_hash(&xc_php_hcache, "xcache.count",      "1");
+	xc_config_hash(&xc_php_hentry, "xcache.slots",     "8K");
+
+	xc_config_long(&xc_var_size,   "xcache.var_size",   "0");
+	xc_config_hash(&xc_var_hcache, "xcache.var_count",  "1");
+	xc_config_hash(&xc_var_hentry, "xcache.var_slots", "8K");
 
 	if (xc_php_size <= 0) {
 		xc_php_size = xc_php_hcache.size = 0;
