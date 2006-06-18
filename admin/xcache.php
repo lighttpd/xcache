@@ -162,10 +162,15 @@ case XC_TYPE_VAR:
 	}
 	if ($type == XC_TYPE_PHP) {
 		$inodes = array();
+		$haveinode = false;
 		foreach ($cachelist['cache_list'] as $e) {
+			if (!isset($e['inode'])) {
+				break;
+			}
+			$haveinode = true;
 			$i = &$inodes[$e['inode']];
 			if (isset($i) && $i == 1) {
-				set_error("duplicate inode $e[inode]");
+				trigger_error("duplicate inode $e[inode]");
 			}
 			$i ++;
 		}
