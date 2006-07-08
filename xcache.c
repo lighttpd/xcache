@@ -668,6 +668,12 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 		goto err_oparray;
 	}
 
+	filename = h->opened_path ? h->opened_path : h->filename;
+	if (xce.name.str.val != filename) {
+		xce.name.str.val = filename;
+		xce.name.str.len = strlen(filename);
+	}
+
 #ifdef HAVE_XCACHE_OPTIMIZER
 	if (XG(optimizer)) {
 		xc_optimize(op_array TSRMLS_CC);
