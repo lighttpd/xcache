@@ -629,10 +629,6 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 		return origin_compile_file(h, type TSRMLS_CC);
 	}
 
-	if (php_check_open_basedir(filename TSRMLS_CC) != 0) {
-		return NULL;
-	}
-
 	stored_xce = NULL;
 	op_array = NULL;
 	ENTER_LOCK(cache) {
@@ -690,6 +686,12 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 
 	if (op_array == NULL) {
 		goto err_oparray;
+	}
+
+	filename = h->opened_path ? h->opened_path : h->filename;
+	if (xce.name.str.val != filename) {
+		xce.name.str.val = filename;
+		xce.name.str.len = strlen(filename);
 	}
 
 #ifdef HAVE_XCACHE_OPTIMIZER
@@ -779,6 +781,10 @@ err_bailout:
 	return op_array;
 
 restore:
+	if (php_check_open_basedir(stored_xce->name.str.val TSRMLS_CC) != 0) {
+		return NULL;
+	}
+
 #ifdef DEBUG
 	fprintf(stderr, "restoring\n");
 #endif
