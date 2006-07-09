@@ -77,6 +77,9 @@ typedef char *zstr;
 #	define zend_u_hash_add(ht, type, arKey, nKeyLength, pData, nDataSize, pDest) \
  	   zend_hash_add(ht, arKey, nKeyLength, pData, nDataSize, pDest)
 
+#	define zend_u_hash_update(ht, type, arKey, nKeyLength, pData, nDataSize, pDest) \
+ 	   zend_hash_update(ht, arKey, nKeyLength, pData, nDataSize, pDest)
+
 #	define zend_u_hash_find(ht, type, arKey, nKeyLength, pData) \
  	   zend_hash_find(ht, arKey, nKeyLength, pData)
 

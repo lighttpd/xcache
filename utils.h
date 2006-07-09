@@ -25,7 +25,7 @@ int xc_undo_fix_opcode(zend_op_array *op_array TSRMLS_DC);
 zend_uchar xc_get_fixed_opcode(zend_uchar opcode, int line);
 
 /* installer */
-void xc_install_function(char *filename, zend_function *func, zend_uchar type, char *key, uint len TSRMLS_DC);
+void xc_install_function(char *filename, zend_function *func, zend_uchar type, void *key, uint len TSRMLS_DC);
 ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, zend_uchar type, void *key, uint len TSRMLS_DC);
 
 /* sandbox */
