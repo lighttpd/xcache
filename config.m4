@@ -59,6 +59,7 @@ if test "$PHP_XCACHE" != "no"; then
   PHP_SUBST([SED])
 
   AC_PATH_PROGS([INDENT], [indent cat])
+  XCACHE_INDENT=cat
   case $INDENT in
   */indent[)]
     opts="-kr --use-tabs --tab-size 4 -sob -nce"
@@ -74,9 +75,6 @@ if test "$PHP_XCACHE" != "no"; then
         fi
       fi
     fi
-    ;;
-  *[)]
-    XCACHE_INDENT=cat
     ;;
   esac
   PHP_SUBST([XCACHE_INDENT])
