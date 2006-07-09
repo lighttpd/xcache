@@ -264,10 +264,16 @@ int xc_undo_fix_opcode(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 /* }}} */
 #endif
 
-void xc_install_function(char *filename, zend_function *func, zend_uchar type, char *key, uint len TSRMLS_DC) /* {{{ */
+void xc_install_function(char *filename, zend_function *func, zend_uchar type, void *key, uint len TSRMLS_DC) /* {{{ */
 {
 	if (func->type == ZEND_USER_FUNCTION) {
-		if (zend_u_hash_add(CG(function_table), type, key, len,
+		if (*(char *) key == '\0') {
+			zend_u_hash_update(CG(function_table), type, key, len,
+						func, sizeof(zend_op_array),
+						NULL
+						);
+		}
+		else if (zend_u_hash_add(CG(function_table), type, key, len,
 					func, sizeof(zend_op_array),
 					NULL
 					) == FAILURE) {
@@ -284,7 +290,13 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, zend_u
 	zend_class_entry *cep = CestToCePtr(*cest);
 	ZESW(void *stored_ce_ptr, NOTHING);
 
-	if (zend_u_hash_add(CG(class_table), type, key, len,
+	if (*(char *) key == '\0') {
+		zend_u_hash_update(CG(class_table), type, key, len,
+					cest, sizeof(xc_cest_t),
+					ZESW(&stored_ce_ptr, NULL)
+					);
+	}
+	else if (zend_u_hash_add(CG(class_table), type, key, len,
 				cest, sizeof(xc_cest_t),
 				ZESW(&stored_ce_ptr, NULL)
 				) == FAILURE) {
