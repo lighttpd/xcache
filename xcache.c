@@ -1062,29 +1062,41 @@ static void xc_request_shutdown(TSRMLS_D) /* {{{ */
 #endif
 }
 /* }}} */
-static void xc_init_globals(zend_xcache_globals* xc_globals TSRMLS_DC) /* {{{ */
+/* {{{ PHP_GINIT_FUNCTION(xcache) */
+static
+#ifdef PHP_GINIT_FUNCTION
+PHP_GINIT_FUNCTION(xcache)
+#else
+void xc_init_globals(zend_xcache_globals* xcache_globals TSRMLS_DC)
+#endif
 {
-	memset(xc_globals, 0, sizeof(zend_xcache_globals));
+	memset(xcache_globals, 0, sizeof(zend_xcache_globals));
 }
 /* }}} */
-static void xc_shutdown_globals(zend_xcache_globals* xc_globals TSRMLS_DC) /* {{{ */
+/* {{{ PHP_GSHUTDOWN_FUNCTION(xcache) */
+static
+#ifdef PHP_GSHUTDOWN_FUNCTION
+PHP_GSHUTDOWN_FUNCTION(xcache)
+#else
+void xc_shutdown_globals(zend_xcache_globals* xcache_globals TSRMLS_DC)
+#endif
 {
 	int i;
 
-	if (xc_globals->php_holds != NULL) {
+	if (xcache_globals->php_holds != NULL) {
 		for (i = 0; i < xc_php_hcache.size; i ++) {
-			xc_stack_destroy(&xc_globals->php_holds[i]);
+			xc_stack_destroy(&xcache_globals->php_holds[i]);
 		}
-		free(xc_globals->php_holds);
-		xc_globals->php_holds = NULL;
+		free(xcache_globals->php_holds);
+		xcache_globals->php_holds = NULL;
 	}
 
-	if (xc_globals->var_holds != NULL) {
+	if (xcache_globals->var_holds != NULL) {
 		for (i = 0; i < xc_var_hcache.size; i ++) {
-			xc_stack_destroy(&xc_globals->var_holds[i]);
+			xc_stack_destroy(&xcache_globals->var_holds[i]);
 		}
-		free(xc_globals->var_holds);
-		xc_globals->var_holds = NULL;
+		free(xcache_globals->var_holds);
+		xcache_globals->var_holds = NULL;
 	}
 }
 /* }}} */
@@ -1984,7 +1996,9 @@ static PHP_MINIT_FUNCTION(xcache)
 		}
 	}
 
+#ifndef PHP_GINIT
 	ZEND_INIT_MODULE_GLOBALS(xcache, xc_init_globals, xc_shutdown_globals);
+#endif
 	REGISTER_INI_ENTRIES();
 
 	if (strcmp(sapi_module.name, "cli") == 0) {
@@ -2059,10 +2073,12 @@ static PHP_MSHUTDOWN_FUNCTION(xcache)
 		pefree(xc_coredump_dir, 1);
 		xc_coredump_dir = NULL;
 	}
-#ifdef ZTS
+#ifndef PHP_GINIT
+#	ifdef ZTS
 	ts_free_id(xcache_globals_id);
-#else
+#	else
 	xc_shutdown_globals(&xcache_globals TSRMLS_CC);
+#	endif
 #endif
 
 	UNREGISTER_INI_ENTRIES();
@@ -2107,6 +2123,11 @@ zend_module_entry xcache_module_entry = {
 #endif
 	PHP_MINFO(xcache),
 	XCACHE_VERSION,
+#ifdef PHP_GINIT
+	PHP_MODULE_GLOBALS(xcache),
+	PHP_GINIT(xcache),
+	PHP_GSHUTDOWN(xcache),
+#endif
 #ifdef ZEND_ENGINE_2
 	ZEND_MODULE_POST_ZEND_DEACTIVATE_N(xcache),
 #else
