@@ -464,7 +464,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	IFRESTORE(`
 #ifdef ZEND_ENGINE_2
 		if (dst->scope) {
-			dst->scope = xc_get_class(processor, (int) dst->scope);
+			dst->scope = xc_get_class(processor, (zend_ulong) dst->scope);
 			xc_fix_method(processor, dst);
 		}
 #endif
@@ -484,7 +484,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 #ifdef ZEND_ENGINE_2
 	IFRESTORE(`
 		if (dst->scope) {
-			dst->scope = xc_get_class(processor, (int) dst->scope);
+			dst->scope = xc_get_class(processor, (zend_ulong) dst->scope);
 			xc_fix_method(processor, dst);
 		}
 		DONE(scope)

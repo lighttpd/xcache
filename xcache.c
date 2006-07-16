@@ -1141,7 +1141,7 @@ static int xcache_admin_auth_check(TSRMLS_D) /* {{{ */
 		unsigned char digest[16];
 
 		PHP_MD5Init(&context);
-		PHP_MD5Update(&context, Z_STRVAL_PP(pass), Z_STRLEN_PP(pass));
+		PHP_MD5Update(&context, (unsigned char *) Z_STRVAL_PP(pass), Z_STRLEN_PP(pass));
 		PHP_MD5Final(digest, &context);
 
 		md5str[0] = '\0';
