@@ -72,19 +72,20 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 				/* {{{ check assert */
 				if (done_count != assert_count) {
 					fprintf(stderr
-						, "count assertion failed at %s `#'%d FUNC_NAME`' : unexpected %d - expected %d = %d != 0\n"
+						, "count assertion failed at %s `#'%d FUNC_NAME`' : unexpected:%d - expecting:%d = %d != 0\n"
 						, __FILE__, __LINE__
 						, done_count, assert_count, done_count - assert_count
 						);
-					abort();
 				}
 				if (done_size != assert_size) {
 					fprintf(stderr
-						, "size assertion failed at %s `#'%d FUNC_NAME`' : %d - %d = %d != 0\n"
+						, "size assertion failed at %s `#'%d FUNC_NAME`' : unexpected:%d - expecting:%d = %d != 0\n"
 						, __FILE__, __LINE__
 						, done_size, assert_size, done_size - assert_size
 						);
-					abort();
+				}
+				if (done_count != assert_count || done_size != assert_size) {
+					assert(0);
 				}
 				/* }}} */
 			')
