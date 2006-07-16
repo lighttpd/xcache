@@ -264,6 +264,25 @@ int xc_undo_fix_opcode(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 /* }}} */
 #endif
 
+#ifdef HAVE_XCACHE_CONSTANT
+void xc_install_constant(char *filename, zend_constant *constant, zend_uchar type, void *key, uint len TSRMLS_DC) /* {{{ */
+{
+	if (zend_u_hash_add(EG(zend_constants), type, key, len,
+				constant, sizeof(zend_constant),
+				NULL
+				) == FAILURE) {
+		CG(in_compilation) = 1;
+		CG(compiled_filename) = filename;
+		CG(zend_lineno) = 0;
+		zend_error(E_NOTICE, "Constant %s already defined", key);
+		free(constant->name);
+		if (!(constant->flags & CONST_PERSISTENT)) {
+			zval_dtor(&constant->value);
+		}
+	}
+}
+/* }}} */
+#endif
 void xc_install_function(char *filename, zend_function *func, zend_uchar type, void *key, uint len TSRMLS_DC) /* {{{ */
 {
 	if (func->type == ZEND_USER_FUNCTION) {
@@ -315,6 +334,16 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, zend_u
 #define TG(x) (sandbox->tmp_##x)
 #define OG(x) (sandbox->orig_##x)
 /* }}} */
+#ifdef HAVE_XCACHE_CONSTANT
+static void xc_constant_copy_ctor(zend_constant *c) /* {{{ */
+{
+	c->name = zend_strndup(c->name, c->name_len - 1);
+	if (!(c->flags & CONST_PERSISTENT)) {
+		zval_copy_ctor(&c->value);
+	}
+}
+/* }}} */
+#endif
 xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /* {{{ */
 {
 	if (sandbox) {
@@ -324,8 +353,14 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 		ECALLOC_ONE(sandbox);
 		sandbox->alloc = 1;
 	}
+
 	memcpy(&OG(included_files), &EG(included_files), sizeof(EG(included_files)));
 	memcpy(&OG(open_files), &CG(open_files), sizeof(CG(open_files)));
+
+#ifdef HAVE_XCACHE_CONSTANT
+	OG(zend_constants) = EG(zend_constants);
+	EG(zend_constants) = &TG(zend_constants);
+#endif
 
 	OG(function_table) = CG(function_table);
 	CG(function_table) = &TG(function_table);
@@ -341,6 +376,9 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 
 	zend_llist_init(TG(open_files), sizeof(zend_file_handle), (void (*)(void *)) zend_file_handle_dtor, 0);
 	zend_hash_init_ex(TG(included_files), 5, NULL, NULL, 0, 1);
+#ifdef HAVE_XCACHE_CONSTANT
+	zend_hash_init_ex(&TG(zend_constants), 20, NULL, ZEND_CONSTANT_DTOR, 1, 0);
+#endif
 	zend_hash_init_ex(&TG(function_table), 128, NULL, ZEND_FUNCTION_DTOR, 0, 0);
 	zend_hash_init_ex(&TG(class_table), 16, NULL, ZEND_CLASS_DTOR, 0, 0);
 
@@ -355,6 +393,17 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 	Bucket *b;
 	zend_llist_position lpos;
 	zend_file_handle *handle;
+
+#ifdef HAVE_XCACHE_CONSTANT
+	b = TG(zend_constants).pListHead;
+	/* install constants */
+	while (b != NULL) {
+		zend_constant *c = (zend_constant*) b->pData;
+		xc_install_constant(sandbox->filename, c,
+				BUCKET_KEY_TYPE(b), BUCKET_KEY(b), b->nKeyLength TSRMLS_CC);
+		b = b->pListNext;
+	}
+#endif
 
 	b = TG(function_table).pListHead;
 	/* install function */
@@ -385,6 +434,9 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 void xc_sandbox_free(xc_sandbox_t *sandbox, int install TSRMLS_DC) /* {{{ */
 {
 	/* restore first first install function/class */
+#ifdef HAVE_XCACHE_CONSTANT
+	EG(zend_constants) = OG(zend_constants);
+#endif
 	CG(function_table) = OG(function_table);
 	CG(class_table)    = OG(class_table);
 	EG(class_table)    = CG(class_table);
@@ -393,12 +445,18 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, int install TSRMLS_DC) /* {{{ */
 		xc_sandbox_install(sandbox TSRMLS_CC);
 
 		/* no free as it's installed */
+#ifdef HAVE_XCACHE_CONSTANT
+		TG(zend_constants).pDestructor = NULL;
+#endif
 		TG(function_table).pDestructor = NULL;
 		TG(class_table).pDestructor = NULL;
 		TG(open_files)->dtor = NULL;
 	}
 
 	/* destroy all the tmp */
+#ifdef HAVE_XCACHE_CONSTANT
+	zend_hash_destroy(&TG(zend_constants));
+#endif
 	zend_hash_destroy(&TG(function_table));
 	zend_hash_destroy(&TG(class_table));
 	zend_hash_destroy(TG(included_files));
