@@ -347,7 +347,7 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 #ifdef ZEND_ENGINE_2_1
 	COPY(__unset)
 	COPY(__isset)
-# if PHP_MAJOR_VERSION >= 6
+# if defined(ZEND_ENGINE_2_2) || PHP_MAJOR_VERSION >= 6
 	COPY(__tostring)
 # endif
 #endif
