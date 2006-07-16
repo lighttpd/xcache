@@ -129,8 +129,8 @@ static inline char *xc_store_string_n(processor_t *processor, zend_uchar type, c
 /* {{{ xc_get_class_num
  * return class_index + 1
  */
-static zend_uint xc_get_class_num(processor_t *processor, zend_class_entry *ce) {
-	zend_uint i;
+static zend_ulong xc_get_class_num(processor_t *processor, zend_class_entry *ce) {
+	zend_ulong i;
 	const xc_entry_t *xce = processor->xce_src;
 	zend_class_entry *ceptr;
 
@@ -146,12 +146,12 @@ static zend_uint xc_get_class_num(processor_t *processor, zend_class_entry *ce) 
 		}
 	}
 	assert(0);
-	return (zend_uint) -1;
+	return (zend_ulong) -1;
 }
 /* }}} */
 /* {{{ xc_get_class */
 #ifdef ZEND_ENGINE_2
-static zend_class_entry *xc_get_class(processor_t *processor, zend_uint class_num) {
+static zend_class_entry *xc_get_class(processor_t *processor, zend_ulong class_num) {
 	/* must be parent or currrent class */
 	assert(class_num <= processor->active_class_num);
 	return CestToCePtr(processor->xce_dst->data.php->classinfos[class_num - 1].cest);
@@ -254,7 +254,6 @@ xc_entry_t *xc_processor_store_xc_entry_t(xc_entry_t *src TSRMLS_DC) {
 		if (processor.p == NULL) {
 			dst = NULL;
 			goto err_alloc;
-			return NULL;
 		}
 		IFASSERT(`oldp = processor.p;')
 		assert(processor.p == (char *) ALIGN(processor.p));
