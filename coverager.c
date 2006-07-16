@@ -205,7 +205,8 @@ void xc_coverager_request_shutdown(TSRMLS_D) /* {{{ */
 	coverager_t *pcov;
 	zstr s;
 	char *outfilename;
-	int dumpdir_len, outfilelen, size, alloc_len = 0;
+	int dumpdir_len, outfilelen, alloc_len = 0;
+	uint size;
 
 	if (!XG(coverages)) {
 		return;

@@ -91,7 +91,7 @@ dnl PROC_CLASS_ENTRY_P_EX(1:dst, 2:src, 3:elm-name)
 define(`PROC_CLASS_ENTRY_P_EX', `
 	if ($2) {
 		IFSTORE(`$1 = (zend_class_entry *) xc_get_class_num(processor, $2);')
-		IFRESTORE(`$1 = xc_get_class(processor, (zend_uint) $2);')
+		IFRESTORE(`$1 = xc_get_class(processor, (zend_ulong) $2);')
 		IFDASM(`add_assoc_stringl_ex(dst, ZEND_STRS("$3"), $2->name, strlen($2->name), 1);')
 	}
 	else {
