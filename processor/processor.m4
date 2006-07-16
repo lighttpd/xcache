@@ -362,9 +362,13 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	COPY(handle_property_get)
 	COPY(handle_property_set)
 #endif
-	dnl must after SETNULL(constructor)
+	dnl must do after SETNULL(constructor) and dst->parent
 	STRUCT(HashTable, function_table, HashTable_zend_function)
 	IFRESTORE(`dst->function_table.pDestructor = (dtor_func_t) destroy_zend_function;')
+	IFCOPY(`
+		processor->active_class_entry_src = NULL;
+		processor->active_class_entry_dst = NULL;
+	')
 ')
 dnl }}}
 DEF_STRUCT_P_FUNC(`znode', , `dnl {{{
@@ -488,8 +492,32 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		PROC_CLASS_ENTRY_P(scope)
 	')
 	DISPATCH(zend_uint, fn_flags)
-	/* useless */
-	COPY(prototype)
+	dnl mark it as -1 on store, and lookup parent on restore
+	IFSTORE(`dst->prototype = (processor->active_class_entry_src && src->prototype) ? (zend_function *) -1 : NULL; DONE(prototype)', `
+			IFRESTORE(`do {
+				zend_function *parent;
+				if (src->prototype != NULL
+				 && zend_u_hash_find(&(processor->active_class_entry_dst->parent->function_table),
+						UG(unicode) ? IS_UNICODE : IS_STRING,
+						src->function_name, strlen(src->function_name) + 1,
+						(void **) &parent) == SUCCESS) {
+					/* see do_inherit_method_check() */
+					if ((parent->common.fn_flags & ZEND_ACC_ABSTRACT)) {
+					  dst->prototype = parent;
+					}
+					else {
+						dst->prototype = parent->common.prototype;
+					}
+				}
+				else {
+					dst->prototype = NULL;
+				}
+				DONE(prototype)
+			} while (0);
+			', `
+				COPYNULL(prototype)
+			')
+	')
 	STRUCT_ARRAY_I(num_args, zend_arg_info, arg_info)
 	DISPATCH(zend_uint, num_args)
 	DISPATCH(zend_uint, required_num_args)
