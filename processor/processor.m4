@@ -4,6 +4,9 @@ DECL_STRUCT_P_FUNC(`zval')
 DECL_STRUCT_P_FUNC(`zval_ptr')
 DECL_STRUCT_P_FUNC(`zend_op_array')
 DECL_STRUCT_P_FUNC(`zend_class_entry')
+#ifdef HAVE_XCACHE_CONSTANT
+DECL_STRUCT_P_FUNC(`zend_constant')
+#endif
 DECL_STRUCT_P_FUNC(`zend_function')
 DECL_STRUCT_P_FUNC(`xc_entry_t')
 #ifdef ZEND_ENGINE_2
@@ -58,6 +61,9 @@ DEF_STRUCT_P_FUNC(`zend_brk_cont_element', , `
 ')
 dnl }}}
 DEF_HASH_TABLE_FUNC(`HashTable_zval_ptr',           `zval_ptr')
+#ifdef HAVE_XCACHE_CONSTANT
+DEF_HASH_TABLE_FUNC(`HashTable_zend_constant',      `zend_constant')
+#endif
 DEF_HASH_TABLE_FUNC(`HashTable_zend_function',      `zend_function')
 #ifdef ZEND_ENGINE_2
 DEF_HASH_TABLE_FUNC(`HashTable_zend_property_info', `zend_property_info')
@@ -204,6 +210,17 @@ DEF_STRUCT_P_FUNC(`zend_arg_info', , `
 ')
 #endif
 dnl }}}
+#ifdef HAVE_XCACHE_CONSTANT
+DEF_STRUCT_P_FUNC(`zend_constant', , `dnl {{{
+	STRUCT(zval, value)
+	DISPATCH(int, flags)
+	DISPATCH(uint, name_len)
+	PROC_STRING_L(name, name_len)
+	zstr name;
+	DISPATCH(int, module_number)
+')
+dnl }}}
+#endif
 DEF_STRUCT_P_FUNC(`zend_function', , `dnl {{{
 	DISABLECHECK(`
 	switch (src->type) {
@@ -598,8 +615,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 
 	STRUCT_P(HashTable, static_variables, HashTable_zval_ptr)
 
-	IFCOPY(`dst->start_op = src->start_op;')
-	DONE(start_op)
+	COPY(start_op)
 	DISPATCH(int, backpatch_count)
 
 	DISPATCH(zend_bool, done_pass_two)
@@ -627,6 +643,19 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 ')
 dnl }}}
 
+#ifdef HAVE_XCACHE_CONSTANT
+DEF_STRUCT_P_FUNC(`xc_constinfo_t', , `dnl {{{
+	DISPATCH(zend_uint, key_size)
+#ifdef IS_UNICODE
+	DISPATCH(zend_uchar, type)
+#endif
+	IFRESTORE(`COPY(key)', `
+		PROC_USTRING_N(type, key, key_size)
+	')
+	STRUCT(zend_constant, constant)
+')
+dnl }}}
+#endif
 DEF_STRUCT_P_FUNC(`xc_funcinfo_t', , `dnl {{{
 	DISPATCH(zend_uint, key_size)
 #ifdef IS_UNICODE
@@ -665,6 +694,11 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 	DISPATCH(time_t, mtime)
 
 	STRUCT_P(zend_op_array, op_array)
+
+#ifdef HAVE_XCACHE_CONSTANT
+	DISPATCH(zend_uint, constinfo_cnt)
+	STRUCT_ARRAY(constinfo_cnt, xc_constinfo_t, constinfos)
+#endif
 
 	DISPATCH(zend_uint, funcinfo_cnt)
 	STRUCT_ARRAY(funcinfo_cnt, xc_funcinfo_t, funcinfos)

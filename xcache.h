@@ -153,6 +153,18 @@ typedef struct {
 	xc_cest_t cest;
 } xc_classinfo_t;
 /* }}} */
+#ifdef HAVE_XCACHE_CONSTANT
+/* {{{ xc_constinfo_t */
+typedef struct {
+#ifdef IS_UNICODE
+	zend_uchar type;
+#endif
+	char *key;
+	zend_uint key_size;
+	zend_constant constant;
+} xc_constinfo_t;
+/* }}} */
+#endif
 /* {{{ xc_funcinfo_t */
 typedef struct {
 #ifdef IS_UNICODE
@@ -174,6 +186,11 @@ typedef struct {
 	time_t mtime;           /* the mtime of origin source file */
 
 	zend_op_array *op_array;
+
+#ifdef HAVE_XCACHE_CONSTANT
+	zend_uint constinfo_cnt;
+	xc_constinfo_t *constinfos;
+#endif
 
 	zend_uint funcinfo_cnt;
 	xc_funcinfo_t *funcinfos;

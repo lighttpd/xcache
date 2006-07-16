@@ -17,6 +17,12 @@ PHP_ARG_ENABLE(xcache, for XCache support,
 [  --enable-xcache         Include XCache support.])
 
 if test "$PHP_XCACHE" != "no"; then
+	PHP_ARG_ENABLE(xcache-constant, for XCache handle of compile time constant,
+  [  --enable-xcache-constant        XCache: Handle new constants made by php compiler (e.g.: for __halt_compiler)], yes, no)
+	if test "$PHP_XCACHE_CONSTANT" != "no"; then
+		AC_DEFINE([HAVE_XCACHE_CONSTANT], 1, [Define to enable XCache handling of compile time constants])
+	fi
+
   xcache_sources="processor.c \
                   xcache.c \
                   mmap.c \

@@ -4,6 +4,13 @@
 ARG_ENABLE("xcache", "Include XCache support", "yes,shared");
 
 if (PHP_XCACHE != "no") {
+	// {{{ check for xcache-constant 
+	ARG_ENABLE("xcache-constant", "XCache: Handle new constants made by php compiler (e.g.: for __halt_compiler)", "yes");
+	if (PHP_XCACHE_CONSTANT != "no") {
+		AC_DEFINE("HAVE_XCACHE_CONSTANT", 1, "Define to enable XCache handling of compile time constants");
+	}
+	// }}}
+
 	var xcache_sources = "processor.c \
 	                      xcache.c \
 	                      mmap.c \

@@ -300,15 +300,18 @@ static void xc_fillentry_dmz(xc_entry_t *entry, int del, zval *list TSRMLS_DC) /
 	switch (entry->type) {
 		case XC_TYPE_PHP:
 			php = entry->data.php;
-			add_assoc_long_ex(ei, ZEND_STRS("sourcesize"),   php->sourcesize);
+			add_assoc_long_ex(ei, ZEND_STRS("sourcesize"),    php->sourcesize);
 #ifdef HAVE_INODE
-			add_assoc_long_ex(ei, ZEND_STRS("device"),       php->device);
-			add_assoc_long_ex(ei, ZEND_STRS("inode"),        php->inode);
+			add_assoc_long_ex(ei, ZEND_STRS("device"),        php->device);
+			add_assoc_long_ex(ei, ZEND_STRS("inode"),         php->inode);
 #endif
-			add_assoc_long_ex(ei, ZEND_STRS("mtime"),        php->mtime);
+			add_assoc_long_ex(ei, ZEND_STRS("mtime"),         php->mtime);
 
-			add_assoc_long_ex(ei, ZEND_STRS("function_cnt"), php->funcinfo_cnt);
-			add_assoc_long_ex(ei, ZEND_STRS("class_cnt"),    php->classinfo_cnt);
+#ifdef HAVE_XCACHE_CONSTANT
+			add_assoc_long_ex(ei, ZEND_STRS("constinfo_cnt"), php->constinfo_cnt);
+#endif
+			add_assoc_long_ex(ei, ZEND_STRS("function_cnt"),  php->funcinfo_cnt);
+			add_assoc_long_ex(ei, ZEND_STRS("class_cnt"),     php->classinfo_cnt);
 			break;
 		case XC_TYPE_VAR:
 			var = entry->data.var;
@@ -353,6 +356,15 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 #ifndef ZEND_ENGINE_2
 	/* new ptr which is stored inside CG(class_table) */
 	xc_cest_t **new_cest_ptrs = (xc_cest_t **)do_alloca(sizeof(xc_cest_t*) * p->classinfo_cnt);
+#endif
+
+#ifdef HAVE_XCACHE_CONSTANT
+	/* install constant */
+	for (i = 0; i < p->constinfo_cnt; i ++) {
+		xc_constinfo_t *ci = &p->constinfos[i];
+		xc_install_constant(xce->name.str.val, &ci->constant,
+				UNISW(0, ci->type), ci->key, ci->key_size TSRMLS_CC);
+	}
 #endif
 
 	/* install function */
@@ -593,6 +605,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	zend_bool clogged = 0;
 	zend_bool catched = 0;
 	char *filename;
+	int old_constinfo_cnt, old_funcinfo_cnt, old_classinfo_cnt;
 
 	if (!xc_initized) {
 		assert(0);
@@ -674,6 +687,10 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	/* make compile inside sandbox */
 	xc_sandbox_init(&sandbox, filename TSRMLS_CC);
 
+	old_classinfo_cnt = zend_hash_num_elements(CG(class_table));
+	old_funcinfo_cnt  = zend_hash_num_elements(CG(function_table));
+	old_constinfo_cnt  = zend_hash_num_elements(EG(zend_constants));
+
 	zend_try {
 		op_array = origin_compile_file(h, type TSRMLS_CC);
 	} zend_catch {
@@ -702,46 +719,60 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 
 	php.op_array      = op_array;
 
-	php.funcinfo_cnt  = zend_hash_num_elements(CG(function_table));
-	php.classinfo_cnt = zend_hash_num_elements(CG(class_table));
+#ifdef HAVE_XCACHE_CONSTANT
+	php.constinfo_cnt = zend_hash_num_elements(EG(zend_constants)) - old_constinfo_cnt;
+#endif
+	php.funcinfo_cnt  = zend_hash_num_elements(CG(function_table)) - old_funcinfo_cnt;
+	php.classinfo_cnt = zend_hash_num_elements(CG(class_table))    - old_classinfo_cnt;
 
-	php.funcinfos     = ECALLOC_N(php.funcinfos, php.funcinfo_cnt);
-	if (!php.funcinfos) {
-		goto err_func;
-	}
-	php.classinfos    = ECALLOC_N(php.classinfos, php.classinfo_cnt);
-	if (!php.classinfos) {
-		goto err_class;
-	}
+#define X_ALLOC_N(var, cnt) do {     \
+	if (php.cnt) {                   \
+		ECALLOC_N(php.var, php.cnt); \
+		if (!php.var) {              \
+			goto err_##var;          \
+		}                            \
+	}                                \
+	else {                           \
+		php.var = NULL;              \
+	}                                \
+} while (0)
+
+#ifdef HAVE_XCACHE_CONSTANT
+	X_ALLOC_N(constinfos, constinfo_cnt);
+#endif
+	X_ALLOC_N(funcinfos,  funcinfo_cnt);
+	X_ALLOC_N(classinfos, classinfo_cnt);
+#undef X_ALLOC
 	/* }}} */
 	/* {{{ shallow copy, pointers only */ {
 		Bucket *b;
 		unsigned int i;
 
-		b = CG(function_table)->pListHead;
-		for (i = 0; b; i ++, b = b->pListNext) {
-			xc_funcinfo_t *fi = &php.funcinfos[i];
+#define COPY_H(vartype, var, cnt, name, datatype) do {        \
+	for (i = 0; b; i ++, b = b->pListNext) {                  \
+		vartype *data = &php.var[i];                          \
+                                                              \
+		if (i < old_##cnt) {                                  \
+			continue;                                         \
+		}                                                     \
+                                                              \
+		assert(i < old_##cnt + php.cnt);                      \
+		assert(b->pData);                                     \
+		memcpy(&data->name, b->pData, sizeof(datatype));      \
+		UNISW(NOTHING, data->type = b->key.type;)             \
+		data->key        = BUCKET_KEY(b);                     \
+		data->key_size   = b->nKeyLength;                     \
+	}                                                         \
+} while(0)
 
-			assert(i < php.funcinfo_cnt);
-			assert(b->pData);
-			memcpy(&fi->func, b->pData, sizeof(zend_function));
-			UNISW(NOTHING, fi->type = b->key.type;)
-			fi->key        = BUCKET_KEY(b);
-			fi->key_size   = b->nKeyLength;
-		}
+#ifdef HAVE_XCACHE_CONSTANT
+		b = EG(zend_constants)->pListHead; COPY_H(xc_constinfo_t, constinfos, constinfo_cnt, constant, zend_constant);
+#endif
+		b = CG(function_table)->pListHead; COPY_H(xc_funcinfo_t,  funcinfos,  funcinfo_cnt,  func,     zend_function);
+		b = CG(class_table)->pListHead;    COPY_H(xc_classinfo_t, classinfos, classinfo_cnt, cest,     xc_cest_t);
 
-		b = CG(class_table)->pListHead;
-		for (i = 0; b; i ++, b = b->pListNext) {
-			xc_classinfo_t *ci = &php.classinfos[i];
-
-			assert(i < php.classinfo_cnt);
-			assert(b->pData);
-			memcpy(&ci->cest, b->pData, sizeof(xc_cest_t));
-			UNISW(NOTHING, ci->type = b->key.type;)
-			ci->key        = BUCKET_KEY(b);
-			ci->key_size   = b->nKeyLength;
-			/* need to fix inside store */
-		}
+#undef COPY_H
+		/* for ZE1, cest need to fix inside store */
 	}
 	/* }}} */
 	xc_entry_gc(TSRMLS_C);
@@ -753,10 +784,19 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	fprintf(stderr, "stored\n");
 #endif
 
-	efree(xce.data.php->classinfos);
-err_class:
-	efree(xce.data.php->funcinfos);
-err_func:
+#define X_FREE(var) \
+	if (xce.data.php->var) { \
+		efree(xce.data.php->var); \
+	} \
+err_##var:
+
+	X_FREE(classinfos)
+	X_FREE(funcinfos)
+#ifdef HAVE_XCACHE_CONSTANT
+	X_FREE(constinfos)
+#endif
+#undef X_FREE
+
 err_oparray:
 err_bailout:
 
@@ -789,11 +829,29 @@ restore:
 	fprintf(stderr, "restoring\n");
 #endif
 	xc_processor_restore_xc_entry_t(&xce, stored_xce, xc_readonly_protection TSRMLS_CC);
-	op_array = xc_entry_install(&xce, h TSRMLS_CC);
 
-	efree(xce.data.php->funcinfos);
-	efree(xce.data.php->classinfos);
+	catched = 0;
+	zend_try {
+		op_array = xc_entry_install(&xce, h TSRMLS_CC);
+	} zend_catch {
+		catched = 1;
+	} zend_end_try();
+
+#define X_FREE(var) \
+	if (xce.data.php->var) { \
+		efree(xce.data.php->var); \
+	}
+	X_FREE(classinfos)
+	X_FREE(funcinfos)
+#ifdef HAVE_XCACHE_CONSTANT
+	X_FREE(constinfos)
+#endif
+#undef X_FREE
 	efree(xce.data.php);
+
+	if (catched) {
+		zend_bailout();
+	}
 #ifdef DEBUG
 	fprintf(stderr, "restored\n");
 #endif
