@@ -295,7 +295,7 @@ static void xc_fillentry_dmz(xc_entry_t *entry, int del, zval *list TSRMLS_DC) /
 		add_assoc_zval_ex(ei, ZEND_STRS("name"), zv);
 	} while (0);
 #else
-	add_assoc_stringl_ex(ei, ZEND_STRS("name"), entry->name.str.val, entry->name.str.len + 1, 1);
+	add_assoc_stringl_ex(ei, ZEND_STRS("name"), entry->name.str.val, entry->name.str.len, 1);
 #endif
 	switch (entry->type) {
 		case XC_TYPE_PHP:
