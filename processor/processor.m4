@@ -381,7 +381,7 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 #endif
 	dnl must do after SETNULL(constructor) and dst->parent
 	STRUCT(HashTable, function_table, HashTable_zend_function)
-	IFRESTORE(`dst->function_table.pDestructor = (dtor_func_t) destroy_zend_function;')
+	IFRESTORE(`dst->function_table.pDestructor = ZEND_FUNCTION_DTOR;')
 	IFCOPY(`
 		processor->active_class_entry_src = NULL;
 		processor->active_class_entry_dst = NULL;
