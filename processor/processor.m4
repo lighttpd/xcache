@@ -360,7 +360,7 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 #endif
 	dnl must after SETNULL(constructor)
 	STRUCT(HashTable, function_table, HashTable_zend_function)
-	IFRESTORE(`dst->function_table.pDestructor = (dtor_func_t) destroy_zend_function;')
+	IFRESTORE(`dst->function_table.pDestructor = ZEND_FUNCTION_DTOR;')
 ')
 dnl }}}
 DEF_STRUCT_P_FUNC(`znode', , `dnl {{{
