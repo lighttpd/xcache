@@ -69,7 +69,7 @@ static const char *const xc_opcode_names[] = {
 /* 66 */	"SEND_VAR",
 /* 67 */	"SEND_REF",
 /* 68 */	"NEW",
-/* 69 */	"UNDEF",
+/* 69 */	"GOTO",
 /* 70 */	"FREE",
 /* 71 */	"INIT_ARRAY",
 /* 72 */	"ADD_ARRAY_ELEMENT",
