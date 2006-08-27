@@ -39,8 +39,8 @@ HEAD;
 <b>Compiling:  </b>Compiling flag, "yes" if the cache is busy compiling php script
 <b>Hits:       </b>Cache Hits, hit=a var/php is loaded from this cache
 <b>Misses:     </b>Cache Misses, miss=a var/php is requested but not in the cache
-<b>CLogs:      </b>Compiling Clogs, clog=compiling is needed but avoided to wait(be blocked)
-            for the cache busy compiling
+<b>Clogs:      </b>Compiling Clogs, clog=compiling is needed but avoided to wait(be blocked)
+            when the cache is busy compiling already
 <b>OOMs:       </b>Out Of Memory, how many times a new item should be stored but there isn't
             enough memory in the cache, think of increasing the xcache.size or xcache.var_size
 <b>Protected:  </b>Whether readonly_protection is available and enable on this cache
