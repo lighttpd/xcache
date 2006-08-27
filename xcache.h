@@ -55,7 +55,7 @@
 #define BUCKET_UKEY(b) (UNISW((b)->arKey, (b)->key.arKey.u))
 #define BUCKET_KEY_TYPE(b) (UNISW(0, (b)->key.type))
 #ifdef IS_UNICODE
-#	define BUCKET_HEAD_SIZE(b) XtOffsetOf(Bucket, key)
+#	define BUCKET_HEAD_SIZE(b) XtOffsetOf(Bucket, key.arKey)
 #else
 #	define BUCKET_HEAD_SIZE(b) XtOffsetOf(Bucket, arKey)
 #endif
