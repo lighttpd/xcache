@@ -9,8 +9,9 @@ th a { color: white; font-weight: bold; display: block; width: 100%; height: 100
 span.sortarrow { color: white; text-decoration: none; }
 .freeblocks { float: left; margin-right: 4px;}
 form {margin: 0; padding: 0}
-.percent { border: 1px solid gray; width: 90%; }
-.percent .v { background: black; font-size: 1px; line-height: 11px;}
+.percent { border: 1px solid black; width: 80%; height: 100%; }
+.percent div { font-size: 1px; line-height: 1px; width: 100%;}
+.percent .pavail { background: blue; }
 .switcher, h1 { text-align: center; display: block; }
 .switcher * { color: blue; }
 .switcher a.active { font-weight: bold; font-size: 130%; color: black; }
