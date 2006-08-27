@@ -37,7 +37,7 @@ define(`PROC_STRING_N_EX', `
 		IFCALC(`xc_calc_string_n(processor, ISTYPE, (void *) $2, `$3' IFASSERT(`, __LINE__'));')
 		IFSTORE(`$1 = (STRTYPE *) xc_store_string_n(processor, ISTYPE, (char *) $2, `$3' IFASSERT(`, __LINE__'));')
 		IFRESTORE(`
-			ALLOC(`$1', `STRTYPE', `sizeof(STRTYPE) * ($3)')
+			ALLOC(`$1', `STRTYPE', `($3)')
 			memcpy($1, $2, sizeof(STRTYPE) * ($3));
 		')
 		FIXPOINTER_EX(`STRTYPE', `$1')
