@@ -46,6 +46,10 @@ sinclude(builddir`/structinfo.m4')
 
 typedef zval *zval_ptr;
 typedef zend_uchar zval_data_type;
+#ifdef IS_UNICODE
+typedef UChar zstr_uchar;
+#endif
+typedef char  zstr_char;
 
 #define MAX_DUP_STR_LEN 256
 dnl }}}
@@ -81,22 +85,52 @@ static void xc_dprint_indent(int indent) /* {{{ */
 }
 #endif
 /* }}} */
+/* {{{ xc_zstrlen_char */
+static inline int xc_zstrlen_char(zstr s)
+{
+	return strlen(ZSTR_S(s));
+}
+/* }}} */
+#ifdef IS_UNICODE
+/* {{{ xc_zstrlen_uchar */
+static inline int xc_zstrlen_uchar(zstr s)
+{
+	int i;
+	UChar *p = ZSTR_U(s);
+	for (i = 0; *p; i ++, p++) {
+		/* empty */
+	}
+	return i;
+}
+/* }}} */
+/* {{{ xc_zstrlen */
+static inline int xc_zstrlen(int type, zstr s)
+{
+	return type == IS_UNICODE ? xc_zstrlen_uchar(s) : xc_zstrlen_char(s);
+}
+/* }}} */
+#else
+/* {{{ xc_zstrlen */
+#define xc_zstrlen(dummy, s) xc_zstrlen_char(s)
+/* }}} */
+#endif
 /* {{{ xc_calc_string_n */
 REDEF(`KIND', `calc')
-static inline void xc_calc_string_n(processor_t *processor, zend_uchar type, char *str, long size IFASSERT(`, int relayline')) {
+static inline void xc_calc_string_n(processor_t *processor, zend_uchar type, zstr str, long size IFASSERT(`, int relayline')) {
 	pushdef(`__LINE__', `relayline')
 	int realsize = UNISW(size, (type == IS_UNICODE) ? UBYTES(size) : size);
+	long dummy = 1;
 
 	if (realsize > MAX_DUP_STR_LEN) {
 		ALLOC(, char, realsize)
 	}
-	else if (zend_u_hash_add(&processor->strings, type, str, size, (void*)&str, sizeof(char*), NULL) == SUCCESS) {
+	else if (zend_u_hash_add(&processor->strings, type, str, size, (void *) &dummy, sizeof(dummy), NULL) == SUCCESS) {
 		/* new string */
 		ALLOC(, char, realsize)
 	} 
 	IFASSERT(`
 		else {
-			dnl fprintf(stderr, "dupstr %s\n", str);
+			dnl fprintf(stderr, "dupstr %s\n", ZSTR_S(str));
 		}
 	')
 	popdef(`__LINE__')
@@ -104,25 +138,27 @@ static inline void xc_calc_string_n(processor_t *processor, zend_uchar type, cha
 /* }}} */
 /* {{{ xc_store_string_n */
 REDEF(`KIND', `store')
-static inline char *xc_store_string_n(processor_t *processor, zend_uchar type, char *str, long size IFASSERT(`, int relayline')) {
+static inline zstr xc_store_string_n(processor_t *processor, zend_uchar type, zstr str, long size IFASSERT(`, int relayline')) {
 	pushdef(`__LINE__', `relayline')
 	int realsize = UNISW(size, (type == IS_UNICODE) ? UBYTES(size) : size);
-	char *s;
+	zstr ret, *pret;
 
 	if (realsize > MAX_DUP_STR_LEN) {
-		ALLOC(s, char, realsize)
-		memcpy(s, str, realsize);
+		ALLOC(ZSTR_V(ret), char, realsize)
+		memcpy(ZSTR_V(ret), ZSTR_V(str), realsize);
+		return ret;
 	}
-	else if (zend_u_hash_find(&processor->strings, type, str, size, (void*)&s) != SUCCESS) {
-		/* new string */
-		ALLOC(s, char, realsize)
-		memcpy(s, str, realsize);
-		zend_u_hash_add(&processor->strings, type, str, size, (void*)&s, sizeof(char*), NULL);
+
+	if (zend_u_hash_find(&processor->strings, type, str, size, (void **) &pret) == SUCCESS) {
+		return *pret;
 	}
-	else {
-		s = *(char**)s;
-	}
-	return s;
+
+	/* new string */
+	ALLOC(ZSTR_V(ret), char, realsize)
+	memcpy(ZSTR_V(ret), ZSTR_V(str), realsize);
+	zend_u_hash_add(&processor->strings, type, str, size, (void *) &ret, sizeof(zstr), NULL);
+	return ret;
+
 	popdef(`__LINE__')
 }
 /* }}} */
@@ -184,9 +220,10 @@ static void xc_fix_method(processor_t *processor, zend_op_array *dst) /* {{{ */
 		ce->clone = zf;
 	}
 	else {
+dnl FIXME: handle common.function_name here
 #define SET_IF_SAME_NAME(member) \
 		do { \
-			if(!strcasecmp(zf->common.function_name, #member)) { \
+			if (!strcasecmp(ZSTR_S(zf->common.function_name), #member)) { \
 				ce->member = zf; \
 			} \
 		} \

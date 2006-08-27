@@ -502,7 +502,7 @@ static int xc_stat(const char *filename, const char *include_path, struct stat *
 #define HASH_NUM(n) HASH(n)
 static inline xc_hash_value_t xc_entry_hash_var(xc_entry_t *xce) /* {{{ */
 {
-	return UNISW(NOTHING, UG(unicode) ? HASH_USTR_L(xce->name_type, (char *)xce->name.ustr.val, xce->name.ustr.len) :)
+	return UNISW(NOTHING, UG(unicode) ? HASH_USTR_L(xce->name_type, xce->name.uni.val, xce->name.uni.len) :)
 		HASH_STR_L(xce->name.str.val, xce->name.str.len);
 }
 /* }}} */
@@ -760,7 +760,12 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 		assert(b->pData);                                     \
 		memcpy(&data->name, b->pData, sizeof(datatype));      \
 		UNISW(NOTHING, data->type = b->key.type;)             \
-		data->key        = BUCKET_KEY(b);                     \
+		if (UNISW(1, b->key.type == IS_STRING)) {             \
+			ZSTR_S(data->key)      = BUCKET_KEY(b);           \
+		}                                                     \
+		else {                                                \
+			ZSTR_U(data->key)      = BUCKET_UKEY(b);          \
+		}                                                     \
 		data->key_size   = b->nKeyLength;                     \
 	}                                                         \
 } while(0)
