@@ -188,6 +188,8 @@ default:
 $type_php = XC_TYPE_PHP;
 $type_var = XC_TYPE_VAR;
 $types = array($type_none => 'Statistics', $type_php =>'List PHP', $type_var =>'List Var Data');
+$xcache_version = XCACHE_VERSION;
+$xcache_modules = XCACHE_MODULES;
 
 include("xcache.tpl.php");
 
