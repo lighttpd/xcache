@@ -43,7 +43,7 @@ Caches:
 		<th>Slots</th>
 		<th>Size</th>
 		<th>Avail</th>
-		<th>Used</th>
+		<th>%</th>
 		<th>Clear</th>
 		<th>Compiling</th>
 		<th>Hits</th>
@@ -58,18 +58,19 @@ Caches:
 	$numkeys = explode(',', 'slots,size,avail,hits,misses,clogs,ooms,cached,deleted');
 	foreach ($cacheinfos as $i => $ci) {
 		echo "
-		<tr ", $a->next(), ">";
+		<tr ", $a->next(), " height=\"20\">";
+		$pavail = (int) ($ci['avail'] / $ci['size'] * 100);
+		$pused = 100 - $pavail;
+
 		$ci = number_formats($ci, $numkeys);
 		$ci['compiling']    = $ci['type'] == $type_php ? ($ci['compiling'] ? 'yes' : 'no') : '-';
 		$ci['can_readonly'] = $ci['can_readonly'] ? 'yes' : 'no';
-
-		$percent = (int) (($ci['size'] - $ci['avail']) / $ci['size'] * 100);
 		echo <<<EOS
 		<th>{$ci['cache_name']}</th>
 		<td>{$ci['slots']}</td>
 		<td>{$ci['size']}</td>
 		<td>{$ci['avail']}</td>
-		<td><div class="percent"><div style="width: $percent%" class="v">&nbsp;</div></div></td>
+		<td title="{$pavail} %"><div class="percent"><div style="height: {$pused}%" class="pused">&nbsp;</div><div style="height: {$pavail}%" class="pavail">&nbsp;</div></div></td>
 		<td>
 			<form method="post">
 				<div>
