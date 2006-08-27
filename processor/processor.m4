@@ -18,7 +18,7 @@ dnl {{{ zend_compiled_variable
 #ifdef IS_CV
 DEF_STRUCT_P_FUNC(`zend_compiled_variable', , `
 	DISPATCH(int, name_len)
-	PROC_USTRING_L(, name, name_len)
+	PROC_ZSTRING_L(, name, name_len)
 	DISPATCH(ulong, hash_value)
 ')
 #endif
@@ -114,8 +114,8 @@ dnl {{{ zvalue_value
 #ifdef IS_UNICODE
 			case IS_UNICODE:
 proc_unicode:
-				DISPATCH(int32_t, value.ustr.len)
-				PROC_USTRING_L(1, value.ustr.val, value.ustr.len)
+				DISPATCH(int32_t, value.uni.len)
+				PROC_ZSTRING_L(1, value.uni.val, value.uni.len)
 				break;
 #endif
 
@@ -199,9 +199,9 @@ dnl {{{ zend_arg_info
 #ifdef ZEND_ENGINE_2
 DEF_STRUCT_P_FUNC(`zend_arg_info', , `
 	DISPATCH(zend_uint, name_len)
-	PROC_USTRING_L(, name, name_len)
+	PROC_ZSTRING_L(, name, name_len)
 	DISPATCH(zend_uint, class_name_len)
-	PROC_USTRING_L(, class_name, class_name_len)
+	PROC_ZSTRING_L(, class_name, class_name_len)
 	DISPATCH(zend_bool, array_type_hint)
 	DISPATCH(zend_bool, allow_null)
 	DISPATCH(zend_bool, pass_by_reference)
@@ -215,7 +215,7 @@ DEF_STRUCT_P_FUNC(`zend_constant', , `dnl {{{
 	STRUCT(zval, value)
 	DISPATCH(int, flags)
 	DISPATCH(uint, name_len)
-	PROC_STRING_L(name, name_len)
+	PROC_ZSTRING_L(, name, name_len)
 	zstr name;
 	DISPATCH(int, module_number)
 ')
@@ -247,11 +247,11 @@ dnl {{{ zend_property_info
 DEF_STRUCT_P_FUNC(`zend_property_info', , `
 	DISPATCH(zend_uint, flags)
 	DISPATCH(int, name_length)
-	PROC_USTRING_L(, name, name_length)
+	PROC_ZSTRING_L(, name, name_length)
 	DISPATCH(ulong, h)
 #ifdef ZEND_ENGINE_2_1
 	DISPATCH(int, doc_comment_len)
-	PROC_USTRING_L(, doc_comment, doc_comment_len)
+	PROC_STRING_L(doc_comment, doc_comment_len)
 #endif
 	dnl isnt in php6 yet
 #if defined(ZEND_ENGINE_2_2) && !defined(IS_UNICODE)
@@ -267,7 +267,7 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	')
 	DISPATCH(char, type)
 	DISPATCH(zend_uint, name_length)
-	PROC_USTRING_L(, name, name_length)
+	PROC_ZSTRING_L(, name, name_length)
 	IFRESTORE(`
 #ifndef ZEND_ENGINE_2
 		/* just copy parent and resolve on install_class */
@@ -343,7 +343,7 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	DISPATCH(zend_uint, line_end)
 #ifdef ZEND_ENGINE_2_1
 	DISPATCH(zend_uint, doc_comment_len)
-	PROC_USTRING_L(, doc_comment, doc_comment_len)
+	PROC_STRING_L(doc_comment, doc_comment_len)
 #endif
 	/* # NOT DONE */
 	COPY(serialize_func)
@@ -369,9 +369,6 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 # endif
 #endif
 	COPY(__call)
-#ifdef IS_UNICODE
-	SETNULL(u_twin)
-#endif
 	/* # NOT DONE */
 	COPY(module)
 #else
@@ -497,7 +494,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 
 	/* Common elements */
 	DISPATCH(zend_uchar, type)
-	PROC_USTRING(, function_name)
+	PROC_ZSTRING(, function_name)
 #ifdef ZEND_ENGINE_2
 	IFRESTORE(`
 		if (dst->scope) {
@@ -516,7 +513,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 				if (src->prototype != NULL
 				 && zend_u_hash_find(&(processor->active_class_entry_dst->parent->function_table),
 						UG(unicode) ? IS_UNICODE : IS_STRING,
-						src->function_name, strlen(src->function_name) + 1,
+						src->function_name, xc_zstrlen(UG(unicode), src->function_name) + 1,
 						(void **) &parent) == SUCCESS) {
 					/* see do_inherit_method_check() */
 					if ((parent->common.fn_flags & ZEND_ACC_ABSTRACT)) {
@@ -573,7 +570,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	DISPATCH(unsigned char, return_reference)
 	/* END of common elements */
 #ifdef IS_UNICODE
-	SETNULL(u_twin)
+	dnl SETNULL(u_twin)
 #endif
 
 	STRUCT_P(zend_uint, refcount)
@@ -631,7 +628,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	DISPATCH(zend_uint, line_start)
 	DISPATCH(zend_uint, line_end)
 	DISPATCH(int, doc_comment_len)
-	PROC_USTRING_L(, doc_comment, doc_comment_len)
+	PROC_STRING_L(doc_comment, doc_comment_len)
 #endif
 
 	/* reserved */
@@ -650,7 +647,7 @@ DEF_STRUCT_P_FUNC(`xc_constinfo_t', , `dnl {{{
 	DISPATCH(zend_uchar, type)
 #endif
 	IFRESTORE(`COPY(key)', `
-		PROC_USTRING_N(type, key, key_size)
+		PROC_ZSTRING_N(type, key, key_size)
 	')
 	STRUCT(zend_constant, constant)
 ')
@@ -662,7 +659,7 @@ DEF_STRUCT_P_FUNC(`xc_funcinfo_t', , `dnl {{{
 	DISPATCH(zend_uchar, type)
 #endif
 	IFRESTORE(`COPY(key)', `
-		PROC_USTRING_N(type, key, key_size)
+		PROC_ZSTRING_N(type, key, key_size)
 	')
 	STRUCT(zend_function, func)
 ')
@@ -673,7 +670,7 @@ DEF_STRUCT_P_FUNC(`xc_classinfo_t', , `dnl {{{
 	DISPATCH(zend_uchar, type)
 #endif
 	IFRESTORE(`COPY(key)', `
-		PROC_USTRING_N(type, key, key_size)
+		PROC_ZSTRING_N(type, key, key_size)
 	')
 #ifdef ZEND_ENGINE_2
 	STRUCT_P(zend_class_entry, cest)
@@ -764,7 +761,13 @@ DEF_STRUCT_P_FUNC(`xc_entry_t', , `
 #else
 		DISPATCH(int, name.str.len)
 #endif
-		IFRESTORE(`COPY(name.str.val)', `PROC_USTRING_L(name_type, name.str.val, name.str.len)')
+		IFRESTORE(`COPY(name.str.val)', `
+#ifdef IS_UNICODE
+			PROC_ZSTRING_L(name_type, name.uni.val, name.uni.len)
+#else
+			PROC_STRING_L(name.str.val, name.str.len)
+#endif
+		')
 	')
 	DONE(name)
 	dnl }}}

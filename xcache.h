@@ -51,8 +51,8 @@
 				? UBYTES(b->nKeyLength) \
 				: b->nKeyLength \
 				))
-#define BUCKET_KEY(b) (UNISW((b)->arKey, (b)->key.u.string))
-#define BUCKET_UKEY(b) (UNISW((b)->arKey, (b)->key.u.unicode))
+#define BUCKET_KEY(b)  (UNISW((b)->arKey, (b)->key.arKey.s))
+#define BUCKET_UKEY(b) (UNISW((b)->arKey, (b)->key.arKey.u))
 #define BUCKET_KEY_TYPE(b) (UNISW(0, (b)->key.type))
 #ifdef IS_UNICODE
 #	define BUCKET_HEAD_SIZE(b) XtOffsetOf(Bucket, key)
@@ -63,13 +63,28 @@
 
 #ifndef IS_UNICODE
 typedef char *zstr;
-#	define ZSTR_S(s) (s)
-#	define ZSTR_U(s) (s)
-#	define ZSTR_V(s) (s)
+#	define ZSTR_S(s)     (s)
+#	define ZSTR_U(s)     (s)
+#	define ZSTR_V(s)     (s)
+#	define ZSTR_PS(s)    (s)
+#	define ZSTR_PU(s)    (s)
+#	define ZSTR_PV(s)    (s)
 #else
-#	define ZSTR_S(s) ((s)->s)
-#	define ZSTR_U(s) ((s)->u)
-#	define ZSTR_V(s) ((s)->v)
+#	define ZSTR_S(zs)    ((zs).s)
+#	define ZSTR_U(zs)    ((zs).u)
+#	define ZSTR_V(zs)    ((zs).v)
+#	define ZSTR_PS(pzs)  ((pzs)->s)
+#	define ZSTR_PU(pzs)  ((pzs)->u)
+#	define ZSTR_PV(pzs)  ((pzs)->v)
+#endif
+
+#ifndef ZSTR
+#	define ZSTR(s)      (s)
+#endif
+
+#ifndef Z_UNIVAL
+#	define Z_UNIVAL(zval) (zval).value.str.val
+#	define Z_UNILEN(zval) (zval).value.str.len
 #endif
 
 /* {{{ u hash wrapper */
@@ -148,7 +163,7 @@ typedef struct {
 #ifdef IS_UNICODE
 	zend_uchar type;
 #endif
-	char *key;
+	zstr      key;
 	zend_uint key_size;
 	xc_cest_t cest;
 } xc_classinfo_t;
@@ -159,7 +174,7 @@ typedef struct {
 #ifdef IS_UNICODE
 	zend_uchar type;
 #endif
-	char *key;
+	zstr      key;
 	zend_uint key_size;
 	zend_constant constant;
 } xc_constinfo_t;
@@ -170,7 +185,7 @@ typedef struct {
 #ifdef IS_UNICODE
 	zend_uchar type;
 #endif
-	char *key;
+	zstr      key;
 	zend_uint key_size;
 	zend_function func;
 } xc_funcinfo_t;

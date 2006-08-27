@@ -265,7 +265,7 @@ int xc_undo_fix_opcode(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 #endif
 
 #ifdef HAVE_XCACHE_CONSTANT
-void xc_install_constant(char *filename, zend_constant *constant, zend_uchar type, void *key, uint len TSRMLS_DC) /* {{{ */
+void xc_install_constant(char *filename, zend_constant *constant, zend_uchar type, zstr key, uint len TSRMLS_DC) /* {{{ */
 {
 	if (zend_u_hash_add(EG(zend_constants), type, key, len,
 				constant, sizeof(zend_constant),
@@ -274,8 +274,12 @@ void xc_install_constant(char *filename, zend_constant *constant, zend_uchar typ
 		CG(in_compilation) = 1;
 		CG(compiled_filename) = filename;
 		CG(zend_lineno) = 0;
+#ifdef IS_UNICODE
+		zend_error(E_NOTICE, "Constant %R already defined", type, key);
+#else
 		zend_error(E_NOTICE, "Constant %s already defined", key);
-		free(constant->name);
+#endif
+		free(ZSTR_V(constant->name));
 		if (!(constant->flags & CONST_PERSISTENT)) {
 			zval_dtor(&constant->value);
 		}
@@ -283,10 +287,17 @@ void xc_install_constant(char *filename, zend_constant *constant, zend_uchar typ
 }
 /* }}} */
 #endif
-void xc_install_function(char *filename, zend_function *func, zend_uchar type, void *key, uint len TSRMLS_DC) /* {{{ */
+void xc_install_function(char *filename, zend_function *func, zend_uchar type, zstr key, uint len TSRMLS_DC) /* {{{ */
 {
+	zend_bool istmpkey;
+
 	if (func->type == ZEND_USER_FUNCTION) {
-		if (*(char *) key == '\0') {
+#ifdef IS_UNICODE
+		istmpkey = (type == IS_STRING && ZSTR_S(key)[0] == 0) || ZSTR_U(key)[0] == 0;
+#else
+		istmpkey = ZSTR_S(key)[0] == 0;
+#endif
+		if (istmpkey) {
 			zend_u_hash_update(CG(function_table), type, key, len,
 						func, sizeof(zend_op_array),
 						NULL
@@ -299,17 +310,27 @@ void xc_install_function(char *filename, zend_function *func, zend_uchar type, v
 			CG(in_compilation) = 1;
 			CG(compiled_filename) = filename;
 			CG(zend_lineno) = ZESW(func->op_array.opcodes[0].lineno, func->op_array.line_start);
+#ifdef IS_UNICODE
+			zend_error(E_ERROR, "Cannot redeclare %R()", type, key);
+#else
 			zend_error(E_ERROR, "Cannot redeclare %s()", key);
+#endif
 		}
 	}
 }
 /* }}} */
-ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, zend_uchar type, void *key, uint len TSRMLS_DC) /* {{{ */
+ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, zend_uchar type, zstr key, uint len TSRMLS_DC) /* {{{ */
 {
+	zend_bool istmpkey;
 	zend_class_entry *cep = CestToCePtr(*cest);
 	ZESW(void *stored_ce_ptr, NOTHING);
 
-	if (*(char *) key == '\0') {
+#ifdef IS_UNICODE
+	istmpkey = (type == IS_STRING && ZSTR_S(key)[0] == 0) || ZSTR_U(key)[0] == 0;
+#else
+	istmpkey = ZSTR_S(key)[0] == 0;
+#endif
+	if (istmpkey) {
 		zend_u_hash_update(CG(class_table), type, key, len,
 					cest, sizeof(xc_cest_t),
 					ZESW(&stored_ce_ptr, NULL)
@@ -322,7 +343,11 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, zend_u
 		CG(in_compilation) = 1;
 		CG(compiled_filename) = filename;
 		CG(zend_lineno) = ZESW(0, cep->line_start);
-		zend_error(E_ERROR, "Cannot redeclare class %s", (char *) cep->name);
+#ifdef IS_UNICODE
+		zend_error(E_ERROR, "Cannot redeclare class %R", type, cep->name);
+#else
+		zend_error(E_ERROR, "Cannot redeclare class %s", cep->name);
+#endif
 	}
 	ZESW(return (xc_cest_t *) stored_ce_ptr, NOTHING);
 }
@@ -337,7 +362,15 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, zend_u
 #ifdef HAVE_XCACHE_CONSTANT
 static void xc_constant_copy_ctor(zend_constant *c) /* {{{ */
 {
-	c->name = zend_strndup(c->name, c->name_len - 1);
+#ifdef IS_UNICODE
+	if (UG(unicode)) {
+		ZSTR_U(c->name) = zend_ustrndup(ZSTR_U(c->name), c->name_len - 1);
+	}
+	else
+#endif
+	{
+		ZSTR_S(c->name) = zend_strndup(ZSTR_S(c->name), c->name_len - 1);
+	}
 	if (!(c->flags & CONST_PERSISTENT)) {
 		zval_copy_ctor(&c->value);
 	}
@@ -400,7 +433,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 	while (b != NULL) {
 		zend_constant *c = (zend_constant*) b->pData;
 		xc_install_constant(sandbox->filename, c,
-				BUCKET_KEY_TYPE(b), BUCKET_KEY(b), b->nKeyLength TSRMLS_CC);
+				BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY(b)), b->nKeyLength TSRMLS_CC);
 		b = b->pListNext;
 	}
 #endif
@@ -410,7 +443,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 	while (b != NULL) {
 		zend_function *func = (zend_function*) b->pData;
 		xc_install_function(sandbox->filename, func,
-				BUCKET_KEY_TYPE(b), BUCKET_KEY(b), b->nKeyLength TSRMLS_CC);
+				BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY(b)), b->nKeyLength TSRMLS_CC);
 		b = b->pListNext;
 	}
 
@@ -418,7 +451,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 	/* install class */
 	while (b != NULL) {
 		xc_install_class(sandbox->filename, (xc_cest_t*)b->pData,
-				BUCKET_KEY_TYPE(b), BUCKET_KEY(b), b->nKeyLength TSRMLS_CC);
+				BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY(b)), b->nKeyLength TSRMLS_CC);
 		b = b->pListNext;
 	}
 

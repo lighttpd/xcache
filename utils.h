@@ -26,10 +26,10 @@ zend_uchar xc_get_fixed_opcode(zend_uchar opcode, int line);
 
 /* installer */
 #ifdef HAVE_XCACHE_CONSTANT
-void xc_install_constant(char *filename, zend_constant *constant, zend_uchar type, void *key, uint len TSRMLS_DC);
+void xc_install_constant(char *filename, zend_constant *constant, zend_uchar type, zstr key, uint len TSRMLS_DC);
 #endif
-void xc_install_function(char *filename, zend_function *func, zend_uchar type, void *key, uint len TSRMLS_DC);
-ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, zend_uchar type, void *key, uint len TSRMLS_DC);
+void xc_install_function(char *filename, zend_function *func, zend_uchar type, zstr key, uint len TSRMLS_DC);
+ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, zend_uchar type, zstr key, uint len TSRMLS_DC);
 
 /* sandbox */
 typedef struct {
