@@ -55,7 +55,7 @@ Caches:
 		<th>Deleted</th>
 	</tr>
 	<?php
-	$numkeys = explode(',', 'slots,size,avail,hits,misses,clogs,ooms,cached,deleted');
+	$numkeys = explode(',', 'hits,misses,clogs,ooms,cached,deleted');
 	foreach ($cacheinfos as $i => $ci) {
 		echo "
 		<tr ", $a->next(), " height=\"20\">";
@@ -63,6 +63,9 @@ Caches:
 		$pused = 100 - $pavail;
 
 		$ci = number_formats($ci, $numkeys);
+		$ci['slots'] = size($ci['slots']);
+		$ci['size']  = size($ci['size']);
+		$ci['avail'] = size($ci['avail']);
 		$ci['compiling']    = $ci['type'] == $type_php ? ($ci['compiling'] ? 'yes' : 'no') : '-';
 		$ci['can_readonly'] = $ci['can_readonly'] ? 'yes' : 'no';
 		echo <<<EOS
@@ -105,8 +108,8 @@ foreach ($cacheinfos as $i => $ci) {
 		<th><?php echo $ci['cache_name']; ?> size<br>offset</th>
 	<?php
 	foreach ($ci['free_blocks'] as $block) {
-		$size   = number_format($block['size']);
-		$offset = number_format($block['offset']);
+		$size   = size($block['size']);
+		$offset = size($block['offset']);
 
 		$c = $b->next();
 		echo "
