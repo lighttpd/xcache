@@ -10,11 +10,11 @@ HEAD;
 ?>
 
 	<link rel="stylesheet" type="text/css" href="xcache.css" />
-	<title>XCache Administration</title>
+	<title>XCache <?php echo $xcache_version; ?> Administration</title>
 </head>
 
 <body>
-<h1>XCache Administration</h1>
+<h1>XCache <?php echo $xcache_version; ?> Administration</h1>
 <a href="help.php" target="_blank" id="help">Help &raquo;</a>
 <span class="switcher"><?php echo switcher("type", $types); ?></span>
 <?php
@@ -236,5 +236,12 @@ ENTRY;
 	}
 }
 ?>
+<div class="footnote">
+<?php echo <<<EOS
+Powered By: {$xcache_version}, {$xcache_modules}
+EOS;
+?>
+</div>
+
 </body>
 </html>
