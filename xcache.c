@@ -1190,6 +1190,9 @@ static int xcache_admin_auth_check(TSRMLS_D) /* {{{ */
 		zend_bailout();
 	}
 
+#ifdef ZEND_ENGINE_2_1
+	zend_is_auto_global("_SERVER", sizeof("_SERVER") - 1);
+#endif
 	if (zend_hash_find(&EG(symbol_table), "_SERVER", sizeof("_SERVER"), (void **) &server) != SUCCESS || Z_TYPE_PP(server) != IS_ARRAY) {
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "_SERVER is corrupted");
 		zend_bailout();
