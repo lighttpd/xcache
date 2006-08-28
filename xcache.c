@@ -1117,6 +1117,23 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 #ifdef HAVE_XCACHE_COVERAGER
 	xc_coverager_request_init(TSRMLS_C);
 #endif
+#if defined(SUHOSIN_PATCH) && SUHOSIN_PATCH && defined(ZEND_ENGINE_2)
+	{
+		static zend_bool suhosin_trick_done = 0;
+		if (!suhosin_trick_done) {
+			zend_class_entry *tmpclass = emalloc(sizeof(zend_class_entry));
+
+			suhosin_trick_done = 1;
+			tmpclass->type = ZEND_USER_CLASS;
+			tmpclass->name = emalloc(5);
+			tmpclass->name_length = 4;
+			memcpy(tmpclass->name, "test", tmpclass->name_length);
+
+			zend_initialize_class_data(tmpclass, 1 TSRMLS_CC);
+			destroy_zend_class(&tmpclass);
+		}
+	}
+#endif
 }
 /* }}} */
 static void xc_request_shutdown(TSRMLS_D) /* {{{ */
