@@ -241,22 +241,28 @@ void *xc_mem_calloc(xc_mem_t *mem, xc_memsize_t memb, xc_memsize_t size) /* {{{ 
 	xc_memsize_t realsize = memb * size;
 	void *p = xc_mem_malloc(mem, realsize);
 
-	memset(p, 0, realsize);
+	if (p) {
+		memset(p, 0, realsize);
+	}
 	return p;
 }
 /* }}} */
 void *xc_mem_realloc(xc_mem_t *mem, const void *p, xc_memsize_t size) /* {{{ */
 {
 	void *newp = xc_mem_malloc(mem, size);
-	memcpy(newp, p, size);
-	xc_mem_free(mem, p);
+	if (p) {
+		memcpy(newp, p, size);
+		xc_mem_free(mem, p);
+	}
 	return newp;
 }
 /* }}} */
 char *xc_mem_strndup(xc_mem_t *mem, const char *str, xc_memsize_t len) /* {{{ */
 {
 	void *p = xc_mem_malloc(mem, len + 1);
-	memcpy(p, str, len + 1);
+	if (p) {
+		memcpy(p, str, len + 1);
+	}
 	return p;
 }
 /* }}} */
