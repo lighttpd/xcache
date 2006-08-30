@@ -164,15 +164,16 @@ case XC_TYPE_VAR:
 		$inodes = array();
 		$haveinode = false;
 		foreach ($cachelist['cache_list'] as $e) {
-			if (!isset($e['inode'])) {
-				break;
+			if (isset($e['inode'])) {
+				$haveinode = true;
 			}
-			$haveinode = true;
-			$i = &$inodes[$e['inode']];
-			if (isset($i) && $i == 1) {
-				trigger_error("duplicate inode $e[inode]");
+		}
+		if (!$haveinode) {
+			foreach ($cachelist['deleted_list'] as $e) {
+				if (isset($e['inode'])) {
+					$haveinode = true;
+				}
 			}
-			$i ++;
 		}
 	}
 	unset($data);

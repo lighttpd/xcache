@@ -156,6 +156,9 @@ typedef struct {
 	xc_entry_t *deletes;
 	int deletes_count;
 	xc_hash_t  *hentry; /* hash to entry */
+
+	time_t     last_gc_deletes;
+	time_t     last_gc_expires;
 } xc_cache_t;
 /* }}} */
 /* {{{ xc_classinfo_t */
@@ -217,7 +220,6 @@ typedef struct {
 /* {{{ xc_entry_data_var_t */
 typedef struct {
 	zval   *value;
-	time_t etime;
 } xc_entry_data_var_t;
 /* }}} */
 typedef zvalue_value xc_entry_name_t;
@@ -234,6 +236,7 @@ struct _xc_entry_t {
 	time_t     ctime;           /* the ctime of this entry */
 	time_t     atime;           /* the atime of this entry */
 	time_t     dtime;           /* the deletion time of this entry */
+	long       ttl;             /* ttl of time entry, var only */
 
 #ifdef IS_UNICODE
 	zend_uchar name_type;

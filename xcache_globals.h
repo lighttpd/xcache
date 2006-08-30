@@ -11,6 +11,7 @@ ZEND_BEGIN_MODULE_GLOBALS(xcache)
 	xc_stack_t *php_holds;
 	xc_stack_t *var_holds;
 	time_t request_time;
+	long   var_default_ttl;
 ZEND_END_MODULE_GLOBALS(xcache)
 
 ZEND_EXTERN_MODULE_GLOBALS(xcache)

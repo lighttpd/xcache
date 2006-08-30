@@ -711,7 +711,6 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 ')
 dnl }}}
 DEF_STRUCT_P_FUNC(`xc_entry_data_var_t', , `dnl {{{
-	DISPATCH(time_t, etime)
 	IFSTORE(`
 		if (processor->reference) {
 			if (zend_hash_add(&processor->zvalptrs, (char *)&src->value, sizeof(&src->value), (void*)&src->value, sizeof(src->value), NULL) == SUCCESS) {
@@ -745,6 +744,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_t', , `
 	DISPATCH(time_t, ctime)
 	DISPATCH(time_t, atime)
 	DISPATCH(time_t, dtime)
+	DISPATCH(long, ttl)
 	DISPATCH(zend_ulong, hits)
 #ifdef IS_UNICODE
 	DISPATCH(zend_uchar, name_type)
