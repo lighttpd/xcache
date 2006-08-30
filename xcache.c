@@ -261,7 +261,9 @@ static void xc_entry_apply_dmz(xc_cache_t *cache, cache_apply_dmz_func_t apply_f
  */
 static XC_ENTRY_APPLY_FUNC(xc_gc_php_entry_expires_dmz) /* {{{ */
 {
+#ifdef DEBUG
 	fprintf(stderr, "ttl %d, %d %d\n", XG(request_time), entry->atime, xc_php_ttl);
+#endif
 	if (XG(request_time) > entry->atime + xc_php_ttl) {
 		return 1;
 	}
@@ -278,7 +280,9 @@ static XC_ENTRY_APPLY_FUNC(xc_gc_var_entry_expires_dmz) /* {{{ */
 /* }}} */
 static void xc_gc_expires_one(xc_cache_t *cache, zend_ulong gc_interval, cache_apply_dmz_func_t apply_func TSRMLS_DC) /* {{{ */
 {
+#ifdef DEBUG
 	fprintf(stderr, "interval %d, %d %d\n", XG(request_time), cache->last_gc_expires, gc_interval);
+#endif
 	if (XG(request_time) - cache->last_gc_expires > gc_interval) {
 		ENTER_LOCK(cache) {
 			if (XG(request_time) - cache->last_gc_expires > gc_interval) {
