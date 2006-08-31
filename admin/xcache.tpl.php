@@ -53,6 +53,7 @@ Caches:
 		<th>Protected</th>
 		<th>Cached</th>
 		<th>Deleted</th>
+		<th>GC</th>
 	</tr>
 	<?php
 	$numkeys = explode(',', 'hits,misses,clogs,ooms,cached,deleted');
@@ -91,6 +92,7 @@ Caches:
 		<td>{$ci['can_readonly']}</td>
 		<td>{$ci['cached']}</td>
 		<td>{$ci['deleted']}</td>
+		<td>{$ci['gc']}</td>
 EOS;
 
 			$b->reset();

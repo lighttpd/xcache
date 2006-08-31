@@ -367,7 +367,7 @@ static void xc_gc_deletes(TSRMLS_D) /* {{{ */
 /* }}} */
 
 /* helper functions for user functions */
-static void xc_fillinfo_dmz(xc_cache_t *cache, zval *return_value TSRMLS_DC) /* {{{ */
+static void xc_fillinfo_dmz(int cachetype, xc_cache_t *cache, zval *return_value TSRMLS_DC) /* {{{ */
 {
 	zval *blocks;
 	const xc_block_t *b;
@@ -375,6 +375,7 @@ static void xc_fillinfo_dmz(xc_cache_t *cache, zval *return_value TSRMLS_DC) /* 
 	xc_memsize_t avail = 0;
 #endif
 	xc_mem_t *mem = cache->mem;
+	zend_ulong interval = cachetype = XC_TYPE_PHP ? xc_php_gc_interval : xc_var_gc_interval;
 
 	add_assoc_long_ex(return_value, ZEND_STRS("slots"),     cache->hentry->size);
 	add_assoc_long_ex(return_value, ZEND_STRS("compiling"), cache->compiling);
@@ -385,6 +386,12 @@ static void xc_fillinfo_dmz(xc_cache_t *cache, zval *return_value TSRMLS_DC) /* 
 
 	add_assoc_long_ex(return_value, ZEND_STRS("cached"),    cache->entries_count);
 	add_assoc_long_ex(return_value, ZEND_STRS("deleted"),   cache->deletes_count);
+	if (interval) {
+		add_assoc_long_ex(return_value, ZEND_STRS("gc"),    (cache->last_gc_expires + interval) - XG(request_time));
+	}
+	else {
+		add_assoc_null_ex(return_value, ZEND_STRS("gc"));
+	}
 
 	MAKE_STD_ZVAL(blocks);
 	array_init(blocks);
@@ -1434,7 +1441,7 @@ static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAME
 			cache = caches[id];
 			ENTER_LOCK(cache) {
 				if (optype == XC_OP_INFO) {
-					xc_fillinfo_dmz(cache, return_value TSRMLS_CC);
+					xc_fillinfo_dmz(type, cache, return_value TSRMLS_CC);
 				}
 				else {
 					xc_filllist_dmz(cache, return_value TSRMLS_CC);
