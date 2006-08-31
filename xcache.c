@@ -938,6 +938,8 @@ err_bailout:
 		zend_bailout();
 	}
 	if (xc_test && stored_xce) {
+		destroy_op_array(op_array TSRMLS_CC);
+		efree(op_array);
 		goto restore;
 	}
 	return op_array;
@@ -1064,8 +1066,8 @@ static int xc_init_constant(int module_number TSRMLS_DC) /* {{{ */
 	zend_register_long_constant(ZEND_STRS("XC_SIZEOF_TEMP_VARIABLE"), sizeof(temp_variable), CONST_CS | CONST_PERSISTENT, module_number TSRMLS_CC);
 	zend_register_long_constant(ZEND_STRS("XC_TYPE_PHP"), XC_TYPE_PHP, CONST_CS | CONST_PERSISTENT, module_number TSRMLS_CC);
 	zend_register_long_constant(ZEND_STRS("XC_TYPE_VAR"), XC_TYPE_VAR, CONST_CS | CONST_PERSISTENT, module_number TSRMLS_CC);
-	zend_register_stringl_constant(ZEND_STRS("XCACHE_VERSION"), ZEND_STRS(XCACHE_VERSION), CONST_CS | CONST_PERSISTENT, module_number TSRMLS_CC);
-	zend_register_stringl_constant(ZEND_STRS("XCACHE_MODULES"), ZEND_STRS(XCACHE_MODULES), CONST_CS | CONST_PERSISTENT, module_number TSRMLS_CC);
+	zend_register_stringl_constant(ZEND_STRS("XCACHE_VERSION"), ZEND_STRL(XCACHE_VERSION), CONST_CS | CONST_PERSISTENT, module_number TSRMLS_CC);
+	zend_register_stringl_constant(ZEND_STRS("XCACHE_MODULES"), ZEND_STRL(XCACHE_MODULES), CONST_CS | CONST_PERSISTENT, module_number TSRMLS_CC);
 	return 0;
 }
 /* }}} */

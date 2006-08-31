@@ -152,6 +152,7 @@ xc_shm_t *xc_shm_init(const char *path, xc_shmsize_t size, zend_bool readonly_pr
 	int ro_ok;
 	volatile void *romem;
 	char tmpname[sizeof(TMP_PATH) - 1 + 100];
+	const char *errstr = NULL;
 
 	CHECK(shm = calloc(1, sizeof(xc_shm_t)), "shm OOM");
 	shm->size = size;
@@ -177,11 +178,15 @@ xc_shm_t *xc_shm_init(const char *path, xc_shmsize_t size, zend_bool readonly_pr
 	if (fd == -1) {
 		/* do not create file in /dev */
 		if (strncmp(shm->name, "/dev", 4) == 0) {
+			perror(shm->name);
+			errstr = "Cannot open file set by xcache.mmap_path";
 			goto err;
 		}
 		fd = open(shm->name, O_CREAT | O_RDWR, XCACHE_MMAP_PERMISSION);
 		shm->newfile = 1;
 		if (fd == -1) {
+			perror(shm->name);
+			errstr = "Cannot open or create file set by xcache.mmap_path";
 			goto err;
 		}
 	}
@@ -196,6 +201,8 @@ xc_shm_t *xc_shm_init(const char *path, xc_shmsize_t size, zend_bool readonly_pr
 #endif
 
 	if (shm->ptr == XCACHE_MAP_FAILED) {
+		perror(shm->name);
+		errstr = "Failed creating file mappping";
 		shm->ptr = NULL;
 		goto err;
 	}
@@ -266,6 +273,10 @@ err:
 	}
 	if (shm) {
 		xc_shm_destroy(shm);
+	}
+	if (errstr) {
+		fprintf(stderr, "%s\n", errstr);
+		zend_error(E_ERROR, "%s", errstr);
 	}
 	return NULL;
 }
