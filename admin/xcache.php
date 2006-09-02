@@ -1,7 +1,6 @@
 <?php
 
-error_reporting(E_ALL);
-define('REQUEST_TIME', time());
+include("./common.php");
 
 class Cycle
 {
@@ -81,12 +80,6 @@ function switcher($name, $options)
 		$html[] = sprintf('<a href="?%s=%s"%s>%s</a>', $name, $k, $k == $n ? 'class="active"' : '', $v);
 	}
 	return implode(' ', $html);
-}
-
-$charset = "UTF-8";
-
-if (file_exists("config.php")) {
-	include("config.php");
 }
 
 $pcnt = xcache_count(XC_TYPE_PHP);
@@ -188,7 +181,7 @@ default:
 
 $type_php = XC_TYPE_PHP;
 $type_var = XC_TYPE_VAR;
-$types = array($type_none => 'Statistics', $type_php =>'List PHP', $type_var =>'List Var Data');
+$types = array($type_none => _T('Statistics'), $type_php => _T('List PHP'), $type_var => _T('List Var Data'));
 $xcache_version = XCACHE_VERSION;
 $xcache_modules = XCACHE_MODULES;
 

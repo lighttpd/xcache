@@ -1,0 +1,102 @@
+<?php
+
+$strings = array(
+		'Cache Legends'
+		=> 'Cache 帮助',
+		'List Legends'
+		=> 'List 帮助',
+		'XCache Administration Help'
+		=> 'XCache 管理页面帮助信息',
+		'Help'
+		=> '帮助',
+		'Slots'
+		=> '槽',
+		'Size'
+		=> '大小',
+		'Avail'
+		=> '剩余',
+		'Used'
+		=> '已用',
+		'Clear'
+		=> '清除',
+		'Sure to clear?'
+		=> '确认要清除吗?',
+		'Compiling'
+		=> '编译中',
+		'%'
+		=> '%',
+		'Hits'
+		=> '命中',
+		'Misses'
+		=> '错过',
+		'Clogs'
+		=> '阻塞',
+		'OOMs'
+		=> '内存不足',
+		'Protected'
+		=> '保护',
+		'Cached'
+		=> '缓存',
+		'Deleted'
+		=> '待删',
+		'Delete'
+		=> '删除',
+		'Free Blocks'
+		=> '空闲块',
+
+		'entry'
+		=> '项目',
+		'Refcount'
+		=> '引用数',
+		'SrcSize'
+		=> '源大小',
+		'Modify'
+		=> '修改',
+		'device'
+		=> '设备',
+		'inode'
+		=> 'Inode',
+		'Access'
+		=> '访问',
+		'Create'
+		=> '创建',
+		'See also'
+		=> '建议参考',
+		'GC'
+		=> 'GC',
+		'Cache'
+		=> '缓冲区',
+		'Caches'
+		=> '缓冲区',
+		'Cached'
+		=> '缓冲',
+		'php Cached'
+		=> '缓冲的 php 脚本',
+		'php Deleted'
+		=> '待删 php 脚本',
+		'var Cached'
+		=> '缓冲的变量',
+		'var Deleted'
+		=> '待删变量',
+		'Statistics'
+		=> '摘要统计',
+		'List PHP'
+		=> '列出PHP',
+		'List Var Data'
+		=> '列变量数据',
+		'XCache %s Administration'
+		=> 'XCache %s 管理页面',
+		'size'
+		=> '大小',
+		'offset'
+		=> '位置',
+		''
+		=> '',
+		''
+		=> '',
+		''
+		=> '',
+		''
+		=> '',
+		);
+

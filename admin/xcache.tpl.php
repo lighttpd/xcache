@@ -10,18 +10,18 @@ HEAD;
 ?>
 
 	<link rel="stylesheet" type="text/css" href="xcache.css" />
-	<title>XCache <?php echo $xcache_version; ?> Administration</title>
+	<title><?php echo sprintf(_T("XCache %s Administration"), $xcache_version); ?></title>
 </head>
 
 <body>
-<h1>XCache <?php echo $xcache_version; ?> Administration</h1>
-<a href="help.php" target="_blank" id="help">Help &raquo;</a>
+<h1><?php echo sprintf(_T("XCache %s Administration"), $xcache_version); ?></h1>
+<a href="help.php" target="_blank" id="help"><?php echo _T("Help") ?> &raquo;</a>
 <span class="switcher"><?php echo switcher("type", $types); ?></span>
 <?php
 $a = new Cycle('class="col1"', 'class="col2"');
 $b = new Cycle('class="col1"', 'class="col2"');
 ?>
-Caches:
+<?php echo _T('Caches'); ?>:
 <table cellspacing="0" cellpadding="4" class="cycles">
 	<col />
 	<col align="right" />
@@ -40,23 +40,25 @@ Caches:
 	<col />
 	<tr <?php echo $a->next(); ?>>
 		<th>-</th>
-		<th>Slots</th>
-		<th>Size</th>
-		<th>Avail</th>
-		<th>%</th>
-		<th>Clear</th>
-		<th>Compiling</th>
-		<th>Hits</th>
-		<th>Misses</th>
-		<th>Clogs</th>
-		<th>OOMs</th>
-		<th>Protected</th>
-		<th>Cached</th>
-		<th>Deleted</th>
-		<th>GC</th>
+		<th><?php echo _T('Slots'); ?></th>
+		<th><?php echo _T('Size'); ?></th>
+		<th><?php echo _T('Avail'); ?></th>
+		<th><?php echo _T('%'); ?></th>
+		<th><?php echo _T('Clear'); ?></th>
+		<th><?php echo _T('Compiling'); ?></th>
+		<th><?php echo _T('Hits'); ?></th>
+		<th><?php echo _T('Misses'); ?></th>
+		<th><?php echo _T('Clogs'); ?></th>
+		<th><?php echo _T('OOMs'); ?></th>
+		<th><?php echo _T('Protected'); ?></th>
+		<th><?php echo _T('Cached'); ?></th>
+		<th><?php echo _T('Deleted'); ?></th>
+		<th><?php echo _T('GC'); ?></th>
 	</tr>
 	<?php
 	$numkeys = explode(',', 'hits,misses,clogs,ooms,cached,deleted');
+	$l_clear = _T('Clear');
+	$l_clear_confirm = _T('Sure to clear?');
 	foreach ($cacheinfos as $i => $ci) {
 		echo "
 		<tr ", $a->next(), " height=\"20\">";
@@ -80,7 +82,7 @@ Caches:
 				<div>
 					<input type="hidden" name="type" value="{$ci['type']}">
 					<input type="hidden" name="cacheid" value="{$ci['cacheid']}">
-					<input type="submit" name="clearcache" value="Clear" class="submit" onclick="return confirm('Sure to clear?');" />
+					<input type="submit" name="clearcache" value="{$l_clear}" class="submit" onclick="return confirm('{$l_clear_confirm}');" />
 				</div>
 			</form>
 		</td>
@@ -100,14 +102,14 @@ EOS;
 	</tr>
 	<?php } ?>
 </table>
-Free Blocks:
+<?php echo _T('Free Blocks'); ?>:
 <?php
 foreach ($cacheinfos as $i => $ci) {
 	$b->reset();
 ?>
 <table cellspacing="0" cellpadding="4" class="cycles freeblocks">
 	<tr>
-		<th><?php echo $ci['cache_name']; ?> size<br>offset</th>
+		<th><?php echo $ci['cache_name']; ?> <?php echo _T("size"); ?><br><?php echo _T("offset"); ?></th>
 	<?php
 	foreach ($ci['free_blocks'] as $block) {
 		$size   = size($block['size']);
@@ -135,7 +137,7 @@ if ($cachelist) {
 	foreach (array('Cached' => $cachelist['cache_list'], 'Deleted' => $cachelist['deleted_list']) as $listname => $entries) {
 		$a->reset();
 		echo "
-		<caption>{$cachelist['type_name']} $listname</caption>";
+		<caption>", _T("{$cachelist['type_name']} $listname"), "</caption>";
 		?>
 
 	<table cellspacing="0" cellpadding="4" class="cycles entrys" width="100%">
@@ -161,23 +163,23 @@ if ($cachelist) {
 		<tr ", $a->next(), ">";
 		?>
 
-			<th><a href="javascript:" onclick="resort(this); return false">Cache</a></th>
-			<th><a href="javascript:" onclick="resort(this); return false">entry</a></th>
-			<th><a href="javascript:" onclick="resort(this); return false">Hits</a></th>
-			<th><a href="javascript:" onclick="resort(this); return false">Ref count</a></th>
-			<th><a href="javascript:" onclick="resort(this); return false">Size</a></th>
+			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Cache'); ?></a></th>
+			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('entry'); ?></a></th>
+			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Hits'); ?></a></th>
+			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Refcount'); ?></a></th>
+			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Size'); ?></a></th>
 			<?php if ($isphp) { ?>
-			<th><a href="javascript:" onclick="resort(this); return false">SrcSize</a></th>
-			<th><a href="javascript:" onclick="resort(this); return false">Modify</a></th>
+			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('SrcSize'); ?></a></th>
+			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Modify'); ?></a></th>
 			<?php if ($haveinode) { ?>
-			<th><a href="javascript:" onclick="resort(this); return false">device</a></th>
-			<th><a href="javascript:" onclick="resort(this); return false">inode</a></th>
+			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('device'); ?></a></th>
+			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('inode'); ?></a></th>
 			<?php } ?>
 			<?php } ?>
-			<th><a href="javascript:" onclick="resort(this); return false">Access</a></th>
-			<th><a href="javascript:" onclick="resort(this); return false">Create</a></th>
+			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Access'); ?></a></th>
+			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Create'); ?></a></th>
 			<?php if ($listname == 'Deleted') { ?>
-			<th><a href="javascript:" onclick="resort(this); return false">Delete</a></th>
+			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Delete'); ?></a></th>
 			<?php } ?>
 		</tr>
 		<?php
@@ -244,7 +246,7 @@ ENTRY;
 ?>
 <div class="footnote">
 <?php echo <<<EOS
-Powered By: {$xcache_version}, {$xcache_modules}
+Powered By: XCache {$xcache_version}, {$xcache_modules}
 EOS;
 ?>
 </div>
