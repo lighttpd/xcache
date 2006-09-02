@@ -216,7 +216,6 @@ DEF_STRUCT_P_FUNC(`zend_constant', , `dnl {{{
 	DISPATCH(int, flags)
 	DISPATCH(uint, name_len)
 	PROC_ZSTRING_L(, name, name_len)
-	zstr name;
 	DISPATCH(int, module_number)
 ')
 dnl }}}
