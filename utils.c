@@ -359,24 +359,6 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, zend_u
 #define TG(x) (sandbox->tmp_##x)
 #define OG(x) (sandbox->orig_##x)
 /* }}} */
-#ifdef HAVE_XCACHE_CONSTANT
-static void xc_constant_copy_ctor(zend_constant *c) /* {{{ */
-{
-#ifdef IS_UNICODE
-	if (UG(unicode)) {
-		ZSTR_U(c->name) = zend_ustrndup(ZSTR_U(c->name), c->name_len - 1);
-	}
-	else
-#endif
-	{
-		ZSTR_S(c->name) = zend_strndup(ZSTR_S(c->name), c->name_len - 1);
-	}
-	if (!(c->flags & CONST_PERSISTENT)) {
-		zval_copy_ctor(&c->value);
-	}
-}
-/* }}} */
-#endif
 xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /* {{{ */
 {
 	if (sandbox) {
