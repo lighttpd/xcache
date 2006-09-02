@@ -256,10 +256,10 @@ static void xc_entry_apply_dmz(xc_cache_t *cache, cache_apply_dmz_func_t apply_f
 
 #define XC_CACHE_APPLY_FUNC(name) void name(xc_cache_t *cache TSRMLS_DC)
 /* call graph:
- * xc_php_gc_expires -> xc_gc_expires_var_one -> xc_entry_apply_dmz -> xc_gc_php_entry_expires_dmz
- * xc_var_gc_expires -> xc_gc_expires_one -> xc_entry_apply_dmz -> xc_gc_var_entry_expires_dmz
+ * xc_gc_expires_php -> xc_gc_expires_one -> xc_entry_apply_dmz -> xc_gc_expires_php_entry_dmz
+ * xc_gc_expires_var -> xc_gc_expires_one -> xc_entry_apply_dmz -> xc_gc_expires_var_entry_dmz
  */
-static XC_ENTRY_APPLY_FUNC(xc_gc_php_entry_expires_dmz) /* {{{ */
+static XC_ENTRY_APPLY_FUNC(xc_gc_expires_php_entry_dmz) /* {{{ */
 {
 #ifdef DEBUG
 	fprintf(stderr, "ttl %d, %d %d\n", XG(request_time), entry->atime, xc_php_ttl);
@@ -270,7 +270,7 @@ static XC_ENTRY_APPLY_FUNC(xc_gc_php_entry_expires_dmz) /* {{{ */
 	return 0;
 }
 /* }}} */
-static XC_ENTRY_APPLY_FUNC(xc_gc_var_entry_expires_dmz) /* {{{ */
+static XC_ENTRY_APPLY_FUNC(xc_gc_expires_var_entry_dmz) /* {{{ */
 {
 	if (VAR_ENTRY_EXPIRED(entry)) {
 		return 1;
@@ -293,7 +293,7 @@ static void xc_gc_expires_one(xc_cache_t *cache, zend_ulong gc_interval, cache_a
 	}
 }
 /* }}} */
-static void xc_php_gc_expires(TSRMLS_D) /* {{{ */
+static void xc_gc_expires_php(TSRMLS_D) /* {{{ */
 {
 	int i, c;
 
@@ -302,11 +302,11 @@ static void xc_php_gc_expires(TSRMLS_D) /* {{{ */
 	}
 
 	for (i = 0, c = xc_php_hcache.size; i < c; i ++) {
-		xc_gc_expires_one(xc_php_caches[i], xc_php_gc_interval, xc_gc_php_entry_expires_dmz TSRMLS_CC);
+		xc_gc_expires_one(xc_php_caches[i], xc_php_gc_interval, xc_gc_expires_php_entry_dmz TSRMLS_CC);
 	}
 }
 /* }}} */
-static void xc_var_gc_expires(TSRMLS_D) /* {{{ */
+static void xc_gc_expires_var(TSRMLS_D) /* {{{ */
 {
 	int i, c;
 
@@ -315,7 +315,7 @@ static void xc_var_gc_expires(TSRMLS_D) /* {{{ */
 	}
 
 	for (i = 0, c = xc_var_hcache.size; i < c; i ++) {
-		xc_gc_expires_one(xc_var_caches[i], xc_var_gc_interval, xc_gc_var_entry_expires_dmz TSRMLS_CC);
+		xc_gc_expires_one(xc_var_caches[i], xc_var_gc_interval, xc_gc_expires_var_entry_dmz TSRMLS_CC);
 	}
 }
 /* }}} */
@@ -1261,8 +1261,8 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 static void xc_request_shutdown(TSRMLS_D) /* {{{ */
 {
 	xc_entry_unholds(TSRMLS_C);
-	xc_php_gc_expires(TSRMLS_C);
-	xc_var_gc_expires(TSRMLS_C);
+	xc_gc_expires_php(TSRMLS_C);
+	xc_gc_expires_var(TSRMLS_C);
 	xc_gc_deletes(TSRMLS_C);
 #ifdef HAVE_XCACHE_COVERAGER
 	xc_coverager_request_shutdown(TSRMLS_C);
