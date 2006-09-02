@@ -18,3 +18,6 @@ form {margin: 0; padding: 0}
 .switcher a.active { font-weight: bold; font-size: 130%; color: black; }
 #help { display: block; float: right; }
 .footnote { text-align: right; font-size: 12px; }
+dl { overflow: hidden; }
+dt { font-weight: bold; clear: both; float: left; width: 100px; text-align: right; margin: 0; }
+dd { margin: 0; }
