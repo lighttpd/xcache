@@ -954,7 +954,11 @@ err_bailout:
 		zend_bailout();
 	}
 	if (xc_test && stored_xce) {
+#ifdef ZEND_ENGINE_2
 		destroy_op_array(op_array TSRMLS_CC);
+#else
+		destroy_op_array(op_array);
+#endif
 		efree(op_array);
 		h = NULL;
 		goto restore;
