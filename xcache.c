@@ -283,9 +283,9 @@ static void xc_gc_expires_one(xc_cache_t *cache, zend_ulong gc_interval, cache_a
 #ifdef DEBUG
 	fprintf(stderr, "interval %d, %d %d\n", XG(request_time), cache->last_gc_expires, gc_interval);
 #endif
-	if (XG(request_time) - cache->last_gc_expires > gc_interval) {
+	if (XG(request_time) - cache->last_gc_expires >= gc_interval) {
 		ENTER_LOCK(cache) {
-			if (XG(request_time) - cache->last_gc_expires > gc_interval) {
+			if (XG(request_time) - cache->last_gc_expires >= gc_interval) {
 				cache->last_gc_expires = XG(request_time);
 				xc_entry_apply_dmz(cache, apply_func TSRMLS_CC);
 			}
@@ -375,7 +375,7 @@ static void xc_fillinfo_dmz(int cachetype, xc_cache_t *cache, zval *return_value
 	xc_memsize_t avail = 0;
 #endif
 	xc_mem_t *mem = cache->mem;
-	zend_ulong interval = cachetype = XC_TYPE_PHP ? xc_php_gc_interval : xc_var_gc_interval;
+	zend_ulong interval = (cachetype == XC_TYPE_PHP) ? xc_php_gc_interval : xc_var_gc_interval;
 
 	add_assoc_long_ex(return_value, ZEND_STRS("slots"),     cache->hentry->size);
 	add_assoc_long_ex(return_value, ZEND_STRS("compiling"), cache->compiling);
