@@ -32,12 +32,14 @@ function get_language_file($name)
 			$l = strtok($l, ';');
 			$file = get_language_file_ex($name, $l, $s);
 			if (isset($file)) {
+				$lang = $l;
 				break;
 			}
 			if (strpos($l, '-') !== false) {
-				$l = strtok($l, '-');
-				$file = get_language_file_ex($name, $l, $s);
+				$ll = strtok($l, '-');
+				$file = get_language_file_ex($name, $ll, $s);
 				if (isset($file)) {
+					$lang = $l;
 					break;
 				}
 			}
@@ -66,5 +68,8 @@ if (file_exists("./config.php")) {
 }
 
 include(get_language_file("common"));
+if (!isset($lang)) {
+	$lang = 'en-us';
+}
 
 ?>

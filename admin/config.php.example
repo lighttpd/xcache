@@ -16,6 +16,8 @@ $show_todo_strings = false;
 function ob_filter_path_nicer($o)
 {
 	$o = str_replace($_SERVER['DOCUMENT_ROOT'],  "{DOCROOT}/", $o);
+	$xcachedir = realpath(dirname(__FILE__) . "/../");
+	$o = str_replace($xcachedir . "/", "{XCache}/", $o);
 	$o = str_replace("/home/", "{H}/", $o);
 	return $o;
 }
