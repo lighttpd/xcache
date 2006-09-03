@@ -42,18 +42,28 @@
 #define CHECK(x, e) do { if ((x) == NULL) { zend_error(E_ERROR, "XCache: " e); goto err; } } while (0)
 #define LOCK(x) xc_lock(x->lck)
 #define UNLOCK(x) xc_unlock(x->lck)
-#define ENTER_LOCK(x) do { \
-	int catched = 0; \
+
+#define ENTER_LOCK_EX(x) \
 	xc_lock(x->lck); \
 	zend_try { \
 		do
-#define LEAVE_LOCK(x) \
+#define LEAVE_LOCK_EX(x) \
 		while (0); \
 	} zend_catch { \
 		catched = 1; \
 	} zend_end_try(); \
-	xc_unlock(x->lck); \
+	xc_unlock(x->lck)
+
+#define ENTER_LOCK(x) do { \
+	int catched = 0; \
+	ENTER_LOCK_EX(x)
+#define LEAVE_LOCK(x) \
+	LEAVE_LOCK_EX(x); \
+	if (catched) { \
+		zend_bailout(); \
+	} \
 } while(0)
+
 /* }}} */
 
 /* {{{ globals */
@@ -762,7 +772,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 
 	stored_xce = NULL;
 	op_array = NULL;
-	ENTER_LOCK(cache) {
+	ENTER_LOCK_EX(cache) {
 		/* clogged */
 		if (cache->compiling) {
 			cache->clogs ++;
@@ -784,7 +794,12 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 
 		cache->compiling = XG(request_time);
 		cache->misses ++;
-	} LEAVE_LOCK(cache);
+	} LEAVE_LOCK_EX(cache);
+
+	if (catched) {
+		cache->compiling = 0;
+		zend_bailout();
+	}
 
 	/* found */
 	if (stored_xce) {
@@ -898,9 +913,9 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 		/* for ZE1, cest need to fix inside store */
 	}
 	/* }}} */
-	ENTER_LOCK(cache) { /* {{{ store/add entry */
+	ENTER_LOCK_EX(cache) { /* {{{ store/add entry */
 		stored_xce = xc_entry_store_dmz(&xce TSRMLS_CC);
-	} LEAVE_LOCK(cache);
+	} LEAVE_LOCK_EX(cache);
 	/* }}} */
 #ifdef DEBUG
 	fprintf(stderr, "stored\n");
