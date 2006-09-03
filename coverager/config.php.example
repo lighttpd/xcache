@@ -1,8 +1,16 @@
 <?php
 
-// should be named as config.php
+// this is an example only
+// write your own config and name it as config.php
+
+// detected by browser
+// $lang = 'en-us';
 
 $charset = "UTF-8";
+
+// developers only
+$show_todo_strings = false;
+
 // $include_paths = array("/www/my-php-project/");
 // $exclude_paths = array("/www/my-php-project/tmp/");
 $syntaxhiglight = true;
@@ -12,8 +20,37 @@ $usecache = false;
 
 function ob_filter_path_nicer($o)
 {
+	$o = str_replace($_SERVER['DOCUMENT_ROOT'],  "{DOCROOT}/", $o);
+	$xcachedir = realpath(dirname(__FILE__) . "/../");
+	$o = str_replace($xcachedir . "/", "{XCache}/", $o);
 	$o = str_replace("/home/", "{H}/", $o);
 	return $o;
 }
+
+// implement your auth here if needed
+// {{{ home made login example
+// this is an example only, it's won't work for you without your implemention.
+function check_admin_auth()
+{
+	require("/path/to/user-login-and-permission-lib.php");
+	session_start();
+
+	if (!user_logined()) {
+		if (!ask_the_user_to_login()) {
+			exit;
+		}
+	}
+
+	user_load_permissions();
+	if (!user_is_admin()) {
+		die("Permission denied");
+	}
+
+	return true;
+}
+
+// uncomment:
+// check_admin_auth()
+// }}}
 
 ?>

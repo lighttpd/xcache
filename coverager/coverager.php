@@ -1,7 +1,6 @@
 <?php
 
-error_reporting(E_ALL);
-define('REQUEST_TIME', time());
+include("./common.php");
 
 class Cycle
 {
@@ -40,20 +39,25 @@ class XcacheCoverageViewer
 	var $include_paths = array();
 	var $exclude_paths = array();
 	var $charset = 'UTF-8';
+	var $lang = 'en-us';
+	var $datadir = null;
+	var $datadir_len = null;
+	var $path = null;
+	var $outpath = null;
 
 	function XcacheCoverageViewer()
 	{
 		$this->datadir = ini_get('xcache.coveragedump_directory');
 
 		// copy config
-		foreach (array('charset', 'include_paths', 'exclude_paths', 'syntaxhiglight', 'usecache', 'datadir') as $k) {
-			if (isset($GLOBALS['usecache'])) {
-				$this->{$k} = $GLOBALS['usecache'];
+		foreach (array('charset', 'include_paths', 'exclude_paths', 'syntaxhiglight', 'usecache', 'datadir', 'lang') as $k) {
+			if (isset($GLOBALS[$k])) {
+				$this->{$k} = $GLOBALS[$k];
 			}
 		}
 
 		$this->datadir = preg_replace('!/$!', '', $this->datadir);
-		$this->datadir_len =  strlen($this->datadir);
+		$this->datadir_len = strlen($this->datadir);
 
 		$this->path = isset($_GET['path']) ? $_GET['path'] : '';
 		$this->path = preg_replace('!\.{2,}!', '.', $this->path);
@@ -124,6 +128,7 @@ class XcacheCoverageViewer
 			$action = "no data";
 		}
 
+		$xcache_version = XCACHE_VERSION;
 		include("coverager.tpl.php");
 	}
 
@@ -301,10 +306,6 @@ function sprint_cov($cov, $lines, $encode = true)
 		}
 	}
 	return implode('', $lines);
-}
-
-if (file_exists("config.php")) {
-	include("config.php");
 }
 
 $app = new XcacheCoverageViewer();

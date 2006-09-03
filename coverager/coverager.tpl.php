@@ -5,14 +5,16 @@
 <?php
 echo <<<HEAD
 	<meta http-equiv="Content-Type" content="text/html; charset=$this->charset" />
+	<meta http-equiv="Content-Language" content="{$this->lang}" />
 	<script type="text/javascript" src="tablesort.js" charset="$this->charset"></script>
 HEAD;
 ?>
 
 	<link rel="stylesheet" type="text/css" href="coverager.css" />
-	<title>XCache Coverage Viewer</title>
+	<title><?php echo _T("XCache PHP Code Coverage Viewer"); ?></title>
 </head>
 <body>
+<h1><?php echo _T("XCache PHP Code Coverage Viewer"); ?></h1>
 
 <?php
 function calc_percent($info, &$percent, &$class)
@@ -48,10 +50,15 @@ function dir_head()
 {
 	global $cycle;
 	$cycle = new Cycle('class="col1"', 'class="col2"');
+	$l_dir = _T("Directory");
+	$l_per = _T("Percent");
+	$l_hit = _T("Hits");
+	$l_lns = _T("Lines");
+	$l_tds = _T("TODO");
 	return <<<EOS
 	<table align="center" cellpadding="2" cellspacing="1" border="0" class="cycles">
 	<tr>
-		<th>Directory</th><th>Percent</th><th>Hits</th><th>Lines</th><th>TODO</th>
+		<th>{$l_dir}</th><th>{$l_per}</th><th>{$l_hit}</th><th>{$l_lns}</th><th>{$l_tds}</th>
 	</tr>
 EOS;
 }
@@ -104,11 +111,15 @@ function file_head()
 {
 	global $cycle;
 	$cycle = new Cycle('class="col1"', 'class="col2"');
+	$l_fil = _T("File");
+	$l_per = _T("Percent");
+	$l_hit = _T("Hits");
+	$l_lns = _T("Lines");
 	return <<<EOS
 	<br>
 	<table align="center" cellpadding="2" cellspacing="1" border="0" class="cycles">
 	<tr>
-		<th>File</th><th>Percent</th><th>Hits</th><th>Lines</th>
+		<th>{$l_fil}</th><th>{$l_per}</th><th>{$l_hit}</th><th>{$l_lns}</th>
 	</tr>
 EOS;
 }
@@ -153,10 +164,14 @@ function file_foot()
 EOS;
 }
 
+$l_root = _T("root");
 if ($action == 'dir') {
+	if (function_exists('ob_filter_path_nicer')) {
+		ob_start('ob_filter_path_nicer');
+	}
 	$path_html = htmlspecialchars($path);
 	echo <<<EOS
-	<a href="?">root</a> $path<br />
+	<a href="?">$l_root</a> $path<br />
 EOS;
 	echo dir_head($dirinfo);
 	echo dir_row($dirinfo, $path);
@@ -177,10 +192,13 @@ EOS;
 	}
 }
 else if ($action == 'file') {
+	if (function_exists('ob_filter_path_nicer')) {
+		ob_start('ob_filter_path_nicer');
+	}
 	$dir_url = urlencode($dir);
 	$dir_html = htmlspecialchars($dir);
 	echo <<<EOS
-	<a href="?">root</a> <a href="?path={$dir_url}">{$dir_html}</a>/<b>{$filename}</b><br />
+	<a href="?">$l_root</a> <a href="?path={$dir_url}">{$dir_html}</a>/<b>{$filename}</b><br />
 EOS;
 
 	echo file_head();
@@ -192,6 +210,9 @@ EOS;
 		echo <<<EOS
 		<a href="#tpl">{$tplfile_html}</a><br />
 EOS;
+	}
+	if (function_exists('ob_filter_path_nicer')) {
+		ob_end_flush();
 	}
 	echo <<<EOS
 	<pre class="code"><ol>{$filecov}</ol></pre>
@@ -207,6 +228,10 @@ else {
 	echo htmlspecialchars($action);
 }
 ?>
+
+<div class="footnote">
+Powered By: XCache <?php echo $xcache_version; ?> coverager <?php echo _T("module"); ?>
+</div>
 
 </body>
 </html>
