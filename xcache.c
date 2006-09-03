@@ -1621,7 +1621,7 @@ PHP_FUNCTION(xcache_isset)
 	ENTER_LOCK(xce.cache) {
 		stored_xce = xc_entry_find_dmz(&xce TSRMLS_CC);
 		if (stored_xce) {
-			if (VAR_ENTRY_EXPIRED(stored_xce)) {
+			if (!VAR_ENTRY_EXPIRED(stored_xce)) {
 				RETVAL_TRUE;
 				/* return */
 				break;
