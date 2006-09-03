@@ -370,7 +370,6 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 	}
 
 	memcpy(&OG(included_files), &EG(included_files), sizeof(EG(included_files)));
-	memcpy(&OG(open_files), &CG(open_files), sizeof(CG(open_files)));
 
 #ifdef HAVE_XCACHE_CONSTANT
 	OG(zend_constants) = EG(zend_constants);
@@ -387,9 +386,7 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 	EG(class_table) = CG(class_table);
 
 	TG(included_files) = &EG(included_files);
-	TG(open_files)     = &CG(open_files);
 
-	zend_llist_init(TG(open_files), sizeof(zend_file_handle), (void (*)(void *)) zend_file_handle_dtor, 0);
 	zend_hash_init_ex(TG(included_files), 5, NULL, NULL, 0, 1);
 #ifdef HAVE_XCACHE_CONSTANT
 	zend_hash_init_ex(&TG(zend_constants), 20, NULL, ZEND_CONSTANT_DTOR, 1, 0);
@@ -439,11 +436,6 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 
 	i = 1;
 	zend_hash_add(&OG(included_files), sandbox->filename, strlen(sandbox->filename) + 1, (void *)&i, sizeof(int), NULL);
-	for (handle = zend_llist_get_first_ex(TG(open_files), &lpos);
-			handle;
-			handle = zend_llist_get_next_ex(TG(open_files), &lpos)) {
-		zend_llist_add_element(&OG(open_files), handle);
-	}
 }
 /* }}} */
 void xc_sandbox_free(xc_sandbox_t *sandbox, int install TSRMLS_DC) /* {{{ */
@@ -465,7 +457,6 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, int install TSRMLS_DC) /* {{{ */
 #endif
 		TG(function_table).pDestructor = NULL;
 		TG(class_table).pDestructor = NULL;
-		TG(open_files)->dtor = NULL;
 	}
 
 	/* destroy all the tmp */
@@ -475,11 +466,9 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, int install TSRMLS_DC) /* {{{ */
 	zend_hash_destroy(&TG(function_table));
 	zend_hash_destroy(&TG(class_table));
 	zend_hash_destroy(TG(included_files));
-	zend_llist_destroy(TG(open_files));
 
 	/* restore orig here, as EG/CG holded tmp before */
 	memcpy(&EG(included_files), &OG(included_files), sizeof(EG(included_files)));
-	memcpy(&CG(open_files),     &OG(open_files),     sizeof(CG(open_files)));
 
 	if (sandbox->alloc) {
 		efree(sandbox);

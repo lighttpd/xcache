@@ -558,7 +558,9 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 
 	i = 1;
 	zend_hash_add(&EG(included_files), xce->name.str.val, xce->name.str.len+1, (void *)&i, sizeof(int), NULL);
-	zend_llist_add_element(&CG(open_files), h);
+	if (h) {
+		zend_llist_add_element(&CG(open_files), h);
+	}
 
 #ifndef ZEND_ENGINE_2
 	free_alloca(new_cest_ptrs);
@@ -938,9 +940,8 @@ err_oparray:
 err_bailout:
 
 	if (xc_test && stored_xce) {
-		/* no install, keep open_files too for h */
+		/* free it, no install. restore now */
 		xc_sandbox_free(&sandbox, 0 TSRMLS_CC);
-		sandbox.tmp_open_files->dtor = NULL;
 	}
 	else {
 		xc_sandbox_free(&sandbox, 1 TSRMLS_CC);
@@ -955,6 +956,7 @@ err_bailout:
 	if (xc_test && stored_xce) {
 		destroy_op_array(op_array TSRMLS_CC);
 		efree(op_array);
+		h = NULL;
 		goto restore;
 	}
 	return op_array;

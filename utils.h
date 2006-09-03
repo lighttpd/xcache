@@ -37,9 +37,7 @@ typedef struct {
 	char *filename;
 
 	HashTable orig_included_files;
-	zend_llist orig_open_files;
 	HashTable *tmp_included_files;
-	zend_llist *tmp_open_files;
 
 #ifdef HAVE_XCACHE_CONSTANT
 	HashTable *orig_zend_constants;
