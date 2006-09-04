@@ -82,6 +82,19 @@ function switcher($name, $options)
 	return implode(' ', $html);
 }
 
+if (!extension_loaded('XCache')) {
+	echo '<h1>XCache is not loaded</h1>';
+	ob_start();
+	phpinfo();
+	$info = ob_get_clean();
+	if (preg_match('!<td class="v">(.*\\.ini)!', $info, $m)) {
+		echo "Please check $m[1]";
+	}
+	else {
+		echo "You don't even have a php.in yet?";
+	}
+	exit;
+}
 $pcnt = xcache_count(XC_TYPE_PHP);
 $vcnt = xcache_count(XC_TYPE_VAR);
 
