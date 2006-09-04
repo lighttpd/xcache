@@ -25,7 +25,12 @@ function get_language_file($name)
 	global $charset, $lang;
 	$s = strtolower($charset);
 	if (isset($lang)) {
-		$file = get_language_file_ex($name, strtolower($lang), $s);
+		$l = strtolower($lang);
+		$file = get_language_file_ex($name, $l, $s);
+		if (!isset($file)) {
+			$l = strtok($l, '-');
+			$file = get_language_file_ex($name, $l, $s);
+		}
 	}
 	else if (!empty($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
 		foreach (explode(',', str_replace(' ', '', $_SERVER['HTTP_ACCEPT_LANGUAGE'])) as $l) {
