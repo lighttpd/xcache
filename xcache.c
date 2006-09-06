@@ -202,7 +202,7 @@ static void xc_entry_remove_dmz(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 		if (xc_entry_equal_dmz(xce, p)) {
 			/* unlink */
 			*pp = p->next;
-			xc_entry_free_dmz(xce, pp TSRMLS_CC);
+			xc_entry_free_dmz(xce TSRMLS_CC);
 			return;
 		}
 	}
@@ -258,7 +258,7 @@ static void xc_entry_apply_dmz(xc_cache_t *cache, cache_apply_dmz_func_t apply_f
 			if (apply_func(p TSRMLS_CC)) {
 				/* unlink */
 				*pp = p->next;
-				xc_entry_free_dmz(p, pp TSRMLS_CC);
+				xc_entry_free_dmz(p TSRMLS_CC);
 			}
 			else {
 				pp = &(p->next);
