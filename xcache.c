@@ -230,6 +230,9 @@ static xc_entry_t *xc_entry_find_dmz(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 /* }}} */
 static void xc_entry_hold_php_dmz(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 {
+#ifdef DEBUG
+	fprintf(stderr, "hold %s\n", ZSTR_S(xce->name));
+#endif
 	xce->refcount ++;
 	xc_stack_push(&XG(php_holds)[xce->cache->cacheid], (void *)xce);
 }
@@ -584,11 +587,17 @@ static inline void xc_entry_unholds_real(xc_stack_t *holds, xc_cache_t **caches,
 
 	for (i = 0; i < cachecount; i ++) {
 		s = &holds[i];
+#ifdef DEBUG
+		fprintf(stderr, "holded %d\n", xc_stack_size(s));
+#endif
 		if (xc_stack_size(s)) {
 			cache = ((xc_entry_t *)xc_stack_top(s))->cache;
 			ENTER_LOCK(cache) {
-				while (xc_stack_size(holds)) {
-					xce = (xc_entry_t*) xc_stack_pop(holds);
+				while (xc_stack_size(s)) {
+					xce = (xc_entry_t*) xc_stack_pop(s);
+#ifdef DEBUG
+					fprintf(stderr, "unhold %s\n", ZSTR_S(xce->name));
+#endif
 					xce->refcount --;
 					assert(xce->refcount >= 0);
 				}
