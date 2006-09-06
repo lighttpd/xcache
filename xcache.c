@@ -426,7 +426,7 @@ static void xc_fillinfo_dmz(int cachetype, xc_cache_t *cache, zval *return_value
 		add_assoc_long_ex(bi, ZEND_STRS("offset"), xc_mem_block_offset(mem, b));
 		add_next_index_zval(blocks, bi);
 #ifndef NDEBUG
-		avail += b->size;
+		avail += xc_mem_block_size(b);
 #endif
 	}
 	add_assoc_zval_ex(return_value, ZEND_STRS("free_blocks"), blocks);
