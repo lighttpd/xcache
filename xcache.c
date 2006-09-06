@@ -356,6 +356,7 @@ static XC_CACHE_APPLY_FUNC(xc_gc_deletes_one) /* {{{ */
 	if (cache->deletes && XG(request_time) - cache->last_gc_deletes > xc_deletes_gc_interval) {
 		ENTER_LOCK(cache) {
 			if (cache->deletes && XG(request_time) - cache->last_gc_deletes > xc_deletes_gc_interval) {
+				cache->last_gc_deletes = XG(request_time);
 				xc_gc_delete_dmz(cache TSRMLS_CC);
 			}
 		} LEAVE_LOCK(cache);
