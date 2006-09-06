@@ -148,7 +148,7 @@ static inline int xc_entry_equal_dmz(xc_entry_t *a, xc_entry_t *b) /* {{{ */
 	return 0;
 }
 /* }}} */
-static void xc_entry_free_dmz(volatile xc_entry_t *xce) /* {{{ */
+static void xc_entry_free_real_dmz(volatile xc_entry_t *xce) /* {{{ */
 {
 	xc_mem_free(xce->cache->mem, (xc_entry_t *)xce);
 }
@@ -179,12 +179,11 @@ static xc_entry_t *xc_entry_store_dmz(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 	}
 }
 /* }}} */
-static void xc_entry_remove_real_dmz(xc_entry_t *xce, xc_entry_t **pp TSRMLS_DC) /* {{{ */
+static void xc_entry_free_dmz(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 {
-	*pp = xce->next;
 	xce->cache->entries_count --;
 	if (xce->refcount == 0) {
-		xc_entry_free_dmz(xce);
+		xc_entry_free_real_dmz(xce);
 	}
 	else {
 		xce->next = xce->cache->deletes;
@@ -201,7 +200,9 @@ static void xc_entry_remove_dmz(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 	xc_entry_t *p;
 	for (p = *pp; p; pp = &(p->next), p = p->next) {
 		if (xc_entry_equal_dmz(xce, p)) {
-			xc_entry_remove_real_dmz(xce, pp TSRMLS_CC);
+			/* unlink */
+			*pp = p->next;
+			xc_entry_free_dmz(xce, pp TSRMLS_CC);
 			return;
 		}
 	}
@@ -248,13 +249,16 @@ typedef XC_ENTRY_APPLY_FUNC((*cache_apply_dmz_func_t));
 static void xc_entry_apply_dmz(xc_cache_t *cache, cache_apply_dmz_func_t apply_func TSRMLS_DC) /* {{{ */
 {
 	xc_entry_t *p, **pp;
+	xc_entry_t *next;
 	int i, c;
 
 	for (i = 0, c = cache->hentry->size; i < c; i ++) {
 		pp = &(cache->entries[i]);
-		for (p = *pp; p; p = p->next) {
+		for (p = *pp; p; p = *pp) {
 			if (apply_func(p TSRMLS_CC)) {
-				xc_entry_remove_real_dmz(p, pp TSRMLS_CC);
+				/* unlink */
+				*pp = p->next;
+				xc_entry_free_dmz(p, pp TSRMLS_CC);
 			}
 			else {
 				pp = &(p->next);
@@ -341,9 +345,10 @@ static XC_CACHE_APPLY_FUNC(xc_gc_delete_dmz) /* {{{ */
 			/* issue warning here */
 		}
 		if (p->refcount == 0) {
+			/* unlink */
 			*pp = p->next;
 			cache->deletes_count --;
-			xc_entry_free_dmz(p);
+			xc_entry_free_real_dmz(p);
 		}
 		else {
 			pp = &(p->next);
