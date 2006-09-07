@@ -91,7 +91,7 @@ if (!extension_loaded('XCache')) {
 		echo "Please check $m[1]";
 	}
 	else {
-		echo "You don't even have a php.in yet?";
+		echo "You don't even have a php.ini yet?";
 	}
 	exit;
 }
