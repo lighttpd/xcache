@@ -342,7 +342,7 @@ static XC_CACHE_APPLY_FUNC(xc_gc_delete_dmz) /* {{{ */
 	xc_entry_t *p, **pp;
 
 	pp = &cache->deletes;
-	for (p = *pp; p; p = p->next) {
+	for (p = *pp; p; p = *pp) {
 		if (XG(request_time) - p->dtime > 3600) {
 			p->refcount = 0;
 			/* issue warning here */
@@ -1488,7 +1488,7 @@ static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAME
 			break;
 		case XC_OP_CLEAR:
 			{
-				xc_entry_t *e;
+				xc_entry_t *e, *next;
 				int i, c;
 
 				if (id < 0 || id >= size) {
@@ -1499,7 +1499,8 @@ static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAME
 				cache = caches[id];
 				ENTER_LOCK(cache) {
 					for (i = 0, c = cache->hentry->size; i < c; i ++) {
-						for (e = cache->entries[i]; e; e = e->next) {
+						for (e = cache->entries[i]; e; e = next) {
+							next = e->next;
 							xc_entry_remove_dmz(e TSRMLS_CC);
 						}
 						cache->entries[i] = NULL;
