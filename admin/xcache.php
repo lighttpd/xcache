@@ -40,16 +40,16 @@ function number_formats($a, $keys)
 	return $a;
 }
 
-function size($size, $suffix = '', $precision = 2)
+function size($size)
 {
 	$size = (int) $size;
 	if ($size < 1024)
-		return number_format($size, $precision) . ' ' . $suffix;
+		return number_format($size, 2) . ' b';
 
 	if ($size < 1048576)
-		return number_format($size / 1024, $precision) . ' K' . $suffix;
+		return number_format($size / 1024, 2) . ' K';
 
-	return number_format($size / 1048576, $precision) . ' M' . $suffix;
+	return number_format($size / 1048576, 2) . ' M';
 }
 
 function age($time)
