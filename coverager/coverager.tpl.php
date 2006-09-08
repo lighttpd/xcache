@@ -56,7 +56,7 @@ function dir_head()
 	$l_lns = _T("Lines");
 	$l_tds = _T("TODO");
 	return <<<EOS
-	<table align="center" cellpadding="2" cellspacing="1" border="0" class="cycles">
+	<table align="center" cellpadding="2" cellspacing="0" border="0" class="cycles">
 	<tr>
 		<th>{$l_dir}</th><th>{$l_per}</th><th>{$l_hit}</th><th>{$l_lns}</th><th>{$l_tds}</th>
 	</tr>
@@ -117,7 +117,7 @@ function file_head()
 	$l_lns = _T("Lines");
 	return <<<EOS
 	<br>
-	<table align="center" cellpadding="2" cellspacing="1" border="0" class="cycles">
+	<table align="center" cellpadding="2" cellspacing="0" border="0" class="cycles">
 	<tr>
 		<th>{$l_fil}</th><th>{$l_per}</th><th>{$l_hit}</th><th>{$l_lns}</th>
 	</tr>
