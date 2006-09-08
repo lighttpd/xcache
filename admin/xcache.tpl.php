@@ -199,7 +199,9 @@ if ($cachelist) {
 			}
 			$ctime = age($entry['ctime']);
 			$atime = age($entry['atime']);
-			$dtime = age($entry['dtime']);
+			if ($listname == 'Deleted') {
+				$dtime = age($entry['dtime']);
+			}
 
 			echo <<<ENTRY
 			<td>{$entry['cache_name']} {$i}</td>
