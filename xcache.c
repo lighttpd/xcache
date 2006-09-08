@@ -1809,7 +1809,7 @@ PHP_FUNCTION(xcache_asm)
 PHP_FUNCTION(xcache_dasm_file)
 {
 	char *filename;
-	long filename_len;
+	int filename_len;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &filename, &filename_len) == FAILURE) {
 		return;
@@ -1970,7 +1970,7 @@ PHP_FUNCTION(xcache_coredump)
 PHP_FUNCTION(xcache_is_autoglobal)
 {
 	char *name;
-	long name_len;
+	int name_len;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &name, &name_len) == FAILURE) {
 		return;
