@@ -90,8 +90,8 @@ $strings = array(
 		=> '大小',
 		'offset'
 		=> '位置',
-		''
-		=> '',
+		'Module Info'
+		=> '模块信息',
 		''
 		=> '',
 		''
