@@ -245,6 +245,13 @@ ENTRY;
 		ob_end_flush();
 	}
 }
+if ($moduleinfo) {
+	$t_moduleinfo = _T("Module Info");
+	echo <<<HTML
+<h2>$t_moduleinfo</h2>
+<div class="moduleinfo">$moduleinfo</div>
+HTML;
+}
 ?>
 <div class="footnote">
 <?php echo <<<EOS

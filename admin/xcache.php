@@ -98,6 +98,7 @@ if (!extension_loaded('XCache')) {
 $pcnt = xcache_count(XC_TYPE_PHP);
 $vcnt = xcache_count(XC_TYPE_VAR);
 
+$moduleinfo = null;
 $type_none = -1;
 if (!isset($_GET['type'])) {
 	$_GET['type'] = $type_none;
@@ -188,6 +189,15 @@ case XC_TYPE_VAR:
 default:
 	$_GET['type'] = $type_none;
 	$cachelist = array();
+	ob_start();
+	phpinfo(INFO_MODULES);
+	$moduleinfo = ob_get_clean();
+	if (preg_match('!XCache</a></h2>(.*?)<h2><a name="module_!is', $moduleinfo, $m)) {
+		$moduleinfo = $m[1];
+	}
+	else {
+		$moduleinfo = null;
+	}
 	break;
 }
 // }}}
