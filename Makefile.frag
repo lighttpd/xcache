@@ -31,8 +31,8 @@ processor.lo: $(XCACHE_PROC_C) $(XCACHE_PROC_H) $(srcdir)/processor.c
 $(builddir)/disassembler.lo: $(XCACHE_PROC_H) $(srcdir)/processor.c
 disassembler.lo: $(XCACHE_PROC_H) $(srcdir)/processor.c
 
-$(builddir)/xcache.lo: $(XCACHE_PROC_H) $(srcdir)/myshm.h $(srcdir)/stack.h $(srcdir)/xcache_globals.h $(srcdir)/xcache.c $(srcdir)/foreachcoresig.h
-xcache.lo: $(XCACHE_PROC_H) $(srcdir)/myshm.h $(srcdir)/stack.h $(srcdir)/xcache_globals.h $(srcdir)/xcache.c $(srcdir)/foreachcoresig.h
+$(builddir)/xcache.lo: $(XCACHE_PROC_H) $(srcdir)/xc_shm.h $(srcdir)/stack.h $(srcdir)/xcache_globals.h $(srcdir)/xcache.c $(srcdir)/foreachcoresig.h
+xcache.lo: $(XCACHE_PROC_H) $(srcdir)/xc_shm.h $(srcdir)/stack.h $(srcdir)/xcache_globals.h $(srcdir)/xcache.c $(srcdir)/foreachcoresig.h
 
 xcachesvnclean: clean
 	cat $(srcdir)/.cvsignore | grep -v Makefile | xargs rm -f

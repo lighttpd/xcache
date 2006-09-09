@@ -403,8 +403,6 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 {
 	int i;
 	Bucket *b;
-	zend_llist_position lpos;
-	zend_file_handle *handle;
 
 #ifdef HAVE_XCACHE_CONSTANT
 	b = TG(zend_constants).pListHead;

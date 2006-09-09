@@ -287,7 +287,7 @@ xc_entry_t *xc_processor_store_xc_entry_t(xc_entry_t *src TSRMLS_DC) {
 		}
 
 		/* mem :) */
-		processor.p = (char *)xc_mem_malloc(src->cache->mem, processor.size);
+		processor.p = (char *) src->cache->mem->handlers->malloc(src->cache->mem, processor.size);
 		if (processor.p == NULL) {
 			dst = NULL;
 			goto err_alloc;

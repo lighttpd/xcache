@@ -15,8 +15,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "myshm.h"
-#include "mem.h"
+#include "xc_shm.h"
 #include "lock.h"
 
 #ifndef ZEND_WIN32
