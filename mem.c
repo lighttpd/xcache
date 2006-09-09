@@ -8,7 +8,9 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include "mem.h"
+#define XC_SHM_IMPL
+#define XC_MEM_IMPL
+#include "xc_shm.h"
 #include "align.h"
 
 #ifdef TEST
@@ -36,6 +38,8 @@ struct _xc_block_t {
 };
 
 struct _xc_mem_t {
+	const xc_mem_handlers_t *handlers;
+	xc_shm_t                *shm;
 	xc_memsize_t size;
 	xc_memsize_t avail;       /* total free */
 	xc_block_t headblock[1];  /* just as a pointer to first block*/
@@ -74,7 +78,7 @@ static void xc_block_check(xc_block_t *b) /* {{{ */
 #endif
 
 
-void *xc_mem_malloc(xc_mem_t *mem, xc_memsize_t size) /* {{{ */
+static XC_MEM_MALLOC(xc_mem_malloc) /* {{{ */
 {
 	xc_block_t *prev, *cur;
 	xc_block_t *newb, *b;
@@ -182,7 +186,7 @@ void *xc_mem_malloc(xc_mem_t *mem, xc_memsize_t size) /* {{{ */
 	return p;
 }
 /* }}} */
-int xc_mem_free(xc_mem_t *mem, const void *p) /* {{{ return block size freed */
+static XC_MEM_FREE(xc_mem_free) /* {{{ return block size freed */
 {
 	xc_block_t *cur, *b;
 	int size;
@@ -236,7 +240,7 @@ int xc_mem_free(xc_mem_t *mem, const void *p) /* {{{ return block size freed */
 	return size;
 }
 /* }}} */
-void *xc_mem_calloc(xc_mem_t *mem, xc_memsize_t memb, xc_memsize_t size) /* {{{ */
+static XC_MEM_CALLOC(xc_mem_calloc) /* {{{ */
 {
 	xc_memsize_t realsize = memb * size;
 	void *p = xc_mem_malloc(mem, realsize);
@@ -247,7 +251,7 @@ void *xc_mem_calloc(xc_mem_t *mem, xc_memsize_t memb, xc_memsize_t size) /* {{{ 
 	return p;
 }
 /* }}} */
-void *xc_mem_realloc(xc_mem_t *mem, const void *p, xc_memsize_t size) /* {{{ */
+static XC_MEM_REALLOC(xc_mem_realloc) /* {{{ */
 {
 	void *newp = xc_mem_malloc(mem, size);
 	if (p) {
@@ -257,7 +261,7 @@ void *xc_mem_realloc(xc_mem_t *mem, const void *p, xc_memsize_t size) /* {{{ */
 	return newp;
 }
 /* }}} */
-char *xc_mem_strndup(xc_mem_t *mem, const char *str, xc_memsize_t len) /* {{{ */
+static XC_MEM_STRNDUP(xc_mem_strndup) /* {{{ */
 {
 	void *p = xc_mem_malloc(mem, len + 1);
 	if (p) {
@@ -266,56 +270,54 @@ char *xc_mem_strndup(xc_mem_t *mem, const char *str, xc_memsize_t len) /* {{{ */
 	return p;
 }
 /* }}} */
-char *xc_mem_strdup(xc_mem_t *mem, const char *str) /* {{{ */
+static XC_MEM_STRDUP(xc_mem_strdup) /* {{{ */
 {
 	return xc_mem_strndup(mem, str, strlen(str));
 }
 /* }}} */
 
-xc_memsize_t xc_mem_avail(xc_mem_t *mem) /* {{{ */
+static XC_MEM_AVAIL(xc_mem_avail) /* {{{ */
 {
 	return mem->avail;
 }
 /* }}} */
-xc_memsize_t xc_mem_size(xc_mem_t *mem) /* {{{ */
+static XC_MEM_SIZE(xc_mem_size) /* {{{ */
 {
 	return mem->size;
 }
 /* }}} */
 
-const xc_block_t *xc_mem_freeblock_first(xc_mem_t *mem) /* {{{ */
+static XC_MEM_FREEBLOCK_FIRST(xc_mem_freeblock_first) /* {{{ */
 {
 	return mem->headblock->next;
 }
 /* }}} */
-const xc_block_t *xc_mem_freeblock_next(const xc_block_t *block) /* {{{ */
+XC_MEM_FREEBLOCK_NEXT(xc_mem_freeblock_next) /* {{{ */
 {
 	return block->next;
 }
 /* }}} */
-xc_memsize_t xc_mem_block_size(const xc_block_t *block) /* {{{ */
+XC_MEM_BLOCK_SIZE(xc_mem_block_size) /* {{{ */
 {
 	return block->size;
 }
 /* }}} */
-xc_memsize_t xc_mem_block_offset(const xc_mem_t *mem, const xc_block_t *block) /* {{{ */
+XC_MEM_BLOCK_OFFSET(xc_mem_block_offset) /* {{{ */
 {
 	return ((char *) block) - ((char *) mem);
 }
 /* }}} */
 
-xc_mem_t *xc_mem_init(void *ptr, xc_memsize_t size) /* {{{ */
+static XC_MEM_INIT(xc_mem_init) /* {{{ */
 {
-	xc_mem_t   *mem;
 	xc_block_t *b;
-
 #define MINSIZE (ALIGN(sizeof(xc_mem_t)) + sizeof(xc_block_t))
 	/* requires at least the header and 1 tail block */
 	if (size < MINSIZE) {
 		fprintf(stderr, "xc_mem_init requires %d bytes at least\n", MINSIZE);
 		return NULL;
 	}
-	mem = (xc_mem_t *) ptr;
+	mem->shm = shm;
 	mem->size = size;
 	mem->avail = size - MINSIZE;
 
@@ -331,7 +333,7 @@ xc_mem_t *xc_mem_init(void *ptr, xc_memsize_t size) /* {{{ */
 	return mem;
 }
 /* }}} */
-void xc_mem_destroy(xc_mem_t *mem) /* {{{ */
+static XC_MEM_DESTROY(xc_mem_destroy) /* {{{ */
 {
 }
 /* }}} */
@@ -380,3 +382,45 @@ int main()
 }
 /* }}} */
 #endif
+
+typedef struct {
+	const char              *name;
+	const xc_mem_handlers_t *handlers;
+} xc_mem_scheme_t;
+static xc_mem_scheme_t xc_mem_schemes[10];
+
+int xc_mem_scheme_register(const char *name, const xc_mem_handlers_t *handlers) /* {{{ */
+{
+	int i;
+	for (i = 0; i < 10; i ++) {
+		if (!xc_mem_schemes[i].name) {
+			xc_mem_schemes[i].name = name;
+			xc_mem_schemes[i].handlers = handlers;
+			return 1;
+		}
+	}
+	return 0;
+}
+/* }}} */
+const xc_mem_handlers_t *xc_mem_scheme_find(const char *name) /* {{{ */
+{
+	int i;
+	for (i = 0; i < 10 && xc_mem_schemes[i].name; i ++) {
+		if (strcmp(xc_mem_schemes[i].name, name) == 0) {
+			return xc_mem_schemes[i].handlers;
+		}
+	}
+	return NULL;
+}
+/* }}} */
+
+static xc_mem_handlers_t xc_mem_mem_handlers = XC_MEM_HANDLERS(mem);
+void xc_shm_mem_init() /* {{{ */
+{
+	memset(xc_mem_schemes, 0, sizeof(xc_mem_schemes));
+
+	if (xc_mem_scheme_register("mem", &xc_mem_mem_handlers) == 0) {
+		zend_error(E_ERROR, "XCache: failed to register mem mem_scheme");
+	}
+}
+/* }}} */

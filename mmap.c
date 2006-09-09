@@ -31,7 +31,8 @@
 #endif
 
 #include "php.h"
-#include "myshm.h"
+#define XC_SHM_IMPL
+#include "xc_shm.h"
 
 #ifndef max
 #define max(a, b) ((a) < (b) ? (b) : (a))
@@ -39,12 +40,14 @@
 
 // {{{ xc_shm_t
 struct _xc_shm_t {
+	xc_shm_handlers_t *handlers;
 	void *ptr;
 	void *ptr_ro;
 	long  diff;
 	xc_shmsize_t size;
 	char *name;
 	int newfile;
+	xc_shmsize_t memoffset;
 #ifdef ZEND_WIN32
 	HANDLE hmap;
 	HANDLE hmap_ro;
@@ -63,43 +66,43 @@ struct _xc_shm_t {
 #define PTR_ADD(ptr, v) (((char *) (ptr)) + (v))
 #define PTR_SUB(ptr, v) (((char *) (ptr)) - (v))
 
-int xc_shm_can_readonly(xc_shm_t *shm) /* {{{ */
+static XC_SHM_CAN_READONLY(xc_mmap_can_readonly) /* {{{ */
 {
 	return shm->ptr_ro != NULL;
 }
 /* }}} */
-int xc_shm_is_readwrite(xc_shm_t *shm, const void *p) /* {{{ */
+static XC_SHM_IS_READWRITE(xc_mmap_is_readwrite) /* {{{ */
 {
 	return p >= shm->ptr && (char *)p < (char *)shm->ptr + shm->size;
 }
 /* }}} */
-int xc_shm_is_readonly(xc_shm_t *shm, const void *p) /* {{{ */
+static XC_SHM_IS_READONLY(xc_mmap_is_readonly) /* {{{ */
 {
-	return xc_shm_can_readonly(shm) && p >= shm->ptr_ro && (char *)p < (char *)shm->ptr_ro + shm->size;
+	return xc_mmap_can_readonly(shm) && p >= shm->ptr_ro && (char *)p < (char *)shm->ptr_ro + shm->size;
 }
 /* }}} */
-void *xc_shm_to_readwrite(xc_shm_t *shm, void *p) /* {{{ */
+static XC_SHM_TO_READWRITE(xc_mmap_to_readwrite) /* {{{ */
 {
 	if (shm->diff) {
-		assert(xc_shm_is_readonly(p));
+		assert(xc_mmap_is_readonly(p));
 		p = PTR_SUB(p, shm->diff);
 	}
-	assert(xc_shm_is_readwrite(p));
+	assert(xc_mmap_is_readwrite(p));
 	return p;
 }
 /* }}} */
-void *xc_shm_to_readonly(xc_shm_t *shm, void *p) /* {{{ */
+static XC_SHM_TO_READONLY(xc_mmap_to_readonly) /* {{{ */
 {
 	assert(xc_shm_is_readwrite(p));
 	if (shm->diff) {
 		p = PTR_ADD(p, shm->diff);
-		assert(xc_shm_is_readonly(p));
+		assert(xc_mmap_is_readonly(p));
 	}
 	return p;
 }
 /* }}} */
 
-void xc_shm_destroy(xc_shm_t *shm) /* {{{ */
+static XC_SHM_DESTROY(xc_mmap_destroy) /* {{{ */
 {
 	if (shm->ptr_ro) {
 		munmap(shm->ptr_ro, shm->size);
@@ -140,7 +143,7 @@ void xc_shm_destroy(xc_shm_t *shm) /* {{{ */
 	return;
 }
 /* }}} */
-xc_shm_t *xc_shm_init(const char *path, xc_shmsize_t size, zend_bool readonly_protection) /* {{{ */
+static XC_SHM_INIT(xc_mmap_init) /* {{{ */
 {
 #ifdef ZEND_WIN32
 #	define TMP_PATH "XCache"
@@ -153,6 +156,7 @@ xc_shm_t *xc_shm_init(const char *path, xc_shmsize_t size, zend_bool readonly_pr
 	volatile void *romem;
 	char tmpname[sizeof(TMP_PATH) - 1 + 100];
 	const char *errstr = NULL;
+	const char *path = (const char *) arg1;
 
 	CHECK(shm = calloc(1, sizeof(xc_shm_t)), "shm OOM");
 	shm->size = size;
@@ -272,7 +276,7 @@ err:
 		close(fd);
 	}
 	if (shm) {
-		xc_shm_destroy(shm);
+		xc_mmap_destroy(shm);
 	}
 	if (errstr) {
 		fprintf(stderr, "%s\n", errstr);
@@ -282,8 +286,33 @@ err:
 }
 /* }}} */
 
-void *xc_shm_ptr(xc_shm_t *shm) /* {{{ */
+static XC_SHM_MEMINIT(xc_mmap_meminit) /* {{{ */
 {
-	return shm->ptr;
+	xc_mem_t *mem;
+	if (shm->memoffset + size > shm->size) {
+		zend_error(E_ERROR, "XCache: internal error at %s#%d", __FILE__, __LINE__);
+		return NULL;
+	}
+	mem = (xc_mem_t *) PTR_ADD(shm->ptr, shm->memoffset);
+	shm->memoffset += size;
+	mem->handlers = shm->handlers->memhandlers;
+	mem->handlers->init(shm, mem, size);
+	return mem;
+}
+/* }}} */
+static XC_SHM_MEMDESTROY(xc_mmap_memdestroy) /* {{{ */
+{
+}
+/* }}} */
+
+static xc_shm_handlers_t xc_shm_mmap_handlers = XC_SHM_HANDLERS(mmap);
+void xc_shm_mmap_register() /* {{{ */
+{
+	CHECK(xc_shm_mmap_handlers.memhandlers = xc_mem_scheme_find("mem"), "cannot find mem handlers");
+	if (xc_shm_scheme_register("mmap", &xc_shm_mmap_handlers) == 0) {
+		zend_error(E_ERROR, "XCache: failed to register mmap shm_scheme");
+	}
+err:
+	return;
 }
 /* }}} */

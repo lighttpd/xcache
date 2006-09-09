@@ -2,19 +2,65 @@ typedef struct _xc_mem_t xc_mem_t;
 typedef struct _xc_block_t xc_block_t;
 typedef unsigned int xc_memsize_t;
 
-void *xc_mem_malloc(xc_mem_t *mem, xc_memsize_t size);
-int xc_mem_free(xc_mem_t *mem, const void *p);
-void *xc_mem_calloc(xc_mem_t *mem, xc_memsize_t memb, xc_memsize_t size);
-void *xc_mem_realloc(xc_mem_t *mem, const void *p, xc_memsize_t size);
-char *xc_mem_strndup(xc_mem_t *mem, const char *str, xc_memsize_t len);
-char *xc_mem_strdup(xc_mem_t *mem, const char *str);
-const xc_block_t *xc_mem_freeblock_first(xc_mem_t *mem);
-const xc_block_t *xc_mem_freeblock_next(const xc_block_t *block);
-xc_memsize_t xc_mem_block_size(const xc_block_t *block);
-xc_memsize_t xc_mem_block_offset(const xc_mem_t *mem, const xc_block_t *block);
+/* shm::mem */
+#define XC_MEM_MALLOC(func)          void *func(xc_mem_t *mem, xc_memsize_t size)
+#define XC_MEM_FREE(func)            xc_memsize_t  func(xc_mem_t *mem, const void *p)
+#define XC_MEM_CALLOC(func)          void *func(xc_mem_t *mem, xc_memsize_t memb, xc_memsize_t size)
+#define XC_MEM_REALLOC(func)         void *func(xc_mem_t *mem, const void *p, xc_memsize_t size)
+#define XC_MEM_STRNDUP(func)         char *func(xc_mem_t *mem, const char *str, xc_memsize_t len)
+#define XC_MEM_STRDUP(func)          char *func(xc_mem_t *mem, const char *str)
+#define XC_MEM_AVAIL(func)           xc_memsize_t      func(xc_mem_t *mem)
+#define XC_MEM_SIZE(func)            xc_memsize_t      func(xc_mem_t *mem)
+#define XC_MEM_FREEBLOCK_FIRST(func) const xc_block_t *func(xc_mem_t *mem)
+#define XC_MEM_FREEBLOCK_NEXT(func)  const xc_block_t *func(const xc_block_t *block)
+#define XC_MEM_BLOCK_SIZE(func)      xc_memsize_t      func(const xc_block_t *block)
+#define XC_MEM_BLOCK_OFFSET(func)    xc_memsize_t      func(const xc_mem_t *mem, const xc_block_t *block)
 
-xc_memsize_t xc_mem_avail(xc_mem_t *mem);
-xc_memsize_t xc_mem_size(xc_mem_t *mem);
+#define XC_MEM_INIT(func)            xc_mem_t *func(xc_shm_t *shm, xc_mem_t *mem, xc_memsize_t size)
+#define XC_MEM_DESTROY(func)         void func(xc_mem_t *mem)
 
-xc_mem_t *xc_mem_init(void *ptr, xc_memsize_t size);
-void xc_mem_destroy(xc_mem_t *mem);
+#define XC_MEM_HANDLERS(name)   {  \
+	xc_##name##_malloc             \
+	, xc_##name##_free             \
+	, xc_##name##_calloc           \
+	, xc_##name##_realloc          \
+	, xc_##name##_strndup          \
+	, xc_##name##_strdup           \
+	, xc_##name##_avail            \
+	, xc_##name##_size             \
+	, xc_##name##_freeblock_first  \
+	, xc_##name##_freeblock_next   \
+	, xc_##name##_block_size       \
+	, xc_##name##_block_offset     \
+\
+	, xc_##name##_init             \
+	, xc_##name##_destroy          \
+}
+
+typedef struct {
+	XC_MEM_MALLOC((*malloc));
+	XC_MEM_FREE((*free));
+	XC_MEM_CALLOC((*calloc));
+	XC_MEM_REALLOC((*realloc));
+	XC_MEM_STRNDUP((*strndup));
+	XC_MEM_STRDUP((*strdup));
+	XC_MEM_AVAIL((*avail));
+	XC_MEM_SIZE((*size));
+	XC_MEM_FREEBLOCK_FIRST((*freeblock_first));
+	XC_MEM_FREEBLOCK_NEXT((*freeblock_next));
+	XC_MEM_BLOCK_SIZE((*block_size));
+	XC_MEM_BLOCK_OFFSET((*block_offset));
+
+	XC_MEM_INIT((*init));
+	XC_MEM_DESTROY((*destroy));
+} xc_mem_handlers_t;
+
+#ifndef XC_MEM_IMPL
+struct _xc_mem_t {
+	const xc_mem_handlers_t *handlers;
+	xc_shm_t                *shm;
+};
+#endif
+
+int xc_mem_scheme_register(const char *name, const xc_mem_handlers_t *handlers);
+const xc_mem_handlers_t *xc_mem_scheme_find(const char *name);

@@ -27,6 +27,8 @@ if test "$PHP_XCACHE" != "no"; then
                   xcache.c \
                   mmap.c \
                   mem.c \
+                  xc_malloc.c \
+                  xc_shm.c \
                   const_string.c \
                   opcode_spec.c \
                   stack.c \
