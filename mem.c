@@ -254,7 +254,7 @@ static XC_MEM_CALLOC(xc_mem_calloc) /* {{{ */
 static XC_MEM_REALLOC(xc_mem_realloc) /* {{{ */
 {
 	void *newp = xc_mem_malloc(mem, size);
-	if (p) {
+	if (p && newp) {
 		memcpy(newp, p, size);
 		xc_mem_free(mem, p);
 	}
