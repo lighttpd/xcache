@@ -86,8 +86,6 @@ XC_MEM_BLOCK_OFFSET(xc_malloc_block_offset) /* {{{ */
 
 static XC_MEM_INIT(xc_mem_malloc_init) /* {{{ */
 {
-	xc_block_t *b;
-
 #define MINSIZE (ALIGN(sizeof(xc_mem_t)))
 	/* requires at least the header and 1 tail block */
 	if (size < MINSIZE) {
