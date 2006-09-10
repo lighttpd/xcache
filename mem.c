@@ -250,7 +250,7 @@ void *xc_mem_calloc(xc_mem_t *mem, xc_memsize_t memb, xc_memsize_t size) /* {{{ 
 void *xc_mem_realloc(xc_mem_t *mem, const void *p, xc_memsize_t size) /* {{{ */
 {
 	void *newp = xc_mem_malloc(mem, size);
-	if (p) {
+	if (p && newp) {
 		memcpy(newp, p, size);
 		xc_mem_free(mem, p);
 	}
