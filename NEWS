@@ -1,0 +1,13 @@
+
+1.0.1 2006-09-10
+========
+cacher:
+ * avoid crash when OOM on mem_(calloc|realloc|strndup) [112] [143]
+ * sohosin compatible & TSRM fix. [99]
+ * indent compatible on building. [98]
+ * Cannot redeclare problem. #14, #17, #18, [86]
+ * win32 fixes: zts [74], map [83]
+ * minor PHP_5_2 compatible fix. please wait for 1.1 if you need php 5.2
+
+admin page:
+ * fix cache clear corrupted bug in admin page
