@@ -1138,8 +1138,8 @@ static xc_shm_t *xc_cache_destroy(xc_cache_t **caches, xc_hash_t *hcache) /* {{{
 			}
 			cache->mem->handlers->free(cache->mem, cache);
 			*/
-			shm->handlers->memdestroy(cache->mem);
 			shm = cache->shm;
+			shm->handlers->memdestroy(cache->mem);
 		}
 	}
 	free(caches);
