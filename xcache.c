@@ -648,18 +648,18 @@ static int xc_stat(const char *filename, const char *include_path, struct stat *
 #define HASH_STR_L(s, l) HASH(zend_inline_hash_func(s, l + 1))
 #define HASH_STR(s) HASH_STR_L(s, strlen(s) + 1)
 #define HASH_NUM(n) HASH(n)
-static inline xc_hash_value_t xc_entry_hash_var(xc_entry_t *xce) /* {{{ */
+static inline xc_hash_value_t xc_entry_hash_var(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 {
 	return UNISW(NOTHING, UG(unicode) ? HASH_USTR_L(xce->name_type, xce->name.uni.val, xce->name.uni.len) :)
 		HASH_STR_L(xce->name.str.val, xce->name.str.len);
 }
 /* }}} */
-static inline xc_hash_value_t xc_entry_hash_php(xc_entry_t *xce) /* {{{ */
+static inline xc_hash_value_t xc_entry_hash_php(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 {
 #ifdef HAVE_INODE
 	return HASH(xce->data.php->device + xce->data.php->inode);
 #else
-	return xc_entry_hash_var(xce);
+	return xc_entry_hash_var(xce TSRMLS_CC);
 #endif
 }
 /* }}} */
@@ -733,7 +733,7 @@ not_relative_path:
 	php->sourcesize   = pbuf->st_size;
 
 
-	hv = xc_entry_hash_php(xce);
+	hv = xc_entry_hash_php(xce TSRMLS_CC);
 	cacheid = (hv & xc_php_hcache.mask);
 	xce->cache = xc_php_caches[cacheid];
 	hv >>= xc_php_hcache.bits;
@@ -1554,7 +1554,7 @@ static int xc_entry_init_key_var(xc_entry_t *xce, zval *name TSRMLS_DC) /* {{{ *
 #endif
 	xce->name = name->value;
 
-	hv = xc_entry_hash_var(xce);
+	hv = xc_entry_hash_var(xce TSRMLS_CC);
 
 	cacheid = (hv & xc_var_hcache.mask);
 	xce->cache = xc_var_caches[cacheid];
