@@ -2122,6 +2122,8 @@ static PHP_MINFO_FUNCTION(xcache)
 {
 	char buf[100];
 	char *ptr;
+	int left, len;
+	xc_shm_scheme_t *scheme;
 
 	php_info_print_table_start();
 	php_info_print_table_header(2, "XCache Support", "enabled");
@@ -2131,7 +2133,7 @@ static PHP_MINFO_FUNCTION(xcache)
 
 	if (xc_php_size) {
 		ptr = _php_math_number_format(xc_php_size, 0, '.', ',');
-		sprintf(buf, "enabled, %s bytes, %d split(s), with %d slots each", ptr, xc_php_hcache.size, xc_php_hentry.size);
+		snprintf(buf, sizeof(buf), "enabled, %s bytes, %d split(s), with %d slots each", ptr, xc_php_hcache.size, xc_php_hentry.size);
 		php_info_print_table_row(2, "Opcode Cache", buf);
 		efree(ptr);
 	}
@@ -2140,13 +2142,24 @@ static PHP_MINFO_FUNCTION(xcache)
 	}
 	if (xc_var_size) {
 		ptr = _php_math_number_format(xc_var_size, 0, '.', ',');
-		sprintf(buf, "enabled, %s bytes, %d split(s), with %d slots each", ptr, xc_var_hcache.size, xc_var_hentry.size);
+		snprintf(buf, sizeof(buf), "enabled, %s bytes, %d split(s), with %d slots each", ptr, xc_var_hcache.size, xc_var_hentry.size);
 		php_info_print_table_row(2, "Variable Cache", buf);
 		efree(ptr);
 	}
 	else {
 		php_info_print_table_row(2, "Variable Cache", "disabled");
 	}
+
+	left = sizeof(buf);
+	ptr = buf;
+	buf[0] = '\0';
+	for (scheme = xc_shm_scheme_first(); scheme; scheme = xc_shm_scheme_next(scheme)) {
+		len = snprintf(ptr, left, ptr == buf ? "%s" : ", %s", xc_shm_scheme_name(scheme));
+		left -= len;
+		ptr += len;
+	}
+	php_info_print_table_row(2, "Shared Memory Schemes", buf);
+
 #ifdef HAVE_XCACHE_COVERAGER
 	php_info_print_table_row(2, "Coverage Dumper", XG(coveragedumper) && xc_coveragedump_dir && xc_coveragedump_dir[0] ? "enabled" : "disabled");
 #endif

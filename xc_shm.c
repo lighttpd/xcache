@@ -10,10 +10,10 @@
 #include <string.h>
 #include "xc_shm.h"
 
-typedef struct {
+struct _xc_shm_scheme_t {
 	const char              *name;
 	const xc_shm_handlers_t *handlers;
-} xc_shm_scheme_t;
+};
 static xc_shm_scheme_t xc_shm_schemes[10];
 
 void xc_shm_init_modules() /* {{{ */
@@ -50,6 +50,23 @@ const xc_shm_handlers_t *xc_shm_scheme_find(const char *name) /* {{{ */
 		}
 	}
 	return NULL;
+}
+/* }}} */
+xc_shm_scheme_t *xc_shm_scheme_first() /* {{{ */
+{
+	return xc_shm_schemes;
+}
+/* }}} */
+xc_shm_scheme_t *xc_shm_scheme_next(xc_shm_scheme_t *scheme) /* {{{ */
+{
+	scheme ++;
+	return scheme->name ? scheme : NULL;
+}
+/* }}} */
+const char *xc_shm_scheme_name(xc_shm_scheme_t *scheme) /* {{{ */
+{
+	assert(scheme);
+	return scheme->name;
 }
 /* }}} */
 xc_shm_t *xc_shm_init(const char *type, xc_shmsize_t size, int readonly_protection, const void *arg1, const void *arg2) /* {{{ */

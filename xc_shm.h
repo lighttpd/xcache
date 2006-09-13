@@ -51,10 +51,14 @@ struct _xc_shm_t {
 	const xc_shm_handlers_t *handlers;
 };
 #endif
+typedef struct _xc_shm_scheme_t xc_shm_scheme_t;
 
 void xc_shm_init_modules();
 int xc_shm_scheme_register(const char *name, const xc_shm_handlers_t *handlers);
 const xc_shm_handlers_t *xc_shm_scheme_find(const char *name);
+xc_shm_scheme_t *xc_shm_scheme_first();
+xc_shm_scheme_t *xc_shm_scheme_next(xc_shm_scheme_t *scheme);
+const char *xc_shm_scheme_name(xc_shm_scheme_t *scheme);
 
 xc_shm_t *xc_shm_init(const char *type, xc_shmsize_t size, int readonly_protection, const void *arg1, const void *arg2);
 void xc_shm_destroy(xc_shm_t *shm);
