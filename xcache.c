@@ -120,8 +120,10 @@ static inline int xc_entry_equal_dmz(xc_entry_t *a, xc_entry_t *b) /* {{{ */
 			do {
 				xc_entry_data_php_t *ap = a->data.php;
 				xc_entry_data_php_t *bp = b->data.php;
-				return ap->inode == bp->inode
-					&& ap->device == bp->device;
+				if (ap->inode) {
+					return ap->inode == bp->inode
+						&& ap->device == bp->device;
+				}
 			} while(0);
 #endif
 			/* fall */
@@ -617,7 +619,7 @@ static void xc_entry_unholds(TSRMLS_D) /* {{{ */
 /* }}} */
 static int xc_stat(const char *filename, const char *include_path, struct stat *pbuf TSRMLS_DC) /* {{{ */
 {
-	char filepath[1024];
+	char filepath[MAXPATHLEN];
 	char *paths, *path;
 	char *tokbuf;
 	int size = strlen(include_path) + 1;
@@ -627,10 +629,9 @@ static int xc_stat(const char *filename, const char *include_path, struct stat *
 	memcpy(paths, include_path, size);
 
 	for (path = php_strtok_r(paths, tokens, &tokbuf); path; path = php_strtok_r(NULL, tokens, &tokbuf)) {
-		if (strlen(path) + strlen(filename) + 1 > 1024) {
+		if (snprintf(filepath, sizeof(filepath), "%s/%s", path, filename) >= MAXPATHLEN - 1) {
 			continue;
 		}
-		snprintf(filepath, sizeof(filepath), "%s/%s", path, filename);
 		if (VCWD_STAT(filepath, pbuf) == 0) {
 			free_alloca(paths);
 			return 0;
@@ -648,22 +649,24 @@ static int xc_stat(const char *filename, const char *include_path, struct stat *
 #define HASH_STR_L(s, l) HASH(zend_inline_hash_func(s, l + 1))
 #define HASH_STR(s) HASH_STR_L(s, strlen(s) + 1)
 #define HASH_NUM(n) HASH(n)
-static inline xc_hash_value_t xc_entry_hash_var(xc_entry_t *xce TSRMLS_DC) /* {{{ */
+static inline xc_hash_value_t xc_entry_hash_name(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 {
 	return UNISW(NOTHING, UG(unicode) ? HASH_USTR_L(xce->name_type, xce->name.uni.val, xce->name.uni.len) :)
 		HASH_STR_L(xce->name.str.val, xce->name.str.len);
 }
 /* }}} */
+#define xc_entry_hash_var xc_entry_hash_name
 static inline xc_hash_value_t xc_entry_hash_php(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 {
 #ifdef HAVE_INODE
-	return HASH(xce->data.php->device + xce->data.php->inode);
-#else
-	return xc_entry_hash_var(xce TSRMLS_CC);
+	if (xce->data.php->inode) {
+		return HASH(xce->data.php->device + xce->data.php->inode);
+	}
 #endif
+	return xc_entry_hash_name(xce TSRMLS_CC);
 }
 /* }}} */
-static int xc_entry_init_key_php(xc_entry_t *xce, char *filename TSRMLS_DC) /* {{{ */
+static int xc_entry_init_key_php(xc_entry_t *xce, char *filename, char *opened_path_buffer TSRMLS_DC) /* {{{ */
 {
 	struct stat buf, *pbuf;
 	xc_hash_value_t hv;
@@ -675,12 +678,14 @@ static int xc_entry_init_key_php(xc_entry_t *xce, char *filename TSRMLS_DC) /* {
 		return 0;
 	}
 
-	do {
+	php = xce->data.php;
+
+	if (XG(stat)) {
 		if (strcmp(SG(request_info).path_translated, filename) == 0) {
 			/* sapi has already done this stat() for us */
 			pbuf = sapi_get_stat(TSRMLS_C);
 			if (pbuf) {
-				break;
+				goto stat_done;
 			}
 		}
 
@@ -690,7 +695,7 @@ static int xc_entry_init_key_php(xc_entry_t *xce, char *filename TSRMLS_DC) /* {
 			if (VCWD_STAT(filename, pbuf) != 0) {
 				return 0;
 			}
-			break;
+			goto stat_done;
 		}
 
 		/* relative path */
@@ -706,7 +711,7 @@ static int xc_entry_init_key_php(xc_entry_t *xce, char *filename TSRMLS_DC) /* {
 			if (VCWD_STAT(filename, pbuf) != 0) {
 				return 0;
 			}
-			break;
+			goto stat_done;
 		}
 not_relative_path:
 
@@ -714,24 +719,44 @@ not_relative_path:
 		if (xc_stat(filename, PG(include_path), pbuf TSRMLS_CC) != 0) {   
 			return 0;
 		}
-	} while (0);
 
-	if (XG(request_time) - pbuf->st_mtime < 2) {
-		return 0;
+		/* fall */
+
+stat_done:
+		if (XG(request_time) - pbuf->st_mtime < 2) {
+			return 0;
+		}
+
+		php->mtime        = pbuf->st_mtime;
+#ifdef HAVE_INODE
+		php->device       = pbuf->st_dev;
+		php->inode        = pbuf->st_ino;
+#endif
+		php->sourcesize   = pbuf->st_size;
+	}
+	else { /* XG(inode) */
+		php->mtime        = 0;
+#ifdef HAVE_INODE
+		php->device       = 0;
+		php->inode        = 0;
+#endif
+		php->sourcesize   = 0;
+	}
+
+#ifdef HAVE_INODE
+	if (!php->inode)
+#endif
+	{
+		/* hash on filename, let's expand it to real path */
+		filename = expand_filepath(filename, opened_path_buffer TSRMLS_CC);
+		if (filename == NULL) {
+			return 0;
+		}
 	}
 
 	UNISW(NOTHING, xce->name_type = IS_STRING;)
 	xce->name.str.val = filename;
 	xce->name.str.len = strlen(filename);
-
-	php = xce->data.php;
-	php->mtime        = pbuf->st_mtime;
-#ifdef HAVE_INODE
-	php->device       = pbuf->st_dev;
-	php->inode        = pbuf->st_ino;
-#endif
-	php->sourcesize   = pbuf->st_size;
-
 
 	hv = xc_entry_hash_php(xce TSRMLS_CC);
 	cacheid = (hv & xc_php_hcache.mask);
@@ -753,6 +778,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	zend_bool clogged = 0;
 	zend_bool catched = 0;
 	char *filename;
+	char opened_path_buffer[MAXPATHLEN];
 	int old_constinfo_cnt, old_funcinfo_cnt, old_classinfo_cnt;
 
 	if (!xc_initized) {
@@ -778,7 +804,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 
 	filename = h->opened_path ? h->opened_path : h->filename;
 	xce.data.php = &php;
-	if (!xc_entry_init_key_php(&xce, filename TSRMLS_CC)) {
+	if (!xc_entry_init_key_php(&xce, filename, opened_path_buffer TSRMLS_CC)) {
 		return origin_compile_file(h, type TSRMLS_CC);
 	}
 	cache = xce.cache;
@@ -859,9 +885,17 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	}
 
 	filename = h->opened_path ? h->opened_path : h->filename;
-	if (xce.name.str.val != filename) {
-		xce.name.str.val = filename;
-		xce.name.str.len = strlen(filename);
+	/* none-inode enabled entry hash/compare on name
+	 * do not update to its name to real pathname
+	 */
+#ifdef HAVE_INODE
+	if (xce.data.php->inode)
+#endif
+	{
+		if (xce.name.str.val != filename) {
+			xce.name.str.val = filename;
+			xce.name.str.len = strlen(filename);
+		}
 	}
 
 #ifdef HAVE_XCACHE_OPTIMIZER
@@ -2115,6 +2149,7 @@ PHP_INI_BEGIN()
 	PHP_INI_ENTRY1     ("xcache.var_gc_interval",      "120", PHP_INI_SYSTEM, xc_OnUpdateULong,    &xc_var_gc_interval)
 
 	STD_PHP_INI_BOOLEAN("xcache.cacher",                 "1", PHP_INI_ALL,    OnUpdateBool,        cacher,            zend_xcache_globals, xcache_globals)
+	STD_PHP_INI_BOOLEAN("xcache.stat",                   "1", PHP_INI_ALL,    OnUpdateBool,        stat,              zend_xcache_globals, xcache_globals)
 #ifdef HAVE_XCACHE_OPTIMIZER
 	STD_PHP_INI_BOOLEAN("xcache.optimizer",              "0", PHP_INI_ALL,    OnUpdateBool,        optimizer,         zend_xcache_globals, xcache_globals)
 #endif

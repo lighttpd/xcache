@@ -18,10 +18,7 @@
 #include "xc_shm.h"
 #include "lock.h"
 
-#ifndef ZEND_WIN32
-/* UnDefine if your filesystem doesn't support inodes */
-#	define HAVE_INODE
-#endif
+#define HAVE_INODE
 #if !defined(ZEND_ENGINE_2_1) && (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 1 || PHP_MAJOR_VERSION > 5)
 #	define ZEND_ENGINE_2_1
 #endif

@@ -1,6 +1,7 @@
 
 ZEND_BEGIN_MODULE_GLOBALS(xcache)
 	zend_bool cacher;      /* true if enabled */
+	zend_bool stat;
 #ifdef HAVE_XCACHE_OPTIMIZER
 	zend_bool optimizer;   /* true if enabled */
 #endif
