@@ -503,7 +503,7 @@ static inline xc_hash_value_t xc_entry_hash_php(xc_entry_t *xce) /* {{{ */
 #endif
 }
 /* }}} */
-static int xc_entry_init_key_php(xc_entry_t *xce, char *filename TSRMLS_DC) /* {{{ */
+static int xc_entry_init_key_php(xc_entry_t *xce, char *filename, char *opened_path_buffer TSRMLS_DC) /* {{{ */
 {
 	struct stat buf, *pbuf;
 	xc_hash_value_t hv;
@@ -540,6 +540,14 @@ static int xc_entry_init_key_php(xc_entry_t *xce, char *filename TSRMLS_DC) /* {
 		return 0;
 	}
 
+#ifndef HAVE_INODE
+	/* hash on filename, let's expand it to real path */
+	filename = expand_filepath(filename, opened_path_buffer TSRMLS_CC);
+	if (filename == NULL) {
+		return 0;
+	}
+#endif
+
 	UNISW(NOTHING, xce->name_type = IS_STRING;)
 	xce->name.str.val = filename;
 	xce->name.str.len = strlen(filename);
@@ -573,6 +581,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	zend_bool clogged = 0;
 	zend_bool catched = 0;
 	char *filename;
+	char opened_path_buffer[MAXPATHLEN];
 
 	if (!xc_initized) {
 		assert(0);
@@ -597,7 +606,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 
 	filename = h->opened_path ? h->opened_path : h->filename;
 	xce.data.php = &php;
-	if (!xc_entry_init_key_php(&xce, filename TSRMLS_CC)) {
+	if (!xc_entry_init_key_php(&xce, filename, opened_path_buffer TSRMLS_CC)) {
 		return origin_compile_file(h, type TSRMLS_CC);
 	}
 	cache = xce.cache;
@@ -669,10 +678,12 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	}
 
 	filename = h->opened_path ? h->opened_path : h->filename;
+#ifdef HAVE_INODE
 	if (xce.name.str.val != filename) {
 		xce.name.str.val = filename;
 		xce.name.str.len = strlen(filename);
 	}
+#endif
 
 #ifdef HAVE_XCACHE_OPTIMIZER
 	if (XG(optimizer)) {
