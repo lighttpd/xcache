@@ -2049,6 +2049,19 @@ static void xcache_signal_handler(int sig) /* {{{ */
 
 /* {{{ PHP_INI */
 
+static PHP_INI_MH(xc_OnUpdateDummy)
+{
+	return SUCCESS;
+}
+
+static PHP_INI_MH(xc_OnUpdateULong)
+{
+	zend_ulong *p = (zend_ulong *) mh_arg1;
+
+	*p = (zend_ulong) atoi(new_value);
+	return SUCCESS;
+}
+
 static PHP_INI_MH(xc_OnUpdateBool)
 {
 	zend_bool *p = (zend_bool *)mh_arg1;
@@ -2087,36 +2100,31 @@ PHP_INI_BEGIN()
 	PHP_INI_ENTRY1     ("xcache.coredump_directory",      "", PHP_INI_SYSTEM, xc_OnUpdateString,   &xc_coredump_dir)
 	PHP_INI_ENTRY1     ("xcache.test",                   "0", PHP_INI_SYSTEM, xc_OnUpdateBool,     &xc_test)
 	PHP_INI_ENTRY1     ("xcache.readonly_protection",    "0", PHP_INI_SYSTEM, xc_OnUpdateBool,     &xc_readonly_protection)
+	/* opcode cache */
+	PHP_INI_ENTRY1     ("xcache.size",                   "0", PHP_INI_SYSTEM, xc_OnUpdateDummy,    NULL)
+	PHP_INI_ENTRY1     ("xcache.count",                  "1", PHP_INI_SYSTEM, xc_OnUpdateDummy,    NULL)
+	PHP_INI_ENTRY1     ("xcache.slots",                 "8K", PHP_INI_SYSTEM, xc_OnUpdateDummy,    NULL)
+	PHP_INI_ENTRY1     ("xcache.shm_scheme",          "mmap", PHP_INI_SYSTEM, xc_OnUpdateString,   &xc_shm_scheme)
+	PHP_INI_ENTRY1     ("xcache.ttl",                    "0", PHP_INI_SYSTEM, xc_OnUpdateULong,    &xc_php_ttl)
+	PHP_INI_ENTRY1     ("xcache.gc_interval",            "0", PHP_INI_SYSTEM, xc_OnUpdateULong,    &xc_php_gc_interval)
+	/* var cache */
+	PHP_INI_ENTRY1     ("xcache.var_size",               "0", PHP_INI_SYSTEM, xc_OnUpdateDummy,    NULL)
+	PHP_INI_ENTRY1     ("xcache.var_count",              "1", PHP_INI_SYSTEM, xc_OnUpdateDummy,    NULL)
+	PHP_INI_ENTRY1     ("xcache.var_slots",             "8K", PHP_INI_SYSTEM, xc_OnUpdateDummy,    NULL)
+	PHP_INI_ENTRY1     ("xcache.var_maxttl",             "0", PHP_INI_SYSTEM, xc_OnUpdateULong,    &xc_var_maxttl)
+	PHP_INI_ENTRY1     ("xcache.var_gc_interval",      "120", PHP_INI_SYSTEM, xc_OnUpdateULong,    &xc_var_gc_interval)
 
 	STD_PHP_INI_BOOLEAN("xcache.cacher",                 "1", PHP_INI_ALL,    OnUpdateBool,        cacher,            zend_xcache_globals, xcache_globals)
 #ifdef HAVE_XCACHE_OPTIMIZER
 	STD_PHP_INI_BOOLEAN("xcache.optimizer",              "0", PHP_INI_ALL,    OnUpdateBool,        optimizer,         zend_xcache_globals, xcache_globals)
 #endif
-	STD_PHP_INI_BOOLEAN("xcache.var_ttl",                "0", PHP_INI_ALL,    OnUpdateLong,        var_ttl,   zend_xcache_globals, xcache_globals)
+	STD_PHP_INI_BOOLEAN("xcache.var_ttl",                "0", PHP_INI_ALL,    OnUpdateLong,        var_ttl,           zend_xcache_globals, xcache_globals)
 #ifdef HAVE_XCACHE_COVERAGER
 	PHP_INI_ENTRY1     ("xcache.coveragedump_directory", "/tmp/pcov/", PHP_INI_SYSTEM, xc_OnUpdateString,   &xc_coveragedump_dir)
 	STD_PHP_INI_BOOLEAN("xcache.coveragedumper" ,                 "0", PHP_INI_ALL,    OnUpdateBool,        coveragedumper,    zend_xcache_globals, xcache_globals)
 #endif
 PHP_INI_END()
 /* }}} */
-static int xc_config_string_disp(char *name, char *default_value) /* {{{ */
-{
-	char *value;
-	char buf[100];
-
-	if (cfg_get_string(name, &value) != SUCCESS) {
-		sprintf(buf, "%s (default)", default_value);
-		php_info_print_table_row(2, name, buf);
-	}
-	else {
-		php_info_print_table_row(2, name, value);
-	}
-
-	return SUCCESS;
-}
-/* }}} */
-#define xc_config_hash_disp xc_config_string_disp
-#define xc_config_long_disp xc_config_string_disp
 /* {{{ PHP_MINFO_FUNCTION(xcache) */
 static PHP_MINFO_FUNCTION(xcache)
 {
@@ -2163,22 +2171,6 @@ static PHP_MINFO_FUNCTION(xcache)
 #ifdef HAVE_XCACHE_COVERAGER
 	php_info_print_table_row(2, "Coverage Dumper", XG(coveragedumper) && xc_coveragedump_dir && xc_coveragedump_dir[0] ? "enabled" : "disabled");
 #endif
-	php_info_print_table_end();
-
-	php_info_print_table_start();
-	php_info_print_table_header(2, "Directive ", "Value");
-	xc_config_string_disp("xcache.shm_scheme", "mmap");
-	xc_config_long_disp("xcache.size",        "0");
-	xc_config_hash_disp("xcache.count",       "1");
-	xc_config_hash_disp("xcache.slots",      "8K");
-	xc_config_hash_disp("xcache.ttl",         "0");
-	xc_config_hash_disp("xcache.gc_interval", "0");
-
-	xc_config_long_disp("xcache.var_size",           "0");
-	xc_config_hash_disp("xcache.var_count",          "1");
-	xc_config_hash_disp("xcache.var_slots",         "8K");
-	xc_config_hash_disp("xcache.var_maxttl",         "0");
-	xc_config_hash_disp("xcache.var_gc_interval",  "300");
 	php_info_print_table_end();
 
 	DISPLAY_INI_ENTRIES();
@@ -2249,18 +2241,6 @@ static int xc_config_long(zend_ulong *p, char *name, char *default_value) /* {{{
 	return SUCCESS;
 }
 /* }}} */
-static int xc_config_string(char **p, char *name, char *default_value) /* {{{ */
-{
-	char *value;
-
-	if (cfg_get_string(name, &value) != SUCCESS) {
-		value = default_value;
-	}
-
-	*p = strdup(value);
-	return SUCCESS;
-}
-/* }}} */
 /* {{{ PHP_MINIT_FUNCTION(xcache) */
 static PHP_MINIT_FUNCTION(xcache)
 {
@@ -2289,18 +2269,13 @@ static PHP_MINIT_FUNCTION(xcache)
 		}
 	}
 
-	xc_config_string(&xc_shm_scheme,   "xcache.shm_scheme", "mmap");
 	xc_config_long(&xc_php_size,       "xcache.size",        "0");
 	xc_config_hash(&xc_php_hcache,     "xcache.count",       "1");
 	xc_config_hash(&xc_php_hentry,     "xcache.slots",      "8K");
-	xc_config_long(&xc_php_ttl,        "xcache.ttl",         "0");
-	xc_config_long(&xc_php_gc_interval, "xcache.gc_interval", "0");
 
-	xc_config_long(&xc_var_size,       "xcache.var_size",          "0");
-	xc_config_hash(&xc_var_hcache,     "xcache.var_count",         "1");
-	xc_config_hash(&xc_var_hentry,     "xcache.var_slots",        "8K");
-	xc_config_long(&xc_var_maxttl,     "xcache.var_maxttl",        "0");
-	xc_config_long(&xc_var_gc_interval, "xcache.var_gc_interval", "120");
+	xc_config_long(&xc_var_size,       "xcache.var_size",    "0");
+	xc_config_hash(&xc_var_hcache,     "xcache.var_count",   "1");
+	xc_config_hash(&xc_var_hentry,     "xcache.var_slots",  "8K");
 
 	if (xc_php_size <= 0) {
 		xc_php_size = xc_php_hcache.size = 0;
