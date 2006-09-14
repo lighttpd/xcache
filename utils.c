@@ -389,10 +389,10 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 
 	zend_hash_init_ex(TG(included_files), 5, NULL, NULL, 0, 1);
 #ifdef HAVE_XCACHE_CONSTANT
-	zend_hash_init_ex(&TG(zend_constants), 20, NULL, ZEND_CONSTANT_DTOR, 1, 0);
+	zend_hash_init_ex(&TG(zend_constants), 20, NULL, EG(zend_constants)->pDestructor, 1, 0);
 #endif
-	zend_hash_init_ex(&TG(function_table), 128, NULL, ZEND_FUNCTION_DTOR, 0, 0);
-	zend_hash_init_ex(&TG(class_table), 16, NULL, ZEND_CLASS_DTOR, 0, 0);
+	zend_hash_init_ex(&TG(function_table), 128, NULL, CG(function_table)->pDestructor, 0, 0);
+	zend_hash_init_ex(&TG(class_table), 16, NULL, CG(class_table)->pDestructor, 0, 0);
 
 	sandbox->filename = filename;
 
