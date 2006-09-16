@@ -58,6 +58,14 @@ if test "$PHP_XCACHE" != "no"; then
   PHP_SUBST([XCACHE_ENABLE_TEST])
 
   AC_PATH_PROGS([AWK], [gawk awk])
+  dnl clean locale for gawk 3.1.5 assertion bug
+  if echo | LANG=C "$AWK" -- '' > /dev/null 2>&1 ; then
+    AWK="LANG=C $AWK"
+  else
+    if echo | /usr/bin/env - "$AWK" -- '' > /dev/null 2>&1 ; then
+      AWK="/usr/bin/env - $AWK"
+    fi
+  fi
   PHP_SUBST([AWK])
   AC_PATH_PROGS([M4], [m4])
   PHP_SUBST([M4])

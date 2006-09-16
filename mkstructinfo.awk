@@ -4,6 +4,9 @@ BEGIN {
 	brace = 0;
 	buffer_len = 0;
 }
+/^#/ {
+	next;
+}
 /^}.*;/ {
 	if (instruct) {
 		sub(";", "");
@@ -50,6 +53,7 @@ BEGIN {
 
 {
 	if (brace == 1 && instruct) {
+		gsub(/\/\*(.+?)\*\//, " "); # removes one line comment
 		sub(/.*[{}]/, "");
 		gsub(/\[[^\]]+\]/, ""); # ignore [...]
 		gsub(/:[0-9]+/, ""); # ignore struct bit
@@ -68,32 +72,46 @@ BEGIN {
 			if (match($0, /[()]/)) {
 				next;
 			}
+			# unsigned int *a,  b; int c;
 			gsub(/[*]/, " ");
+			# unsigned int a,  b; int c;
 			gsub(/ +/, " ");
+			# unsigned int a, b; int c;
 			gsub(/ *[,;]/, ";");
+			# unsigned int a; b; int c;
 			if (!match($0, /;/)) {
 				next;
 			}
 			split($0, chunks, ";");
-			# get var of "int *var, var;" etc
-			for (i in chunks) {
+			# [unsigned int a, b, c]
+
+			for (i = 1; i in chunks; i ++) {
 				if (chunks[i] == "") {
 					delete chunks[i];
 					continue;
 				}
 				split(chunks[i], pieces, " ");
+				# [unsigned, int, a]
+				# [b]
+				# [c]
 
-				for (j in pieces) {
+				last_piece = "";
+				for (j = 1; j in pieces; j ++) {
 					last_piece = pieces[j];
-					delete pieces[i];
+					delete pieces[j];
 				}
 				if (last_piece == "") {
 					print "=====" chunks[i];
 				}
+				# a
+				# b
+				# c
+
 				buffer[buffer_len] = last_piece;
 				buffer_len ++;
-				delete chunks[i];
+				delete chunks[i]
 			}
+			last_piece = "";
 		}
 		next;
 	}
