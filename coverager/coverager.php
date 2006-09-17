@@ -61,7 +61,9 @@ class XcacheCoverageViewer
 
 		$this->path = isset($_GET['path']) ? $_GET['path'] : '';
 		$this->path = preg_replace('!\.{2,}!', '.', $this->path);
-		$this->path = preg_replace('![\\\\/]{2,}!', '/', $this->path);
+		$qsep = preg_quote(DIRECTORY_SEPARATOR, '!');
+		$this->path = preg_replace("![\\\\$qsep]{2,}!", DIRECTORY_SEPARATOR, $this->path);
+		$this->path = preg_replace("!$qsep$!", '', $this->path);
 		if ($this->path == '/') {
 			$this->path = '';
 		}
