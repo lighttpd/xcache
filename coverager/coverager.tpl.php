@@ -67,6 +67,7 @@ function dir_row($info, $srcdir)
 {
 	global $cycle;
 	if ($info['files'] || $info['todos']) {
+		$srcdir .= DIRECTORY_SEPARATOR;
 		$c = $cycle->next();
 		$srcdir_html = htmlspecialchars($srcdir);
 		$todos = number_format($info['todos']);
