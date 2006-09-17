@@ -234,6 +234,7 @@ void xc_coverager_request_shutdown(TSRMLS_D) /* {{{ */
 			xc_coverager_save_cov(ZSTR_S(s), outfilename, *pcov TSRMLS_CC);
 			zend_hash_move_forward(XG(coverages));
 		}
+		efree(outfilename);
 	}
 
 	zend_hash_destroy(XG(coverages));
