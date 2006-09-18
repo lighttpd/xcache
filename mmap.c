@@ -80,19 +80,19 @@ int xc_shm_is_readonly(xc_shm_t *shm, const void *p) /* {{{ */
 void *xc_shm_to_readwrite(xc_shm_t *shm, void *p) /* {{{ */
 {
 	if (shm->diff) {
-		assert(xc_shm_is_readonly(p));
+		assert(xc_shm_is_readonly(shm, p));
 		p = PTR_SUB(p, shm->diff);
 	}
-	assert(xc_shm_is_readwrite(p));
+	assert(xc_shm_is_readwrite(shm, p));
 	return p;
 }
 /* }}} */
 void *xc_shm_to_readonly(xc_shm_t *shm, void *p) /* {{{ */
 {
-	assert(xc_shm_is_readwrite(p));
+	assert(xc_shm_is_readwrite(shm, p));
 	if (shm->diff) {
 		p = PTR_ADD(p, shm->diff);
-		assert(xc_shm_is_readonly(p));
+		assert(xc_shm_is_readonly(shm, p));
 	}
 	return p;
 }
