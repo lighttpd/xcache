@@ -65,6 +65,7 @@ function _T($str)
 }
 
 error_reporting(E_ALL);
+ini_set('display_errors', 'On');
 define('REQUEST_TIME', time());
 
 $charset = "UTF-8";
