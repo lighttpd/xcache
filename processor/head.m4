@@ -49,8 +49,8 @@ typedef zend_uchar zval_data_type;
 
 #define MAX_DUP_STR_LEN 256
 dnl }}}
-/* export: typedef struct _processor_t processor_t; :export {{{ */
-struct _processor_t {
+/* export: typedef struct _xc_processor_t xc_processor_t; :export {{{ */
+struct _xc_processor_t {
 	char *p;
 	zend_uint size;
 	HashTable strings;
@@ -83,7 +83,7 @@ static void xc_dprint_indent(int indent) /* {{{ */
 /* }}} */
 /* {{{ xc_calc_string_n */
 REDEF(`KIND', `calc')
-static inline void xc_calc_string_n(processor_t *processor, zend_uchar type, char *str, long size IFASSERT(`, int relayline')) {
+static inline void xc_calc_string_n(xc_processor_t *processor, zend_uchar type, char *str, long size IFASSERT(`, int relayline')) {
 	pushdef(`__LINE__', `relayline')
 	int realsize = UNISW(size, (type == IS_UNICODE) ? UBYTES(size) : size);
 
@@ -104,7 +104,7 @@ static inline void xc_calc_string_n(processor_t *processor, zend_uchar type, cha
 /* }}} */
 /* {{{ xc_store_string_n */
 REDEF(`KIND', `store')
-static inline char *xc_store_string_n(processor_t *processor, zend_uchar type, char *str, long size IFASSERT(`, int relayline')) {
+static inline char *xc_store_string_n(xc_processor_t *processor, zend_uchar type, char *str, long size IFASSERT(`, int relayline')) {
 	pushdef(`__LINE__', `relayline')
 	int realsize = UNISW(size, (type == IS_UNICODE) ? UBYTES(size) : size);
 	char *s;
@@ -129,7 +129,7 @@ static inline char *xc_store_string_n(processor_t *processor, zend_uchar type, c
 /* {{{ xc_get_class_num
  * return class_index + 1
  */
-static zend_uint xc_get_class_num(processor_t *processor, zend_class_entry *ce) {
+static zend_uint xc_get_class_num(xc_processor_t *processor, zend_class_entry *ce) {
 	zend_uint i;
 	const xc_entry_t *xce = processor->xce_src;
 	zend_class_entry *ceptr;
@@ -151,7 +151,7 @@ static zend_uint xc_get_class_num(processor_t *processor, zend_class_entry *ce) 
 /* }}} */
 /* {{{ xc_get_class */
 #ifdef ZEND_ENGINE_2
-static zend_class_entry *xc_get_class(processor_t *processor, zend_uint class_num) {
+static zend_class_entry *xc_get_class(xc_processor_t *processor, zend_uint class_num) {
 	/* must be parent or currrent class */
 	assert(class_num <= processor->active_class_num);
 	return CestToCePtr(processor->xce_dst->data.php->classinfos[class_num - 1].cest);
@@ -160,7 +160,7 @@ static zend_class_entry *xc_get_class(processor_t *processor, zend_uint class_nu
 /* }}} */
 #ifdef ZEND_ENGINE_2
 /* fix method on store */
-static void xc_fix_method(processor_t *processor, zend_op_array *dst) /* {{{ */
+static void xc_fix_method(xc_processor_t *processor, zend_op_array *dst) /* {{{ */
 {
 	zend_function *zf = (zend_function *) dst;
 	zend_class_entry *ce = processor->active_class_entry_dst;
@@ -213,7 +213,7 @@ dnl ================ export API
 /* export: xc_entry_t *xc_processor_store_xc_entry_t(xc_entry_t *src TSRMLS_DC); :export {{{ */
 xc_entry_t *xc_processor_store_xc_entry_t(xc_entry_t *src TSRMLS_DC) {
 	xc_entry_t *dst;
-	processor_t processor;
+	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
 	if (src->type == XC_TYPE_VAR) {
@@ -287,7 +287,7 @@ err_alloc:
 /* }}} */
 /* export: xc_entry_t *xc_processor_restore_xc_entry_t(xc_entry_t *dst, const xc_entry_t *src, zend_bool readonly_protection TSRMLS_DC); :export {{{ */
 xc_entry_t *xc_processor_restore_xc_entry_t(xc_entry_t *dst, const xc_entry_t *src, zend_bool readonly_protection TSRMLS_DC) {
-	processor_t processor;
+	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
 	processor.readonly_protection = readonly_protection;
@@ -298,7 +298,7 @@ xc_entry_t *xc_processor_restore_xc_entry_t(xc_entry_t *dst, const xc_entry_t *s
 /* }}} */
 /* export: zval *xc_processor_restore_zval(zval *dst, const zval *src TSRMLS_DC); :export {{{ */
 zval *xc_processor_restore_zval(zval *dst, const zval *src TSRMLS_DC) {
-	processor_t processor;
+	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
 	processor.reference = 1;

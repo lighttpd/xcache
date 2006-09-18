@@ -8,9 +8,9 @@ define(`DECL_STRUCT_P_FUNC', `translit(
 	ifdef(`EXPORT_'ifelse(`$2', `', `$1', `$2'), `void', `static void inline')
 	FUNC_NAME`'(
 		IFDPRINT( `const $1 * const src, int indent')
-		IFCALC(   `processor_t *processor, const $1 * const src')
-		IFSTORE(  `processor_t *processor, $1 *dst, const $1 * const src')
-		IFRESTORE(`processor_t *processor, $1 *dst, const $1 * const src')
+		IFCALC(   `xc_processor_t *processor, const $1 * const src')
+		IFSTORE(  `xc_processor_t *processor, $1 *dst, const $1 * const src')
+		IFRESTORE(`xc_processor_t *processor, $1 *dst, const $1 * const src')
 		IFDASM(   `zval *dst, const $1 * const src')
 		IFASM(    `$1 *dst, const $1 * const src')
 		TSRMLS_DC
