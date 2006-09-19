@@ -130,7 +130,7 @@ class XcacheCoverageViewer
 			$action = "no data";
 		}
 
-		$xcache_version = XCACHE_VERSION;
+		$xcache_version = defined('XCACHE_VERSION') ? XCACHE_VERSION : '';
 		include("coverager.tpl.php");
 	}
 
@@ -308,6 +308,22 @@ function sprint_cov($cov, $lines, $encode = true)
 		}
 	}
 	return implode('', $lines);
+}
+if (!function_exists('xcache_coverager_decode')) {
+	function xcache_coverager_decode($bytes)
+	{
+		$bytes = unpack('l*', $bytes);
+		$i = 1;
+		if ($bytes[$i ++] != 0x564f4350) {
+			return null;
+		}
+		$end = count($bytes);
+		$cov = array();
+		for (/* empty*/; $i <= $end; $i += 2) {
+			$cov[$bytes[$i]] = $bytes[$i + 1];
+		}
+		return $cov;
+	}
 }
 
 $app = new XcacheCoverageViewer();
