@@ -68,6 +68,9 @@ if test "$PHP_XCACHE" != "no"; then
   fi
   PHP_SUBST([AWK])
   AC_PATH_PROGS([M4], [m4])
+  if echo | "$M4" -E > /dev/null 2>&1 ; then
+    M4="$M4 -E"
+  fi
   PHP_SUBST([M4])
   AC_PATH_PROGS([GREP], [grep])
   PHP_SUBST([GREP])
