@@ -2,17 +2,27 @@
 
 function get_language_file_ex($name, $l, $s)
 {
-	static $map = array(
+	static $lmap = array(
 			'zh'    => 'zh-simplified',
 			'zh-hk' => 'zh-traditional',
 			'zh-tw' => 'zh-traditional',
 			);
+	static $smap = array(
+			'gbk'     => 'gb2312',
+			'gb18030' => 'gb2312',
+			);
 
-	if (isset($map[$l])) {
-		$l = $map[$l];
+	if (isset($lmap[$l])) {
+		$l = $lmap[$l];
 	}
 	if (file_exists($file = "$name-$l-$s.lang.php")) {
 		return $file;
+	}
+	if (isset($smap[$s])) {
+		$s = $smap[$s];
+		if (file_exists($file = "$name-$l-$s.lang.php")) {
+			return $file;
+		}
 	}
 	if (file_exists($file = "$name-$l.lang.php")) {
 		return $file;
