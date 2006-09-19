@@ -225,7 +225,10 @@ EOS;
 	}
 }
 else {
-	echo htmlspecialchars($action);
+	$error_html = htmlspecialchars($error);
+	echo <<<EOS
+	<span class="error">{$error_html}</span>
+EOS;
 }
 ?>
 
