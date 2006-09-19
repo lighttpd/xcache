@@ -2,11 +2,35 @@
 # vim:ts=4:sw=4
 BEGIN {
 	brace = 0;
+	incomment = 0;
 	buffer_len = 0;
 }
+
+# multiline comment handling
+{
+	# removes one line comment
+	gsub(/\/\*(.+?)\*\//, " ");
+}
+/\*\// {
+	if (incomment) {
+		sub(/.*\*\//, "");
+		incomment = 0;
+	}
+}
+incomment {
+	next;
+}
+/\/\*/ {
+	sub(/\/\*.*/, "");
+	incomment = 1;
+	# fall through
+}
+
+# skip file/line mark here to be faster
 /^#/ {
 	next;
 }
+
 /^}.*;/ {
 	if (instruct) {
 		sub(";", "");
@@ -53,7 +77,7 @@ BEGIN {
 
 {
 	if (brace == 1 && instruct) {
-		gsub(/\/\*(.+?)\*\//, " "); # removes one line comment
+		gsub(/(^[\t ]+|[\t ]+$)/, ""); # trim whitespaces
 		sub(/.*[{}]/, "");
 		gsub(/\[[^\]]+\]/, ""); # ignore [...]
 		gsub(/:[0-9]+/, ""); # ignore struct bit
@@ -66,6 +90,8 @@ BEGIN {
 			buffer_len ++;
 		}
 		else {
+			# process normal variables
+
 			# ignore any ()s
 			while (gsub(/(\([^)]*\))/, "")) {
 			}
@@ -82,6 +108,7 @@ BEGIN {
 			if (!match($0, /;/)) {
 				next;
 			}
+			# print "=DEBUG=" $0 "==";
 			split($0, chunks, ";");
 			# [unsigned int a, b, c]
 
@@ -101,7 +128,9 @@ BEGIN {
 					delete pieces[j];
 				}
 				if (last_piece == "") {
-					print "=====" chunks[i];
+					# print "=ERROR=" chunks[i] "==";
+					delete chunks[i];
+					continue;
 				}
 				# a
 				# b
@@ -122,7 +151,7 @@ BEGIN {
 	typedefs[$3] = $4;
 	next;
 }
-/^typedef struct .*\{/ {
+/^typedef struct .*\{[^}]*$/ {
 	brace = 1;
 	instruct = 1;
 	next;
