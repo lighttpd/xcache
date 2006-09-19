@@ -124,10 +124,12 @@ class XcacheCoverageViewer
 			}
 		}
 		else if (!$this->datadir) {
-			$action = 'require xcache.coveragedump_directory';
+			$action = 'error';
+			$error  = 'require `ini:xcache.coveragedump_directory` or `config:$datadir` to be set';
 		}
 		else {
-			$action = "no data";
+			$action = 'error';
+			$error  = "no data";
 		}
 
 		$xcache_version = defined('XCACHE_VERSION') ? XCACHE_VERSION : '';
