@@ -119,7 +119,7 @@ class XcacheCoverageViewer
 
 			list($tplfile, $tpllines, $tplcov) = $this->loadTplCov($fileinfo['cov'], substr($this->outpath, $this->datadir_len));
 			if ($tplfile) {
-				$tplcov = sprint_cov($tplinfo['tplcov'], $tpllines);
+				$tplcov = sprint_cov($tplcov, $tpllines);
 				unset($tpllines);
 			}
 		}
