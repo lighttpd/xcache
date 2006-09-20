@@ -96,6 +96,8 @@ static zend_compile_file_t *origin_compile_file;
 static zend_bool xc_test = 0;
 static zend_bool xc_readonly_protection = 0;
 
+zend_bool xc_have_op_array_ctor = 0;
+
 static zend_bool xc_module_gotup = 0;
 static zend_bool xc_zend_extension_gotup = 0;
 #if !COMPILE_DL_XCACHE
@@ -2280,6 +2282,8 @@ static int xc_config_long(zend_ulong *p, char *name, char *default_value) /* {{{
 static PHP_MINIT_FUNCTION(xcache)
 {
 	char *env;
+	zend_extension *ext;
+	zend_llist_position lpos;
 
 	xc_module_gotup = 1;
 	if (!xc_zend_extension_gotup) {
@@ -2288,6 +2292,17 @@ static PHP_MINIT_FUNCTION(xcache)
 			xc_zend_extension_startup(&zend_extension_entry);
 		}
 	}
+
+	/* cache if there's an op_array_ctor */
+	for (ext = zend_llist_get_first_ex(&zend_extensions, &lpos);
+			ext;
+			ext = zend_llist_get_next_ex(&zend_extensions, &lpos)) {
+		if (ext->op_array_ctor) {
+			xc_have_op_array_ctor = 1;
+			break;
+		}
+	}
+
 
 #ifndef PHP_GINIT
 	ZEND_INIT_MODULE_GLOBALS(xcache, xc_init_globals, xc_shutdown_globals);

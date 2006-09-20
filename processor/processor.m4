@@ -473,16 +473,6 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		/* deep */
 		STRUCT_P(HashTable, static_variables, HashTable_zval_ptr)
 		define(`SKIPASSERT_ONCE')
-
-	IFRESTORE(`
-#ifdef ZEND_ENGINE_2
-		if (dst->scope) {
-			dst->scope = xc_get_class(processor, (zend_ulong) dst->scope);
-			xc_fix_method(processor, dst);
-		}
-#endif
-	')
-
 	}
 	else
 	')
@@ -495,15 +485,6 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	DISPATCH(zend_uchar, type)
 	PROC_ZSTRING(, function_name)
 #ifdef ZEND_ENGINE_2
-	IFRESTORE(`
-		if (dst->scope) {
-			dst->scope = xc_get_class(processor, (zend_ulong) dst->scope);
-			xc_fix_method(processor, dst);
-		}
-		DONE(scope)
-	', `
-		PROC_CLASS_ENTRY_P(scope)
-	')
 	DISPATCH(zend_uint, fn_flags)
 	dnl mark it as -1 on store, and lookup parent on restore
 	IFSTORE(`dst->prototype = (processor->active_class_entry_src && src->prototype) ? (zend_function *) -1 : NULL; DONE(prototype)', `
@@ -636,6 +617,26 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	DISPATCH(zend_bool, created_by_eval)
 #endif
 	} while (0);
+
+	IFRESTORE(`
+#ifdef ZEND_ENGINE_2
+		if (dst->scope) {
+			dst->scope = xc_get_class(processor, (zend_ulong) dst->scope);
+			xc_fix_method(processor, dst);
+		}
+		DONE(scope)
+#endif
+	', `
+#ifdef ZEND_ENGINE_2
+		PROC_CLASS_ENTRY_P(scope)
+#endif
+	')
+
+	IFRESTORE(`
+		if (xc_have_op_array_ctor) {
+			zend_llist_apply_with_argument(&zend_extensions, (llist_apply_with_arg_func_t) xc_zend_extension_op_array_ctor_handler, dst TSRMLS_CC);
+		}
+	')
 ')
 dnl }}}
 
