@@ -4,6 +4,7 @@ divert(0)
 #include <stdio.h>
 
 #include "php.h"
+#include "zend_extensions.h"
 #include "zend_compile.h"
 #include "zend_API.h"
 #include "zend_ini.h"
@@ -18,6 +19,13 @@ divert(0)
 #if defined(HARDENING_PATCH_HASH_PROTECT) && HARDENING_PATCH_HASH_PROTECT
 extern unsigned int zend_hash_canary;
 #endif
+extern zend_bool xc_have_op_array_ctor;
+static void xc_zend_extension_op_array_ctor_handler(zend_extension *extension, zend_op_array *op_array TSRMLS_DC)
+{
+	if (extension->op_array_ctor) {
+		extension->op_array_ctor(op_array);
+	}
+}
 
 define(`SIZEOF_zend_uint', `sizeof(zend_uint)')
 define(`COUNTOF_zend_uint', `1')
