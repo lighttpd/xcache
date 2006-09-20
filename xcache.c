@@ -2293,6 +2293,11 @@ static PHP_MINIT_FUNCTION(xcache)
 		}
 	}
 
+	ext = zend_get_extension("Zend Optimizer");
+	if (ext) {
+		/* zend_optimizer.optimization_level>0 is not compatible with other cacher, disabling */
+		ext->op_array_handler = NULL;
+	}
 	/* cache if there's an op_array_ctor */
 	for (ext = zend_llist_get_first_ex(&zend_extensions, &lpos);
 			ext;
@@ -2454,13 +2459,54 @@ zend_module_entry xcache_module_entry = {
 ZEND_GET_MODULE(xcache)
 #endif
 /* }}} */
+static startup_func_t xc_last_ext_startup;
+static zend_llist_element *xc_llist_element;
+static xc_ptr_compare_func(void *p1, void *p2) /* {{{ */
+{
+	return p1 == p2;
+}
+/* }}} */
+static int xc_zend_startup_last(zend_extension *extension) /* {{{ */
+{
+	/* restore */
+	extension->startup = xc_last_ext_startup;
+	if (extension->startup) {
+		if (extension->startup(extension) != SUCCESS) {
+			return FAILURE;
+		}
+	}
+	xc_zend_extension_register(&zend_extension_entry, 0);
+	if (!xc_module_gotup) {
+		return zend_startup_module(&xcache_module_entry);
+	}
+	return SUCCESS;
+}
+/* }}} */
 ZEND_DLEXPORT int xcache_zend_startup(zend_extension *extension) /* {{{ */
 {
 	if (xc_zend_extension_gotup) {
 		return FAILURE;
 	}
 	xc_zend_extension_gotup = 1;
-	if (!xc_module_gotup) {
+	xc_llist_element = NULL;
+	if (zend_llist_count(&zend_extensions) > 1) {
+		zend_llist_position lpos;
+		zend_extension *ext;
+		llist_dtor_func_t dtor;
+
+		ext = zend_get_extension(XCACHE_NAME);
+		assert(ext);
+		dtor = zend_extensions.dtor; /* avoid dtor */
+		zend_extensions.dtor = NULL;
+		zend_llist_del_element(&zend_extensions, ext, xc_ptr_compare_func);
+		zend_extensions.dtor = dtor;
+
+		ext = (zend_extension *) zend_llist_get_last_ex(&zend_extensions, &lpos);
+		assert(ext);
+		xc_last_ext_startup = ext->startup;
+		ext->startup = xc_zend_startup_last;
+	}
+	else if (!xc_module_gotup) {
 		return zend_startup_module(&xcache_module_entry);
 	}
 	return SUCCESS;
