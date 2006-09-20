@@ -56,7 +56,7 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		<th><?php echo _T('GC'); ?></th>
 	</tr>
 	<?php
-	$numkeys = explode(',', 'hits,misses,clogs,ooms,cached,deleted');
+	$numkeys = explode(',', 'slots,size,avail,hits,misses,clogs,ooms,cached,deleted');
 	$l_clear = _T('Clear');
 	$l_clear_confirm = _T('Sure to clear?');
 	foreach ($cacheinfos as $i => $ci) {
@@ -65,17 +65,17 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		$pavail = (int) ($ci['avail'] / $ci['size'] * 100);
 		$pused = 100 - $pavail;
 
+		$ci_slots = size($ci['slots']);
+		$ci_size  = size($ci['size']);
+		$ci_avail = size($ci['avail']);
 		$ci = number_formats($ci, $numkeys);
-		$ci['slots'] = size($ci['slots']);
-		$ci['size']  = size($ci['size']);
-		$ci['avail'] = size($ci['avail']);
 		$ci['compiling']    = $ci['type'] == $type_php ? ($ci['compiling'] ? 'yes' : 'no') : '-';
 		$ci['can_readonly'] = $ci['can_readonly'] ? 'yes' : 'no';
 		echo <<<EOS
 		<th>{$ci['cache_name']}</th>
-		<td>{$ci['slots']}</td>
-		<td>{$ci['size']}</td>
-		<td>{$ci['avail']}</td>
+		<td title="{$ci['slots']}">{$ci_slots}</td>
+		<td title="{$ci['size']}">{$ci_size}</td>
+		<td title="{$ci['avail']}">{$ci_avail}</td>
 		<td title="{$pavail} %"><div class="percent"><div style="height: {$pused}%" class="pused">&nbsp;</div><div style="height: {$pavail}%" class="pavail">&nbsp;</div></div></td>
 		<td>
 			<form method="post">
