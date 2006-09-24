@@ -55,6 +55,9 @@ DEF_STRUCT_P_FUNC(`zend_try_catch_element', , `
 dnl }}}
 dnl {{{ zend_brk_cont_element
 DEF_STRUCT_P_FUNC(`zend_brk_cont_element', , `
+#ifdef ZEND_ENGINE_2_2
+	DISPATCH(int, start)
+#endif
 	DISPATCH(int, cont)
 	DISPATCH(int, brk)
 	DISPATCH(int, parent)
