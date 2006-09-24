@@ -19,13 +19,6 @@ divert(0)
 #if defined(HARDENING_PATCH_HASH_PROTECT) && HARDENING_PATCH_HASH_PROTECT
 extern unsigned int zend_hash_canary;
 #endif
-extern zend_bool xc_have_op_array_ctor;
-static void xc_zend_extension_op_array_ctor_handler(zend_extension *extension, zend_op_array *op_array TSRMLS_DC)
-{
-	if (extension->op_array_ctor) {
-		extension->op_array_ctor(op_array);
-	}
-}
 
 define(`SIZEOF_zend_uint', `sizeof(zend_uint)')
 define(`COUNTOF_zend_uint', `1')
@@ -254,6 +247,15 @@ dnl FIXME: handle common.function_name here
 }
 /* }}} */
 #endif
+/* {{{ call op_array ctor handler */
+extern zend_bool xc_have_op_array_ctor;
+static void xc_zend_extension_op_array_ctor_handler(zend_extension *extension, zend_op_array *op_array TSRMLS_DC)
+{
+	if (extension->op_array_ctor) {
+		extension->op_array_ctor(op_array);
+	}
+}
+/* }}} */
 dnl ================ export API
 /* export: xc_entry_t *xc_processor_store_xc_entry_t(xc_entry_t *src TSRMLS_DC); :export {{{ */
 xc_entry_t *xc_processor_store_xc_entry_t(xc_entry_t *src TSRMLS_DC) {
