@@ -246,6 +246,53 @@ dnl FIXME: handle common.function_name here
 	}
 }
 /* }}} */
+static int xc_hash_static_member_check(xc_processor_t *processor, Bucket *b TSRMLS_DC) /* {{{ */
+{
+	zend_class_entry *src = processor->active_class_entry_src;
+	if (src->parent) {
+		zval **srczv;
+		if (zend_hash_quick_find(CE_STATIC_MEMBERS(src), b->arKey, b->nKeyLength, b->h, (void **) &srczv) == SUCCESS) {
+			zval **zv = (zval **) b->pData;
+			if (*srczv == *zv) {
+				return ZEND_HASH_APPLY_REMOVE;
+			}
+		}
+	}
+	return ZEND_HASH_APPLY_KEEP;
+}
+/* }}} */
+/* fix static members on restore */
+static void inherit_static_prop(zval **p) /* {{{ */
+{
+	(*p)->refcount++;
+	(*p)->is_ref = 1;
+}
+/* }}} */
+static void xc_fix_static_members(xc_processor_t *processor, zend_class_entry *dst TSRMLS_DC) /* {{{ */
+{
+	zend_class_entry *parent_ce = dst->parent;
+	if (parent_ce->type != dst->type) {
+		/* User class extends internal class */
+		zend_update_class_constants(parent_ce  TSRMLS_CC);
+		zend_hash_merge(&dst->default_static_members, CE_STATIC_MEMBERS(parent_ce), (void (*)(void *)) inherit_static_prop, NULL, sizeof(zval *), 0);
+	}
+	else {
+		zend_hash_merge(&dst->default_static_members, &parent_ce->default_static_members, (void (*)(void *)) inherit_static_prop, NULL, sizeof(zval *), 0);
+	}
+
+	/*
+	HashPosition pos;
+	HashTable *pmembers = CE_STATIC_MEMBERS(dst->parent);
+	zval **zv;
+	for (zend_hash_internal_pointer_reset_ex(pmembers, &pos);
+			zend_hash_get_current_data_ex(pmembers, (void **) &zv, &pos) == SUCCESS;
+			zend_hash_move_forward_ex(pmembers, &pos)) {
+			if (zend_hash_quick_find(parent->static_members, p->arKey, p->nKeyLength, p->h, &pprop.ptr) == SUCCESS) {
+			}
+	}
+	*/
+}
+/* }}} */
 #endif
 /* {{{ call op_array ctor handler */
 extern zend_bool xc_have_op_array_ctor;

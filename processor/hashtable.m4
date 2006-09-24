@@ -1,4 +1,4 @@
-dnl DEF_HASH_TABLE_FUNC(1:name, 2:datatype [, 3:dataname])
+dnl DEF_HASH_TABLE_FUNC(1:name, 2:datatype [, 3:dataname] [, 4:check_function])
 define(`DEF_HASH_TABLE_FUNC', `
 	DEF_STRUCT_P_FUNC(`HashTable', `$1', `
 		pushdefFUNC_NAME(`$2', `$3')
@@ -93,6 +93,15 @@ define(`DEF_HASH_TABLE_FUNC', `
 		DISABLECHECK(`
 
 		for (b = src->pListHead; b != NULL; b = b->pListNext) {
+			ifelse(`$4', `', `', `
+				pushdef(`BUCKET', `b')
+				if ($4 == ZEND_HASH_APPLY_REMOVE) {
+					IFCOPY(`dst->nNumOfElements --;')
+					continue;
+				}
+				popdef(`BUCKET')
+		  ')
+		  
 			IFCALCCOPY(`bucketsize = BUCKET_SIZE(b);')
 			ALLOC(pnew, char, bucketsize, , Bucket)
 			IFCOPY(`memcpy(pnew, b, bucketsize);')
