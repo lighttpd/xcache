@@ -2461,7 +2461,7 @@ ZEND_GET_MODULE(xcache)
 /* }}} */
 static startup_func_t xc_last_ext_startup;
 static zend_llist_element *xc_llist_element;
-static xc_ptr_compare_func(void *p1, void *p2) /* {{{ */
+static int xc_ptr_compare_func(void *p1, void *p2) /* {{{ */
 {
 	return p1 == p2;
 }
