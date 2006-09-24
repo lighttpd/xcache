@@ -264,9 +264,9 @@ DEF_STRUCT_P_FUNC(`zend_property_info', , `
 #endif
 dnl }}}
 DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
-	IFCOPY(`
+	IFCALCCOPY(`
 		processor->active_class_entry_src = src;
-		processor->active_class_entry_dst = dst;
+		IFCOPY(`processor->active_class_entry_dst = dst;')
 	')
 	DISPATCH(char, type)
 	DISPATCH(zend_uint, name_length)
@@ -297,12 +297,12 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 #ifdef ZEND_ENGINE_2
 	STRUCT(HashTable, properties_info, HashTable_zend_property_info)
 #	ifdef ZEND_ENGINE_2_1
-	STRUCT(HashTable, default_static_members, IFSTORE(HashTable_zval_ptr_static_member_check, HashTable_zval_ptr))
+	STRUCT(HashTable, default_static_members, IFCALCSTORE(HashTable_zval_ptr_static_member_check, HashTable_zval_ptr))
 	IFCOPY(`dst->static_members = &dst->default_static_members;')
 	IFRESTORE(`if (dst->parent) xc_fix_static_members(processor, dst TSRMLS_CC);')
 	DONE(static_members)
 #	else
-	STRUCT_P(HashTable, static_members, IFSTORE(HashTable_zval_ptr_static_member_check, HashTable_zval_ptr))
+	STRUCT_P(HashTable, static_members, IFCALCSTORE(HashTable_zval_ptr_static_member_check, HashTable_zval_ptr))
 #	endif
 	STRUCT(HashTable, constants_table, HashTable_zval_ptr)
 
@@ -383,9 +383,9 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	dnl must do after SETNULL(constructor) and dst->parent
 	STRUCT(HashTable, function_table, HashTable_zend_function)
 	IFRESTORE(`dst->function_table.pDestructor = ZEND_FUNCTION_DTOR;')
-	IFCOPY(`
+	IFCALCCOPY(`
 		processor->active_class_entry_src = NULL;
-		processor->active_class_entry_dst = NULL;
+		IFCOPY(`processor->active_class_entry_dst = NULL;')
 	')
 ')
 dnl }}}
