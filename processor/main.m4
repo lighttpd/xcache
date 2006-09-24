@@ -21,8 +21,8 @@ define(`ALLOC', `
 	/* allocate */
 	IFCALC(`
 		IFASSERT(`
-			xc_stack_push(&processor->allocsizes, (void*)(SIZE));
-			xc_stack_push(&processor->allocsizes, (void*)(__LINE__));
+			xc_stack_push(&processor->allocsizes, (void *) (long) (SIZE));
+			xc_stack_push(&processor->allocsizes, (void *) (long) (__LINE__));
 		')
 		processor->size = (size_t) ALIGN(processor->size);
 		processor->size += SIZE;
@@ -33,11 +33,11 @@ define(`ALLOC', `
 				fprintf(stderr, "mismatch `$@' at line %d\n", __LINE__);
 			}
 			else {
-				int expect = (int)xc_stack_pop(&processor->allocsizes);
-				int atline = (int)xc_stack_pop(&processor->allocsizes);
-				int real = SIZE;
+				unsigned long expect = (unsigned long) xc_stack_pop(&processor->allocsizes);
+				unsigned long atline = (unsigned long) xc_stack_pop(&processor->allocsizes);
+				unsigned long real = SIZE;
 				if (expect != real) {
-					fprintf(stderr, "mismatch `$@' at line %d(was %d): real %d - expect %d = %d\n", __LINE__, atline, real, expect, real - expect);
+					fprintf(stderr, "mismatch `$@' at line %d(was %d): real %lu - expect %lu = %lu\n", __LINE__, atline, real, expect, real - expect);
 				}
 			}
 		}')
