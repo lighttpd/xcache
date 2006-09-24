@@ -35,4 +35,4 @@ $(builddir)/xcache.lo: $(XCACHE_PROC_H) $(srcdir)/xc_shm.h $(srcdir)/stack.h $(s
 xcache.lo: $(XCACHE_PROC_H) $(srcdir)/xc_shm.h $(srcdir)/stack.h $(srcdir)/xcache_globals.h $(srcdir)/xcache.c $(srcdir)/foreachcoresig.h
 
 xcachesvnclean: clean
-	cat $(srcdir)/.cvsignore | grep -v Makefile | xargs rm -f
+	cat $(srcdir)/.cvsignore | grep -v Makefile | xargs rm -rf
