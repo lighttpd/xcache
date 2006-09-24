@@ -188,16 +188,10 @@ dnl }}}
 dnl {{{ IF**
 define(`IFCALC', `ifelse(KIND, `calc', `$1', `$2')')
 define(`IFSTORE', `ifelse(KIND, `store', `$1', `$2')')
-define(`IFCALCSTORE', `IFSTORE(`$1', `
-	IFCALC(`$1', `$2')
-')')
+define(`IFCALCSTORE', `IFSTORE(`$1', `IFCALC(`$1', `$2')')')
 define(`IFRESTORE', `ifelse(KIND, `restore', `$1', `$2')')
-define(`IFCOPY', `IFSTORE(`$1', `
-	IFRESTORE(`$1', `$2')
-')')
-define(`IFCALCCOPY', `IFCALC(`$1', `
-	IFCOPY(`$1', `$2')
-')')
+define(`IFCOPY', `IFSTORE(`$1', `IFRESTORE(`$1', `$2')')')
+define(`IFCALCCOPY', `IFCALC(`$1', `IFCOPY(`$1', `$2')')')
 define(`IFDPRINT', `ifelse(KIND, `dprint', `$1', `$2')')
 define(`IFASM', `ifelse(KIND, `asm', `$1', `$2')')
 define(`IFDASM', `ifelse(KIND, `dasm', `$1', `$2')')
