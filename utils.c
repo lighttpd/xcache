@@ -410,7 +410,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 	while (b != NULL) {
 		zend_constant *c = (zend_constant*) b->pData;
 		xc_install_constant(sandbox->filename, c,
-				BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY(b)), b->nKeyLength TSRMLS_CC);
+				BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY_S(b)), b->nKeyLength TSRMLS_CC);
 		b = b->pListNext;
 	}
 #endif
@@ -420,7 +420,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 	while (b != NULL) {
 		zend_function *func = (zend_function*) b->pData;
 		xc_install_function(sandbox->filename, func,
-				BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY(b)), b->nKeyLength TSRMLS_CC);
+				BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY_S(b)), b->nKeyLength TSRMLS_CC);
 		b = b->pListNext;
 	}
 
@@ -428,7 +428,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 	/* install class */
 	while (b != NULL) {
 		xc_install_class(sandbox->filename, (xc_cest_t*)b->pData,
-				BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY(b)), b->nKeyLength TSRMLS_CC);
+				BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY_S(b)), b->nKeyLength TSRMLS_CC);
 		b = b->pListNext;
 	}
 

@@ -950,10 +950,10 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 		memcpy(&data->name, b->pData, sizeof(datatype));      \
 		UNISW(NOTHING, data->type = b->key.type;)             \
 		if (UNISW(1, b->key.type == IS_STRING)) {             \
-			ZSTR_S(data->key)      = BUCKET_KEY(b);           \
+			ZSTR_S(data->key)      = BUCKET_KEY_S(b);          \
 		}                                                     \
 		else {                                                \
-			ZSTR_U(data->key)      = BUCKET_UKEY(b);          \
+			ZSTR_U(data->key)      = BUCKET_KEY_U(b);         \
 		}                                                     \
 		data->key_size   = b->nKeyLength;                     \
 	}                                                         \

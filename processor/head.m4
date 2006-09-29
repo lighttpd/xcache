@@ -251,7 +251,7 @@ static int xc_hash_static_member_check(xc_processor_t *processor, Bucket *b TSRM
 	const zend_class_entry *src = processor->active_class_entry_src;
 	if (src->parent) {
 		zval **srczv;
-		if (zend_hash_quick_find(CE_STATIC_MEMBERS(src), b->arKey, b->nKeyLength, b->h, (void **) &srczv) == SUCCESS) {
+		if (zend_u_hash_quick_find(CE_STATIC_MEMBERS(src), BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY_S(b)), b->nKeyLength, b->h, (void **) &srczv) == SUCCESS) {
 			zval **zv = (zval **) b->pData;
 			if (*srczv == *zv) {
 				return ZEND_HASH_APPLY_REMOVE;

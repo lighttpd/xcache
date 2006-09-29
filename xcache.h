@@ -47,9 +47,9 @@
 				? UBYTES(b->nKeyLength) \
 				: b->nKeyLength \
 				))
-#define BUCKET_KEY(b)  (UNISW((b)->arKey, (b)->key.arKey.s))
-#define BUCKET_UKEY(b) (UNISW((b)->arKey, (b)->key.arKey.u))
-#define BUCKET_KEY_TYPE(b) (UNISW(0, (b)->key.type))
+#define BUCKET_KEY_S(b)    (UNISW((b)->arKey, (b)->key.arKey.s))
+#define BUCKET_KEY_U(b)    (UNISW((b)->arKey, (b)->key.arKey.u))
+#define BUCKET_KEY_TYPE(b) (UNISW(IS_STRING,  (b)->key.type))
 #ifdef IS_UNICODE
 #	define BUCKET_HEAD_SIZE(b) XtOffsetOf(Bucket, key.arKey)
 #else
@@ -93,6 +93,9 @@ typedef char *zstr;
 
 #	define zend_u_hash_find(ht, type, arKey, nKeyLength, pData) \
  	   zend_hash_find(ht, arKey, nKeyLength, pData)
+
+#	define zend_u_hash_quick_find(ht, type, arKey, nKeyLength, h, pData) \
+ 	   zend_hash_quick_find(ht, arKey, nKeyLength, h, pData)
 
 #	define add_u_assoc_zval_ex(arg, type, key, key_len, value) \
 		add_assoc_zval_ex(arg, key, key_len, value)

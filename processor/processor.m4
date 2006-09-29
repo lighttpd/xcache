@@ -56,7 +56,9 @@ dnl }}}
 dnl {{{ zend_brk_cont_element
 DEF_STRUCT_P_FUNC(`zend_brk_cont_element', , `
 #ifdef ZEND_ENGINE_2_2
+#ifndef IS_UNICODE
 	DISPATCH(int, start)
+#endif
 #endif
 	DISPATCH(int, cont)
 	DISPATCH(int, brk)
