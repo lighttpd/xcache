@@ -44,7 +44,7 @@ define(`DEF_HASH_TABLE_FUNC', `
 					} while (keysize > bufsize);
 					buf = erealloc(buf, bufsize);
 				}
-				memcpy(buf, BUCKET_KEY(b), keysize);
+				memcpy(buf, BUCKET_KEY_S(b), keysize);
 				buf[keysize - 2] = buf[keysize - 1] = ""[0];
 				keysize = b->nKeyLength;
 #ifdef IS_UNICODE
