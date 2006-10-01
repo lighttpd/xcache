@@ -2025,6 +2025,9 @@ static function_entry xcache_functions[] = /* {{{ */
 #endif
 #ifdef HAVE_XCACHE_COVERAGER
 	PHP_FE(xcache_coverager_decode,  NULL)
+	PHP_FE(xcache_coverager_start,   NULL)
+	PHP_FE(xcache_coverager_stop,    NULL)
+	PHP_FE(xcache_coverager_get,     NULL)
 #endif
 	PHP_FE(xcache_get_special_value, NULL)
 	PHP_FE(xcache_get_op_type,       NULL)
@@ -2157,8 +2160,8 @@ PHP_INI_BEGIN()
 #endif
 	STD_PHP_INI_BOOLEAN("xcache.var_ttl",                "0", PHP_INI_ALL,    OnUpdateLong,        var_ttl,           zend_xcache_globals, xcache_globals)
 #ifdef HAVE_XCACHE_COVERAGER
-	PHP_INI_ENTRY1     ("xcache.coveragedump_directory", "/tmp/pcov/", PHP_INI_SYSTEM, xc_OnUpdateString,   &xc_coveragedump_dir)
-	STD_PHP_INI_BOOLEAN("xcache.coveragedumper" ,                 "0", PHP_INI_ALL,    OnUpdateBool,        coveragedumper,    zend_xcache_globals, xcache_globals)
+	STD_PHP_INI_BOOLEAN("xcache.coverager"      ,        "0", PHP_INI_ALL,    OnUpdateBool,        coverager,         zend_xcache_globals, xcache_globals)
+	PHP_INI_ENTRY1     ("xcache.coveragedump_directory",  "", PHP_INI_SYSTEM, xc_OnUpdateDummy,    NULL)
 #endif
 PHP_INI_END()
 /* }}} */
@@ -2169,6 +2172,7 @@ static PHP_MINFO_FUNCTION(xcache)
 	char *ptr;
 	int left, len;
 	xc_shm_scheme_t *scheme;
+	char *covdumpdir;
 
 	php_info_print_table_start();
 	php_info_print_table_header(2, "XCache Support", "enabled");
@@ -2206,7 +2210,10 @@ static PHP_MINFO_FUNCTION(xcache)
 	php_info_print_table_row(2, "Shared Memory Schemes", buf);
 
 #ifdef HAVE_XCACHE_COVERAGER
-	php_info_print_table_row(2, "Coverage Dumper", XG(coveragedumper) && xc_coveragedump_dir && xc_coveragedump_dir[0] ? "enabled" : "disabled");
+	if (cfg_get_string("xcache.coveragedump_directory", &covdumpdir) != SUCCESS || !covdumpdir[0]) {
+		covdumpdir = NULL;
+	}
+	php_info_print_table_row(2, "Coverage Auto Dumper", XG(coverager) && covdumpdir ? "enabled" : "disabled");
 #endif
 	php_info_print_table_end();
 

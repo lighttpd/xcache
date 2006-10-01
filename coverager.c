@@ -15,7 +15,7 @@
 typedef HashTable *coverager_t;
 #define PCOV_HEADER_MAGIC 0x564f4350
 
-char *xc_coveragedump_dir = NULL;
+static char *xc_coveragedump_dir = NULL;
 static zend_compile_file_t *origin_compile_file;
 
 #undef DEBUG
@@ -192,34 +192,66 @@ bailout:
 	if (buf) efree(buf);
 }
 /* }}} */
-void xc_coverager_request_init(TSRMLS_D) /* {{{ */
+
+static void xc_coverager_initenv(TSRMLS_D) /* {{{ */
 {
-	if (XG(coveragedumper)) {
+	if (!XG(coverages)) {
 		XG(coverages) = emalloc(sizeof(HashTable));
 		zend_hash_init(XG(coverages), 0, NULL, xc_destroy_coverage, 0);
 	}
 }
 /* }}} */
-void xc_coverager_request_shutdown(TSRMLS_D) /* {{{ */
+static void xc_coverager_clean(TSRMLS_D) /* {{{ */
+{
+	if (XG(coverages)) {
+		zend_hash_destroy(XG(coverages));
+		efree(XG(coverages));
+		XG(coverages) = NULL;
+	}
+}
+/* }}} */
+
+static void xc_coverager_enable(TSRMLS_D) /* {{{ */
+{
+	XG(coverage_enabled) = 1;
+}
+/* }}} */
+static void xc_coverager_disable(TSRMLS_D) /* {{{ */
+{
+	XG(coverage_enabled) = 0;
+}
+/* }}} */
+
+void xc_coverager_request_init(TSRMLS_D) /* {{{ */
+{
+	if (XG(coveragedumper)) {
+		xc_coverager_enable(TSRMLS_C);
+		xc_coverager_initenv(TSRMLS_C);
+		CG(extended_info) = 1;
+	}
+	else {
+		XG(coverage_enabled) = 0;
+	}
+}
+/* }}} */
+static void xc_coverager_autodump(TSRMLS_D) /* {{{ */
 {
 	coverager_t *pcov;
 	zstr s;
 	char *outfilename;
 	int dumpdir_len, outfilelen, alloc_len = 0;
 	uint size;
+	HashPosition pos;
 
-	if (!XG(coverages)) {
-		return;
-	}
-	if (XG(coveragedumper)) {	
+	if (XG(coverages) && xc_coveragedump_dir) {	
 		dumpdir_len = strlen(xc_coveragedump_dir);
 		alloc_len = dumpdir_len + 1 + 128;
 		outfilename = emalloc(alloc_len);
 		strcpy(outfilename, xc_coveragedump_dir);
 
-		zend_hash_internal_pointer_reset(XG(coverages));
-		while (zend_hash_get_current_data(XG(coverages), (void **) &pcov) == SUCCESS) {
-			zend_hash_get_current_key_ex(XG(coverages), &s, &size, NULL, 0, NULL);
+		zend_hash_internal_pointer_reset_ex(XG(coverages), &pos);
+		while (zend_hash_get_current_data_ex(XG(coverages), (void **) &pcov, &pos) == SUCCESS) {
+			zend_hash_get_current_key_ex(XG(coverages), &s, &size, NULL, 0, &pos);
 			outfilelen = dumpdir_len + size + 5;
 			if (alloc_len < outfilelen) {
 				alloc_len = outfilelen + 128;
@@ -232,14 +264,56 @@ void xc_coverager_request_shutdown(TSRMLS_D) /* {{{ */
 			fprintf(stderr, "outfilename %s\n", outfilename);
 #endif
 			xc_coverager_save_cov(ZSTR_S(s), outfilename, *pcov TSRMLS_CC);
-			zend_hash_move_forward(XG(coverages));
+			zend_hash_move_forward_ex(XG(coverages), &pos);
 		}
 		efree(outfilename);
 	}
+}
+/* }}} */
+static void xc_coverager_dump(zval *return_value TSRMLS_DC) /* {{{ */
+{
+	coverager_t *pcov;
+	HashPosition pos;
 
-	zend_hash_destroy(XG(coverages));
-	efree(XG(coverages));
-	XG(coverages) = NULL;
+	if (XG(coverages)) {
+		array_init(return_value);
+
+		zend_hash_internal_pointer_reset_ex(XG(coverages), &pos);
+		while (zend_hash_get_current_data_ex(XG(coverages), (void **) &pcov, &pos) == SUCCESS) {
+			zval *lines;
+			long *phits;
+			coverager_t cov;
+			HashPosition pos2;
+			zstr filename;
+			uint size;
+
+			cov = *pcov;
+			zend_hash_get_current_key_ex(XG(coverages), &filename, &size, NULL, 0, &pos);
+
+			MAKE_STD_ZVAL(lines);
+			array_init(lines);
+			zend_hash_internal_pointer_reset_ex(cov, &pos2);
+			while (zend_hash_get_current_data_ex(cov, (void**)&phits, &pos2) == SUCCESS) {
+				long hits = *phits;
+				add_index_long(lines, pos2->h, hits >= 0 ? hits : 0);
+				zend_hash_move_forward_ex(cov, &pos2);
+			}
+			add_assoc_zval_ex(return_value, ZSTR_S(filename), strlen(ZSTR_S(filename)) + 1, lines);
+
+			zend_hash_move_forward_ex(XG(coverages), &pos);
+		}
+	}
+	else {
+		RETVAL_NULL();
+	}
+}
+/* }}} */
+void xc_coverager_request_shutdown(TSRMLS_D) /* {{{ */
+{
+	if (XG(coveragedumper)) {
+		xc_coverager_autodump(TSRMLS_C);
+		xc_coverager_clean(TSRMLS_C);
+	}
 }
 /* }}} */
 
@@ -350,8 +424,11 @@ static zend_op_array *xc_compile_file_for_coverage(zend_file_handle *h, int type
 	zend_op_array *op_array;
 
 	op_array = origin_compile_file(h, type TSRMLS_CC);
-	if (XG(coveragedumper) && XG(coverages) && op_array) {
-		xc_coverager_init_compile_result(op_array TSRMLS_CC);
+	if (op_array) {
+		if (XG(coveragedumper)) {
+			xc_coverager_initenv(TSRMLS_C);
+			xc_coverager_init_compile_result(op_array TSRMLS_CC);
+		}
 	}
 	return op_array;
 }
@@ -362,7 +439,7 @@ void xc_coverager_handle_ext_stmt(zend_op_array *op_array, zend_uchar op) /* {{{
 {
 	TSRMLS_FETCH();
 
-	if (XG(coveragedumper) && XG(coverages)) {
+	if (XG(coverages) && XG(coverage_enabled)) {
 		int size = xc_coverager_get_op_array_size_no_tail(op_array);
 		int oplineno = (*EG(opline_ptr)) - op_array->opcodes;
 		if (oplineno < size) {
@@ -375,19 +452,21 @@ void xc_coverager_handle_ext_stmt(zend_op_array *op_array, zend_uchar op) /* {{{
 /* init/destroy */
 int xc_coverager_init(int module_number TSRMLS_DC) /* {{{ */
 {
-	if (xc_coveragedump_dir) {
+	origin_compile_file = zend_compile_file;
+	zend_compile_file = xc_compile_file_for_coverage;
+
+	if (cfg_get_string("xcache.coveragedump_directory", &xc_coveragedump_dir) == SUCCESS && xc_coveragedump_dir) {
 		int len = strlen(xc_coveragedump_dir);
 		if (len) {
 			if (xc_coveragedump_dir[len - 1] == '/') {
 				xc_coveragedump_dir[len - 1] = '\0';
 			}
 		}
+		if (!strlen(xc_coveragedump_dir)) {
+			xc_coveragedump_dir = NULL;
+		}
 	}
-	if (xc_coveragedump_dir && xc_coveragedump_dir[0]) {
-		origin_compile_file = zend_compile_file;
-		zend_compile_file = xc_compile_file_for_coverage;
-		CG(extended_info) = 1;
-	}
+
 	return SUCCESS;
 }
 /* }}} */
@@ -397,14 +476,16 @@ void xc_coverager_destroy() /* {{{ */
 		zend_compile_file = origin_compile_file;
 	}
 	if (xc_coveragedump_dir) {
-		pefree(xc_coveragedump_dir, 1);
 		xc_coveragedump_dir = NULL;
 	}
 }
 /* }}} */
 
 /* user api */
-PHP_FUNCTION(xcache_coverager_decode) /* {{{ */
+/* {{{ proto array xcache_coverager_decode(string data)
+ * decode specified data which is saved by auto dumper to array
+ */
+PHP_FUNCTION(xcache_coverager_decode)
 {
 	char *str;
 	int len;
@@ -433,4 +514,59 @@ PHP_FUNCTION(xcache_coverager_decode) /* {{{ */
 	}
 }
 /* }}} */
+/* {{{ proto void xcache_coverager_start([bool clean = true])
+ * starts coverager data collecting
+ */
+PHP_FUNCTION(xcache_coverager_start)
+{
+	zend_bool clean = 1;
 
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|b", &clean) == FAILURE) {
+		return;
+	}
+
+	if (clean) {
+		xc_coverager_clean(TSRMLS_C);
+	}
+
+	if (XG(coveragedumper)) {
+		xc_coverager_enable(TSRMLS_C);
+	}
+	else {
+		php_error(E_WARNING, "You can only start coverager after you set 'xcache.coveragedumper' to 'On' in ini");
+	}
+}
+/* }}} */
+/* {{{ proto void xcache_coverager_stop([bool clean = false])
+ * stop coverager data collecting
+ */
+PHP_FUNCTION(xcache_coverager_stop)
+{
+	zend_bool clean = 0;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|b", &clean) == FAILURE) {
+		return;
+	}
+
+	xc_coverager_disable(TSRMLS_C);
+	if (clean) {
+		xc_coverager_clean(TSRMLS_C);
+	}
+}
+/* }}} */
+/* {{{ proto array xcache_coverager_get([bool clean = false])
+ * get coverager data collected
+ */
+PHP_FUNCTION(xcache_coverager_get)
+{
+	zend_bool clean = 0;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|b", &clean) == FAILURE) {
+		return;
+	}
+
+	xc_coverager_dump(return_value TSRMLS_CC);
+	if (clean) {
+		xc_coverager_clean(TSRMLS_C);
+	}
+}
+/* }}} */
