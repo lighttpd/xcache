@@ -1,5 +1,7 @@
 
-#undef DEBUG
+#if 0
+#define DEBUG
+#endif
 
 /* {{{ macros */
 #include <stdlib.h>

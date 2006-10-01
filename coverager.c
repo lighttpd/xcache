@@ -18,7 +18,10 @@ typedef HashTable *coverager_t;
 static char *xc_coveragedump_dir = NULL;
 static zend_compile_file_t *origin_compile_file;
 
-#undef DEBUG
+#if 0
+#define DEBUG
+#endif
+
 /* dumper */
 static void xc_destroy_coverage(void *pDest) /* {{{ */
 {
