@@ -217,6 +217,7 @@ static void xc_coverager_clean(TSRMLS_D) /* {{{ */
 static void xc_coverager_enable(TSRMLS_D) /* {{{ */
 {
 	XG(coverage_enabled) = 1;
+	xc_coverager_initenv(TSRMLS_C);
 }
 /* }}} */
 static void xc_coverager_disable(TSRMLS_D) /* {{{ */
@@ -229,7 +230,6 @@ void xc_coverager_request_init(TSRMLS_D) /* {{{ */
 {
 	if (XG(coverager)) {
 		xc_coverager_enable(TSRMLS_C);
-		xc_coverager_initenv(TSRMLS_C);
 		CG(extended_info) = 1;
 	}
 	else {
