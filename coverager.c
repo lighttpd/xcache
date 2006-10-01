@@ -227,7 +227,7 @@ static void xc_coverager_disable(TSRMLS_D) /* {{{ */
 
 void xc_coverager_request_init(TSRMLS_D) /* {{{ */
 {
-	if (XG(coveragedumper)) {
+	if (XG(coverager)) {
 		xc_coverager_enable(TSRMLS_C);
 		xc_coverager_initenv(TSRMLS_C);
 		CG(extended_info) = 1;
@@ -313,7 +313,7 @@ static void xc_coverager_dump(zval *return_value TSRMLS_DC) /* {{{ */
 /* }}} */
 void xc_coverager_request_shutdown(TSRMLS_D) /* {{{ */
 {
-	if (XG(coveragedumper)) {
+	if (XG(coverager)) {
 		xc_coverager_autodump(TSRMLS_C);
 		xc_coverager_clean(TSRMLS_C);
 	}
@@ -428,7 +428,7 @@ static zend_op_array *xc_compile_file_for_coverage(zend_file_handle *h, int type
 
 	op_array = origin_compile_file(h, type TSRMLS_CC);
 	if (op_array) {
-		if (XG(coveragedumper)) {
+		if (XG(coverager)) {
 			xc_coverager_initenv(TSRMLS_C);
 			xc_coverager_init_compile_result(op_array TSRMLS_CC);
 		}
@@ -532,11 +532,11 @@ PHP_FUNCTION(xcache_coverager_start)
 		xc_coverager_clean(TSRMLS_C);
 	}
 
-	if (XG(coveragedumper)) {
+	if (XG(coverager)) {
 		xc_coverager_enable(TSRMLS_C);
 	}
 	else {
-		php_error(E_WARNING, "You can only start coverager after you set 'xcache.coveragedumper' to 'On' in ini");
+		php_error(E_WARNING, "You can only start coverager after you set 'xcache.coverager' to 'On' in ini");
 	}
 }
 /* }}} */
