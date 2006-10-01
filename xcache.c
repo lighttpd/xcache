@@ -725,7 +725,7 @@ not_relative_path:
 		/* fall */
 
 stat_done:
-		if (XG(request_time) - pbuf->st_mtime < 2) {
+		if (XG(request_time) - pbuf->st_mtime < 2 && !xc_test) {
 			return 0;
 		}
 
