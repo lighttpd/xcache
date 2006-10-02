@@ -34,6 +34,7 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, zend_u
 /* sandbox */
 typedef struct {
 	int alloc;
+	int orig_user_error_handler_error_reporting;
 	char *filename;
 
 	HashTable orig_included_files;
