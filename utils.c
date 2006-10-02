@@ -432,7 +432,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 	b = TG(class_table).pListHead;
 	/* install class */
 	while (b != NULL) {
-		xc_install_class(sandbox->filename, (xc_cest_t*) b->pData, -1,
+		xc_install_class(sandbox->filename, (xc_cest_t*) b->pData,
 				BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY_S(b)), b->nKeyLength TSRMLS_CC);
 		b = b->pListNext;
 	}
