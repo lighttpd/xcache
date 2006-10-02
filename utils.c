@@ -334,6 +334,11 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 
 	sandbox->filename = filename;
 
+#ifdef E_STRICT
+	sandbox->orig_user_error_handler_error_reporting = EG(user_error_handler_error_reporting);
+	EG(user_error_handler_error_reporting) &= ~E_STRICT;
+#endif
+
 	return sandbox;
 }
 /* }}} */
@@ -356,7 +361,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 	b = TG(class_table).pListHead;
 	/* install class */
 	while (b != NULL) {
-		xc_install_class(sandbox->filename, (xc_cest_t*)b->pData,
+		xc_install_class(sandbox->filename, (xc_cest_t*) b->pData,
 				BUCKET_KEY_TYPE(b), BUCKET_KEY(b), b->nKeyLength TSRMLS_CC);
 		b = b->pListNext;
 	}
@@ -395,6 +400,10 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, int install TSRMLS_DC) /* {{{ */
 	/* restore orig here, as EG/CG holded tmp before */
 	memcpy(&EG(included_files), &OG(included_files), sizeof(EG(included_files)));
 	memcpy(&CG(open_files),     &OG(open_files),     sizeof(CG(open_files)));
+
+#ifdef E_STRICT
+	EG(user_error_handler_error_reporting) = sandbox->orig_user_error_handler_error_reporting;
+#endif
 
 	if (sandbox->alloc) {
 		efree(sandbox);
