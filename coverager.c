@@ -146,11 +146,13 @@ static void xc_coverager_save_cov(char *srcfile, char *outfilename, coverager_t 
 
 			for (; len >= sizeof(long) * 2; len -= sizeof(long) * 2, p += 2) {
 				if (zend_hash_index_find(cov, p[0], (void**)&phits) == SUCCESS) {
-					if (p[1] == 0) {
+					if (p[1] == -1) {
 						/* OPTIMIZE: already marked */
 						continue;
 					}
-					p[1] += *phits;
+					if (*phits != -1) {
+						p[1] += *phits;
+					}
 				}
 				zend_hash_index_update(cov, p[0], &p[1], sizeof(p[1]), NULL);
 			}
@@ -218,8 +220,8 @@ static void xc_coverager_clean(TSRMLS_D) /* {{{ */
 			while (zend_hash_get_current_data_ex(cov, (void**)&phits, &pos2) == SUCCESS) {
 				long hits = *phits;
 
-				if (hits != 0) {
-					hits = 0;
+				if (hits != -1) {
+					hits = -1;
 					zend_hash_index_update(cov, pos2->h, &hits, sizeof(hits), NULL);
 				}
 				zend_hash_move_forward_ex(cov, &pos2);
@@ -376,11 +378,13 @@ static void xc_coverager_add_hits(HashTable *cov, long line, long hits TSRMLS_DC
 		return;
 	}
 	if (zend_hash_index_find(cov, line, (void**)&poldhits) == SUCCESS) {
-		if (hits == 0) {
-			/* OPTIMIZE: already marked */
+		if (hits == -1) {
+			/* OPTIMIZE: -1 == init-ing, but it's already initized */
 			return;
 		}
-		hits += *poldhits;
+		if (*poldhits != -1) {
+			hits += *poldhits;
+		}
 	}
 	zend_hash_index_update(cov, line, &hits, sizeof(hits), NULL);
 }
@@ -429,7 +433,7 @@ static int xc_coverager_init_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ 
 			case ZEND_EXT_FCALL_BEGIN:
 			case ZEND_EXT_FCALL_END:
 #endif
-				xc_coverager_add_hits(cov, op_array->opcodes[i].lineno, 0 TSRMLS_CC);
+				xc_coverager_add_hits(cov, op_array->opcodes[i].lineno, -1 TSRMLS_CC);
 				break;
 		}
 	}

@@ -168,6 +168,7 @@ typedef struct {
 	zstr      key;
 	zend_uint key_size;
 	xc_cest_t cest;
+	int       oplineno;
 } xc_classinfo_t;
 /* }}} */
 #ifdef HAVE_XCACHE_CONSTANT
@@ -214,6 +215,7 @@ typedef struct {
 
 	zend_uint classinfo_cnt;
 	xc_classinfo_t *classinfos;
+	zend_bool have_early_binding;
 } xc_entry_data_php_t;
 /* }}} */
 /* {{{ xc_entry_data_var_t */

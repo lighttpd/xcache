@@ -1,4 +1,4 @@
-#include "php.h"
+
 #include "xcache.h"
 #include "utils.h"
 #ifdef ZEND_ENGINE_2_1
@@ -8,6 +8,14 @@
 #undef NDEBUG
 #include "assert.h"
 
+#ifndef ZEND_VM_SET_OPCODE_HANDLER
+#	define ZEND_VM_SET_OPCODE_HANDLER(opline) do { } while (0)
+#endif
+
+#define OP_ZVAL_DTOR(op) do { \
+	(op).u.constant.is_ref = 0; \
+	zval_dtor(&(op).u.constant); \
+} while(0)
 xc_compile_result_t *xc_compile_result_init(xc_compile_result_t *cr, /* {{{ */
 		zend_op_array *op_array,
 		HashTable *function_table,
@@ -264,6 +272,122 @@ int xc_undo_fix_opcode(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 /* }}} */
 #endif
 
+int xc_foreach_early_binding_class(zend_op_array *op_array, void (*callback)(zend_op *opline, int oplineno, void *data TSRMLS_DC), void *data TSRMLS_DC) /* {{{ */
+{
+	zend_op *opline, *begin, *end, *next = NULL;
+	xc_cest_t cest;
+
+	opline = begin = op_array->opcodes;
+	end = opline + op_array->last;
+	while (opline < end) {
+		switch (opline->opcode) {
+			case ZEND_JMP:
+				next = begin + opline->op1.u.opline_num;
+				break;
+
+			case ZEND_JMPZNZ:
+				next = begin + max(opline->op2.u.opline_num, opline->extended_value);
+				break;
+
+			case ZEND_JMPZ:
+			case ZEND_JMPNZ:
+			case ZEND_JMPZ_EX:
+			case ZEND_JMPNZ_EX:
+				next = begin + opline->op2.u.opline_num;
+				break;
+
+			case ZEND_RETURN:
+				opline = end;
+				break;
+
+			case ZEND_DECLARE_INHERITED_CLASS:
+				callback(opline, opline - begin, data TSRMLS_CC);
+				break;
+		}
+
+		if (opline < next) {
+			opline = next;
+		}
+		else {
+			opline ++;
+		}
+	}
+}
+/* }}} */
+int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, int oplineno TSRMLS_DC) /* {{{ */
+{
+	zend_op *opline, *opcodes;
+
+#ifdef DEBUG
+	fprintf(stderr, "binding %d\n", oplineno);
+#endif
+	assert(oplineno >= 0);
+
+	/* do early binding */
+	opline = &(op_array->opcodes[oplineno]);
+
+	switch (opline->opcode) {
+	case ZEND_DECLARE_INHERITED_CLASS:
+#ifdef ZEND_ENGINE_2
+		{
+			zval *parent_name;
+			zend_class_entry **pce;
+			parent_name = &(opline - 1)->op2.u.constant;
+#ifdef DEBUG
+			fprintf(stderr, "binding with parent %s\n", Z_STRVAL_P(parent_name));
+#endif
+			if (zend_lookup_class(Z_STRVAL_P(parent_name), Z_STRLEN_P(parent_name), &pce TSRMLS_CC) == FAILURE) {
+				return FAILURE;
+			}
+
+			if (do_bind_inherited_class(opline, class_table, *pce, 1 TSRMLS_CC) == NULL) {
+				return FAILURE;
+			}
+		}
+#else
+		if (do_bind_function_or_class(opline, NULL, class_table, 1) == FAILURE) {
+			return FAILURE;
+		}
+#endif
+
+#ifdef ZEND_FETCH_CLASS
+		/* clear unnecessary ZEND_FETCH_CLASS opcode */
+		if (opline > op_array->opcodes
+		 && (opline - 1)->opcode == ZEND_FETCH_CLASS) {
+			zend_op *fetch_class_opline = opline - 1;
+
+#ifdef DEBUG
+			fprintf(stderr, "%s %p\n", Z_STRVAL(fetch_class_opline->op2.u.constant), Z_STRVAL(fetch_class_opline->op2.u.constant));
+#endif
+			OP_ZVAL_DTOR(fetch_class_opline->op2);
+			fetch_class_opline->opcode = ZEND_NOP;
+			ZEND_VM_SET_OPCODE_HANDLER(fetch_class_opline);
+			memset(&fetch_class_opline->op1, 0, sizeof(znode));
+			memset(&fetch_class_opline->op2, 0, sizeof(znode));
+			SET_UNUSED(fetch_class_opline->op1);
+			SET_UNUSED(fetch_class_opline->op2);
+			SET_UNUSED(fetch_class_opline->result);
+		}
+#endif
+		break;
+
+	default:
+		return FAILURE;
+	}
+
+	zend_hash_del(class_table, opline->op1.u.constant.value.str.val, opline->op1.u.constant.value.str.len);
+	OP_ZVAL_DTOR(opline->op1);
+	OP_ZVAL_DTOR(opline->op2);
+	opline->opcode = ZEND_NOP;
+	ZEND_VM_SET_OPCODE_HANDLER(opline);
+	memset(&opline->op1, 0, sizeof(znode));
+	memset(&opline->op2, 0, sizeof(znode));
+	SET_UNUSED(opline->op1);
+	SET_UNUSED(opline->op2);
+	return SUCCESS;
+}
+/* }}} */
+
 #ifdef HAVE_XCACHE_CONSTANT
 void xc_install_constant(char *filename, zend_constant *constant, zend_uchar type, zstr key, uint len TSRMLS_DC) /* {{{ */
 {
@@ -319,7 +443,7 @@ void xc_install_function(char *filename, zend_function *func, zend_uchar type, z
 	}
 }
 /* }}} */
-ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, zend_uchar type, zstr key, uint len TSRMLS_DC) /* {{{ */
+ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, int oplineno, zend_uchar type, zstr key, uint len TSRMLS_DC) /* {{{ */
 {
 	zend_bool istmpkey;
 	zend_class_entry *cep = CestToCePtr(*cest);
@@ -335,6 +459,9 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, zend_u
 					cest, sizeof(xc_cest_t),
 					ZESW(&stored_ce_ptr, NULL)
 					);
+		if (oplineno != -1) {
+			xc_do_early_binding(CG(active_op_array), CG(class_table), oplineno TSRMLS_CC);
+		}
 	}
 	else if (zend_u_hash_add(CG(class_table), type, key, len,
 				cest, sizeof(xc_cest_t),
@@ -348,6 +475,7 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, zend_u
 #else
 		zend_error(E_ERROR, "Cannot redeclare class %s", cep->name);
 #endif
+		assert(oplineno == -1);
 	}
 	ZESW(return (xc_cest_t *) stored_ce_ptr, NOTHING);
 }
@@ -404,6 +532,12 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 	return sandbox;
 }
 /* }}} */
+static void xc_early_binding_cb(zend_op *opline, int oplineno, void *data TSRMLS_DC) /* {{{ */
+{
+	xc_sandbox_t *sandbox = (xc_sandbox_t *) data;
+	xc_do_early_binding(CG(active_op_array), OG(class_table), oplineno TSRMLS_CC);
+}
+/* }}} */
 static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 {
 	int i;
@@ -432,10 +566,13 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 	b = TG(class_table).pListHead;
 	/* install class */
 	while (b != NULL) {
-		xc_install_class(sandbox->filename, (xc_cest_t*) b->pData,
+		xc_install_class(sandbox->filename, (xc_cest_t*) b->pData, -1,
 				BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY_S(b)), b->nKeyLength TSRMLS_CC);
 		b = b->pListNext;
 	}
+	xc_undo_pass_two(CG(active_op_array) TSRMLS_CC);
+	xc_foreach_early_binding_class(CG(active_op_array), xc_early_binding_cb, (void *) sandbox TSRMLS_CC);
+	xc_redo_pass_two(CG(active_op_array) TSRMLS_CC);
 
 	i = 1;
 	zend_hash_add(&OG(included_files), sandbox->filename, strlen(sandbox->filename) + 1, (void *)&i, sizeof(int), NULL);

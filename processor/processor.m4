@@ -473,7 +473,10 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 dnl }}}
 DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	IFRESTORE(`
-	if (!processor->readonly_protection) {
+	dnl shadow copy must NOT meet:
+	dnl readonly_protection=on
+	dnl main op_array && have early binding
+	if (!processor->readonly_protection && !(src == processor->xce_src->data.php->op_array && processor->xce_src->data.php->have_early_binding)) {
 		/* really fast shallow copy */
 		memcpy(dst, src, sizeof(src[0]));
 		dst->refcount[0] = 1000;
@@ -684,6 +687,7 @@ DEF_STRUCT_P_FUNC(`xc_classinfo_t', , `dnl {{{
 #else
 	STRUCT(zend_class_entry, cest)
 #endif
+	DISPATCH(int, oplineno)
 ')
 dnl }}}
 DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
@@ -714,6 +718,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 		')
 	')
 	STRUCT_ARRAY(classinfo_cnt, xc_classinfo_t, classinfos)
+	DISPATCH(zend_bool, have_early_binding)
 	popdef(`BEFORE_LOOP')
 ')
 dnl }}}

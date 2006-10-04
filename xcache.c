@@ -66,6 +66,10 @@
 	} \
 } while(0)
 
+#ifndef max
+#define max(a, b) ((a) < (b) ? (b) : (a))
+#endif
+
 /* }}} */
 
 /* {{{ globals */
@@ -541,6 +545,8 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 	xc_cest_t **new_cest_ptrs = (xc_cest_t **)do_alloca(sizeof(xc_cest_t*) * p->classinfo_cnt);
 #endif
 
+	CG(active_op_array) = p->op_array;
+
 #ifdef HAVE_XCACHE_CONSTANT
 	/* install constant */
 	for (i = 0; i < p->constinfo_cnt; i ++) {
@@ -570,7 +576,7 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 		}
 		new_cest_ptrs[i] =
 #endif
-		xc_install_class(xce->name.str.val, &ci->cest,
+		xc_install_class(xce->name.str.val, &ci->cest, ci->oplineno,
 				UNISW(0, ci->type), ci->key, ci->key_size TSRMLS_CC);
 	}
 
@@ -772,6 +778,35 @@ stat_done:
 	return 1;
 }
 /* }}} */
+static void xc_cache_early_binding_class_cb(zend_op *opline, int oplineno, void *data TSRMLS_DC) /* {{{ */
+{
+	char *class_name;
+	int i, class_len;
+	xc_cest_t cest;
+	xc_entry_data_php_t *php = (xc_entry_data_php_t *) data;
+
+	class_name = opline->op1.u.constant.value.str.val;
+	class_len  = opline->op1.u.constant.value.str.len;
+	if (zend_hash_find(CG(class_table), class_name, class_len, (void **) &cest) == FAILURE) {
+		assert(0);
+	}
+#ifdef DEBUG
+	fprintf(stderr, "got ZEND_DECLARE_INHERITED_CLASS: %s\n", class_name + 1);
+#endif
+	/* let's see which class */
+	for (i = 0; i < php->classinfo_cnt; i ++) {
+		if (memcmp(ZSTR_S(php->classinfos[i].key), class_name, class_len) == 0) {
+			php->classinfos[i].oplineno = oplineno;
+			php->have_early_binding = 1;
+			break;
+		}
+	}
+
+	if (i == php->classinfo_cnt) {
+		assert(0);
+	}
+}
+/* }}} */
 static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /* {{{ */
 {
 	xc_sandbox_t sandbox;
@@ -784,6 +819,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	char *filename;
 	char opened_path_buffer[MAXPATHLEN];
 	int old_constinfo_cnt, old_funcinfo_cnt, old_classinfo_cnt;
+	int i;
 
 	if (!xc_initized) {
 		assert(0);
@@ -894,20 +930,21 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	 */
 #ifdef HAVE_INODE
 	if (xce.data.php->inode)
-#endif
 	{
 		if (xce.name.str.val != filename) {
 			xce.name.str.val = filename;
 			xce.name.str.len = strlen(filename);
 		}
 	}
+#endif
 
 #ifdef HAVE_XCACHE_OPTIMIZER
 	if (XG(optimizer)) {
 		xc_optimize(op_array TSRMLS_CC);
 	}
 #endif
-
+	/* }}} */
+	/* {{{ prepare */
 	php.op_array      = op_array;
 
 #ifdef HAVE_XCACHE_CONSTANT
@@ -971,6 +1008,16 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 		/* for ZE1, cest need to fix inside store */
 	}
 	/* }}} */
+	/* {{{ find inherited classes that should be early-binding */
+	php.have_early_binding = 0;
+	for (i = 0; i < php.classinfo_cnt; i ++) {
+		php.classinfos[i].oplineno = -1;
+	}
+
+	xc_undo_pass_two(php.op_array TSRMLS_CC);
+	xc_foreach_early_binding_class(php.op_array, xc_cache_early_binding_class_cb, (void *) &php TSRMLS_CC);
+	xc_redo_pass_two(php.op_array TSRMLS_CC);
+	/* }}} */
 	ENTER_LOCK_EX(cache) { /* {{{ store/add entry */
 		stored_xce = xc_entry_store_dmz(&xce TSRMLS_CC);
 	} LEAVE_LOCK_EX(cache);
@@ -1000,6 +1047,7 @@ err_bailout:
 		xc_sandbox_free(&sandbox, 0 TSRMLS_CC);
 	}
 	else {
+		CG(active_op_array) = op_array;
 		xc_sandbox_free(&sandbox, 1 TSRMLS_CC);
 	}
 
