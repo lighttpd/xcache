@@ -24,12 +24,14 @@ int xc_fix_opcode(zend_op_array *op_array TSRMLS_DC);
 int xc_undo_fix_opcode(zend_op_array *op_array TSRMLS_DC);
 zend_uchar xc_get_fixed_opcode(zend_uchar opcode, int line);
 
+int xc_foreach_early_binding_class(zend_op_array *op_array, void (*callback)(zend_op *opline, int oplineno, void *data TSRMLS_DC), void *data TSRMLS_DC);
+
 /* installer */
 #ifdef HAVE_XCACHE_CONSTANT
 void xc_install_constant(char *filename, zend_constant *constant, zend_uchar type, zstr key, uint len TSRMLS_DC);
 #endif
 void xc_install_function(char *filename, zend_function *func, zend_uchar type, zstr key, uint len TSRMLS_DC);
-ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, zend_uchar type, zstr key, uint len TSRMLS_DC);
+ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, int oplineno, zend_uchar type, zstr key, uint len TSRMLS_DC);
 
 /* sandbox */
 typedef struct {
