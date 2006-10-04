@@ -8,6 +8,10 @@
 #undef NDEBUG
 #include "assert.h"
 
+#ifndef max
+#define max(a, b) ((a) < (b) ? (b) : (a))
+#endif
+
 #ifndef ZEND_VM_SET_OPCODE_HANDLER
 #	define ZEND_VM_SET_OPCODE_HANDLER(opline) do { } while (0)
 #endif
