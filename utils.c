@@ -318,7 +318,7 @@ int xc_foreach_early_binding_class(zend_op_array *op_array, void (*callback)(zen
 	}
 }
 /* }}} */
-int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, int oplineno TSRMLS_DC) /* {{{ */
+static int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, int oplineno TSRMLS_DC) /* {{{ */
 {
 	zend_op *opline, *opcodes;
 
@@ -336,10 +336,16 @@ int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, int opl
 		{
 			zval *parent_name;
 			zend_class_entry **pce;
+
+			/* don't early-bind classes that implement interfaces */
+			if ((opline + 1)->opcode == ZEND_FETCH_CLASS && (opline + 2)->opcode == ZEND_ADD_INTERFACE) {
+				return FAILURE;
+			}
+
 			parent_name = &(opline - 1)->op2.u.constant;
-#ifdef DEBUG
+#	ifdef DEBUG
 			fprintf(stderr, "binding with parent %s\n", Z_STRVAL_P(parent_name));
-#endif
+#	endif
 			if (zend_lookup_class(Z_STRVAL_P(parent_name), Z_STRLEN_P(parent_name), &pce TSRMLS_CC) == FAILURE) {
 				return FAILURE;
 			}
@@ -348,21 +354,15 @@ int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, int opl
 				return FAILURE;
 			}
 		}
-#else
-		if (do_bind_function_or_class(opline, NULL, class_table, 1) == FAILURE) {
-			return FAILURE;
-		}
-#endif
 
-#ifdef ZEND_FETCH_CLASS
 		/* clear unnecessary ZEND_FETCH_CLASS opcode */
 		if (opline > op_array->opcodes
 		 && (opline - 1)->opcode == ZEND_FETCH_CLASS) {
 			zend_op *fetch_class_opline = opline - 1;
 
-#ifdef DEBUG
+#	ifdef DEBUG
 			fprintf(stderr, "%s %p\n", Z_STRVAL(fetch_class_opline->op2.u.constant), Z_STRVAL(fetch_class_opline->op2.u.constant));
-#endif
+#	endif
 			OP_ZVAL_DTOR(fetch_class_opline->op2);
 			fetch_class_opline->opcode = ZEND_NOP;
 			ZEND_VM_SET_OPCODE_HANDLER(fetch_class_opline);
@@ -371,6 +371,22 @@ int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, int opl
 			SET_UNUSED(fetch_class_opline->op1);
 			SET_UNUSED(fetch_class_opline->op2);
 			SET_UNUSED(fetch_class_opline->result);
+		}
+
+		/* clear unnecessary ZEND_VERIFY_ABSTRACT_CLASS opcode */
+		if ((opline + 1)->opcode == ZEND_VERIFY_ABSTRACT_CLASS) {
+			zend_op *abstract_op = opline + 1;
+			memset(abstract_op, 0, sizeof(abstract_op[0]));
+			abstract_op->lineno = 0;
+			SET_UNUSED(abstract_op->op1);
+			SET_UNUSED(abstract_op->op2);
+			SET_UNUSED(abstract_op->result);
+			abstract_op->opcode = ZEND_NOP;
+			ZEND_VM_SET_OPCODE_HANDLER(abstract_op);
+		}
+#else
+		if (do_bind_function_or_class(opline, NULL, class_table, 1) == FAILURE) {
+			return FAILURE;
 		}
 #endif
 		break;
