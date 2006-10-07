@@ -294,6 +294,7 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 #endif
 
 	STRUCT(HashTable, default_properties, HashTable_zval_ptr)
+	IFSTORE(`xc_hash_reset_zval_refcount(&dst->default_properties TSRMLS_CC);')
 	IFCOPY(`dst->builtin_functions = src->builtin_functions;')
 	DONE(builtin_functions)
 #ifdef ZEND_ENGINE_2
@@ -307,6 +308,7 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	STRUCT_P(HashTable, static_members, IFCALCSTORE(HashTable_zval_ptr_static_member_check, HashTable_zval_ptr))
 #	endif
 	STRUCT(HashTable, constants_table, HashTable_zval_ptr)
+	IFSTORE(`xc_hash_reset_zval_refcount(&dst->constants_table TSRMLS_CC);')
 
 	dnl runtime binding: ADD_INTERFACE will deal with it
 	IFRESTORE(`
