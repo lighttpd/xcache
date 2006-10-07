@@ -566,7 +566,7 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 		zend_class_entry *ce = CestToCePtr(ci->cest);
 		/* fix pointer to the be which inside class_table */
 		if (ce->parent) {
-			zend_uint class_idx = (/* class_num */ (int) ce->parent) - 1;
+			zend_uint class_idx = (/* class_num */ (int) (long) ce->parent) - 1;
 			assert(class_idx < i);
 			ci->cest.parent = new_cest_ptrs[class_idx];
 		}
