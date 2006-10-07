@@ -277,6 +277,18 @@ static void xc_fix_static_members(xc_processor_t *processor, zend_class_entry *d
 }
 /* }}} */
 #endif
+int xc_hash_reset_zval_refcount_applyer(void *pDest TSRMLS_DC) /* {{{ */
+{
+	zval **zv = (zval **) pDest;
+	ZVAL_REFCOUNT(*zv) = 1;
+	return ZEND_HASH_APPLY_KEEP;
+}
+/* }}} */
+static void xc_hash_reset_zval_refcount(HashTable *hash TSRMLS_DC) /* {{{ */
+{
+	zend_hash_apply(hash, xc_hash_reset_zval_refcount_applyer TSRMLS_CC);
+}
+/* }}} */
 /* {{{ call op_array ctor handler */
 extern zend_bool xc_have_op_array_ctor;
 static void xc_zend_extension_op_array_ctor_handler(zend_extension *extension, zend_op_array *op_array TSRMLS_DC)
