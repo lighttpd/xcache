@@ -304,9 +304,17 @@ int xc_foreach_early_binding_class(zend_op_array *op_array, void (*callback)(zen
 				opline = end;
 				break;
 
+#ifdef ZEND_ENGINE_2
 			case ZEND_DECLARE_INHERITED_CLASS:
 				callback(opline, opline - begin, data TSRMLS_CC);
 				break;
+#else
+			case ZEND_DECLARE_FUNCTION_OR_CLASS:
+				if (opline->extended_value == ZEND_DECLARE_INHERITED_CLASS) {
+					callback(opline, opline - begin, data TSRMLS_CC);
+				}
+				break;
+#endif
 		}
 
 		if (opline < next) {
@@ -331,8 +339,8 @@ static int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, 
 	opline = &(op_array->opcodes[oplineno]);
 
 	switch (opline->opcode) {
-	case ZEND_DECLARE_INHERITED_CLASS:
 #ifdef ZEND_ENGINE_2
+	case ZEND_DECLARE_INHERITED_CLASS:
 		{
 			zval *parent_name;
 			zend_class_entry **pce;
@@ -385,6 +393,7 @@ static int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, 
 			ZEND_VM_SET_OPCODE_HANDLER(abstract_op);
 		}
 #else
+	case ZEND_DECLARE_FUNCTION_OR_CLASS:
 		if (do_bind_function_or_class(opline, NULL, class_table, 1) == FAILURE) {
 			return FAILURE;
 		}
