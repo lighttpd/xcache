@@ -221,7 +221,11 @@ DEF_STRUCT_P_FUNC(`zend_constant', , `dnl {{{
 	STRUCT(zval, value)
 	DISPATCH(int, flags)
 	DISPATCH(uint, name_len)
+	pushdef(`emalloc', `malloc($1)')
+	pushdef(`ecalloc', `calloc($1, $2)')
 	PROC_ZSTRING_L(, name, name_len)
+	popdef(`ecalloc')
+	popdef(`emalloc')
 	DISPATCH(int, module_number)
 ')
 dnl }}}
