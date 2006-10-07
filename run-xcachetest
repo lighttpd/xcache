@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# use symlink first
+if test -x ./php-cli ; then
+	php_cli=./php-cli
+elif test ! -z "$TEST_PHP_EXECUTABLE" && test -x "$TEST_PHP_EXECUTABLE"; then
+	php_cli="$TEST_PHP_EXECUTABLE"
+else
+	php_cli="which php"
+fi
+
+if test -x ./php-cgi ; then
+	php_cgi=./php-cgi
+else
+	php_cgi="which php-cgi"
+fi
+
+PHP_SRC=./php-src
+test -z "$TEST_PHP_USER" && TEST_PHP_USER="$PHP_SRC/Zend,$PHP_SRC/tests"
+
+TEST_PHP_EXECUTABLE="$php_cli"
+TEST_PHP_CGI_EXECUTABLE="$php_cgi"
+
+export TEST_PHP_CGI_EXECUTABLE
+export TEST_PHP_EXECUTABLE
+export TEST_PHP_USER
+
+echo "XCache test running with:"
+echo "TEST_PHP_CGI_EXECUTABLE: $TEST_PHP_CGI_EXECUTABLE"
+echo "TEST_PHP_EXECUTABLE:     $TEST_PHP_EXECUTABLE"
+echo "TEST_PHP_USER:           $TEST_PHP_USER"
+
+exec "$php_cli" "$@"
