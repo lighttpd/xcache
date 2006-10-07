@@ -502,32 +502,6 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	PROC_ZSTRING(, function_name)
 #ifdef ZEND_ENGINE_2
 	DISPATCH(zend_uint, fn_flags)
-	dnl mark it as -1 on store, and lookup parent on restore
-	IFSTORE(`dst->prototype = (processor->active_class_entry_src && src->prototype) ? (zend_function *) -1 : NULL; DONE(prototype)', `
-			IFRESTORE(`do {
-				zend_function *parent;
-				if (src->prototype != NULL
-				 && zend_u_hash_find(&(processor->active_class_entry_dst->parent->function_table),
-						UG(unicode) ? IS_UNICODE : IS_STRING,
-						src->function_name, xc_zstrlen(UG(unicode), src->function_name) + 1,
-						(void **) &parent) == SUCCESS) {
-					/* see do_inherit_method_check() */
-					if ((parent->common.fn_flags & ZEND_ACC_ABSTRACT)) {
-					  dst->prototype = parent;
-					}
-					else {
-						dst->prototype = parent->common.prototype;
-					}
-				}
-				else {
-					dst->prototype = NULL;
-				}
-				DONE(prototype)
-			} while (0);
-			', `
-				COPYNULL(prototype)
-			')
-	')
 	STRUCT_ARRAY_I(num_args, zend_arg_info, arg_info)
 	DISPATCH(zend_uint, num_args)
 	DISPATCH(zend_uint, required_num_args)
@@ -634,10 +608,42 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 #endif
 	} while (0);
 
+#ifdef ZEND_ENGINE_2
+	dnl mark it as -1 on store, and lookup parent on restore
+	IFSTORE(`dst->prototype = (processor->active_class_entry_src && src->prototype) ? (zend_function *) -1 : NULL; DONE(prototype)', `
+			IFRESTORE(`do {
+				zend_function *parent;
+				if (src->prototype != NULL
+				 && zend_u_hash_find(&(processor->active_class_entry_dst->parent->function_table),
+						UG(unicode) ? IS_UNICODE : IS_STRING,
+						src->function_name, xc_zstrlen(UG(unicode), src->function_name) + 1,
+						(void **) &parent) == SUCCESS) {
+					/* see do_inherit_method_check() */
+					if ((parent->common.fn_flags & ZEND_ACC_ABSTRACT)) {
+					  dst->prototype = parent;
+					} else if (!(parent->common.fn_flags & ZEND_ACC_CTOR) || (parent->common.prototype && (parent->common.prototype->common.scope->ce_flags & ZEND_ACC_INTERFACE))) {
+						/* ctors only have a prototype if it comes from an interface */
+						dst->prototype = parent->common.prototype ? parent->common.prototype : parent;
+					}
+					else {
+						dst->prototype = NULL;
+					}
+				}
+				else {
+					dst->prototype = NULL;
+				}
+				DONE(prototype)
+			} while (0);
+			', `
+				COPYNULL(prototype)
+			')
+	')
+#endif
+
 	IFRESTORE(`
 #ifdef ZEND_ENGINE_2
-		if (dst->scope) {
-			dst->scope = xc_get_class(processor, (zend_ulong) dst->scope);
+		if (src->scope) {
+			dst->scope = xc_get_class(processor, (zend_ulong) src->scope);
 			xc_fix_method(processor, dst);
 		}
 		DONE(scope)
