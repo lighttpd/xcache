@@ -15,8 +15,8 @@ else
 	php_cgi="which php-cgi"
 fi
 
-PHP_SRC=./php-src
-test -z "$TEST_PHP_USER" && TEST_PHP_USER="$PHP_SRC/Zend,$PHP_SRC/tests"
+test -z "$PHP_SRC" && PHP_SRC=./php-src
+test -z "$TEST_PHP_USER" && TEST_PHP_USER="$PHP_SRC/Zend,$PHP_SRC/tests,$PHP_SRC/ext/standard/tests"
 
 TEST_PHP_EXECUTABLE="$php_cli"
 TEST_PHP_CGI_EXECUTABLE="$php_cgi"
