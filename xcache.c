@@ -1070,10 +1070,6 @@ err_bailout:
 	return op_array;
 
 restore:
-	if (php_check_open_basedir(stored_xce->name.str.val TSRMLS_CC) != 0) {
-		return NULL;
-	}
-
 #ifdef DEBUG
 	fprintf(stderr, "restoring\n");
 #endif
