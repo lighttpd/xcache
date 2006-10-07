@@ -1042,6 +1042,10 @@ err_bailout:
 		/* free it, no install. restore now */
 		xc_sandbox_free(&sandbox, 0 TSRMLS_CC);
 	}
+	else if (!op_array) {
+		/* failed to compile free it, no install */
+		xc_sandbox_free(&sandbox, 0 TSRMLS_CC);
+	}
 	else {
 		CG(active_op_array) = op_array;
 		xc_sandbox_free(&sandbox, 1 TSRMLS_CC);
