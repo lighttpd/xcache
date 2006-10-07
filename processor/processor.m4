@@ -545,6 +545,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 
 	STRUCT_P(zend_uint, refcount)
 	UNFIXPOINTER(zend_uint, refcount)
+	IFSTORE(`dst->refcount[0] = 1;')
 
 	pushdef(`AFTER_ALLOC', `IFCOPY(`
 		processor->active_opcodes_dst = dst->opcodes;
