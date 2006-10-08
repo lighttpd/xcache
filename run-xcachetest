@@ -16,7 +16,14 @@ else
 fi
 
 test -z "$PHP_SRC" && PHP_SRC=./php-src
-test -z "$TEST_PHP_USER" && TEST_PHP_USER="$PHP_SRC/Zend,$PHP_SRC/tests,$PHP_SRC/ext/standard/tests"
+if test -z "$TEST_PHP_USER" ; then
+	TEST_PHP_USER="$PHP_SRC/tests"
+	for i in Zend ZendEngine2 ext/standard/tests ext/reflection/tests ; do
+		if test -d "$PHP_SRC/$i" ; then
+			TEST_PHP_USER="$TEST_PHP_USER,$PHP_SRC/$i"
+		fi
+	done
+fi
 
 TEST_PHP_EXECUTABLE="$php_cli"
 TEST_PHP_CGI_EXECUTABLE="$php_cgi"
