@@ -395,20 +395,21 @@ static int xc_coverager_get_op_array_size_no_tail(zend_op_array *op_array) /* {{
 	zend_uint size;
 
 	size = op_array->size;
-#ifdef ZEND_ENGINE_2
-	if (op_array->opcodes[size - 1].opcode == ZEND_HANDLE_EXCEPTION) {
-		size --;
+	do {
+next_op:
+		if (size == 0) {
+			break;
+		}
+		switch (op_array->opcodes[size - 1].opcode) {
+#ifdef ZEND_HANDLE_EXCEPTION
+			case ZEND_HANDLE_EXCEPTION:
 #endif
-		if (op_array->opcodes[size - 1].opcode == ZEND_RETURN) {
-			size --;
-			/* it's not real php statement */
-			if (op_array->opcodes[size - 1].opcode == ZEND_EXT_STMT) {
+			case ZEND_RETURN:
+			case ZEND_EXT_STMT:
 				size --;
-			}
-		}   
-#ifdef ZEND_ENGINE_2
-	}
-#endif
+				goto next_op;
+		}
+	} while (0);
 	return size;
 }
 /* }}} */
