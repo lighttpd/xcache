@@ -1672,7 +1672,7 @@ PHP_FUNCTION(xcache_get)
 		stored_xce = xc_entry_find_dmz(&xce TSRMLS_CC);
 		if (stored_xce) {
 			if (XG(request_time) <= stored_xce->ctime + stored_xce->ttl) {
-				xc_processor_restore_zval(return_value, stored_xce->data.var->value TSRMLS_CC);
+				xc_processor_restore_zval(return_value, stored_xce->data.var->value, stored_xce->have_references TSRMLS_CC);
 				/* return */
 				break;
 			}
@@ -1829,7 +1829,7 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 #ifdef DEBUG
 					fprintf(stderr, "incdec: notlong\n");
 #endif
-					xc_processor_restore_zval(&oldzval, stored_xce->data.var->value TSRMLS_CC);
+					xc_processor_restore_zval(&oldzval, stored_xce->data.var->value, stored_xce->have_references TSRMLS_CC);
 					convert_to_long(&oldzval);
 					value = Z_LVAL(oldzval);
 					zval_dtor(&oldzval);

@@ -66,7 +66,6 @@ DEF_STRUCT_P_FUNC(`zend_brk_cont_element', , `
 ')
 dnl }}}
 DEF_HASH_TABLE_FUNC(`HashTable_zval_ptr',           `zval_ptr')
-DEF_HASH_TABLE_FUNC(`HashTable_zval_ptr_static_member_check',  `zval_ptr', , `xc_hash_static_member_check(processor, BUCKET TSRMLS_CC)')
 #ifdef HAVE_XCACHE_CONSTANT
 DEF_HASH_TABLE_FUNC(`HashTable_zend_constant',      `zend_constant')
 #endif
@@ -167,6 +166,7 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 							/* *dst is updated */
 							dnl fprintf(stderr, "*dst is set to %p\n", dst[0]);
 						')
+						IFCALCSTORE(`processor->have_references = 1;')
 						IFSTORE(`assert(xc_is_shm(dst[0]));')
 						IFRESTORE(`assert(!xc_is_shm(dst[0]));')
 						break;
@@ -299,21 +299,18 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 #endif
 
 	STRUCT(HashTable, default_properties, HashTable_zval_ptr)
-	IFSTORE(`xc_hash_reset_zval_refcount(&dst->default_properties TSRMLS_CC);')
 	IFCOPY(`dst->builtin_functions = src->builtin_functions;')
 	DONE(builtin_functions)
 #ifdef ZEND_ENGINE_2
 	STRUCT(HashTable, properties_info, HashTable_zend_property_info)
 #	ifdef ZEND_ENGINE_2_1
-	STRUCT(HashTable, default_static_members, IFCALCSTORE(HashTable_zval_ptr_static_member_check, HashTable_zval_ptr))
+	STRUCT(HashTable, default_static_members, HashTable_zval_ptr)
 	IFCOPY(`dst->static_members = &dst->default_static_members;')
-	IFRESTORE(`if (dst->parent) xc_fix_static_members(processor, dst TSRMLS_CC);')
 	DONE(static_members)
 #	else
-	STRUCT_P(HashTable, static_members, IFCALCSTORE(HashTable_zval_ptr_static_member_check, HashTable_zval_ptr))
+	STRUCT_P(HashTable, static_members, HashTable_zval_ptr)
 #	endif
 	STRUCT(HashTable, constants_table, HashTable_zval_ptr)
-	IFSTORE(`xc_hash_reset_zval_refcount(&dst->constants_table TSRMLS_CC);')
 
 	dnl runtime binding: ADD_INTERFACE will deal with it
 	IFRESTORE(`
@@ -814,6 +811,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_t', , `
 	')
 	DONE(data)
 	dnl }}}
+	DISPATCH(zend_bool, have_references)
 ')
 dnl }}}
 dnl ====================================================
