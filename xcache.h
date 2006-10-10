@@ -248,6 +248,8 @@ struct _xc_entry_t {
 		xc_entry_data_php_t *php;
 		xc_entry_data_var_t *var;
 	} data;
+
+	zend_bool  have_references;
 };
 /* }}} */
 

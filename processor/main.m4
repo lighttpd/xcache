@@ -10,6 +10,8 @@ define(`REDEF', `undefine(`$1') define(`$1', `$2')')
 define(`ONCE', `ifdef(`ONCE $1', `', `define(`ONCE $1')$1')')
 define(`m4_errprint', `ONCE(`errprint(`$1
 ')')')
+define(`ZEND_STRS', `($1), (sizeof($1))')
+define(`ZEND_STRL', `($1), (sizeof($1) - 1)')
 dnl ============
 define(`INDENT', `xc_dprint_indent(indent);')
 dnl }}}

@@ -61,6 +61,7 @@ struct _xc_processor_t {
 	HashTable strings;
 	HashTable zvalptrs;
 	zend_bool reference; /* enable if to deal with reference */
+	zend_bool have_references;
 	const xc_entry_t *xce_src;
 	const xc_entry_t *xce_dst;
 	const zend_class_entry *cache_ce;
@@ -260,49 +261,7 @@ dnl FIXME: handle common.function_name here
 	}
 }
 /* }}} */
-static int xc_hash_static_member_check(xc_processor_t *processor, Bucket *b TSRMLS_DC) /* {{{ */
-{
-	const zend_class_entry *src = processor->active_class_entry_src;
-	if (src->parent) {
-		zval **parentzv;
-		if (zend_u_hash_quick_find(CE_STATIC_MEMBERS(src->parent), BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY_S(b)), b->nKeyLength, b->h, (void **) &parentzv) == SUCCESS) {
-			zval **zv = (zval **) b->pData;
-			if (*parentzv == *zv) {
-				return ZEND_HASH_APPLY_REMOVE;
-			}
-		}
-	}
-	return ZEND_HASH_APPLY_KEEP;
-}
-/* }}} */
-/* fix static members on restore */
-static void inherit_static_prop(zval **p) /* {{{ */
-{
-	/* already set */
-#if 0
-	(*p)->refcount++;
-	(*p)->is_ref = 1;
 #endif
-}
-/* }}} */
-static void xc_fix_static_members(xc_processor_t *processor, zend_class_entry *dst TSRMLS_DC) /* {{{ */
-{
-	zend_hash_merge(&dst->default_static_members, &dst->parent->default_static_members, (void (*)(void *)) inherit_static_prop, NULL, sizeof(zval *), 0);
-}
-/* }}} */
-#endif
-int xc_hash_reset_zval_refcount_applyer(void *pDest TSRMLS_DC) /* {{{ */
-{
-	zval **zv = (zval **) pDest;
-	ZVAL_REFCOUNT(*zv) = 1;
-	return ZEND_HASH_APPLY_KEEP;
-}
-/* }}} */
-static void xc_hash_reset_zval_refcount(HashTable *hash TSRMLS_DC) /* {{{ */
-{
-	zend_hash_apply(hash, xc_hash_reset_zval_refcount_applyer TSRMLS_CC);
-}
-/* }}} */
 /* {{{ call op_array ctor handler */
 extern zend_bool xc_have_op_array_ctor;
 static void xc_zend_extension_op_array_ctor_handler(zend_extension *extension, zend_op_array *op_array TSRMLS_DC)
@@ -319,9 +278,7 @@ xc_entry_t *xc_processor_store_xc_entry_t(xc_entry_t *src TSRMLS_DC) {
 	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
-	if (src->type == XC_TYPE_VAR) {
-		processor.reference = 1;
-	}
+	processor.reference = 1;
 
 	IFASSERT(`xc_stack_init(&processor.allocsizes);')
 
@@ -342,6 +299,7 @@ xc_entry_t *xc_processor_store_xc_entry_t(xc_entry_t *src TSRMLS_DC) {
 		zend_hash_destroy(&processor.strings);
 	}
 	src->size = processor.size;
+	src->have_references = processor.have_references;
 
 	IFASSERT(`xc_stack_reverse(&processor.allocsizes);')
 	/* store {{{ */
@@ -393,23 +351,36 @@ xc_entry_t *xc_processor_restore_xc_entry_t(xc_entry_t *dst, const xc_entry_t *s
 
 	memset(&processor, 0, sizeof(processor));
 	processor.readonly_protection = readonly_protection;
+	if (src->have_references) {
+		processor.reference = 1;
+	}
 
+	if (processor.reference) {
+		zend_hash_init(&processor.zvalptrs, 0, NULL, NULL, 0);
+	}
 	xc_restore_xc_entry_t(&processor, dst, src TSRMLS_CC);
+	if (processor.reference) {
+		zend_hash_destroy(&processor.zvalptrs);
+	}
 	return dst;
 }
 /* }}} */
-/* export: zval *xc_processor_restore_zval(zval *dst, const zval *src TSRMLS_DC); :export {{{ */
-zval *xc_processor_restore_zval(zval *dst, const zval *src TSRMLS_DC) {
+/* export: zval *xc_processor_restore_zval(zval *dst, const zval *src, zend_bool have_references TSRMLS_DC); :export {{{ */
+zval *xc_processor_restore_zval(zval *dst, const zval *src, zend_bool have_references TSRMLS_DC) {
 	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
-	processor.reference = 1;
+	processor.reference = have_references;
 
-	zend_hash_init(&processor.zvalptrs, 0, NULL, NULL, 0);
-	dnl fprintf(stderr, "mark[%p] = %p\n", src, dst);
-	zend_hash_add(&processor.zvalptrs, (char *)src, sizeof(src), (void*)&dst, sizeof(dst), NULL);
+	if (processor.reference) {
+		zend_hash_init(&processor.zvalptrs, 0, NULL, NULL, 0);
+		dnl fprintf(stderr, "mark[%p] = %p\n", src, dst);
+		zend_hash_add(&processor.zvalptrs, (char *)src, sizeof(src), (void*)&dst, sizeof(dst), NULL);
+	}
 	xc_restore_zval(&processor, dst, src TSRMLS_CC);
-	zend_hash_destroy(&processor.zvalptrs);
+	if (processor.reference) {
+		zend_hash_destroy(&processor.zvalptrs);
+	}
 
 	return dst;
 }
