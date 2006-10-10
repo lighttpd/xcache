@@ -161,7 +161,7 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 			IFCALCCOPY(`
 				if (processor->reference) {
 					zval_ptr *ppzv;
-					if (zend_hash_find(&processor->zvalptrs, (char *)src[0], sizeof(src[0]), (void**)&ppzv) == SUCCESS) {
+					if (zend_hash_find(&processor->zvalptrs, (char *) &src[0], sizeof(src[0]), (void **) &ppzv) == SUCCESS) {
 						IFCOPY(`
 							dst[0] = *ppzv;
 							/* *dst is updated */
@@ -183,7 +183,7 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 					', `
 						zval_ptr pzv = dst[0];
 					')
-					if (zend_hash_add(&processor->zvalptrs, (char *)src[0], sizeof(src[0]), (void*)&pzv, sizeof(pzv), NULL) == SUCCESS) {
+					if (zend_hash_add(&processor->zvalptrs, (char *) &src[0], sizeof(src[0]), (void *) &pzv, sizeof(pzv), NULL) == SUCCESS) {
 						/* first add, go on */
 						dnl fprintf(stderr, "mark[%p] = %p\n", src[0], pzv);
 					}
