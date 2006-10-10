@@ -1,6 +1,7 @@
 
 #if 0
 #define DEBUG
+#define SHOW_DPRINT
 #endif
 
 /* {{{ macros */
@@ -1014,6 +1015,9 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	xc_foreach_early_binding_class(php.op_array, xc_cache_early_binding_class_cb, (void *) &php TSRMLS_CC);
 	xc_redo_pass_two(php.op_array TSRMLS_CC);
 	/* }}} */
+#ifdef SHOW_DPRINT
+	xc_dprint(&xce, 0 TSRMLS_CC);
+#endif
 	ENTER_LOCK_EX(cache) { /* {{{ store/add entry */
 		stored_xce = xc_entry_store_dmz(&xce TSRMLS_CC);
 	} LEAVE_LOCK_EX(cache);
@@ -1074,6 +1078,9 @@ restore:
 	fprintf(stderr, "restoring\n");
 #endif
 	xc_processor_restore_xc_entry_t(&xce, stored_xce, xc_readonly_protection TSRMLS_CC);
+#ifdef SHOW_DPRINT
+	xc_dprint(&xce, 0 TSRMLS_CC);
+#endif
 
 	catched = 0;
 	zend_try {

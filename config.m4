@@ -57,6 +57,12 @@ if test "$PHP_XCACHE" != "no"; then
   fi
   PHP_SUBST([XCACHE_ENABLE_TEST])
 
+  PHP_ARG_ENABLE(xcache-dprint, for XCache self test,
+  [  --enable-xcache-dprint          XCache: Enable debug print functions - FOR DEVELOPERS ONLY!!], no, no)
+  if test "$PHP_XCACHE_DPRINT" != "no"; then
+    AC_DEFINE([HAVE_XCACHE_DPRINT], 1, [Define to enable XCache debug print functions])
+  fi
+
   AC_PATH_PROGS([AWK], [gawk awk])
   dnl clean locale for gawk 3.1.5 assertion bug
   if echo | LANG=C "$AWK" -- '' > /dev/null 2>&1 ; then

@@ -145,12 +145,12 @@ dnl {{{ STRUCT_P(1:type, 2:elm, 3:name=type)
 define(`STRUCT_P', `
 	DBG(`$0($*)')
 	if (src->$2) {
-		STRUCT_P_EX(`$1', `dst->$2', `src->$2', `$2', `$3')
 		IFDPRINT(`INDENT()`'fprintf(stderr, "$1:$2");')
+		STRUCT_P_EX(`$1', `dst->$2', `src->$2', `$2', `$3')
 	}
 	else {
-		COPYNULL_EX(`dst->$2', `$2')
 		IFDPRINT(`INDENT()`'fprintf(stderr, "$1:$2:\tNULL\n");')
+		COPYNULL_EX(`dst->$2', `$2')
 	}
 	DONE(`$2')
 ')

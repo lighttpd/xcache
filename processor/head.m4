@@ -76,7 +76,7 @@ struct _xc_processor_t {
 IFASSERT(xc_stack_t allocsizes;)
 };
 /* }}} */
-#ifdef XCACHE_HAVE_DPRINT
+#ifdef HAVE_XCACHE_DPRINT
 static void xc_dprint_indent(int indent) /* {{{ */
 {
 	int i;
@@ -84,8 +84,22 @@ static void xc_dprint_indent(int indent) /* {{{ */
 		fprintf(stderr, "  ");
 	}
 }
-#endif
 /* }}} */
+static void xc_dprint_str_len(const char *str, int len) /* {{{ */
+{
+	const unsigned char *p = str;
+	int i;
+	for (i = 0; i < len; i ++) {
+		if (p[i] < 32 || p[i] == 127) {
+			fprintf(stderr, "\\%03o", (unsigned int) p[i]);
+		}
+		else {
+			fputc(p[i], stderr);
+		}
+	}
+}
+/* }}} */
+#endif
 /* {{{ xc_zstrlen_char */
 static inline int xc_zstrlen_char(zstr s)
 {
@@ -401,7 +415,7 @@ zval *xc_processor_restore_zval(zval *dst, const zval *src TSRMLS_DC) {
 }
 /* }}} */
 /* export: void xc_dprint(xc_entry_t *src, int indent TSRMLS_DC); :export {{{ */
-#ifdef XCACHE_HAVE_DPRINT
+#ifdef HAVE_XCACHE_DPRINT
 void xc_dprint(xc_entry_t *src, int indent TSRMLS_DC) {
 	IFDPRINT(`INDENT()`'fprintf(stderr, "xc_entry_t:src");')
 	xc_dprint_xc_entry_t(src, indent TSRMLS_CC);
