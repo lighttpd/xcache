@@ -93,7 +93,7 @@ define(`DEF_HASH_TABLE_FUNC', `
 		DISABLECHECK(`
 
 		for (b = src->pListHead; b != NULL; b = b->pListNext) {
-			ifelse(`$4', `', `', `
+			ifelse($4, `', `', `
 				pushdef(`BUCKET', `b')
 				if ($4 == ZEND_HASH_APPLY_REMOVE) {
 					IFCOPY(`dst->nNumOfElements --;')
