@@ -118,9 +118,14 @@ if (PHP_XCACHE != "no") {
 	else {
 		ADD_FLAG("XCACHE_ENABLE_TEST", "");
 	}
-
+	// }}}
 	XCACHE_PROC_SOURCES=glob(srcdir + "\\processor\\*.m4").join(' ');
 	ADD_FLAG("XCACHE_PROC_SOURCES", XCACHE_PROC_SOURCES);
+	// {{{ check for xcache-test
+	ARG_ENABLE("xcache-dprint", "XCache: Enable self debug print functions - FOR DEVELOPERS ONLY!!", "no");
+	if (PHP_XCACHE_TEST != "no") {
+		AC_DEFINE("HAVE_XCACHE_TEST", 1, "Define to enable XCache debug print functions");
+	}
 	// }}}
 	// {{{ check for opcode_spec_def.h
 	STDOUT.Write("Checking if you have opcode_spec_def.h for XCache ... ");

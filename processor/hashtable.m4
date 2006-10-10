@@ -118,6 +118,12 @@ define(`DEF_HASH_TABLE_FUNC', `
 				}
 				dst->arBuckets[n] = pnew;
 			')
+			IFDPRINT(`
+				INDENT()
+				fprintf(stderr, "$2:\"");
+				xc_dprint_str_len(BUCKET_KEY_S(b), BUCKET_KEY_SIZE(b));
+				fprintf(stderr, "\" %d:h=%lu", BUCKET_KEY_SIZE(b), b->h);
+			')
 			if (sizeof(void *) == sizeof($2)) {
 				IFCOPY(`pnew->pData = &pnew->pDataPtr;')
 				dnl no alloc

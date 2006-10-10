@@ -40,7 +40,9 @@ define(`PROC_STRING_N_EX', `
 				INIT_ZVAL(zv);
 				ZVAL_UNICODEL(&zv, (UChar *) ($2), $3 - 1, 1);
 				zend_make_printable_zval(&zv, &reszv, &usecopy);
-				fprintf(stderr, "string:%s:\t\"%s\" len=%d\n", "$1", reszv.value.str.val, $3 - 1);
+				fprintf(stderr, "string:%s:\t\"", "$1");
+				xc_dprint_str_len(Z_STRVAL(reszv), Z_STRLEN(reszv));
+				fprintf(stderr, "\" len=%d\n", $3 - 1);
 				if (usecopy) {
 					zval_dtor(&reszv);
 				}
@@ -48,7 +50,9 @@ define(`PROC_STRING_N_EX', `
 			} while (0);
 #endif
 			', `
-			fprintf(stderr, "string:%s:\t\"%s\" len=%d\n", "$1", SRCPTR, $3 - 1);
+			fprintf(stderr, "string:%s:\t\"", "$1");
+			xc_dprint_str_len(SRCPTR, $3 - 1);
+			fprintf(stderr, "\" len=%d\n", $3 - 1);
 			')
 		')
 		IFCALC(`xc_calc_string_n(processor, ISTYPE, SRCSTR, $3 IFASSERT(`, __LINE__'));')
