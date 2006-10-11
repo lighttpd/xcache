@@ -271,8 +271,6 @@ void xc_install_constant(char *filename, zend_constant *constant, zend_uchar typ
 				constant, sizeof(zend_constant),
 				NULL
 				) == FAILURE) {
-		CG(in_compilation) = 1;
-		CG(compiled_filename) = filename;
 		CG(zend_lineno) = 0;
 #ifdef IS_UNICODE
 		zend_error(E_NOTICE, "Constant %R already defined", type, key);
@@ -307,8 +305,6 @@ void xc_install_function(char *filename, zend_function *func, zend_uchar type, z
 					func, sizeof(zend_op_array),
 					NULL
 					) == FAILURE) {
-			CG(in_compilation) = 1;
-			CG(compiled_filename) = filename;
 			CG(zend_lineno) = ZESW(func->op_array.opcodes[0].lineno, func->op_array.line_start);
 #ifdef IS_UNICODE
 			zend_error(E_ERROR, "Cannot redeclare %R()", type, key);
@@ -340,8 +336,6 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, zend_u
 				cest, sizeof(xc_cest_t),
 				ZESW(&stored_ce_ptr, NULL)
 				) == FAILURE) {
-		CG(in_compilation) = 1;
-		CG(compiled_filename) = filename;
 		CG(zend_lineno) = ZESW(0, cep->line_start);
 #ifdef IS_UNICODE
 		zend_error(E_ERROR, "Cannot redeclare class %R", type, cep->name);
@@ -396,6 +390,11 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 
 	sandbox->filename = filename;
 
+#ifdef E_STRICT
+	sandbox->orig_user_error_handler_error_reporting = EG(user_error_handler_error_reporting);
+	EG(user_error_handler_error_reporting) &= ~E_STRICT;
+#endif
+
 	return sandbox;
 }
 /* }}} */
@@ -427,7 +426,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 	b = TG(class_table).pListHead;
 	/* install class */
 	while (b != NULL) {
-		xc_install_class(sandbox->filename, (xc_cest_t*)b->pData,
+		xc_install_class(sandbox->filename, (xc_cest_t*) b->pData,
 				BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY(b)), b->nKeyLength TSRMLS_CC);
 		b = b->pListNext;
 	}
@@ -447,7 +446,12 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, int install TSRMLS_DC) /* {{{ */
 	EG(class_table)    = CG(class_table);
 
 	if (install) {
+		CG(in_compilation)    = 1;
+		CG(compiled_filename) = sandbox->filename;
+		CG(zend_lineno)       = 0;
 		xc_sandbox_install(sandbox TSRMLS_CC);
+		CG(in_compilation)    = 0;
+		CG(compiled_filename) = NULL;
 
 		/* no free as it's installed */
 #ifdef HAVE_XCACHE_CONSTANT
@@ -467,6 +471,10 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, int install TSRMLS_DC) /* {{{ */
 
 	/* restore orig here, as EG/CG holded tmp before */
 	memcpy(&EG(included_files), &OG(included_files), sizeof(EG(included_files)));
+
+#ifdef E_STRICT
+	EG(user_error_handler_error_reporting) = sandbox->orig_user_error_handler_error_reporting;
+#endif
 
 	if (sandbox->alloc) {
 		efree(sandbox);
