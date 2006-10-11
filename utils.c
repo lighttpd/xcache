@@ -424,8 +424,6 @@ void xc_install_constant(char *filename, zend_constant *constant, zend_uchar typ
 				constant, sizeof(zend_constant),
 				NULL
 				) == FAILURE) {
-		CG(in_compilation) = 1;
-		CG(compiled_filename) = filename;
 		CG(zend_lineno) = 0;
 #ifdef IS_UNICODE
 		zend_error(E_NOTICE, "Constant %R already defined", type, key);
@@ -460,8 +458,6 @@ void xc_install_function(char *filename, zend_function *func, zend_uchar type, z
 					func, sizeof(zend_op_array),
 					NULL
 					) == FAILURE) {
-			CG(in_compilation) = 1;
-			CG(compiled_filename) = filename;
 			CG(zend_lineno) = ZESW(func->op_array.opcodes[0].lineno, func->op_array.line_start);
 #ifdef IS_UNICODE
 			zend_error(E_ERROR, "Cannot redeclare %R()", type, key);
@@ -496,8 +492,6 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, int op
 				cest, sizeof(xc_cest_t),
 				ZESW(&stored_ce_ptr, NULL)
 				) == FAILURE) {
-		CG(in_compilation) = 1;
-		CG(compiled_filename) = filename;
 		CG(zend_lineno) = ZESW(0, cep->line_start);
 #ifdef IS_UNICODE
 		zend_error(E_ERROR, "Cannot redeclare class %R", type, cep->name);
@@ -618,7 +612,12 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, int install TSRMLS_DC) /* {{{ */
 	EG(class_table)    = CG(class_table);
 
 	if (install) {
+		CG(in_compilation)    = 1;
+		CG(compiled_filename) = sandbox->filename;
+		CG(zend_lineno)       = 0;
 		xc_sandbox_install(sandbox TSRMLS_CC);
+		CG(in_compilation)    = 0;
+		CG(compiled_filename) = NULL;
 
 		/* no free as it's installed */
 #ifdef HAVE_XCACHE_CONSTANT

@@ -1074,6 +1074,9 @@ err_bailout:
 	return op_array;
 
 restore:
+	CG(in_compilation)    = 1;
+	CG(compiled_filename) = stored_xce->name.str.val;
+	CG(zend_lineno)       = 0;
 #ifdef DEBUG
 	fprintf(stderr, "restoring\n");
 #endif
@@ -1104,6 +1107,8 @@ restore:
 	if (catched) {
 		zend_bailout();
 	}
+	CG(in_compilation)    = 0;
+	CG(compiled_filename) = NULL;
 #ifdef DEBUG
 	fprintf(stderr, "restored\n");
 #endif
