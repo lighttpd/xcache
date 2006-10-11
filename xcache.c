@@ -756,6 +756,10 @@ err_bailout:
 		xc_sandbox_free(&sandbox, 0 TSRMLS_CC);
 		sandbox.tmp_open_files->dtor = NULL;
 	}
+	else if (!op_array) {
+		/* failed to compile free it, no install */
+		xc_sandbox_free(&sandbox, 0 TSRMLS_CC);
+	}
 	else {
 		xc_sandbox_free(&sandbox, 1 TSRMLS_CC);
 	}
