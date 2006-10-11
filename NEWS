@@ -1,0 +1,80 @@
+1.1 2006-10-11
+========
+cacher:
+ * gc expired items, new ini
+   * xcache.ttl
+   * xcache.gc_interval
+   * xcache.var_ttl
+   * xcache.var_maxttl
+   * xcache.var_gc_interval 
+ * Partial php 5.2 support
+ * "Cannot redeclare ()" bug
+ * [95] FIX #20, default: --enable-xcache-constant=yes
+ * [89] FIX #19 prototype inherit from abstract class
+ * [88] FIX possible fix for #14 "Cannot redeclare ()"
+ * [86] FIX #14, #17, #18
+
+Translations:
+ * [128] Chinese translation for xcache.ini
+ * [124] Chinese translation for coverager
+ * [135] Chinese Traditional translation for admin page. thanks to Finjon Kiang.
+ * [123] Chinese translation for admin page
+
+Admin:
+ * FIX cache corruption on clear button click
+ * FIX refcount
+ * use phpinfo style
+
+Coverager:
+ * use phpinfo style
+ * percent bar updated
+
+Others:
+ * kill compiler warnings
+ * zts build
+ * all fixes from <=1.0.2
+
+ChangeLog
+========
+ * remove redundant open_basedir check, it's done before compiling
+ * trick in_compilation state, don't trigger __autoload at compile time
+ * FIX conflict between sandbox and user error handler 
+ * [154] fix segv on MSHUTDOWN
+ * [153] win32/vc build fix
+ * [150] avoid crash when OOM on mem_realloc
+ * [148] reconstruct shm/allocator
+ * [147] show module info in statistics page
+ * [146] avoid reading of uninitialized data. thanks to valgrind
+ * [144] compat size displaying in admin page func
+ * [143] fixed string parameter parsing arg type for disassembler functions. thanks to check_paramaters.php
+ * [141] fix cache clear corruption bug
+ * [140] fix refcount on cache #1 #2 …
+ * [133] admin-page: be more friendly if XCache isn't loaded
+ * [132] fix zts on calling destroy_op_array
+ * [131] move open_files out of sandbox, it's not needed
+ * [130] improve locking for compile
+ * [137] [138] changed the coding way of unlinking list. fixed ttl expires dead loop
+ * [114] gc expired items, new ini: xcache.ttl xcache.gc_interval xcache.var_ttl …
+ * [126] fix xcache_isset reported by http://forum.lighttpd.net/topic/1397
+ * [119] fix leak in xcache.test=1; XCACHE_VERSION/XCACHE_MODULES length off-by-one
+ * [118] show gc countdown in admin page
+ * [113] zts build fix
+ * [112] avoid crash when OOM on mem_(calloc|realloc|strndup)
+ * [108] update percent bar to vertical/avail
+ * [107] show XCache version in admin page
+ * [105] trigger jit on $_SERVER when needed
+ * [101] note: xcache.mmap_path is a file
+ * [100] FIX: alloc'ed wrong size for string on restore
+ * [99]  sohosin compatible & TSRM fix.
+ * [96]  remove tailing \0 in filename of administration html output. reported by …
+ * [94]  PHP_5_2: __tostring cache was MFH by php
+ * [93]  try to show both count/size assert before abort
+ * [92]  PHP_5_2: auto module_global is maintained by php engine
+ * [90] [91] kill compiler warnings
+ * [87]  XCACHE_INDENT fallback
+ * [84]  handle without inodes
+ * [79]  fix messy XCACHE_MAP_FAILED checking
+ * [78]  catch up with PHP_5_2, zend_property_info.ce
+ * [77]  leakcheck
+
+ (not all changesets is list here)
