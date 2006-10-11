@@ -1,3 +1,26 @@
+1.0.3 2006-10-?
+========
+cacher:
+ * [239] avoid crash when error compiling script
+ * [238] fix zval reference handling
+ * [237] fix the parsing of c headers to build on some rare arch
+ * [211] fix conflict between sandbox and user error handler
+ * [180] fix type processor_t conflict with Mac OS X
+ * [179] fix assertion code that may be enabled on some arch, making the compile failed
+
+coverager:
+ * [240] coverager fixes
+   * fix tplcov
+   * leaked by outfilename (efree by zend_mm tho)
+   * remove double Content-Language
+   * avoid double slash
+   * make dir ended with dir sep
+   * DIRECTORY_SEPARATOR for coverager config example
+
+1.0.2 2006-09-16
+========
+cacher:
+ * fix: was not working properly on windows
 
 1.0.1 2006-09-10
 ========
