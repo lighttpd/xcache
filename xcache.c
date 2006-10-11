@@ -1,6 +1,9 @@
 
 #if 0
 #define DEBUG
+#endif
+
+#if 0
 #define SHOW_DPRINT
 #endif
 
@@ -1078,7 +1081,7 @@ restore:
 	CG(compiled_filename) = stored_xce->name.str.val;
 	CG(zend_lineno)       = 0;
 #ifdef DEBUG
-	fprintf(stderr, "restoring\n");
+	fprintf(stderr, "restoring %s\n", stored_xce->name.str.val);
 #endif
 	xc_processor_restore_xc_entry_t(&xce, stored_xce, xc_readonly_protection TSRMLS_CC);
 #ifdef SHOW_DPRINT
@@ -1110,7 +1113,7 @@ restore:
 	CG(in_compilation)    = 0;
 	CG(compiled_filename) = NULL;
 #ifdef DEBUG
-	fprintf(stderr, "restored\n");
+	fprintf(stderr, "restored  %s\n", stored_xce->name.str.val);
 #endif
 	return op_array;
 }
