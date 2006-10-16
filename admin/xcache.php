@@ -79,7 +79,7 @@ function switcher($name, $options)
 	$n = isset($_GET[$name]) ? $_GET[$name] : null;
 	$html = array();
 	foreach ($options as $k => $v) {
-		$html[] = sprintf('<a href="?%s=%s"%s>%s</a>', $name, $k, $k == $n ? 'class="active"' : '', $v);
+		$html[] = sprintf('<a href="?%s=%s"%s>%s</a>', $name, $k, $k == $n ? ' class="active"' : '', $v);
 	}
 	return implode(' ', $html);
 }
