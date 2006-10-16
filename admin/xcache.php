@@ -70,6 +70,8 @@ function age($time)
 			return $ret . ' ' . $name[$i];
 		}
 	}
+
+	return '0 s';
 }
 
 function switcher($name, $options)
