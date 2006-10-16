@@ -164,7 +164,7 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 						IFCOPY(`
 							dst[0] = *ppzv;
 							/* *dst is updated */
-							dnl fprintf(stderr, "*dst is set to %p\n", dst[0]);
+							dnl fprintf(stderr, "*dst is set to %p, KIND is_shm %d\n", dst[0], xc_is_shm(dst[0]));
 						')
 						IFCALCSTORE(`processor->have_references = 1;')
 						IFSTORE(`assert(xc_is_shm(dst[0]));')
@@ -182,6 +182,7 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 						zval_ptr pzv = (zval_ptr)-1;
 					', `
 						zval_ptr pzv = dst[0];
+						FIXPOINTER_EX(zval, pzv)
 					')
 					if (zend_hash_add(&processor->zvalptrs, (char *) &src[0], sizeof(src[0]), (void *) &pzv, sizeof(pzv), NULL) == SUCCESS) {
 						/* first add, go on */
@@ -197,6 +198,7 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 			')
 			IFDPRINT(`INDENT()`'fprintf(stderr, "[%p]", src[0]);')
 			STRUCT_P_EX(zval, dst[0], src[0], `[0]', `', ` ')
+			FIXPOINTER_EX(zval, dst[0])
 		} while (0);
 	')
 	DONE_SIZE(sizeof(zval_ptr))
@@ -734,16 +736,6 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 ')
 dnl }}}
 DEF_STRUCT_P_FUNC(`xc_entry_data_var_t', , `dnl {{{
-	IFSTORE(`
-		if (processor->reference) {
-			if (zend_hash_add(&processor->zvalptrs, (char *)&src->value, sizeof(&src->value), (void*)&src->value, sizeof(src->value), NULL) == SUCCESS) {
-				dnl fprintf(stderr, "mark[%p] = %p\n", &src->value, &dst->value);
-			}
-			else {
-				assert(0);
-			}
-		}
-	')
 	IFDPRINT(`INDENT()`'fprintf(stderr, "zval:value");')
 	STRUCT_P_EX(zval_ptr, dst->value, src->value, `value', `', `&')
 	DONE(value)
