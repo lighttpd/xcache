@@ -1679,7 +1679,7 @@ PHP_FUNCTION(xcache_get)
 	ENTER_LOCK(xce.cache) {
 		stored_xce = xc_entry_find_dmz(&xce TSRMLS_CC);
 		if (stored_xce) {
-			if (XG(request_time) <= stored_xce->ctime + stored_xce->ttl) {
+			if (!VAR_ENTRY_EXPIRED(stored_xce)) {
 				xc_processor_restore_zval(return_value, stored_xce->data.var->value, stored_xce->have_references TSRMLS_CC);
 				/* return */
 				break;
@@ -2219,7 +2219,7 @@ PHP_INI_BEGIN()
 #ifdef HAVE_XCACHE_OPTIMIZER
 	STD_PHP_INI_BOOLEAN("xcache.optimizer",              "0", PHP_INI_ALL,    OnUpdateBool,        optimizer,         zend_xcache_globals, xcache_globals)
 #endif
-	STD_PHP_INI_BOOLEAN("xcache.var_ttl",                "0", PHP_INI_ALL,    OnUpdateLong,        var_ttl,           zend_xcache_globals, xcache_globals)
+	STD_PHP_INI_ENTRY  ("xcache.var_ttl",                "0", PHP_INI_ALL,    OnUpdateLong,        var_ttl,           zend_xcache_globals, xcache_globals)
 #ifdef HAVE_XCACHE_COVERAGER
 	STD_PHP_INI_BOOLEAN("xcache.coverager"      ,        "0", PHP_INI_ALL,    OnUpdateBool,        coverager,         zend_xcache_globals, xcache_globals)
 	PHP_INI_ENTRY1     ("xcache.coveragedump_directory",  "", PHP_INI_SYSTEM, xc_OnUpdateDummy,    NULL)
