@@ -20,10 +20,13 @@ $usecache = false;
 
 function ob_filter_path_nicer($o)
 {
-	$o = str_replace($_SERVER['DOCUMENT_ROOT'],  "{DOCROOT}/", $o);
-	$xcachedir = realpath(dirname(__FILE__) . "/../");
-	$o = str_replace($xcachedir . "/", "{XCache}/", $o);
-	$o = str_replace("/home/", "{H}/", $o);
+	$sep = DIRECTORY_SEPARATOR;
+	$o = str_replace($_SERVER['DOCUMENT_ROOT'],  "{DOCROOT}$sep", $o);
+	$xcachedir = realpath(dirname(__FILE__) . "$sep..$sep");
+	$o = str_replace($xcachedir . $sep, "{XCache}$sep", $o);
+	if ($sep == '/') {
+		$o = str_replace("/home/", "{H}/", $o);
+	}
 	return $o;
 }
 

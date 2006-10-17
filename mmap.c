@@ -84,19 +84,19 @@ static XC_SHM_IS_READONLY(xc_mmap_is_readonly) /* {{{ */
 static XC_SHM_TO_READWRITE(xc_mmap_to_readwrite) /* {{{ */
 {
 	if (shm->diff) {
-		assert(xc_mmap_is_readonly(p));
+		assert(xc_mmap_is_readonly(shm, p));
 		p = PTR_SUB(p, shm->diff);
 	}
-	assert(xc_mmap_is_readwrite(p));
+	assert(xc_mmap_is_readwrite(shm, p));
 	return p;
 }
 /* }}} */
 static XC_SHM_TO_READONLY(xc_mmap_to_readonly) /* {{{ */
 {
-	assert(xc_shm_is_readwrite(p));
+	assert(xc_mmap_is_readwrite(shm, p));
 	if (shm->diff) {
 		p = PTR_ADD(p, shm->diff);
-		assert(xc_mmap_is_readonly(p));
+		assert(xc_mmap_is_readonly(shm, p));
 	}
 	return p;
 }
