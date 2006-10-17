@@ -30,12 +30,19 @@ Coverager:
  * percent bar updated
 
 Others:
+ * fix build on rare arch
+ * fix build on Mac OS X
  * kill compiler warnings
  * zts build
  * all fixes from <=1.0.2
 
 ChangeLog
 ========
+ * merged from trunk: 159,161-162,167-180,182,184,186-187,194
+   * [194] PHP_5_2: new element in zend_brk_cont_element
+   * [186] [187] fix build on some rare arch
+   * [184] fix tplcov
+   * [178] fix type processor_t conflict with Mac OS X
  * remove redundant open_basedir check, it's done before compiling
  * trick in_compilation state, don't trigger __autoload at compile time
  * FIX conflict between sandbox and user error handler 
