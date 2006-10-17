@@ -1,6 +1,8 @@
 1.1 2006-10-11
 ========
 cacher:
+ * fix xcache_get issue on ttl 0 data
+ * coverager: avoid crash when php failed to compile file
  * gc expired items, new ini
    * xcache.ttl
    * xcache.gc_interval
@@ -38,6 +40,10 @@ Others:
 
 ChangeLog
 ========
+ * merged [254] fix xcache.var_ttl displaying in info, fix xcache_get for ttl-unlimited
+ * merged [250] admin: fix switcher class on active
+ * merged [249] return 0 s instead of empty for deltatime
+ * merged [201] coverager: avoid crash when upstream failed to compile file
  * merged from trunk: 159,161-162,167-180,182,184,186-187,194
    * [194] PHP_5_2: new element in zend_brk_cont_element
    * [186] [187] fix build on some rare arch

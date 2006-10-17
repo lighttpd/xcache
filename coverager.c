@@ -350,7 +350,7 @@ static zend_op_array *xc_compile_file_for_coverage(zend_file_handle *h, int type
 	zend_op_array *op_array;
 
 	op_array = origin_compile_file(h, type TSRMLS_CC);
-	if (XG(coveragedumper) && XG(coverages)) {
+	if (XG(coveragedumper) && XG(coverages) && op_array) {
 		xc_coverager_init_compile_result(op_array TSRMLS_CC);
 	}
 	return op_array;
