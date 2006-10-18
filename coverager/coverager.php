@@ -322,7 +322,8 @@ if (!function_exists('xcache_coverager_decode')) {
 		$end = count($bytes);
 		$cov = array();
 		for (/* empty*/; $i <= $end; $i += 2) {
-			$cov[$bytes[$i]] = $bytes[$i + 1];
+			$hits = $bytes[$i + 1];
+			$cov[$bytes[$i]] = $hits <= 0 ? 0 : $hits;
 		}
 		return $cov;
 	}
