@@ -34,6 +34,33 @@
 #	define ZESW(v1, v2) v2
 #endif
 
+/* {{{ dirty fix for PHP 6 */
+#ifdef add_assoc_long_ex
+static inline void my_add_assoc_long_ex(zval *arg, char *key, uint key_len, long value)
+{
+	add_assoc_long_ex(arg, key, key_len, value);
+}
+#	undef add_assoc_long_ex
+#	define add_assoc_long_ex my_add_assoc_long_ex
+#endif
+#ifdef add_assoc_bool_ex
+static inline void my_add_assoc_bool_ex(zval *arg, char *key, uint key_len, zend_bool value)
+{
+	add_assoc_bool_ex(arg, key, key_len, value);
+}
+#	undef add_assoc_bool_ex
+#	define add_assoc_bool_ex my_add_assoc_bool_ex
+#endif
+#ifdef add_assoc_null_ex
+static inline void my_add_assoc_null_ex(zval *arg, char *key, uint key_len)
+{
+	add_assoc_null_ex(arg, key, key_len);
+}
+#	undef add_assoc_null_ex
+#	define add_assoc_null_ex my_add_assoc_null_ex
+#endif
+/* }}} */
+
 /* unicode */
 #ifdef IS_UNICODE
 #	define UNISW(text, unicode) unicode
