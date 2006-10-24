@@ -530,8 +530,6 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 	OG(function_table) = CG(function_table);
 	CG(function_table) = &TG(function_table);
 
-	assert(EG(class_table) == CG(class_table));
-
 	OG(class_table) = CG(class_table);
 	CG(class_table) = &TG(class_table);
 	EG(class_table) = CG(class_table);
