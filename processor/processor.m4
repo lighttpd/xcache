@@ -707,6 +707,18 @@ DEF_STRUCT_P_FUNC(`xc_classinfo_t', , `dnl {{{
 	DISPATCH(int, oplineno)
 ')
 dnl }}}
+#ifdef ZEND_ENGINE_2_1
+DEF_STRUCT_P_FUNC(`xc_autoglobal_t', , `dnl {{{
+	DISPATCH(zend_uint, key_len)
+#ifdef IS_UNICODE
+	DISPATCH(zend_uchar, type)
+#endif
+	IFRESTORE(`COPY(key)', `
+		PROC_ZSTRING_L(type, key, key_len)
+	')
+')
+dnl }}}
+#endif
 DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 	zend_uint i;
 
@@ -735,6 +747,10 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 		')
 	')
 	STRUCT_ARRAY(classinfo_cnt, xc_classinfo_t, classinfos)
+#ifdef ZEND_ENGINE_2_1
+	DISPATCH(zend_uint, autoglobal_cnt)
+	STRUCT_ARRAY(autoglobal_cnt, xc_autoglobal_t, autoglobals)
+#endif
 	DISPATCH(zend_bool, have_early_binding)
 	popdef(`BEFORE_LOOP')
 ')
