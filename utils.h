@@ -48,8 +48,10 @@ typedef struct {
 #endif
 	HashTable *orig_function_table;
 	HashTable *orig_class_table;
+	HashTable *orig_auto_globals;
 	HashTable tmp_function_table;
 	HashTable tmp_class_table;
+	HashTable tmp_auto_globals;
 } xc_sandbox_t;
 
 xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC);

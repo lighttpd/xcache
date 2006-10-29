@@ -499,6 +499,9 @@ static void xc_fillentry_dmz(xc_entry_t *entry, int del, zval *list TSRMLS_DC) /
 #endif
 			add_assoc_long_ex(ei, ZEND_STRS("function_cnt"),  php->funcinfo_cnt);
 			add_assoc_long_ex(ei, ZEND_STRS("class_cnt"),     php->classinfo_cnt);
+#ifdef ZEND_ENGINE_2_1
+			add_assoc_long_ex(ei, ZEND_STRS("autoglobal_cnt"),php->autoglobal_cnt);
+#endif
 			break;
 		case XC_TYPE_VAR:
 			var = entry->data.var;
@@ -579,6 +582,22 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 		xc_install_class(xce->name.str.val, &ci->cest, ci->oplineno,
 				UNISW(0, ci->type), ci->key, ci->key_size TSRMLS_CC);
 	}
+
+#ifdef ZEND_ENGINE_2_1
+	/* trigger auto_globals jit */
+	for (i = 0; i < p->autoglobal_cnt; i ++) {
+		xc_autoglobal_t *aginfo = &p->autoglobals[i];
+		/*
+		zend_auto_global *auto_global;
+		if (zend_u_hash_find(CG(auto_globals), aginfo->type, aginfo->key, aginfo->key_len+1, (void **) &auto_global)==SUCCESS) {
+			if (auto_global->armed) {
+				auto_global->armed = auto_global->auto_global_callback(auto_global->name, auto_global->name_len TSRMLS_CC);
+			}
+		}
+		*/
+		zend_u_is_auto_global(aginfo->type, aginfo->key, aginfo->key_len TSRMLS_CC);
+	}
+#endif
 
 	i = 1;
 	zend_hash_add(&EG(included_files), xce->name.str.val, xce->name.str.len+1, (void *)&i, sizeof(int), NULL);
@@ -948,10 +967,25 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	php.op_array      = op_array;
 
 #ifdef HAVE_XCACHE_CONSTANT
-	php.constinfo_cnt = zend_hash_num_elements(EG(zend_constants)) - old_constinfo_cnt;
+	php.constinfo_cnt  = zend_hash_num_elements(EG(zend_constants)) - old_constinfo_cnt;
 #endif
-	php.funcinfo_cnt  = zend_hash_num_elements(CG(function_table)) - old_funcinfo_cnt;
-	php.classinfo_cnt = zend_hash_num_elements(CG(class_table))    - old_classinfo_cnt;
+	php.funcinfo_cnt   = zend_hash_num_elements(CG(function_table)) - old_funcinfo_cnt;
+	php.classinfo_cnt  = zend_hash_num_elements(CG(class_table))    - old_classinfo_cnt;
+#ifdef ZEND_ENGINE_2_1
+	/* {{{ count php.autoglobal_cnt */ {
+		Bucket *b;
+
+		php.autoglobal_cnt = 0;
+		for (b = CG(auto_globals)->pListHead; b != NULL; b = b->pListNext) {
+			zend_auto_global *auto_global = (zend_auto_global *) b->pData;
+			/* check if actived */
+			if (auto_global->auto_global_callback && !auto_global->armed) {
+				php.autoglobal_cnt ++;
+			}
+		}
+	}
+	/* }}} */
+#endif
 
 #define X_ALLOC_N(var, cnt) do {     \
 	if (php.cnt) {                   \
@@ -966,10 +1000,13 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 } while (0)
 
 #ifdef HAVE_XCACHE_CONSTANT
-	X_ALLOC_N(constinfos, constinfo_cnt);
+	X_ALLOC_N(constinfos,  constinfo_cnt);
 #endif
-	X_ALLOC_N(funcinfos,  funcinfo_cnt);
-	X_ALLOC_N(classinfos, classinfo_cnt);
+	X_ALLOC_N(funcinfos,   funcinfo_cnt);
+	X_ALLOC_N(classinfos,  classinfo_cnt);
+#ifdef ZEND_ENGINE_2_1
+	X_ALLOC_N(autoglobals, autoglobal_cnt);
+#endif
 #undef X_ALLOC
 	/* }}} */
 	/* {{{ shallow copy, pointers only */ {
@@ -1005,7 +1042,30 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 		b = CG(class_table)->pListHead;    COPY_H(xc_classinfo_t, classinfos, classinfo_cnt, cest,     xc_cest_t);
 
 #undef COPY_H
-		/* for ZE1, cest need to fix inside store */
+
+		/* for ZE1, cest need to be fixed inside store */
+
+#ifdef ZEND_ENGINE_2_1
+		/* scan for acatived auto globals */
+		i = 0;
+		for (b = CG(auto_globals)->pListHead; b != NULL; b = b->pListNext) {
+			zend_auto_global *auto_global = (zend_auto_global *) b->pData;
+			/* check if actived */
+			if (auto_global->auto_global_callback && !auto_global->armed) {
+				xc_autoglobal_t *data = &php.autoglobals[i ++];
+
+				assert(i < php.autoglobal_cnt);
+				UNISW(NOTHING, data->type = b->key.type;)
+				if (UNISW(1, b->key.type == IS_STRING)) {
+					ZSTR_S(data->key)     = BUCKET_KEY_S(b);
+				}
+				else {
+					ZSTR_U(data->key)     = BUCKET_KEY_U(b);
+				}
+				data->key_len = b->nKeyLength - 1;
+			}
+		}
+#endif
 	}
 	/* }}} */
 	/* {{{ find inherited classes that should be early-binding */
@@ -1035,6 +1095,9 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	} \
 err_##var:
 
+#ifdef ZEND_ENGINE_2_1
+	X_FREE(autoglobals)
+#endif
 	X_FREE(classinfos)
 	X_FREE(funcinfos)
 #ifdef HAVE_XCACHE_CONSTANT
@@ -1099,6 +1162,9 @@ restore:
 	if (xce.data.php->var) { \
 		efree(xce.data.php->var); \
 	}
+#ifdef ZEND_ENGINE_2_1
+	X_FREE(autoglobals)
+#endif
 	X_FREE(classinfos)
 	X_FREE(funcinfos)
 #ifdef HAVE_XCACHE_CONSTANT

@@ -127,6 +127,8 @@ typedef char *zstr;
 #	define add_u_assoc_zval_ex(arg, type, key, key_len, value) \
 		add_assoc_zval_ex(arg, key, key_len, value)
 
+#	define zend_u_is_auto_global(type, name, name_len) \
+		zend_is_auto_global(name, name_len)
 #endif
 /* }}} */
 
@@ -220,6 +222,17 @@ typedef struct {
 	zend_function func;
 } xc_funcinfo_t;
 /* }}} */
+#ifdef ZEND_ENGINE_2_1
+/* {{{ xc_autoglobal_t */
+typedef struct {
+#ifdef IS_UNICODE
+	zend_uchar type;
+#endif
+	zstr       key;
+	zend_uint  key_len;
+} xc_autoglobal_t;
+/* }}} */
+#endif
 typedef enum { XC_TYPE_PHP, XC_TYPE_VAR } xc_entry_type_t;
 /* {{{ xc_entry_data_php_t */
 typedef struct {
@@ -243,6 +256,11 @@ typedef struct {
 	zend_uint classinfo_cnt;
 	xc_classinfo_t *classinfos;
 	zend_bool have_early_binding;
+
+#ifdef ZEND_ENGINE_2_1
+	zend_uint autoglobal_cnt;
+	xc_autoglobal_t *autoglobals;
+#endif
 } xc_entry_data_php_t;
 /* }}} */
 /* {{{ xc_entry_data_var_t */

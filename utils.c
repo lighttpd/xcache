@@ -510,6 +510,29 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, int op
 #define TG(x) (sandbox->tmp_##x)
 #define OG(x) (sandbox->orig_##x)
 /* }}} */
+#ifdef ZEND_ENGINE_2_1
+static zend_bool xc_auto_global_callback(char *name, uint name_len TSRMLS_DC) /* {{{ */
+{
+	zend_auto_global *auto_global;
+	if (zend_u_hash_find(CG(auto_globals), UG(unicode) ? IS_UNICODE : IS_STRING, ZSTR(name), name_len + 1, (void **) &auto_global) == FAILURE) {
+		return 1;
+	}
+	return 0;
+}
+/* }}} */
+static int xc_auto_global_arm(zend_auto_global *auto_global TSRMLS_DC) /* {{{ */
+{
+	if (auto_global->auto_global_callback) {
+		auto_global->armed = 1;
+		auto_global->auto_global_callback = xc_auto_global_callback;
+	}
+	else {
+		auto_global->armed = 0;
+	}
+	return ZEND_HASH_APPLY_KEEP;
+}
+/* }}} */
+#endif
 xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /* {{{ */
 {
 	if (sandbox) {
@@ -534,6 +557,11 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 	CG(class_table) = &TG(class_table);
 	EG(class_table) = CG(class_table);
 
+#ifdef ZEND_ENGINE_2_1
+	OG(auto_globals) = CG(auto_globals);
+	CG(auto_globals) = &TG(auto_globals);
+#endif
+
 	TG(included_files) = &EG(included_files);
 
 	zend_hash_init_ex(TG(included_files), 5, NULL, NULL, 0, 1);
@@ -542,6 +570,15 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 #endif
 	zend_hash_init_ex(&TG(function_table), 128, NULL, OG(function_table)->pDestructor, 0, 0);
 	zend_hash_init_ex(&TG(class_table), 16, NULL, OG(class_table)->pDestructor, 0, 0);
+#ifdef ZEND_ENGINE_2_1
+	zend_hash_init_ex(&TG(auto_globals), 8, NULL, OG(auto_globals)->pDestructor, 0, 0);
+	{
+		zend_auto_global tmp_autoglobal;
+
+		zend_hash_copy(&TG(auto_globals), OG(auto_globals), NULL, (void *) &tmp_autoglobal, sizeof(tmp_autoglobal));
+		zend_hash_apply(&TG(auto_globals), (apply_func_t) xc_auto_global_arm TSRMLS_CC);
+	}
+#endif
 
 	sandbox->filename = filename;
 
@@ -591,6 +628,18 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 				BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY_S(b)), b->nKeyLength TSRMLS_CC);
 		b = b->pListNext;
 	}
+
+#ifdef ZEND_ENGINE_2_1
+	/* trigger auto_globals jit */
+	for (b = TG(auto_globals).pListHead; b != NULL; b = b->pListNext) {
+		zend_auto_global *auto_global = (zend_auto_global *) b->pData;
+		/* check if actived */
+		if (auto_global->auto_global_callback && !auto_global->armed) {
+			zend_u_is_auto_global(BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY_S(b)), auto_global->name_len TSRMLS_CC);
+		}
+	}
+#endif
+
 	xc_undo_pass_two(CG(active_op_array) TSRMLS_CC);
 	xc_foreach_early_binding_class(CG(active_op_array), xc_early_binding_cb, (void *) sandbox TSRMLS_CC);
 	xc_redo_pass_two(CG(active_op_array) TSRMLS_CC);
@@ -608,6 +657,9 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, int install TSRMLS_DC) /* {{{ */
 	CG(function_table) = OG(function_table);
 	CG(class_table)    = OG(class_table);
 	EG(class_table)    = CG(class_table);
+#ifdef ZEND_ENGINE_2_1
+	CG(auto_globals)   = OG(auto_globals);
+#endif
 
 	if (install) {
 		CG(in_compilation)    = 1;
@@ -623,6 +675,9 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, int install TSRMLS_DC) /* {{{ */
 #endif
 		TG(function_table).pDestructor = NULL;
 		TG(class_table).pDestructor = NULL;
+#ifdef ZEND_ENGINE_2_1
+		TG(auto_globals).pDestructor = NULL;
+#endif
 	}
 
 	/* destroy all the tmp */
@@ -631,6 +686,9 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, int install TSRMLS_DC) /* {{{ */
 #endif
 	zend_hash_destroy(&TG(function_table));
 	zend_hash_destroy(&TG(class_table));
+#ifdef ZEND_ENGINE_2_1
+	zend_hash_destroy(&TG(auto_globals));
+#endif
 	zend_hash_destroy(TG(included_files));
 
 	/* restore orig here, as EG/CG holded tmp before */
