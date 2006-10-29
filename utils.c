@@ -535,6 +535,7 @@ static int xc_auto_global_arm(zend_auto_global *auto_global TSRMLS_DC) /* {{{ */
 #endif
 xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /* {{{ */
 {
+	HashTable *h;
 	if (sandbox) {
 		memset(sandbox, 0, sizeof(sandbox[0]));
 	}
@@ -566,12 +567,14 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 
 	zend_hash_init_ex(TG(included_files), 5, NULL, NULL, 0, 1);
 #ifdef HAVE_XCACHE_CONSTANT
-	zend_hash_init_ex(&TG(zend_constants), 20, NULL, OG(zend_constants)->pDestructor, 1, 0);
+	h = OG(zend_constants);
+	zend_hash_init_ex(&TG(zend_constants),  20, NULL, h->pDestructor, h->persistent, h->bApplyProtection);
 #endif
-	zend_hash_init_ex(&TG(function_table), 128, NULL, OG(function_table)->pDestructor, 0, 0);
-	zend_hash_init_ex(&TG(class_table), 16, NULL, OG(class_table)->pDestructor, 0, 0);
+	zend_hash_init_ex(&TG(function_table), 128, NULL, h->pDestructor, h->persistent, h->bApplyProtection);
+	zend_hash_init_ex(&TG(class_table),     16, NULL, h->pDestructor, h->persistent, h->bApplyProtection);
 #ifdef ZEND_ENGINE_2_1
-	zend_hash_init_ex(&TG(auto_globals), 8, NULL, OG(auto_globals)->pDestructor, 0, 0);
+	/* shallow copy, don't destruct */
+	zend_hash_init_ex(&TG(auto_globals),     8, NULL,           NULL, h->persistent, h->bApplyProtection);
 	{
 		zend_auto_global tmp_autoglobal;
 
@@ -675,9 +678,6 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, int install TSRMLS_DC) /* {{{ */
 #endif
 		TG(function_table).pDestructor = NULL;
 		TG(class_table).pDestructor = NULL;
-#ifdef ZEND_ENGINE_2_1
-		TG(auto_globals).pDestructor = NULL;
-#endif
 	}
 
 	/* destroy all the tmp */
