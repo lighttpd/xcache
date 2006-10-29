@@ -593,7 +593,11 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 
 	IFRESTORE(`COPY(filename)', `PROC_STRING(filename)')
 #ifdef IS_UNICODE
-	PROC_STRING(script_encoding)
+	IFRESTORE(`
+		COPY(script_encoding)
+	', `
+		PROC_STRING(script_encoding)
+	')
 #endif
 #ifdef ZEND_ENGINE_2
 	DISPATCH(zend_uint, line_start)
