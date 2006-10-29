@@ -570,10 +570,13 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 	h = OG(zend_constants);
 	zend_hash_init_ex(&TG(zend_constants),  20, NULL, h->pDestructor, h->persistent, h->bApplyProtection);
 #endif
+	h = OG(function_table);
 	zend_hash_init_ex(&TG(function_table), 128, NULL, h->pDestructor, h->persistent, h->bApplyProtection);
+	h = OG(class_table);
 	zend_hash_init_ex(&TG(class_table),     16, NULL, h->pDestructor, h->persistent, h->bApplyProtection);
 #ifdef ZEND_ENGINE_2_1
 	/* shallow copy, don't destruct */
+	h = OG(auto_globals);
 	zend_hash_init_ex(&TG(auto_globals),     8, NULL,           NULL, h->persistent, h->bApplyProtection);
 	{
 		zend_auto_global tmp_autoglobal;
