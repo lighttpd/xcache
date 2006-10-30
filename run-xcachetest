@@ -6,13 +6,13 @@ if test -x ./php-cli ; then
 elif test ! -z "$TEST_PHP_EXECUTABLE" && test -x "$TEST_PHP_EXECUTABLE"; then
 	php_cli="$TEST_PHP_EXECUTABLE"
 else
-	php_cli="which php"
+	php_cli="`which php`"
 fi
 
 if test -x ./php-cgi ; then
 	php_cgi=./php-cgi
 else
-	php_cgi="which php-cgi"
+	php_cgi="`which php-cgi`"
 fi
 
 test -z "$PHP_SRC" && PHP_SRC=./php-src
