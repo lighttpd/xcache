@@ -263,7 +263,7 @@ DEF_STRUCT_P_FUNC(`zend_property_info', , `
 	DISPATCH(ulong, h)
 #ifdef ZEND_ENGINE_2_1
 	DISPATCH(int, doc_comment_len)
-	PROC_STRING_L(doc_comment, doc_comment_len)
+	PROC_ZSTRING_L(, doc_comment, doc_comment_len)
 #endif
 	dnl isnt in php6 yet
 #if defined(ZEND_ENGINE_2_2) && !defined(IS_UNICODE)
@@ -355,7 +355,7 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	DISPATCH(zend_uint, line_end)
 #ifdef ZEND_ENGINE_2_1
 	DISPATCH(zend_uint, doc_comment_len)
-	PROC_STRING_L(doc_comment, doc_comment_len)
+	PROC_ZSTRING_L(, doc_comment, doc_comment_len)
 #endif
 	/* # NOT DONE */
 	COPY(serialize_func)
@@ -603,7 +603,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	DISPATCH(zend_uint, line_start)
 	DISPATCH(zend_uint, line_end)
 	DISPATCH(int, doc_comment_len)
-	PROC_STRING_L(doc_comment, doc_comment_len)
+	PROC_ZSTRING_L(, doc_comment, doc_comment_len)
 #endif
 
 	/* reserved */
