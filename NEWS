@@ -1,4 +1,4 @@
-1.0.3 2006-10-?
+1.0.3 2006-11-11
 ========
 cacher:
  * [239] avoid crash when error compiling script
