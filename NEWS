@@ -1,4 +1,4 @@
-1.1 2006-10-11
+1.1.0 2006-11-11
 ========
 cacher:
  * fix xcache_get issue on ttl 0 data
