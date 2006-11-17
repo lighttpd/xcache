@@ -106,6 +106,7 @@ zend_bool xc_have_op_array_ctor = 0;
 
 static zend_bool xc_module_gotup = 0;
 static zend_bool xc_zend_extension_gotup = 0;
+static zend_bool xc_zend_extension_faked = 0;
 #if !COMPILE_DL_XCACHE
 #	define zend_extension_entry xcache_zend_extension_entry
 #endif
@@ -2380,6 +2381,22 @@ static int xc_zend_extension_startup(zend_extension *extension)
 	return SUCCESS;
 }
 /* }}} */
+static int xc_ptr_compare_func(void *p1, void *p2) /* {{{ */
+{
+	return p1 == p2;
+}
+/* }}} */
+static int xc_zend_remove_extension(zend_extension *extension) /* {{{ */
+{
+	llist_dtor_func_t dtor;
+
+	assert(extension);
+	dtor = zend_extensions.dtor; /* avoid dtor */
+	zend_extensions.dtor = NULL;
+	zend_llist_del_element(&zend_extensions, extension, xc_ptr_compare_func);
+	zend_extensions.dtor = dtor;
+}
+/* }}} */
 static int xc_config_hash(xc_hash_t *p, char *name, char *default_value) /* {{{ */
 {
 	int bits, size;
@@ -2424,6 +2441,7 @@ static PHP_MINIT_FUNCTION(xcache)
 		if (zend_get_extension(XCACHE_NAME) == NULL) {
 			xc_zend_extension_register(&zend_extension_entry, 0);
 			xc_zend_extension_startup(&zend_extension_entry);
+			xc_zend_extension_faked = 1;
 		}
 	}
 
@@ -2533,6 +2551,13 @@ static PHP_MSHUTDOWN_FUNCTION(xcache)
 #	endif
 #endif
 
+	if (xc_zend_extension_faked) {
+		zend_extension *ext = zend_get_extension(XCACHE_NAME);
+		if (ext->shutdown) {
+			ext->shutdown(ext);
+		}
+		xc_zend_remove_extension(ext);
+	}
 	UNREGISTER_INI_ENTRIES();
 	return SUCCESS;
 }
@@ -2595,11 +2620,6 @@ ZEND_GET_MODULE(xcache)
 /* }}} */
 static startup_func_t xc_last_ext_startup;
 static zend_llist_element *xc_llist_element;
-static int xc_ptr_compare_func(void *p1, void *p2) /* {{{ */
-{
-	return p1 == p2;
-}
-/* }}} */
 static int xc_zend_startup_last(zend_extension *extension) /* {{{ */
 {
 	/* restore */
@@ -2626,14 +2646,9 @@ ZEND_DLEXPORT int xcache_zend_startup(zend_extension *extension) /* {{{ */
 	if (zend_llist_count(&zend_extensions) > 1) {
 		zend_llist_position lpos;
 		zend_extension *ext;
-		llist_dtor_func_t dtor;
 
 		ext = zend_get_extension(XCACHE_NAME);
-		assert(ext);
-		dtor = zend_extensions.dtor; /* avoid dtor */
-		zend_extensions.dtor = NULL;
-		zend_llist_del_element(&zend_extensions, ext, xc_ptr_compare_func);
-		zend_extensions.dtor = dtor;
+		xc_zend_remove_extension(ext);
 
 		ext = (zend_extension *) zend_llist_get_last_ex(&zend_extensions, &lpos);
 		assert(ext);
