@@ -1581,12 +1581,11 @@ static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAME
 	xc_cache_t **caches, *cache;
 	long id = 0;
 
-	if (!xc_initized) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "XCache is not initized");
-		RETURN_FALSE;
-	}
-
 	xcache_admin_auth_check(TSRMLS_C);
+
+	if (!xc_initized) {
+		RETURN_NULL();
+	}
 
 	if (optype == XC_OP_COUNT) {
 		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &type) == FAILURE) {
