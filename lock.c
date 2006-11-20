@@ -91,7 +91,7 @@ xc_lock_t *xc_fcntl_init(const char *pathname) /* {{{ */
 			}
 		}
 		size = strlen(tmpdir) + sizeof("/.xcache.lock") - 1 + 3 * 10 + 100;
-		myname = do_alloca(size);
+		myname = malloc(size);
 		snprintf(myname, size - 1, "%s%c.xcache.%d.%d.%d.lock", tmpdir, DEFAULT_SLASH, (int) getuid(), i ++, rand());
 		pathname = myname;
 	}
@@ -118,7 +118,7 @@ xc_lock_t *xc_fcntl_init(const char *pathname) /* {{{ */
 	}
 
 	if (myname) {
-		free_alloca(myname);
+		free(myname);
 	}
 
 	return lck;
