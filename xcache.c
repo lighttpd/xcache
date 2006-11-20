@@ -2638,7 +2638,7 @@ static int xc_zend_startup_last(zend_extension *extension) /* {{{ */
 ZEND_DLEXPORT int xcache_zend_startup(zend_extension *extension) /* {{{ */
 {
 	if (xc_zend_extension_gotup) {
-		return FAILURE;
+		return SUCCESS;
 	}
 	xc_zend_extension_gotup = 1;
 	xc_llist_element = NULL;
