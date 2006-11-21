@@ -2363,19 +2363,12 @@ static void xc_zend_extension_register(zend_extension *new_extension, DL_HANDLE 
 #endif
 }
 
-/* dirty check */
-#if defined(COMPILE_DL_XCACHE) && (defined(ZEND_WIN32) || defined(__CYGWIN__) || defined(__MINGW32__))
-#	define zend_append_version_info(x) do { } while (0)
-#else
-extern void zend_append_version_info(zend_extension *extension);
-#endif
 static int xc_zend_extension_startup(zend_extension *extension)
 {
     if (extension->startup) {
         if (extension->startup(extension) != SUCCESS) {
 			return FAILURE;
         }
-        zend_append_version_info(extension);
     }
 	return SUCCESS;
 }
