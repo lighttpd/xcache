@@ -100,8 +100,8 @@ define(`DEF_HASH_TABLE_FUNC', `
 					continue;
 				}
 				popdef(`BUCKET')
-		  ')
-		  
+			')
+
 			IFCALCCOPY(`bucketsize = BUCKET_SIZE(b);')
 			ALLOC(pnew, char, bucketsize, , Bucket)
 			IFCOPY(`memcpy(pnew, b, bucketsize);')
