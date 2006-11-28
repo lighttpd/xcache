@@ -212,7 +212,6 @@ static void xc_coverager_clean(TSRMLS_D) /* {{{ */
 			long *phits;
 			coverager_t cov;
 			HashPosition pos2;
-			uint size;
 
 			cov = *pcov;
 
