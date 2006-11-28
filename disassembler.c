@@ -100,7 +100,11 @@ void xc_dasm_string(zval *dst, zval *source TSRMLS_DC) /* {{{ */
 
 	/* free */
 	efree(eval_name);
+#ifdef ZEND_ENGINE_2
 	destroy_op_array(op_array TSRMLS_CC);
+#else
+	destroy_op_array(op_array);
+#endif
 	efree(op_array);
 	xc_sandbox_free(&sandbox, 0 TSRMLS_CC);
 	return;
@@ -140,7 +144,11 @@ void xc_dasm_file(zval *dst, const char *filename TSRMLS_DC) /* {{{ */
 	xc_dasm(dst, op_array TSRMLS_CC);
 
 	/* free */
+#ifdef ZEND_ENGINE_2
 	destroy_op_array(op_array TSRMLS_CC);
+#else
+	destroy_op_array(op_array);
+#endif
 	efree(op_array);
 	xc_sandbox_free(&sandbox, 0 TSRMLS_CC);
 	zval_dtor(zfilename);
