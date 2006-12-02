@@ -7,7 +7,9 @@ dnl ================ main
 
 dnl {{{ basic
 define(`REDEF', `undefine(`$1') define(`$1', `$2')')
-define(`ONCE', `ifdef(`ONCE $1', `', `define(`ONCE $1')$1')')
+define(`MAKE_MACRONAME', `translit(`$1', ` ():
+', `_____')')
+define(`ONCE', `ifdef(MAKE_MACRONAME(`ONCE $1'), `', `define(MAKE_MACRONAME(`ONCE$1'))$1')')
 define(`m4_errprint', `ONCE(`errprint(`$1
 ')')')
 define(`ZEND_STRS', `($1), (sizeof($1))')
