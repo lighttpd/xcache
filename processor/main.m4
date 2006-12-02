@@ -12,6 +12,10 @@ define(`MAKE_MACRONAME', `translit(`$1', ` ():
 define(`ONCE', `ifdef(MAKE_MACRONAME(`ONCE $1'), `', `define(MAKE_MACRONAME(`ONCE $1'))$1')')
 define(`m4_errprint', `ONCE(`errprint(`$1
 ')')')
+ifdef(`len', `
+define(`m4_len', defn(`len'))
+undefine(`len')
+')
 define(`ZEND_STRS', `($1), (sizeof($1))')
 define(`ZEND_STRL', `($1), (sizeof($1) - 1)')
 dnl ============
