@@ -121,8 +121,8 @@ static int xc_apply_cest(xc_cest_t *cest, apply_func_t applyer TSRMLS_DC) /* {{{
 /* }}} */
 int xc_apply_op_array(xc_compile_result_t *cr, apply_func_t applyer TSRMLS_DC) /* {{{ */
 {
-	zend_hash_apply_with_argument(cr->function_table, (apply_func_arg_t) xc_apply_function, applyer TSRMLS_CC);
-	zend_hash_apply_with_argument(cr->class_table, (apply_func_arg_t) xc_apply_cest, applyer TSRMLS_CC);
+	zend_hash_apply_with_argument(cr->function_table, (apply_func_arg_t) xc_apply_function, (void *) applyer TSRMLS_CC);
+	zend_hash_apply_with_argument(cr->class_table, (apply_func_arg_t) xc_apply_cest, (void *) applyer TSRMLS_CC);
 
 	return applyer(cr->op_array TSRMLS_CC);
 }
