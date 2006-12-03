@@ -1053,9 +1053,10 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 			zend_auto_global *auto_global = (zend_auto_global *) b->pData;
 			/* check if actived */
 			if (auto_global->auto_global_callback && !auto_global->armed) {
-				xc_autoglobal_t *data = &php.autoglobals[i ++];
+				xc_autoglobal_t *data = &php.autoglobals[i];
 
 				assert(i < php.autoglobal_cnt);
+				i ++;
 				UNISW(NOTHING, data->type = b->key.type;)
 				if (UNISW(1, b->key.type == IS_STRING)) {
 					ZSTR_S(data->key)     = BUCKET_KEY_S(b);
