@@ -45,7 +45,7 @@ define(`ALLOC', `
 				unsigned long atline = (unsigned long) xc_stack_pop(&processor->allocsizes);
 				unsigned long real = SIZE;
 				if (expect != real) {
-					fprintf(stderr, "mismatch `$@' at line %d(was %d): real %lu - expect %lu = %l\n", __LINE__, atline, real, expect, real - expect);
+					fprintf(stderr, "mismatch `$@' at line %d(was %lu): real %lu - expect %lu = %lu\n", __LINE__, atline, real, expect, real - expect);
 				}
 			}
 		}')

@@ -279,7 +279,6 @@ int xc_undo_fix_opcode(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 int xc_foreach_early_binding_class(zend_op_array *op_array, void (*callback)(zend_op *opline, int oplineno, void *data TSRMLS_DC), void *data TSRMLS_DC) /* {{{ */
 {
 	zend_op *opline, *begin, *end, *next = NULL;
-	xc_cest_t cest;
 
 	opline = begin = op_array->opcodes;
 	end = opline + op_array->last;
@@ -324,11 +323,12 @@ int xc_foreach_early_binding_class(zend_op_array *op_array, void (*callback)(zen
 			opline ++;
 		}
 	}
+	return SUCCESS;
 }
 /* }}} */
 static int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, int oplineno TSRMLS_DC) /* {{{ */
 {
-	zend_op *opline, *opcodes;
+	zend_op *opline;
 
 #ifdef DEBUG
 	fprintf(stderr, "binding %d\n", oplineno);
