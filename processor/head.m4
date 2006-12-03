@@ -88,7 +88,7 @@ static void xc_dprint_indent(int indent) /* {{{ */
 /* }}} */
 static void xc_dprint_str_len(const char *str, int len) /* {{{ */
 {
-	const unsigned char *p = str;
+	const unsigned char *p = (const unsigned char *) str;
 	int i;
 	for (i = 0; i < len; i ++) {
 		if (p[i] < 32 || p[i] == 127) {

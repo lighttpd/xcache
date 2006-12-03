@@ -2387,6 +2387,7 @@ static int xc_zend_remove_extension(zend_extension *extension) /* {{{ */
 	zend_extensions.dtor = NULL;
 	zend_llist_del_element(&zend_extensions, extension, xc_ptr_compare_func);
 	zend_extensions.dtor = dtor;
+	return SUCCESS;
 }
 /* }}} */
 static int xc_config_hash(xc_hash_t *p, char *name, char *default_value) /* {{{ */
