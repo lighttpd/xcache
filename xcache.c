@@ -2357,7 +2357,7 @@ static void xc_zend_extension_register(zend_extension *new_extension, DL_HANDLE 
 
     zend_extension_dispatch_message(ZEND_EXTMSG_NEW_EXTENSION, &extension);
 
-    zend_llist_add_element(&zend_extensions, &extension);
+    zend_llist_prepend_element(&zend_extensions, &extension);
 #ifdef DEBUG
 	fprintf(stderr, "registered\n");
 #endif
@@ -2431,11 +2431,9 @@ static PHP_MINIT_FUNCTION(xcache)
 
 	xc_module_gotup = 1;
 	if (!xc_zend_extension_gotup) {
-		if (zend_get_extension(XCACHE_NAME) == NULL) {
-			xc_zend_extension_register(&zend_extension_entry, 0);
-			xc_zend_extension_startup(&zend_extension_entry);
-			xc_zend_extension_faked = 1;
-		}
+		xc_zend_extension_register(&zend_extension_entry, 0);
+		xc_zend_extension_startup(&zend_extension_entry);
+		xc_zend_extension_faked = 1;
 	}
 
 	ext = zend_get_extension("Zend Optimizer");
@@ -2631,9 +2629,6 @@ static int xc_zend_startup_last(zend_extension *extension) /* {{{ */
 /* }}} */
 ZEND_DLEXPORT int xcache_zend_startup(zend_extension *extension) /* {{{ */
 {
-	if (xc_zend_extension_gotup) {
-		return SUCCESS;
-	}
 	xc_zend_extension_gotup = 1;
 	xc_llist_element = NULL;
 	if (zend_llist_count(&zend_extensions) > 1) {
