@@ -243,7 +243,7 @@ static xc_entry_t *xc_entry_find_dmz(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 static void xc_entry_hold_php_dmz(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 {
 #ifdef DEBUG
-	fprintf(stderr, "hold %s\n", ZSTR_S(xce->name));
+	fprintf(stderr, "hold %s\n", xce->name.str.val);
 #endif
 	xce->refcount ++;
 	xc_stack_push(&XG(php_holds)[xce->cache->cacheid], (void *)xce);
@@ -290,7 +290,7 @@ static void xc_entry_apply_dmz(xc_cache_t *cache, cache_apply_dmz_func_t apply_f
 static XC_ENTRY_APPLY_FUNC(xc_gc_expires_php_entry_dmz) /* {{{ */
 {
 #ifdef DEBUG
-	fprintf(stderr, "ttl %d, %d %d\n", XG(request_time), entry->atime, xc_php_ttl);
+	fprintf(stderr, "ttl %lu, %lu %lu\n", (zend_ulong) XG(request_time), (zend_ulong) entry->atime, xc_php_ttl);
 #endif
 	if (XG(request_time) > entry->atime + xc_php_ttl) {
 		return 1;
@@ -309,7 +309,7 @@ static XC_ENTRY_APPLY_FUNC(xc_gc_expires_var_entry_dmz) /* {{{ */
 static void xc_gc_expires_one(xc_cache_t *cache, zend_ulong gc_interval, cache_apply_dmz_func_t apply_func TSRMLS_DC) /* {{{ */
 {
 #ifdef DEBUG
-	fprintf(stderr, "interval %d, %d %d\n", XG(request_time), cache->last_gc_expires, gc_interval);
+	fprintf(stderr, "interval %lu, %lu %lu\n", (zend_ulong) XG(request_time), (zend_ulong) cache->last_gc_expires, gc_interval);
 #endif
 	if (XG(request_time) - cache->last_gc_expires >= gc_interval) {
 		ENTER_LOCK(cache) {
@@ -631,7 +631,7 @@ static inline void xc_entry_unholds_real(xc_stack_t *holds, xc_cache_t **caches,
 				while (xc_stack_size(s)) {
 					xce = (xc_entry_t*) xc_stack_pop(s);
 #ifdef DEBUG
-					fprintf(stderr, "unhold %s\n", ZSTR_S(xce->name));
+					fprintf(stderr, "unhold %s\n", xce->name.str.val);
 #endif
 					xce->refcount --;
 					assert(xce->refcount >= 0);
