@@ -1,6 +1,7 @@
 divert(-1)
 dnl ================ start ======================
 dnl define(`XCACHE_ENABLE_TEST')
+dnl define(`DEBUG_SIZE')
 define(`USEMEMCPY')
 
 dnl ================ main
@@ -49,6 +50,7 @@ define(`ALLOC', `
 				}
 			}
 		}')
+		void *oldp = processor->p;
 		$1 = (FORCETYPE *) (processor->p = (char *) ALIGN(processor->p));
 		ifelse(`$4', `', `
 				IFASSERT(`memset($1, -1, SIZE);')
@@ -56,6 +58,11 @@ define(`ALLOC', `
 				memset($1, 0, SIZE);
 		')
 		processor->p += SIZE;
+
+		ifdef(`DEBUG_SIZE', `
+			xc_totalsize += (char *) processor->p - (char *) oldp;
+			fprintf(stderr, "%d\t%d\t`'SIZE()\n", (char *) processor->p - (char *) oldp, xc_totalsize);
+		')
 	')
 	IFRESTORE(`ifelse(`$4', `', `
 			ifelse(

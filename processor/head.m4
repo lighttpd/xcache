@@ -38,6 +38,8 @@ m4_errprint(`AUTOCHECK INFO: runtime autocheck Enabled (debug build)')
 ', `
 m4_errprint(`AUTOCHECK INFO: runtime autocheck Disabled (optimized build)')
 ')
+ifdef(`DEBUG_SIZE', `static int xc_totalsize = 0;')
+
 sinclude(builddir`/structinfo.m4')
 
 #ifndef NDEBUG
