@@ -38,7 +38,7 @@
 #define max(a, b) ((a) < (b) ? (b) : (a))
 #endif
 
-// {{{ xc_shm_t
+/* {{{ xc_shm_t */
 struct _xc_shm_t {
 	xc_shm_handlers_t *handlers;
 	void *ptr;

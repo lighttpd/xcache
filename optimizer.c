@@ -6,9 +6,11 @@ static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	if (op_array->type != ZEND_USER_FUNCTION) {
 		return 0;
 	}
-	//xc_undo_pass_two(op_array TSRMLS_CC);
-	//xc_redo_pass_two(op_array TSRMLS_CC);
-	//xc_dprint_zend_op_array(op_array, 0);
+#if 0
+	xc_undo_pass_two(op_array TSRMLS_CC);
+	xc_redo_pass_two(op_array TSRMLS_CC);
+	xc_dprint_zend_op_array(op_array, 0);
+#endif
 	return 0;
 }
 /* }}} */

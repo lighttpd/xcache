@@ -50,7 +50,9 @@ define(`ALLOC', `
 				}
 			}
 		}')
-		void *oldp = processor->p;
+		ifdef(`DEBUG_SIZE', ` {
+			void *oldp = processor->p;
+		')
 		$1 = (FORCETYPE *) (processor->p = (char *) ALIGN(processor->p));
 		ifelse(`$4', `', `
 				IFASSERT(`memset($1, -1, SIZE);')
@@ -62,6 +64,7 @@ define(`ALLOC', `
 		ifdef(`DEBUG_SIZE', `
 			xc_totalsize += (char *) processor->p - (char *) oldp;
 			fprintf(stderr, "%d\t%d\t`'SIZE()\n", (char *) processor->p - (char *) oldp, xc_totalsize);
+		}
 		')
 	')
 	IFRESTORE(`ifelse(`$4', `', `
