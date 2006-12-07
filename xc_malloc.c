@@ -105,7 +105,7 @@ static XC_MEM_DESTROY(xc_mem_malloc_destroy) /* {{{ */
 }
 /* }}} */
 
-// {{{ xc_shm_t
+/* {{{ xc_shm_t */
 struct _xc_shm_t {
 	xc_shm_handlers_t *handlers;
 	xc_shmsize_t       size;

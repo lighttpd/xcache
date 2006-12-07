@@ -28,7 +28,7 @@
 #define PADD(p, a) (CHAR_PTR(p) + a)
 #define PSUB(p1, p2) (CHAR_PTR(p1) - CHAR_PTR(p2))
 
-// {{{ mem
+/* {{{ mem */
 struct _xc_block_t {
 #ifdef ALLOC_DEBUG_BLOCK_CHECK
 	unsigned int magic;

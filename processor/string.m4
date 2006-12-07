@@ -108,6 +108,6 @@ define(`PROC_ZSTRING_N', `
 #endif
 	popdef(`NSIZE')
 ')
-// }}}
+dnl }}}
 define(`PROC_ZSTRING_L', `DBG(`$0($*)') PROC_ZSTRING_N(`$1', `$2', `$3', `len')')
 define(`PROC_ZSTRING', `DBG(`$0($*)') PROC_ZSTRING_N(`$1', `$2', , `strlen')')
