@@ -330,9 +330,7 @@ static int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, 
 {
 	zend_op *opline;
 
-#ifdef DEBUG
-	fprintf(stderr, "binding %d\n", oplineno);
-#endif
+	TRACE("binding %d", oplineno);
 	assert(oplineno >= 0);
 
 	/* do early binding */
@@ -351,9 +349,7 @@ static int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, 
 			}
 
 			parent_name = &(opline - 1)->op2.u.constant;
-#	ifdef DEBUG
-			fprintf(stderr, "binding with parent %s\n", Z_STRVAL_P(parent_name));
-#	endif
+			TRACE("binding with parent %s", Z_STRVAL_P(parent_name));
 			if (zend_lookup_class(Z_STRVAL_P(parent_name), Z_STRLEN_P(parent_name), &pce TSRMLS_CC) == FAILURE) {
 				return FAILURE;
 			}
@@ -368,9 +364,7 @@ static int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, 
 		 && (opline - 1)->opcode == ZEND_FETCH_CLASS) {
 			zend_op *fetch_class_opline = opline - 1;
 
-#	ifdef DEBUG
-			fprintf(stderr, "%s %p\n", Z_STRVAL(fetch_class_opline->op2.u.constant), Z_STRVAL(fetch_class_opline->op2.u.constant));
-#	endif
+			TRACE("%s %p", Z_STRVAL(fetch_class_opline->op2.u.constant), Z_STRVAL(fetch_class_opline->op2.u.constant));
 			OP_ZVAL_DTOR(fetch_class_opline->op2);
 			fetch_class_opline->opcode = ZEND_NOP;
 			ZEND_VM_SET_OPCODE_HANDLER(fetch_class_opline);
@@ -704,5 +698,21 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, int install TSRMLS_DC) /* {{{ */
 	if (sandbox->alloc) {
 		efree(sandbox);
 	}
+}
+/* }}} */
+int xc_vtrace(const char *fmt, va_list args) /* {{{ */
+{
+	vfprintf(stderr, fmt, args);
+	return 0;
+}
+/* }}} */
+int xc_trace(const char *fmt, ...) /* {{{ */
+{
+	va_list args;
+
+	va_start(args, fmt);
+	xc_vtrace(fmt, args);
+	va_end(args);
+	return 0;
 }
 /* }}} */

@@ -14,9 +14,9 @@
 #include "align.h"
 
 #ifdef TEST
-#	define ALLOC_DEBUG
+#	define DEBUG
 #endif
-#ifdef ALLOC_DEBUG
+#ifdef DEBUG
 #	define ALLOC_DEBUG_BLOCK_CHECK
 #endif
 
@@ -90,19 +90,15 @@ static XC_MEM_MALLOC(xc_mem_malloc) /* {{{ */
 	/* realsize is ALIGNed so next block start at ALIGNed address */
 	realsize = ALIGN(realsize);
 
-#ifdef ALLOC_DEBUG
-	fprintf(stderr, "avail: %d (%dKB). Allocate size: %d realsize: %d (%dKB)"
+	TRACE("avail: %d (%dKB). Allocate size: %d realsize: %d (%dKB)"
 			, mem->avail, mem->avail / 1024
 			, size
 			, realsize, realsize / 1024
 			);
-#endif
 	do {
 		p = NULL;
 		if (mem->avail < realsize) {
-#ifdef ALLOC_DEBUG
-			fprintf(stderr, " oom\n");
-#endif
+			TRACE(" oom");
 			break;
 		}
 
@@ -131,9 +127,7 @@ static XC_MEM_MALLOC(xc_mem_malloc) /* {{{ */
 		}
 
 		if (b == NULL) {
-#ifdef ALLOC_DEBUG
-			fprintf(stderr, " no fit chunk\n");
-#endif
+			TRACE(" no fit chunk");
 			break;
 		}
 
@@ -148,9 +142,7 @@ static XC_MEM_MALLOC(xc_mem_malloc) /* {{{ */
 		/* perfect fit, just unlink */
 		if (cur->size == realsize) {
 			prev->next = cur->next;
-#ifdef ALLOC_DEBUG
-			fprintf(stderr, " perfect fit. Got: %p\n", p);
-#endif
+			TRACE(" perfect fit. Got: %p", p);
 			break;
 		}
 
@@ -168,14 +160,12 @@ static XC_MEM_MALLOC(xc_mem_malloc) /* {{{ */
 		 *            `--^
 		 */
 
-#ifdef ALLOC_DEBUG
-		fprintf(stderr, " -> avail: %d (%dKB). new next: %p offset: %d %dKB. Got: %p\n"
+		TRACE(" -> avail: %d (%dKB). new next: %p offset: %d %dKB. Got: %p"
 				, mem->avail, mem->avail / 1024
 				, newb
 				, PSUB(newb, mem), PSUB(newb, mem) / 1024
 				, p
 				);
-#endif
 		prev->next = newb;
 		/* prev|cur|newb|next
 		 *    `-----^
@@ -192,10 +182,7 @@ static XC_MEM_FREE(xc_mem_free) /* {{{ return block size freed */
 	int size;
 
 	cur = (xc_block_t *) (CHAR_PTR(p) - BLOCK_HEADER_SIZE());
-#ifdef ALLOC_DEBUG
-	fprintf(stderr, "freeing: %p", p);
-	fprintf(stderr, ", size=%d", cur->size);
-#endif
+	TRACE("freeing: %p, size=%d", p, cur->size);
 	xc_block_check(cur);
 	assert((char*)mem < (char*)cur && (char*)cur < (char*)mem + mem->size);
 
@@ -210,9 +197,7 @@ static XC_MEM_FREE(xc_mem_free) /* {{{ return block size freed */
 	b->next = cur;
 	size = cur->size;
 
-#ifdef ALLOC_DEBUG
-	fprintf(stderr, ", avail %d (%dKB)", mem->avail, mem->avail / 1024);
-#endif
+	TRACE(" avail %d (%dKB)", mem->avail, mem->avail / 1024);
 	mem->avail += size;
 
 	/* combine prev|cur */
@@ -220,9 +205,7 @@ static XC_MEM_FREE(xc_mem_free) /* {{{ return block size freed */
 		b->size += cur->size;
 		b->next = cur->next;
 		cur = b;
-#ifdef ALLOC_DEBUG
-		fprintf(stderr, ", combine prev");
-#endif
+		TRACE(" combine prev");
 	}
 
 	/* combine cur|next */
@@ -230,13 +213,9 @@ static XC_MEM_FREE(xc_mem_free) /* {{{ return block size freed */
 	if (PADD(cur, cur->size) == (char *)b) {
 		cur->size += b->size;
 		cur->next = b->next;
-#ifdef ALLOC_DEBUG
-		fprintf(stderr, ", combine next");
-#endif
+		TRACE(" combine next");
 	}
-#ifdef ALLOC_DEBUG
-	fprintf(stderr, " -> avail %d (%dKB)\n", mem->avail, mem->avail / 1024);
-#endif
+	TRACE(" -> avail %d (%dKB)", mem->avail, mem->avail / 1024);
 	return size;
 }
 /* }}} */
