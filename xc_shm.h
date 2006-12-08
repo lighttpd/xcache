@@ -1,3 +1,5 @@
+#ifndef XC_SHM_H
+#define XC_SHM_H
 typedef struct _xc_shm_t xc_shm_t;
 typedef size_t xc_shmsize_t;
 
@@ -62,3 +64,4 @@ const char *xc_shm_scheme_name(xc_shm_scheme_t *scheme);
 
 xc_shm_t *xc_shm_init(const char *type, xc_shmsize_t size, int readonly_protection, const void *arg1, const void *arg2);
 void xc_shm_destroy(xc_shm_t *shm);
+#endif

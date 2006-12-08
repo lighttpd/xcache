@@ -1,6 +1,4 @@
 
-#undef ALLOC_DEBUG
-
 #include <stdio.h>
 #include <assert.h>
 #include <limits.h>
@@ -33,6 +31,7 @@
 #include "php.h"
 #define XC_SHM_IMPL
 #include "xc_shm.h"
+#include "utils.h"
 
 #ifndef max
 #define max(a, b) ((a) < (b) ? (b) : (a))
@@ -54,13 +53,6 @@ struct _xc_shm_t {
 #endif
 };
 
-#undef NDEBUG
-#ifdef ALLOC_DEBUG
-#	define inline
-#else
-#	define NDEBUG
-#endif
-#include <assert.h>
 /* }}} */
 #define CHECK(x, e) do { if ((x) == NULL) { zend_error(E_ERROR, "XCache: " e); goto err; } } while (0)
 #define PTR_ADD(ptr, v) (((char *) (ptr)) + (v))

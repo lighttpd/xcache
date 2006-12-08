@@ -26,9 +26,7 @@ static zend_compile_file_t *origin_compile_file;
 static void xc_destroy_coverage(void *pDest) /* {{{ */
 {
 	coverager_t cov = *(coverager_t*) pDest;
-#ifdef DEBUG
-	fprintf(stderr, "destroy %p\n", cov);
-#endif
+	TRACE("destroy %p", cov);
 	zend_hash_destroy(cov);
 	efree(cov);
 }
@@ -38,9 +36,7 @@ void xcache_mkdirs_ex(char *root, int rootlen, char *path, int pathlen TSRMLS_DC
 	char *fullpath;
 	struct stat st;
 
-#ifdef DEBUG
-	fprintf(stderr, "mkdirs %s %d %s %d\n", root, rootlen, path, pathlen);
-#endif
+	TRACE("mkdirs %s %d %s %d", root, rootlen, path, pathlen);
 	fullpath = do_alloca(rootlen + pathlen + 1);
 	memcpy(fullpath, root, rootlen);
 	memcpy(fullpath + rootlen, path, pathlen);
@@ -55,9 +51,7 @@ void xcache_mkdirs_ex(char *root, int rootlen, char *path, int pathlen TSRMLS_DC
 			xcache_mkdirs_ex(root, rootlen, path, chr - path TSRMLS_CC);
 			*chr = PHP_DIR_SEPARATOR;
 		}
-#ifdef DEBUG
-		fprintf(stderr, "mkdir %s\n", fullpath);
-#endif
+		TRACE("mkdir %s", fullpath);
 #if PHP_MAJOR_VERSION > 5
 		php_stream_mkdir(fullpath, 0700, REPORT_ERRORS, NULL);
 #else
@@ -112,9 +106,7 @@ static void xc_coverager_save_cov(char *srcfile, char *outfilename, coverager_t 
 	}
 
 	if (newfile) {
-#ifdef DEBUG
-		fprintf(stderr, "new file\n");
-#endif
+		TRACE("%s", "new file");
 	}
 	else if (outstat.st_size) {
 		len = outstat.st_size;
@@ -122,9 +114,7 @@ static void xc_coverager_save_cov(char *srcfile, char *outfilename, coverager_t 
 		if (read(fd, (void *) contents, len) != len) {
 			goto bailout;
 		}
-#ifdef DEBUG
-		fprintf(stderr, "oldsize %d\n", (int) len);
-#endif
+		TRACE("oldsize %d", (int) len);
 		do {
 			p = (long *) contents;
 			len -= sizeof(long);
@@ -132,9 +122,7 @@ static void xc_coverager_save_cov(char *srcfile, char *outfilename, coverager_t 
 				break;
 			}
 			if (*p++ != PCOV_HEADER_MAGIC) {
-#ifdef DEBUG
-				fprintf(stderr, "wrong magic in file %s\n", outfilename);
-#endif
+				TRACE("wrong magic in file %s", outfilename);
 				break;
 			}
 
@@ -289,9 +277,7 @@ static void xc_coverager_autodump(TSRMLS_D) /* {{{ */
 			strcpy(outfilename + dumpdir_len, ZSTR_S(s));
 			strcpy(outfilename + dumpdir_len + size - 1, ".pcov");
 
-#ifdef DEBUG
-			fprintf(stderr, "outfilename %s\n", outfilename);
-#endif
+			TRACE("outfilename %s", outfilename);
 			xc_coverager_save_cov(ZSTR_S(s), outfilename, *pcov TSRMLS_CC);
 			zend_hash_move_forward_ex(XG(coverages), &pos);
 		}
@@ -353,18 +339,14 @@ static coverager_t xc_coverager_get(char *filename TSRMLS_DC) /* {{{ */
 	coverager_t cov, *pcov;
 
 	if (zend_hash_find(XG(coverages), filename, len, (void **) &pcov) == SUCCESS) {
-#ifdef DEBUG
-		fprintf(stderr, "got coverage %s %p\n", filename, *pcov);
-#endif
+		TRACE("got coverage %s %p", filename, *pcov);
 		return *pcov;
 	}
 	else {
 		cov = emalloc(sizeof(HashTable));
 		zend_hash_init(cov, 0, NULL, NULL, 0);
 		zend_hash_add(XG(coverages), filename, len, (void **) &cov, sizeof(cov), NULL);
-#ifdef DEBUG
-		fprintf(stderr, "new coverage %s %p\n", filename, cov);
-#endif
+		TRACE("new coverage %s %p", filename, cov);
 		return cov;
 	}
 }
@@ -533,9 +515,7 @@ PHP_FUNCTION(xcache_coverager_decode)
 		return;
 	}
 	if (*p++ != PCOV_HEADER_MAGIC) {
-#ifdef DEBUG
-		fprintf(stderr, "wrong magic in xcache_coverager_decode");
-#endif
+		TRACE("%s", "wrong magic in xcache_coverager_decode");
 		return;
 	}
 

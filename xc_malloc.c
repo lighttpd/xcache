@@ -6,6 +6,7 @@
 #include "xc_shm.h"
 #include "php.h"
 #include "align.h"
+#include "utils.h"
 
 struct _xc_mem_t {
 	const xc_mem_handlers_t *handlers;
@@ -111,14 +112,6 @@ struct _xc_shm_t {
 	xc_shmsize_t       size;
 	xc_shmsize_t       memoffset;
 };
-
-#undef NDEBUG
-#ifdef ALLOC_DEBUG
-#	define inline
-#else
-#	define NDEBUG
-#endif
-#include <assert.h>
 /* }}} */
 
 static XC_SHM_CAN_READONLY(xc_malloc_can_readonly) /* {{{ */

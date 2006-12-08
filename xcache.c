@@ -29,20 +29,9 @@
 #include "stack.h"
 #include "xcache_globals.h"
 #include "processor.h"
-#include "utils.h"
 #include "const_string.h"
 #include "opcode_spec.h"
-
-#ifdef DEBUG
-#	undef NDEBUG
-#	undef inline
-#	define inline
-#else
-#	ifndef NDEBUG
-#		define NDEBUG
-#	endif
-#endif
-#include <assert.h>
+#include "utils.h"
 
 #define VAR_ENTRY_EXPIRED(pentry) ((pentry)->ttl && XG(request_time) > pentry->ctime + (pentry)->ttl)
 #define CHECK(x, e) do { if ((x) == NULL) { zend_error(E_ERROR, "XCache: " e); goto err; } } while (0)
@@ -242,9 +231,7 @@ static xc_entry_t *xc_entry_find_dmz(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 /* }}} */
 static void xc_entry_hold_php_dmz(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 {
-#ifdef DEBUG
-	fprintf(stderr, "hold %s\n", xce->name.str.val);
-#endif
+	TRACE("hold %s", xce->name.str.val);
 	xce->refcount ++;
 	xc_stack_push(&XG(php_holds)[xce->cache->cacheid], (void *)xce);
 }
@@ -289,9 +276,7 @@ static void xc_entry_apply_dmz(xc_cache_t *cache, cache_apply_dmz_func_t apply_f
  */
 static XC_ENTRY_APPLY_FUNC(xc_gc_expires_php_entry_dmz) /* {{{ */
 {
-#ifdef DEBUG
-	fprintf(stderr, "ttl %lu, %lu %lu\n", (zend_ulong) XG(request_time), (zend_ulong) entry->atime, xc_php_ttl);
-#endif
+	TRACE("ttl %lu, %lu %lu", (zend_ulong) XG(request_time), (zend_ulong) entry->atime, xc_php_ttl);
 	if (XG(request_time) > entry->atime + xc_php_ttl) {
 		return 1;
 	}
@@ -308,9 +293,7 @@ static XC_ENTRY_APPLY_FUNC(xc_gc_expires_var_entry_dmz) /* {{{ */
 /* }}} */
 static void xc_gc_expires_one(xc_cache_t *cache, zend_ulong gc_interval, cache_apply_dmz_func_t apply_func TSRMLS_DC) /* {{{ */
 {
-#ifdef DEBUG
-	fprintf(stderr, "interval %lu, %lu %lu\n", (zend_ulong) XG(request_time), (zend_ulong) cache->last_gc_expires, gc_interval);
-#endif
+	TRACE("interval %lu, %lu %lu", (zend_ulong) XG(request_time), (zend_ulong) cache->last_gc_expires, gc_interval);
 	if (XG(request_time) - cache->last_gc_expires >= gc_interval) {
 		ENTER_LOCK(cache) {
 			if (XG(request_time) - cache->last_gc_expires >= gc_interval) {
@@ -622,17 +605,13 @@ static inline void xc_entry_unholds_real(xc_stack_t *holds, xc_cache_t **caches,
 
 	for (i = 0; i < cachecount; i ++) {
 		s = &holds[i];
-#ifdef DEBUG
-		fprintf(stderr, "holded %d\n", xc_stack_size(s));
-#endif
+		TRACE("holded %d", xc_stack_size(s));
 		if (xc_stack_size(s)) {
 			cache = ((xc_entry_t *)xc_stack_top(s))->cache;
 			ENTER_LOCK(cache) {
 				while (xc_stack_size(s)) {
 					xce = (xc_entry_t*) xc_stack_pop(s);
-#ifdef DEBUG
-					fprintf(stderr, "unhold %s\n", xce->name.str.val);
-#endif
+					TRACE("unhold %s", xce->name.str.val);
 					xce->refcount --;
 					assert(xce->refcount >= 0);
 				}
@@ -810,9 +789,7 @@ static void xc_cache_early_binding_class_cb(zend_op *opline, int oplineno, void 
 	if (zend_hash_find(CG(class_table), class_name, class_len, (void **) &cest) == FAILURE) {
 		assert(0);
 	}
-#ifdef DEBUG
-	fprintf(stderr, "got ZEND_DECLARE_INHERITED_CLASS: %s\n", class_name + 1);
-#endif
+	TRACE("got ZEND_DECLARE_INHERITED_CLASS: %s", class_name + 1);
 	/* let's see which class */
 	for (i = 0; i < php->classinfo_cnt; i ++) {
 		if (memcmp(ZSTR_S(php->classinfos[i].key), class_name, class_len) == 0) {
@@ -890,9 +867,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 		stored_xce = xc_entry_find_dmz(&xce TSRMLS_CC);
 		/* found */
 		if (stored_xce) {
-#ifdef DEBUG
-			fprintf(stderr, "found %s, catch it\n", stored_xce->name.str.val);
-#endif
+			TRACE("found %s, catch it", stored_xce->name.str.val);
 			xc_entry_hold_php_dmz(stored_xce TSRMLS_CC);
 			cache->hits ++;
 			break;
@@ -919,9 +894,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	/* }}} */
 
 	/* {{{ compile */
-#ifdef DEBUG
-	fprintf(stderr, "compiling %s\n", filename);
-#endif
+	TRACE("compiling %s", filename);
 
 	/* make compile inside sandbox */
 	xc_sandbox_init(&sandbox, filename TSRMLS_CC);
@@ -1087,9 +1060,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 		stored_xce = xc_entry_store_dmz(&xce TSRMLS_CC);
 	} LEAVE_LOCK_EX(cache);
 	/* }}} */
-#ifdef DEBUG
-	fprintf(stderr, "stored\n");
-#endif
+	TRACE("%s", "stored");
 
 #define X_FREE(var) \
 	if (xce.data.php->var) { \
@@ -1145,9 +1116,7 @@ restore:
 	CG(in_compilation)    = 1;
 	CG(compiled_filename) = stored_xce->name.str.val;
 	CG(zend_lineno)       = 0;
-#ifdef DEBUG
-	fprintf(stderr, "restoring %s\n", stored_xce->name.str.val);
-#endif
+	TRACE("restoring %s", stored_xce->name.str.val);
 	xc_processor_restore_xc_entry_t(&xce, stored_xce, xc_readonly_protection TSRMLS_CC);
 #ifdef SHOW_DPRINT
 	xc_dprint(&xce, 0 TSRMLS_CC);
@@ -1180,9 +1149,7 @@ restore:
 	}
 	CG(in_compilation)    = 0;
 	CG(compiled_filename) = NULL;
-#ifdef DEBUG
-	fprintf(stderr, "restored  %s\n", stored_xce->name.str.val);
-#endif
+	TRACE("restored  %s", stored_xce->name.str.val);
 	return op_array;
 }
 /* }}} */
@@ -1874,14 +1841,10 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 	ENTER_LOCK(xce.cache) {
 		stored_xce = xc_entry_find_dmz(&xce TSRMLS_CC);
 		if (stored_xce) {
-#ifdef DEBUG
-			fprintf(stderr, "incdec: gotxce %s\n", xce.name.str.val);
-#endif
+			TRACE("incdec: gotxce %s", xce.name.str.val);
 			/* timeout */
 			if (VAR_ENTRY_EXPIRED(stored_xce)) {
-#ifdef DEBUG
-				fprintf(stderr, "incdec: expired\n");
-#endif
+				TRACE("%s", "incdec: expired");
 				xc_entry_remove_dmz(stored_xce TSRMLS_CC);
 				stored_xce = NULL;
 			}
@@ -1891,9 +1854,7 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 				if (Z_TYPE_P(stored_var->value) == IS_LONG) {
 					stored_xce->ctime = XG(request_time);
 					stored_xce->ttl   = xce.ttl;
-#ifdef DEBUG
-					fprintf(stderr, "incdec: islong\n");
-#endif
+					TRACE("%s", "incdec: islong");
 					value = Z_LVAL_P(stored_var->value);
 					value += (inc == 1 ? count : - count);
 					RETVAL_LONG(value);
@@ -1901,9 +1862,7 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 					break; /* leave lock */
 				}
 				else {
-#ifdef DEBUG
-					fprintf(stderr, "incdec: notlong\n");
-#endif
+					TRACE("%s", "incdec: notlong");
 					xc_processor_restore_zval(&oldzval, stored_xce->data.var->value, stored_xce->have_references TSRMLS_CC);
 					convert_to_long(&oldzval);
 					value = Z_LVAL(oldzval);
@@ -1911,11 +1870,9 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 				}
 			}
 		}
-#ifdef DEBUG
 		else {
-			fprintf(stderr, "incdec: %s not found\n", xce.name.str.val);
+			TRACE("incdec: %s not found", xce.name.str.val);
 		}
-#endif
 
 		value += (inc == 1 ? count : - count);
 		RETVAL_LONG(value);
@@ -2359,9 +2316,7 @@ static void xc_zend_extension_register(zend_extension *new_extension, DL_HANDLE 
     zend_extension_dispatch_message(ZEND_EXTMSG_NEW_EXTENSION, &extension);
 
     zend_llist_prepend_element(&zend_extensions, &extension);
-#ifdef DEBUG
-	fprintf(stderr, "registered\n");
-#endif
+	TRACE("%s", "registered");
 }
 
 static int xc_zend_extension_startup(zend_extension *extension)
