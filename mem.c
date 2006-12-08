@@ -12,6 +12,7 @@
 #define XC_MEM_IMPL
 #include "xc_shm.h"
 #include "align.h"
+#include "utils.h"
 
 #ifdef TEST
 #	define DEBUG
@@ -98,7 +99,7 @@ static XC_MEM_MALLOC(xc_mem_malloc) /* {{{ */
 	do {
 		p = NULL;
 		if (mem->avail < realsize) {
-			TRACE(" oom");
+			TRACE("%s", " oom");
 			break;
 		}
 
@@ -127,7 +128,7 @@ static XC_MEM_MALLOC(xc_mem_malloc) /* {{{ */
 		}
 
 		if (b == NULL) {
-			TRACE(" no fit chunk");
+			TRACE("%s", " no fit chunk");
 			break;
 		}
 
@@ -205,7 +206,7 @@ static XC_MEM_FREE(xc_mem_free) /* {{{ return block size freed */
 		b->size += cur->size;
 		b->next = cur->next;
 		cur = b;
-		TRACE(" combine prev");
+		TRACE("%s", " combine prev");
 	}
 
 	/* combine cur|next */
@@ -213,7 +214,7 @@ static XC_MEM_FREE(xc_mem_free) /* {{{ return block size freed */
 	if (PADD(cur, cur->size) == (char *)b) {
 		cur->size += b->size;
 		cur->next = b->next;
-		TRACE(" combine next");
+		TRACE("%s", " combine next");
 	}
 	TRACE(" -> avail %d (%dKB)", mem->avail, mem->avail / 1024);
 	return size;
