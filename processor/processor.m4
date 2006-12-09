@@ -411,7 +411,6 @@ DEF_STRUCT_P_FUNC(`znode', , `dnl {{{
 		src->op_type == XCACHE_IS_CV ||
 		src->op_type == IS_TMP_VAR ||
 		src->op_type == IS_UNUSED);
-#undef XCACHE_IS_CV
 	dnl dirty dispatch
 	DISABLECHECK(`
 	switch (src->op_type) {
@@ -426,11 +425,7 @@ DEF_STRUCT_P_FUNC(`znode', , `dnl {{{
 		', `
 		case IS_VAR:
 		case IS_TMP_VAR:
-#ifdef IS_CV
-		case IS_CV:
-#else
-		case 16:
-#endif
+		case XCACHE_IS_CV:
 			DISPATCH(zend_uint, u.var)
 			DISPATCH(zend_uint, u.EA.type)
 			break;
@@ -446,6 +441,7 @@ DEF_STRUCT_P_FUNC(`znode', , `dnl {{{
 	}
 	')
 	DONE(u)
+#undef XCACHE_IS_CV
 ')
 dnl }}}
 DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
