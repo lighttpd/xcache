@@ -1,4 +1,4 @@
-#if 1
+#if 0
 #define DEBUG
 #endif
 
@@ -28,7 +28,7 @@ typedef struct _bb_t {
 	bbid_t     jmpout_op1;
 	bbid_t     jmpout_op2;
 	bbid_t     jmpout_ext;
-	bbid_t     follow;
+	bbid_t     fall;
 } bb_t;
 /* }}} */
 
@@ -101,21 +101,21 @@ static int op_array_convert_switch(zend_op_array *op_array) /* {{{ */
 	return SUCCESS;
 }
 /* }}} */
-static int op_get_jmpout(bb_t *bb, zend_op *opcodes, zend_op *opline) /* {{{ */
+static int op_get_jmpout(int *jmpout_op1, int *jmpout_op2, int *jmpout_ext, zend_bool *fall, zend_op *opline) /* {{{ */
 {
-	/* break=have follow */
+	/* break=will fall */
 	switch (opline->opcode) {
 	case ZEND_RETURN:
 	case ZEND_EXIT:
-		break;
+		return SUCCESS; /* no fall */
 
 	case ZEND_JMP:
-		bb->jmpout_op1 = opline->op1.u.opline_num;
-		return SUCCESS; /* no follow */
+		*jmpout_op1 = opline->op1.u.opline_num;
+		return SUCCESS; /* no fall */
 
 	case ZEND_JMPZNZ:
-		bb->jmpout_ext = opline->extended_value;
-		bb->jmpout_op2 = opline->op2.u.opline_num;
+		*jmpout_ext = opline->extended_value;
+		*jmpout_op2 = opline->op2.u.opline_num;
 		break;
 
 	case ZEND_JMPZ:
@@ -130,13 +130,14 @@ static int op_get_jmpout(bb_t *bb, zend_op *opcodes, zend_op *opline) /* {{{ */
 	case ZEND_FE_RESET:
 #endif      
 	case ZEND_FE_FETCH:
-		bb->jmpout_op2 = opline->op2.u.opline_num;
+		*jmpout_op2 = opline->op2.u.opline_num;
 		break;
 
 	default:
 		return FAILURE;
 	}
 
+	*fall = 1;
 	return SUCCESS;
 }
 /* }}} */
@@ -152,7 +153,7 @@ static bb_t *bb_new_ex(zend_op *opcodes, int count) /* {{{ */
 	bb->jmpout_op1 = BBID_INVALID;
 	bb->jmpout_op2 = BBID_INVALID;
 	bb->jmpout_ext = BBID_INVALID;
-	bb->follow     = BBID_INVALID;
+	bb->fall       = BBID_INVALID;
 
 	if (opcodes) {
 		bb->alloc   = 0;
@@ -177,6 +178,21 @@ static void bb_destroy(bb_t *bb) /* {{{ */
 	efree(bb);
 }
 /* }}} */
+#ifdef DEBUG
+static void bb_print(bb_t *bb, zend_op *opcodes) /* {{{ */
+{
+	fprintf(stderr,
+			"%3d %3d %3d"
+			" %c%c"
+			" %3d %3d %3d %3d\r\n"
+			, bb->id, bb->count, bb->opcodes - opcodes
+			, bb->used ? 'U' : ' ', bb->alloc ? 'A' : ' '
+			, bb->jmpout_op1, bb->jmpout_op2, bb->jmpout_ext, bb->fall
+			);
+}
+/* }}} */
+#endif
+
 #define bbs_get(bbs, n) xc_stack_get(bbs, n)
 static void bbs_destroy(bbs_t *bbs) /* {{{ */
 {
@@ -187,6 +203,16 @@ static void bbs_destroy(bbs_t *bbs) /* {{{ */
 	}
 }
 /* }}} */
+#ifdef DEBUG
+static void bbs_print(bbs_t *bbs, zend_op *opcodes) /* {{{ */
+{
+	int i;
+	for (i = 0; i < xc_stack_count(bbs); i ++) {
+		bb_print(bbs_get(bbs, i), opcodes);
+	}
+}
+/* }}} */
+#endif
 #define bbs_init(bbs) xc_stack_init_ex(bbs, 16)
 static bb_t *bbs_add_bb(bbs_t *bbs, bb_t *bb) /* {{{ */
 {
@@ -203,51 +229,97 @@ static bb_t *bbs_new_bb_ex(bbs_t *bbs, zend_op *opcodes, int count) /* {{{ */
 static int bbs_build_from(bbs_t *bbs, zend_op *opcodes, int count) /* {{{ */
 {
 	int i, prev;
-	bb_t bb, *pbb;
-	zend_bool *markjmpins  = do_alloca(count);
-	zend_bool *markjmpouts = do_alloca(count);
+	bb_t *pbb;
+	bbid_t id;
+	int jmpout_op1, jmpout_op2, jmpout_ext;
+	zend_bool fall;
+	bbid_t *bbids          = do_alloca(count * sizeof(bbid_t));
+	zend_bool *markjmpins  = do_alloca(count * sizeof(zend_bool));
+	zend_bool *markjmpouts = do_alloca(count * sizeof(zend_bool));
 
-	memset(markjmpins,  0, sizeof(zend_bool));
-	memset(markjmpouts, 0, sizeof(zend_bool));
+	/* {{{ mark jmpin/jumpout */
+	memset(markjmpins,  0, count * sizeof(zend_bool));
+	memset(markjmpouts, 0, count * sizeof(zend_bool));
 
 	for (i = 0; i < count; i ++) {
-		/* BBID_INVALID=invalidate line 
-		 * bb.jmpout_op1 bb.jmpout_op2 bb.jmpout_ext bb.follow means opline number here, not basicblock id
-		 */
-		bb.jmpout_op1 = bb.jmpout_op2 = BBID_INVALID;
-		bb.jmpout_ext = bb.follow     = BBID_INVALID;
-		if (op_get_jmpout(&bb, opcodes, &opcodes[i]) == SUCCESS) {
+		jmpout_op1 = jmpout_op2 = jmpout_ext = -1;
+		fall = 0;
+		if (op_get_jmpout(&jmpout_op1, &jmpout_op2, &jmpout_ext, &fall, &opcodes[i]) == SUCCESS) {
 			markjmpouts[i] = 1;
 
-			if (bb.jmpout_op1 != BBID_INVALID) {
-				markjmpins[bb.jmpout_op1] = 1;
+			if (jmpout_op1 != -1) {
+				markjmpins[jmpout_op1] = 1;
 			}
-			if (bb.jmpout_op2 != BBID_INVALID) {
-				markjmpins[bb.jmpout_op2] = 1;
+			if (jmpout_op2 != -1) {
+				markjmpins[jmpout_op2] = 1;
 			}
-			if (bb.jmpout_ext != BBID_INVALID) {
-				markjmpins[bb.jmpout_ext] = 1;
-			}
-
-			if (i < count && bb.follow != BBID_INVALID) {
-				markjmpins[i + 1] = 1;
+			if (jmpout_ext != -1) {
+				markjmpins[jmpout_ext] = 1;
 			}
 		}
 	}
+	/* }}} */
+	/* {{{ fill opcodes with newly allocated id */
+	for (i = 0; i < count; i ++) {
+		bbids[i] = BBID_INVALID;
+	}
 
 	prev = 0;
+	id = 0;
 	for (i = 1; i < count; i ++) {
-		if (markjmpins[i]) {
-			pbb = bbs_new_bb_ex(bbs, opcodes + prev, i - prev);
-			op_get_jmpout(pbb, opcodes, &opcodes[prev]);
+		if (markjmpins[i] || markjmpouts[i - 1]) {
+			for (; prev < i; prev ++) {
+				bbids[prev] = id;
+			}
+			id ++;
 			prev = i;
 		}
 	}
 
-	if (prev != count - 1) {
-		pbb = bbs_new_bb_ex(bbs, opcodes + prev, count - prev);
+	if (prev < count) {
+		for (; prev < i; prev ++) {
+			bbids[prev] = id;
+		}
 	}
+	/* }}} */
+	/* {{{ create basic blocks */
+	prev = 0;
+	id = 0;
+	for (i = 1; i < count; i ++) {
+		if (id == bbids[i]) {
+			continue;
+		}
+		id = bbids[i];
 
+		pbb = bbs_new_bb_ex(bbs, opcodes + prev, i - prev);
+		jmpout_op1 = jmpout_op2 = jmpout_ext = -1;
+		fall = 0;
+		if (op_get_jmpout(&jmpout_op1, &jmpout_op2, &jmpout_ext, &fall, &opcodes[prev]) == SUCCESS) {
+			if (jmpout_op1 != -1) {
+				pbb->jmpout_op1 = bbids[jmpout_op1];
+				assert(pbb->jmpout_op1 != BBID_INVALID);
+			}
+			if (jmpout_op2 != -1) {
+				pbb->jmpout_op2 = bbids[jmpout_op2];
+				assert(pbb->jmpout_op2 != BBID_INVALID);
+			}
+			if (jmpout_ext != -1) {
+				pbb->jmpout_ext = bbids[jmpout_ext];
+				assert(pbb->jmpout_ext != BBID_INVALID);
+			}
+			if (fall && i + 1 < count) {
+				pbb->fall = bbids[i + 1];
+				assert(pbb->fall != BBID_INVALID);
+			}
+		}
+		prev = i + 1;
+	}
+	assert(prev == count);
+	/* }}} */
+
+	free_alloca(bbids);
+	free_alloca(markjmpins);
+	free_alloca(markjmpouts);
 	return SUCCESS;
 }
 /* }}} */
@@ -264,20 +336,27 @@ static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	}
 	xc_undo_pass_two(op_array TSRMLS_CC);
 #ifdef DEBUG
+#	if 0
 	TRACE("optimize file: %s", op_array->filename);
 	xc_dprint_zend_op_array(op_array, 0 TSRMLS_CC);
+#	endif
 #endif
 
-	if (op_array_convert_switch(op_array)) {
+	if (op_array_convert_switch(op_array) == SUCCESS) {
 		bbs_init(&bbs);
-		if (bbs_build_from(&bbs, op_array->opcodes, op_array->last)) {
+		if (bbs_build_from(&bbs, op_array->opcodes, op_array->last) == SUCCESS) {
+#ifdef DEBUG
+			bbs_print(&bbs, op_array->opcodes);
+#endif
 		}
 		bbs_destroy(&bbs);
 	}
 
 #ifdef DEBUG
+#	if 0
 	TRACE("%s", "after compiles");
 	xc_dprint_zend_op_array(op_array, 0 TSRMLS_CC);
+#	endif
 #endif
 	xc_redo_pass_two(op_array TSRMLS_CC);
 	return 0;
