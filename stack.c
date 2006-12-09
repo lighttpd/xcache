@@ -3,10 +3,10 @@
 #include "stack.h"
 typedef xc_stack_t* S;
 
-void xc_stack_init(S stack)
+void xc_stack_init_ex(S stack, int initsize)
 {
 	stack->cnt = 0;
-	stack->size = 8;
+	stack->size = initsize;
 	stack->data = malloc(sizeof(void *) * stack->size);
 }
 
@@ -42,7 +42,7 @@ void* xc_stack_get(S stack, int n)
 	return stack->data[n];
 }
 
-int xc_stack_size(S stack)
+int xc_stack_count(S stack)
 {
 	assert(stack != NULL);
 	return stack->cnt;
