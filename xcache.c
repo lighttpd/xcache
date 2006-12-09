@@ -605,11 +605,11 @@ static inline void xc_entry_unholds_real(xc_stack_t *holds, xc_cache_t **caches,
 
 	for (i = 0; i < cachecount; i ++) {
 		s = &holds[i];
-		TRACE("holded %d", xc_stack_size(s));
-		if (xc_stack_size(s)) {
+		TRACE("holded %d", xc_stack_count(s));
+		if (xc_stack_count(s)) {
 			cache = ((xc_entry_t *)xc_stack_top(s))->cache;
 			ENTER_LOCK(cache) {
-				while (xc_stack_size(s)) {
+				while (xc_stack_count(s)) {
 					xce = (xc_entry_t*) xc_stack_pop(s);
 					TRACE("unhold %s", xce->name.str.val);
 					xce->refcount --;
