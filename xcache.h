@@ -164,8 +164,9 @@ typedef ZESW(zend_class_entry, zend_class_entry*) xc_cest_t;
 
 typedef zend_op_array *(zend_compile_file_t)(zend_file_handle *h, int type TSRMLS_DC);
 
-/* {{{ xc_cache_t */
 typedef struct _xc_entry_t xc_entry_t;
+typedef struct _xc_entry_data_php_t xc_entry_data_php_t;
+/* {{{ xc_cache_t */
 typedef struct {
 	int cacheid;
 	xc_hash_t  *hcache; /* hash to cacheid */
@@ -181,9 +182,12 @@ typedef struct {
 
 	xc_entry_t **entries;
 	int entries_count;
+	xc_entry_data_php_t **phps;
+	int phps_count;
 	xc_entry_t *deletes;
 	int deletes_count;
-	xc_hash_t  *hentry; /* hash to entry */
+	xc_hash_t  *hentry; /* hash settings to entry */
+	xc_hash_t  *hphp;   /* hash settings to php */
 
 	time_t     last_gc_deletes;
 	time_t     last_gc_expires;
@@ -234,14 +238,19 @@ typedef struct {
 /* }}} */
 #endif
 typedef enum { XC_TYPE_PHP, XC_TYPE_VAR } xc_entry_type_t;
+typedef char xc_md5sum_t[16];
 /* {{{ xc_entry_data_php_t */
-typedef struct {
+struct _xc_entry_data_php_t {
+	xc_hash_value_t hvalue; /* hash of md5 */
+	xc_entry_data_php_t *next;
+	xc_cache_t *cache;      /* which cache it's on */
+
+	xc_md5sum_t md5;        /* md5sum of the source */
+	zend_ulong  refcount;   /* count of entries referencing to this data */
+
 	size_t sourcesize;
-#ifdef HAVE_INODE
-	int device;             /* the filesystem device */
-	int inode;              /* the filesystem inode */
-#endif
-	time_t mtime;           /* the mtime of origin source file */
+	zend_ulong hits;        /* hits of this php */
+	size_t     size;
 
 	zend_op_array *op_array;
 
@@ -261,11 +270,15 @@ typedef struct {
 	zend_uint autoglobal_cnt;
 	xc_autoglobal_t *autoglobals;
 #endif
-} xc_entry_data_php_t;
+
+	zend_bool  have_references;
+};
 /* }}} */
 /* {{{ xc_entry_data_var_t */
 typedef struct {
 	zval   *value;
+
+	zend_bool  have_references;
 } xc_entry_data_var_t;
 /* }}} */
 typedef zvalue_value xc_entry_name_t;
@@ -277,7 +290,7 @@ struct _xc_entry_t {
 	xc_cache_t *cache;      /* which cache it's on */
 
 	size_t     size;
-	zend_ulong refcount;
+	zend_ulong refcount;    /* count of instances holding this entry */
 	zend_ulong hits;
 	time_t     ctime;           /* the ctime of this entry */
 	time_t     atime;           /* the atime of this entry */
@@ -294,7 +307,11 @@ struct _xc_entry_t {
 		xc_entry_data_var_t *var;
 	} data;
 
-	zend_bool  have_references;
+	time_t mtime;           /* the mtime of origin source file */
+#ifdef HAVE_INODE
+	int device;             /* the filesystem device */
+	int inode;              /* the filesystem inode */
+#endif
 };
 /* }}} */
 

@@ -1,0 +1,31 @@
+digraph tree {
+	subgraph cluster_compiling {
+		label="compiling";
+		php_compile;
+		php_store;
+		entry_store;
+	}
+	error [color=red];
+	origin_compile [color=red]
+
+	begin -> origin_compile [label="compiling", color=red];
+
+	begin -> entry_init_key -> entry_lookup;
+	edge [label=hit, color=blue]
+	entry_lookup -> restore;
+	php_lookup -> entry_store;
+	edge [label=miss, color=green]
+	entry_lookup -> md5_init;
+	md5_init -> php_lookup;
+	php_lookup -> php_compile;
+
+	edge [label="", color=""]
+	php_lookup -> origin_compile [label="miss but compiling", color=red];
+	php_compile -> php_store -> entry_store -> restore;
+
+	edge [color=red];
+	md5_init -> error;
+	php_compile -> error;
+	php_store -> error;
+	entry_store -> error;
+}

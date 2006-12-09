@@ -22,6 +22,7 @@ define(`DISPATCH', `
 	, `$1', `zval_data_type',   `PROC_INT(`$2', `u',  `$1')'
 	, `$1', `xc_entry_type_t',  `PROC_INT(`$2', `d',  `$1')'
 	, `$1', `xc_hash_value_t',  `PROC_INT(`$2', `lu', `$1')'
+	, `$1', `xc_md5sum_t',      `/* is copying enough? */COPY(`$2')'
 	, `', `', `m4_errprint(`Unknown type "$1"')'
 	)
 ')
