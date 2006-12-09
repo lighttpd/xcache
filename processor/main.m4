@@ -135,15 +135,21 @@ dnl }}}
 dnl {{{ FIXPOINTER
 define(`FIXPOINTER', `FIXPOINTER_EX(`$1', `dst->$2')')
 define(`FIXPOINTER_EX', `IFSTORE(`
-	$2 = ($1 *) processor->xce_src->cache->shm->handlers->to_readonly(processor->xce_src->cache->shm, (char *)$2);
+	$2 = ($1 *) processor->cache->shm->handlers->to_readonly(processor->cache->shm, (char *)$2);
 ')')
 define(`UNFIXPOINTER', `UNFIXPOINTER_EX(`$1', `dst->$2')')
 define(`UNFIXPOINTER_EX', `IFSTORE(`
-	$2 = ($1 *) processor->xce_src->cache->shm->handlers->to_readwrite(processor->xce_src->cache->shm, (char *)$2);
+	$2 = ($1 *) processor->cache->shm->handlers->to_readwrite(processor->cache->shm, (char *)$2);
 ')')
 dnl }}}
 dnl {{{ COPY
 define(`COPY', `IFNOTMEMCPY(`IFCOPY(`dst->$1 = src->$1;')')DONE(`$1')')
+dnl }}}
+dnl {{{ COPYPOINTER
+define(`COPYPOINTER', `COPY(`$1')')
+dnl }}}
+dnl {{{ COPYARRAY
+define(`COPYARRAY', `IFNOTMEMCPY(`IFCOPY(`memcpy(dst->$1, src->$1, sizeof(dst->$1));')')DONE(`$1')')
 dnl }}}
 dnl {{{ SETNULL_EX
 define(`SETNULL_EX', `IFCOPY(`$1 = NULL;')')
@@ -222,6 +228,7 @@ EXPORT(`zend_class_entry')
 EXPORT(`xc_classinfo_t')
 EXPORT(`xc_funcinfo_t')
 EXPORT(`xc_entry_t')
+EXPORT(`xc_entry_data_php_t')
 EXPORT(`zval')
 
 include(srcdir`/processor/hashtable.m4')

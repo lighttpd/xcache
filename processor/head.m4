@@ -64,8 +64,9 @@ struct _xc_processor_t {
 	HashTable zvalptrs;
 	zend_bool reference; /* enable if to deal with reference */
 	zend_bool have_references;
-	const xc_entry_t *xce_src;
-	const xc_entry_t *xce_dst;
+	const xc_entry_data_php_t *php_src;
+	const xc_entry_data_php_t *php_dst;
+	const xc_cache_t          *cache;
 	const zend_class_entry *cache_ce;
 	zend_uint cache_class_num;
 
@@ -185,14 +186,14 @@ static inline zstr xc_store_string_n(xc_processor_t *processor, zend_uchar type,
  */
 static zend_ulong xc_get_class_num(xc_processor_t *processor, zend_class_entry *ce) {
 	zend_ulong i;
-	const xc_entry_t *xce = processor->xce_src;
+	const xc_entry_data_php_t *php = processor->php_src;
 	zend_class_entry *ceptr;
 
 	if (processor->cache_ce == ce) {
 		return processor->cache_class_num;
 	}
-	for (i = 0; i < xce->data.php->classinfo_cnt; i ++) {
-		ceptr = CestToCePtr(xce->data.php->classinfos[i].cest);
+	for (i = 0; i < php->classinfo_cnt; i ++) {
+		ceptr = CestToCePtr(php->classinfos[i].cest);
 		if (ZCEP_REFCOUNT_PTR(ceptr) == ZCEP_REFCOUNT_PTR(ce)) {
 			processor->cache_ce = ceptr;
 			processor->cache_class_num = i + 1;
@@ -208,7 +209,7 @@ static zend_ulong xc_get_class_num(xc_processor_t *processor, zend_class_entry *
 static zend_class_entry *xc_get_class(xc_processor_t *processor, zend_ulong class_num) {
 	/* must be parent or currrent class */
 	assert(class_num <= processor->active_class_num);
-	return CestToCePtr(processor->xce_dst->data.php->classinfos[class_num - 1].cest);
+	return CestToCePtr(processor->php_dst->classinfos[class_num - 1].cest);
 }
 #endif
 /* }}} */
@@ -274,13 +275,15 @@ static void xc_zend_extension_op_array_ctor_handler(zend_extension *extension, z
 }
 /* }}} */
 dnl ================ export API
-/* export: xc_entry_t *xc_processor_store_xc_entry_t(xc_entry_t *src TSRMLS_DC); :export {{{ */
-xc_entry_t *xc_processor_store_xc_entry_t(xc_entry_t *src TSRMLS_DC) {
-	xc_entry_t *dst;
+define(`DEFINE_STORE_API', `
+/* export: $1 *xc_processor_store_$1($1 *src TSRMLS_DC); :export {{{ */
+$1 *xc_processor_store_$1($1 *src TSRMLS_DC) {
+	$1 *dst;
 	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
 	processor.reference = 1;
+	processor.cache = src->cache;
 
 	IFASSERT(`xc_stack_init(&processor.allocsizes);')
 
@@ -294,14 +297,18 @@ xc_entry_t *xc_processor_store_xc_entry_t(xc_entry_t *src TSRMLS_DC) {
 		/* allocate */
 		processor.size = ALIGN(processor.size + sizeof(src[0]));
 
-		xc_calc_xc_entry_t(&processor, src TSRMLS_CC);
+		xc_calc_$1(&processor, src TSRMLS_CC);
 		if (processor.reference) {
 			zend_hash_destroy(&processor.zvalptrs);
 		}
 		zend_hash_destroy(&processor.strings);
 	}
 	src->size = processor.size;
-	src->have_references = processor.have_references;
+	ifelse(`$1', `xc_entry_t', `
+		src->data.var->have_references = processor.have_references;
+	', `
+		src->have_references = processor.have_references;
+	')
 
 	IFASSERT(`xc_stack_reverse(&processor.allocsizes);')
 	/* store {{{ */
@@ -313,7 +320,7 @@ xc_entry_t *xc_processor_store_xc_entry_t(xc_entry_t *src TSRMLS_DC) {
 		}
 
 		/* mem :) */
-		processor.p = (char *) src->cache->mem->handlers->malloc(src->cache->mem, processor.size);
+		processor.p = (char *) processor.cache->mem->handlers->malloc(processor.cache->mem, processor.size);
 		if (processor.p == NULL) {
 			dst = NULL;
 			goto err_alloc;
@@ -322,10 +329,10 @@ xc_entry_t *xc_processor_store_xc_entry_t(xc_entry_t *src TSRMLS_DC) {
 		assert(processor.p == (char *) ALIGN(processor.p));
 
 		/* allocate */
-		dst = (xc_entry_t *) processor.p;
+		dst = ($1 *) processor.p;
 		processor.p = (char *) ALIGN(processor.p + sizeof(dst[0]));
 
-		xc_store_xc_entry_t(&processor, dst, src TSRMLS_CC);
+		xc_store_$1(&processor, dst, src TSRMLS_CC);
 		IFASSERT(` {
 			int real = processor.p - oldp;
 			int should = processor.size;
@@ -347,12 +354,26 @@ err_alloc:
 	return dst;
 }
 /* }}} */
-/* export: xc_entry_t *xc_processor_restore_xc_entry_t(xc_entry_t *dst, const xc_entry_t *src, zend_bool readonly_protection TSRMLS_DC); :export {{{ */
-xc_entry_t *xc_processor_restore_xc_entry_t(xc_entry_t *dst, const xc_entry_t *src, zend_bool readonly_protection TSRMLS_DC) {
+')
+DEFINE_STORE_API(`xc_entry_t')
+DEFINE_STORE_API(`xc_entry_data_php_t')
+/* export: xc_entry_t *xc_processor_restore_xc_entry_t(xc_entry_t *dst, const xc_entry_t *src TSRMLS_DC); :export {{{ */
+xc_entry_t *xc_processor_restore_xc_entry_t(xc_entry_t *dst, const xc_entry_t *src TSRMLS_DC) {
+	xc_processor_t processor;
+
+	memset(&processor, 0, sizeof(processor));
+	xc_restore_xc_entry_t(&processor, dst, src TSRMLS_CC);
+
+	return dst;
+}
+/* }}} */
+/* export: xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(xc_entry_data_php_t *dst, const xc_entry_data_php_t *src, zend_bool readonly_protection TSRMLS_DC); :export {{{ */
+xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(xc_entry_data_php_t *dst, const xc_entry_data_php_t *src, zend_bool readonly_protection TSRMLS_DC) {
 	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
 	processor.readonly_protection = readonly_protection;
+	/* this function is used for php data only */
 	if (src->have_references) {
 		processor.reference = 1;
 	}
@@ -360,7 +381,7 @@ xc_entry_t *xc_processor_restore_xc_entry_t(xc_entry_t *dst, const xc_entry_t *s
 	if (processor.reference) {
 		zend_hash_init(&processor.zvalptrs, 0, NULL, NULL, 0);
 	}
-	xc_restore_xc_entry_t(&processor, dst, src TSRMLS_CC);
+	xc_restore_xc_entry_data_php_t(&processor, dst, src TSRMLS_CC);
 	if (processor.reference) {
 		zend_hash_destroy(&processor.zvalptrs);
 	}

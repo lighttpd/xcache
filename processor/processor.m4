@@ -478,7 +478,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	dnl shadow copy must NOT meet:
 	dnl readonly_protection=on
 	dnl main op_array && have early binding
-	if (!processor->readonly_protection && !(src == processor->xce_src->data.php->op_array && processor->xce_src->data.php->have_early_binding)) {
+	if (!processor->readonly_protection && !(src == processor->php_src->op_array && processor->php_src->have_early_binding)) {
 		/* really fast shallow copy */
 		memcpy(dst, src, sizeof(src[0]));
 		dst->refcount[0] = 1000;
@@ -718,13 +718,21 @@ dnl }}}
 DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 	zend_uint i;
 
-#ifdef HAVE_INODE
-	DISPATCH(int, device)
-	DISPATCH(int, inode)
-#endif
-	DISPATCH(size_t, sourcesize)
+	IFCOPY(`
+		processor->php_dst = dst;
+		processor->php_src = src;
+	')
 
-	DISPATCH(time_t, mtime)
+	DISPATCH(xc_hash_value_t, hvalue)
+	/* skip */
+	DONE(next)
+	COPY(cache)
+	DISPATCH(xc_md5sum_t, md5)
+	DISPATCH(zend_ulong, refcount)
+
+	DISPATCH(size_t, sourcesize)
+	DISPATCH(zend_ulong, hits)
+	DISPATCH(size_t, size)
 
 	STRUCT_P(zend_op_array, op_array)
 
@@ -749,20 +757,18 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 #endif
 	DISPATCH(zend_bool, have_early_binding)
 	popdef(`BEFORE_LOOP')
+	DISPATCH(zend_bool, have_references)
 ')
 dnl }}}
 DEF_STRUCT_P_FUNC(`xc_entry_data_var_t', , `dnl {{{
 	IFDPRINT(`INDENT()`'fprintf(stderr, "zval:value");')
 	STRUCT_P_EX(zval_ptr, dst->value, src->value, `value', `', `&')
+	DISPATCH(zend_bool, have_references)
 	DONE(value)
 ')
 dnl }}}
 dnl {{{ xc_entry_t
 DEF_STRUCT_P_FUNC(`xc_entry_t', , `
-	IFCOPY(`
-		processor->xce_dst = dst;
-		processor->xce_src = src;
-	')
 	DISPATCH(xc_entry_type_t, type)
 	DISPATCH(size_t, size)
 
@@ -808,18 +814,24 @@ DEF_STRUCT_P_FUNC(`xc_entry_t', , `
 	DISABLECHECK(`
 		switch (src->type) {
 		case XC_TYPE_PHP:
-			STRUCT_P(xc_entry_data_php_t, data.php)
+			IFCALCCOPY(`DONE(data.php)', `STRUCT_P(xc_entry_data_php_t, data.php)')
 			break;
+
 		case XC_TYPE_VAR:
 			STRUCT_P(xc_entry_data_var_t, data.var)
 			break;
+
 		default:
 			assert(0);
 		}
 	')
 	DONE(data)
 	dnl }}}
-	DISPATCH(zend_bool, have_references)
+	DISPATCH(time_t, mtime)
+#ifdef HAVE_INODE
+	DISPATCH(int, device)
+	DISPATCH(int, inode)
+#endif
 ')
 dnl }}}
 dnl ====================================================
