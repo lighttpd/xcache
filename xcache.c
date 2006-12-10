@@ -704,13 +704,13 @@ static int xc_stat(const char *filename, const char *include_path, struct stat *
 		}
 		if (VCWD_STAT(filepath, pbuf) == 0) {
 			free_alloca(paths);
-			return FAILURE;
+			return SUCCESS;
 		}
 	}
 
 	free_alloca(paths);
 
-	return SUCCESS;
+	return FAILURE;
 }
 /* }}} */
 
@@ -746,6 +746,10 @@ static int xc_entry_init_key_php(xc_entry_t *xce, char *filename, char *opened_p
 	char *ptr;
 
 	if (!filename || !SG(request_info).path_translated) {
+		return FAILURE;
+	}
+
+	if (strstr(filename, "://") != NULL) {
 		return FAILURE;
 	}
 
@@ -1146,6 +1150,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 
 	assert(xc_initized);
 
+	TRACE("type = %d\n", h->type);
 	if (!XG(cacher)) {
 		op_array = origin_compile_file(h, type TSRMLS_CC);
 #ifdef HAVE_XCACHE_OPTIMIZER
@@ -1160,6 +1165,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	filename = h->opened_path ? h->opened_path : h->filename;
 	xce.data.php = &php;
 	if (xc_entry_init_key_php(&xce, filename, opened_path_buffer TSRMLS_CC) != SUCCESS) {
+		TRACE("failed to init key for %s", filename);
 		return origin_compile_file(h, type TSRMLS_CC);
 	}
 	cache = xce.cache;
