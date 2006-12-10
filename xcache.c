@@ -856,7 +856,7 @@ static int xc_entry_init_key_php_md5(xc_entry_data_php_t *php, xc_entry_t *xce T
 	php_stream     *stream;
 	xc_hash_value_t hv;
 
-	stream = php_stream_open_wrapper(xce->name.str.val, "rb", REPORT_ERRORS | ENFORCE_SAFE_MODE, NULL);
+	stream = php_stream_open_wrapper(xce->name.str.val, "rb", USE_PATH | REPORT_ERRORS | ENFORCE_SAFE_MODE | STREAM_DISABLE_OPEN_BASEDIR, NULL);
 	if (!stream) {
 		return FAILURE;
 	}
