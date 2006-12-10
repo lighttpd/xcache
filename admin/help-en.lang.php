@@ -21,8 +21,9 @@
 <dl>
 <dt><?php echo _T('entry'); ?>: </dt><dd>The entry name or filename</dd>
 <dt><?php echo _T('Hits'); ?>: </dt><dd>Times this entry is hit (loaded from this cache)</dd>
-<dt><?php echo _T('Refcount'); ?>: </dt><dd>Reference count this entry is holded by a php request</dd>
+<dt><?php echo _T('Refcount'); ?>: </dt><dd>Reference count of this entry is holded by a php request</dd>
 <dt><?php echo _T('Size'); ?>: </dt><dd>Size in bytes of this entry in the cache</dd>
+<dt><?php echo _T('PhpShared'); ?>: </dt><dd>Count of entry sharing this php data</dd>
 <dt><?php echo _T('SrcSize'); ?>: </dt><dd>Size of the source file</dd>
 <dt><?php echo _T('Modify'); ?>: </dt><dd>Last modified time of the source file</dd>
 <dt><?php echo _T('device'); ?>: </dt><dd>device number of the source file</dd>

@@ -157,6 +157,7 @@ if ($cachelist) {
 			echo '<col align="right" />';
 			echo '<col align="right" />';
 			echo '<col align="right" />';
+			echo '<col align="right" />';
 		}
 
 		echo "
@@ -169,6 +170,7 @@ if ($cachelist) {
 			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Refcount'); ?></a></th>
 			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Size'); ?></a></th>
 			<?php if ($isphp) { ?>
+			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('PhpShared'); ?></a></th>
 			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('SrcSize'); ?></a></th>
 			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Modify'); ?></a></th>
 			<?php if ($haveinode) { ?>
@@ -191,7 +193,8 @@ if ($cachelist) {
 			$refcount = number_format($entry['refcount']);
 			$size     = size($entry['size']);
 			if ($isphp) {
-				$sourcesize = size($entry['sourcesize']);
+				$sourcesize  = size($entry['sourcesize']);
+				$phprefcount = number_format($entry['phprefcount']);
 			}
 
 			if ($isphp) {
@@ -212,6 +215,7 @@ if ($cachelist) {
 ENTRY;
 			if ($isphp) {
 				echo <<<ENTRY
+				<td int="{$entry['phprefcount']}">{$phprefcount}</td>
 				<td int="{$entry['sourcesize']}">{$sourcesize}</td>
 				<td int="{$entry['mtime']}">{$mtime}</td>
 ENTRY;

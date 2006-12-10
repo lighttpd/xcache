@@ -23,6 +23,7 @@
 <dt><?php echo _T('Hits'); ?>: </dt><dd>該項目被命中的次數 (從共享記憶體區載入)</dd>
 <dt><?php echo _T('Refcount'); ?>: </dt><dd>項目依然被其他程序佔用的引用次數</dd>
 <dt><?php echo _T('Size'); ?>: </dt><dd>項目在共享記憶體裡佔用位元數</dd>
+<dt><?php echo _T('PhpShared'); ?>: </dt><dd>與本項目相同 PHP 內容的个數</dd>
 <dt><?php echo _T('SrcSize'); ?>: </dt><dd>原始檔案大小</dd>
 <dt><?php echo _T('Modify'); ?>: </dt><dd>原始檔案最後修改時間</dd>
 <dt><?php echo _T('device'); ?>: </dt><dd>原始檔案所在設備ID</dd>
