@@ -23,6 +23,7 @@
 <dt><?php echo _T('Hits'); ?>: </dt><dd>该项目被命中的次数 (从共享内存区载入)</dd>
 <dt><?php echo _T('Refcount'); ?>: </dt><dd>项目依然被其他进程占据的引用次数</dd>
 <dt><?php echo _T('Size'); ?>: </dt><dd>项目在共享内存里占用字节数</dd>
+<dt><?php echo _T('PhpShared'); ?>: </dt><dd>与本项目相同 PHP 代码的个数</dd>
 <dt><?php echo _T('SrcSize'); ?>: </dt><dd>源文件大小</dd>
 <dt><?php echo _T('Modify'); ?>: </dt><dd>源文件最后修改时间</dd>
 <dt><?php echo _T('device'); ?>: </dt><dd>源文件所在设备ID</dd>
