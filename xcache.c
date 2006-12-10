@@ -1257,10 +1257,11 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 			catched = 1;
 		} zend_end_try();
 
-		xce.data.php = &php;
-		if (catched) {
+		if (catched || !op_array) {
 			goto err_aftersandbox;
 		}
+
+		xce.data.php = &php;
 	}
 	/* }}} */
 #ifdef HAVE_INODE
