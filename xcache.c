@@ -1315,8 +1315,10 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 		goto err_aftersandbox;
 	}
 
-	xc_free_php(&php TSRMLS_CC);
-	xc_sandbox_free(&sandbox, 0 TSRMLS_CC);
+	if (newlycompiled) {
+		xc_free_php(&php TSRMLS_CC);
+		xc_sandbox_free(&sandbox, 0 TSRMLS_CC);
+	}
 
 	if (stored_xce) {
 		if (op_array) {
@@ -1333,8 +1335,10 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	return op_array;
 
 err_aftersandbox:
-	xc_free_php(&php TSRMLS_CC);
-	xc_sandbox_free(&sandbox, 0 TSRMLS_CC);
+	if (newlycompiled) {
+		xc_free_php(&php TSRMLS_CC);
+		xc_sandbox_free(&sandbox, 0 TSRMLS_CC);
+	}
 
 	if (catched) {
 		cache->compiling = 0;
