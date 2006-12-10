@@ -201,6 +201,7 @@ static void bbs_destroy(bbs_t *bbs) /* {{{ */
 		bb = (bb_t *) xc_stack_pop(bbs);
 		bb_destroy(bb);
 	}
+	xc_stack_destroy(bbs);
 }
 /* }}} */
 #ifdef DEBUG
