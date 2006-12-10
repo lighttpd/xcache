@@ -9,6 +9,7 @@
 
 #ifdef DEBUG
 #	include "processor.h"
+#	include "const_string.h"
 #endif
 
 typedef int bbid_t;
@@ -25,17 +26,17 @@ typedef struct _bb_t {
 	int        count;
 	int        size;
 
-	bbid_t     jmpout_op1;
-	bbid_t     jmpout_op2;
-	bbid_t     jmpout_ext;
 	bbid_t     fall;
+	bbid_t     catch;
+
+	int        opnum; /* opnum after joining basic block */
 } bb_t;
 /* }}} */
 
 /* basic blocks */
 typedef xc_stack_t bbs_t;
 
-/* oparray help functions */
+/* op array helper functions */
 static int op_array_convert_switch(zend_op_array *op_array) /* {{{ */
 {
 	int i;
@@ -101,43 +102,70 @@ static int op_array_convert_switch(zend_op_array *op_array) /* {{{ */
 	return SUCCESS;
 }
 /* }}} */
-static int op_get_jmpout(int *jmpout_op1, int *jmpout_op2, int *jmpout_ext, zend_bool *fall, zend_op *opline) /* {{{ */
+/* {{{ op_flowinfo helper func */
+enum {
+	XC_OPNUM_INVALID = -1,
+};
+typedef struct {
+	int       jmpout_op1;
+	int       jmpout_op2;
+	int       jmpout_ext;
+	zend_bool fall;
+} op_flowinfo_t;
+static void op_flowinfo_init(op_flowinfo_t *fi)
 {
+	fi->jmpout_op1 = fi->jmpout_op2 = fi->jmpout_ext = XC_OPNUM_INVALID;
+	fi->fall = 0;
+}
+/* }}} */
+static int op_get_flowinfo(op_flowinfo_t *fi, zend_op *opline) /* {{{ */
+{
+	op_flowinfo_init(fi);
+
 	/* break=will fall */
 	switch (opline->opcode) {
+	case ZEND_HANDLE_EXCEPTION:
 	case ZEND_RETURN:
 	case ZEND_EXIT:
 		return SUCCESS; /* no fall */
 
 	case ZEND_JMP:
-		*jmpout_op1 = opline->op1.u.opline_num;
+		fi->jmpout_op1 = opline->op1.u.opline_num;
 		return SUCCESS; /* no fall */
 
 	case ZEND_JMPZNZ:
-		*jmpout_ext = opline->extended_value;
-		*jmpout_op2 = opline->op2.u.opline_num;
-		break;
+		fi->jmpout_op2 = opline->op2.u.opline_num;
+		fi->jmpout_ext = (int) opline->extended_value;
+		return SUCCESS; /* no fall */
 
 	case ZEND_JMPZ:
 	case ZEND_JMPNZ:
 	case ZEND_JMPZ_EX:
 	case ZEND_JMPNZ_EX:
-#ifndef ZEND_ENGINE_2_1
-		/* Pre-PHP 5.1 only */
+#ifdef ZEND_JMP_NO_CTOR
 	case ZEND_JMP_NO_CTOR:
-#else       
+#endif
+#ifdef ZEND_NEW
 	case ZEND_NEW:
+#endif
+#ifdef ZEND_FE_RESET
 	case ZEND_FE_RESET:
 #endif      
 	case ZEND_FE_FETCH:
-		*jmpout_op2 = opline->op2.u.opline_num;
+		fi->jmpout_op2 = opline->op2.u.opline_num;
 		break;
+
+#ifdef ZEND_CATCH
+	case ZEND_CATCH:
+		fi->jmpout_ext = (int) opline->extended_value;
+		break;
+#endif
 
 	default:
 		return FAILURE;
 	}
 
-	*fall = 1;
+	fi->fall = 1;
 	return SUCCESS;
 }
 /* }}} */
@@ -150,10 +178,8 @@ static bb_t *bb_new_ex(zend_op *opcodes, int count) /* {{{ */
 {
 	bb_t *bb = (bb_t *) ecalloc(sizeof(bb_t), 1);
 
-	bb->jmpout_op1 = BBID_INVALID;
-	bb->jmpout_op2 = BBID_INVALID;
-	bb->jmpout_ext = BBID_INVALID;
 	bb->fall       = BBID_INVALID;
+	bb->catch      = BBID_INVALID;
 
 	if (opcodes) {
 		bb->alloc   = 0;
@@ -181,23 +207,29 @@ static void bb_destroy(bb_t *bb) /* {{{ */
 #ifdef DEBUG
 static void bb_print(bb_t *bb, zend_op *opcodes) /* {{{ */
 {
+	op_flowinfo_t fi;
+	zend_op *last = bb->opcodes + bb->count - 1;
+
+	op_get_flowinfo(&fi, last);
+
 	fprintf(stderr,
 			"%3d %3d %3d"
 			" %c%c"
-			" %3d %3d %3d %3d\r\n"
-			, bb->id, bb->count, bb->opcodes - opcodes
+			" %3d %3d %3d %3d %3d %s\r\n"
+			, bb->id, bb->count, bb->alloc ? -1 : bb->opcodes - opcodes
 			, bb->used ? 'U' : ' ', bb->alloc ? 'A' : ' '
-			, bb->jmpout_op1, bb->jmpout_op2, bb->jmpout_ext, bb->fall
+			, fi.jmpout_op1, fi.jmpout_op2, fi.jmpout_ext, bb->fall, bb->catch, xc_get_opcode(last->opcode)
 			);
 }
 /* }}} */
 #endif
 
-#define bbs_get(bbs, n) xc_stack_get(bbs, n)
+#define bbs_get(bbs, n) ((bb_t *) xc_stack_get(bbs, n))
+#define bbs_count(bbs) xc_stack_count(bbs)
 static void bbs_destroy(bbs_t *bbs) /* {{{ */
 {
 	bb_t *bb;
-	while (xc_stack_count(bbs)) {
+	while (bbs_count(bbs)) {
 		bb = (bb_t *) xc_stack_pop(bbs);
 		bb_destroy(bb);
 	}
@@ -208,6 +240,11 @@ static void bbs_destroy(bbs_t *bbs) /* {{{ */
 static void bbs_print(bbs_t *bbs, zend_op *opcodes) /* {{{ */
 {
 	int i;
+	fprintf(stderr,
+			" id cnt lno"
+			" UA"
+			" op1 op2 ext fal cat opcode\r\n"
+			);
 	for (i = 0; i < xc_stack_count(bbs); i ++) {
 		bb_print(bbs_get(bbs, i), opcodes);
 	}
@@ -227,101 +264,164 @@ static bb_t *bbs_new_bb_ex(bbs_t *bbs, zend_op *opcodes, int count) /* {{{ */
 	return bbs_add_bb(bbs, bb_new_ex(opcodes, count));
 }
 /* }}} */
-static int bbs_build_from(bbs_t *bbs, zend_op *opcodes, int count) /* {{{ */
+static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{ */
 {
-	int i, prev;
+	int i, start;
 	bb_t *pbb;
 	bbid_t id;
-	int jmpout_op1, jmpout_op2, jmpout_ext;
-	zend_bool fall;
+	op_flowinfo_t fi;
+	zend_op *opline;
 	bbid_t *bbids          = do_alloca(count * sizeof(bbid_t));
-	zend_bool *markjmpins  = do_alloca(count * sizeof(zend_bool));
-	zend_bool *markjmpouts = do_alloca(count * sizeof(zend_bool));
+	bbid_t *catchbbids     = do_alloca(count * sizeof(bbid_t));
+	zend_bool *markbbhead  = do_alloca(count * sizeof(zend_bool));
 
 	/* {{{ mark jmpin/jumpout */
-	memset(markjmpins,  0, count * sizeof(zend_bool));
-	memset(markjmpouts, 0, count * sizeof(zend_bool));
+	memset(markbbhead,  0, count * sizeof(zend_bool));
 
+	markbbhead[0] = 1;
 	for (i = 0; i < count; i ++) {
-		jmpout_op1 = jmpout_op2 = jmpout_ext = -1;
-		fall = 0;
-		if (op_get_jmpout(&jmpout_op1, &jmpout_op2, &jmpout_ext, &fall, &opcodes[i]) == SUCCESS) {
-			markjmpouts[i] = 1;
-
-			if (jmpout_op1 != -1) {
-				markjmpins[jmpout_op1] = 1;
+		if (op_get_flowinfo(&fi, &op_array->opcodes[i]) == SUCCESS) {
+			if (fi.jmpout_op1 != XC_OPNUM_INVALID) {
+				markbbhead[fi.jmpout_op1] = 1;
 			}
-			if (jmpout_op2 != -1) {
-				markjmpins[jmpout_op2] = 1;
+			if (fi.jmpout_op2 != XC_OPNUM_INVALID) {
+				markbbhead[fi.jmpout_op2] = 1;
 			}
-			if (jmpout_ext != -1) {
-				markjmpins[jmpout_ext] = 1;
+			if (fi.jmpout_ext != XC_OPNUM_INVALID) {
+				markbbhead[fi.jmpout_ext] = 1;
+			}
+			if (i + 1 < count) {
+				markbbhead[i + 1] = 1;
 			}
 		}
 	}
+	/* mark try start */
+	for (i = 0; i < op_array->last_try_catch; i ++) {
+		markbbhead[op_array->try_catch_array[i].try_op] = 1;
+	}
 	/* }}} */
-	/* {{{ fill opcodes with newly allocated id */
+	/* {{{ fill op lines with newly allocated id */
 	for (i = 0; i < count; i ++) {
 		bbids[i] = BBID_INVALID;
 	}
 
-	prev = 0;
+	/*
+	start = 0;
 	id = 0;
 	for (i = 1; i < count; i ++) {
-		if (markjmpins[i] || markjmpouts[i - 1]) {
-			for (; prev < i; prev ++) {
-				bbids[prev] = id;
+		if (markbbhead[i]) {
+			for (; start < i; start ++) {
+				bbids[start] = id;
 			}
 			id ++;
-			prev = i;
+			start = i;
 		}
 	}
 
-	if (prev < count) {
-		for (; prev < i; prev ++) {
-			bbids[prev] = id;
+	for (; start < count; start ++) {
+		bbids[start] = id;
+	}
+	*/
+	id = -1;
+	for (i = 0; i < count; i ++) {
+		if (markbbhead[i]) {
+			id ++;
 		}
+		bbids[i] = id;
+		TRACE("bbids[%d] = %d", i, id);
 	}
 	/* }}} */
+	/* {{{ fill op lines with catch id */
+	for (i = 0; i < count; i ++) {
+		catchbbids[i] = BBID_INVALID;
+	}
+
+	for (i = 0; i < op_array->last_try_catch; i ++) {
+		int j;
+		zend_try_catch_element *e = &op_array->try_catch_array[i];
+		for (j = e->try_op; j < e->catch_op; j ++) {
+			catchbbids[j] = bbids[e->catch_op];
+		}
+	}
+#ifdef DEBUG
+	for (i = 0; i < count; i ++) {
+		TRACE("catchbbids[%d] = %d", i, catchbbids[i]);
+	}
+#endif
+	/* }}} */
 	/* {{{ create basic blocks */
-	prev = 0;
+	start = 0;
 	id = 0;
-	for (i = 1; i < count; i ++) {
-		if (id == bbids[i]) {
+	/* loop over to deal with the last block */
+	for (i = 1; i <= count; i ++) {
+		if (i < count && id == bbids[i]) {
 			continue;
 		}
-		id = bbids[i];
 
-		pbb = bbs_new_bb_ex(bbs, opcodes + prev, i - prev);
-		jmpout_op1 = jmpout_op2 = jmpout_ext = -1;
-		fall = 0;
-		if (op_get_jmpout(&jmpout_op1, &jmpout_op2, &jmpout_ext, &fall, &opcodes[prev]) == SUCCESS) {
-			if (jmpout_op1 != -1) {
-				pbb->jmpout_op1 = bbids[jmpout_op1];
-				assert(pbb->jmpout_op1 != BBID_INVALID);
+		opline = op_array->opcodes + start;
+		pbb = bbs_new_bb_ex(bbs, opline, i - start);
+		pbb->catch = catchbbids[start];
+
+		/* last */
+		opline = pbb->opcodes + pbb->count - 1;
+		if (op_get_flowinfo(&fi, opline) == SUCCESS) {
+			if (fi.jmpout_op1 != XC_OPNUM_INVALID) {
+				opline->op1.u.opline_num = bbids[fi.jmpout_op1];
+				assert(opline->op1.u.opline_num != BBID_INVALID);
 			}
-			if (jmpout_op2 != -1) {
-				pbb->jmpout_op2 = bbids[jmpout_op2];
-				assert(pbb->jmpout_op2 != BBID_INVALID);
+			if (fi.jmpout_op2 != XC_OPNUM_INVALID) {
+				opline->op2.u.opline_num = bbids[fi.jmpout_op2];
+				assert(opline->op2.u.opline_num != BBID_INVALID);
 			}
-			if (jmpout_ext != -1) {
-				pbb->jmpout_ext = bbids[jmpout_ext];
-				assert(pbb->jmpout_ext != BBID_INVALID);
+			if (fi.jmpout_ext != XC_OPNUM_INVALID) {
+				opline->extended_value = bbids[fi.jmpout_ext];
+				assert(opline->extended_value != BBID_INVALID);
 			}
-			if (fall && i + 1 < count) {
+			if (fi.fall && i + 1 < count) {
 				pbb->fall = bbids[i + 1];
+				TRACE("fall %d", pbb->fall);
 				assert(pbb->fall != BBID_INVALID);
 			}
 		}
-		prev = i + 1;
+		if (i >= count) {
+			break;
+		}
+		start = i + 1;
+		id = bbids[i];
 	}
-	assert(prev == count);
 	/* }}} */
 
+	free_alloca(catchbbids);
 	free_alloca(bbids);
-	free_alloca(markjmpins);
-	free_alloca(markjmpouts);
+	free_alloca(markbbhead);
 	return SUCCESS;
+}
+/* }}} */
+static void bbs_restore_opnum(bbs_t *bbs) /* {{{ */
+{
+	int i;
+	for (i = 0; i < bbs_count(bbs); i ++) {
+		op_flowinfo_t fi;
+		bb_t *bb = bbs_get(bbs, i);
+		zend_op *last = bb->opcodes + bb->count - 1;
+
+		if (op_get_flowinfo(&fi, last) == SUCCESS) {
+			if (fi.jmpout_op1 != XC_OPNUM_INVALID) {
+				last->op1.u.opline_num = bbs_get(bbs, fi.jmpout_op1)->opnum;
+				assert(last->op1.u.opline_num != BBID_INVALID);
+			}
+			if (fi.jmpout_op2 != XC_OPNUM_INVALID) {
+				last->op2.u.opline_num = bbs_get(bbs, fi.jmpout_op2)->opnum;
+				assert(last->op2.u.opline_num != BBID_INVALID);
+			}
+			if (fi.jmpout_ext != XC_OPNUM_INVALID) {
+				last->extended_value = bbs_get(bbs, fi.jmpout_ext)->opnum;
+				assert(last->extended_value != BBID_INVALID);
+			}
+		}
+	}
+
+	/* TODO: rebuild zend_try_catch_element here */
 }
 /* }}} */
 
@@ -345,10 +445,17 @@ static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 
 	if (op_array_convert_switch(op_array) == SUCCESS) {
 		bbs_init(&bbs);
-		if (bbs_build_from(&bbs, op_array->opcodes, op_array->last) == SUCCESS) {
+		if (bbs_build_from(&bbs, op_array, op_array->last) == SUCCESS) {
+			int i;
 #ifdef DEBUG
 			bbs_print(&bbs, op_array->opcodes);
 #endif
+			/* TODO: calc opnum after basic block move */
+			for (i = 0; i < bbs_count(&bbs); i ++) {
+				bb_t *bb = bbs_get(&bbs, i);
+				bb->opnum = bb->opcodes - op_array->opcodes;
+			}
+			bbs_restore_opnum(&bbs);
 		}
 		bbs_destroy(&bbs);
 	}
