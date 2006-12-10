@@ -1076,7 +1076,7 @@ static zend_op_array *xc_compile_php(xc_entry_data_php_t *php, zend_file_handle 
 	}
 
 	xc_undo_pass_two(php->op_array TSRMLS_CC);
-	xc_foreach_early_binding_class(php->op_array, xc_cache_early_binding_class_cb, (void *) &php TSRMLS_CC);
+	xc_foreach_early_binding_class(php->op_array, xc_cache_early_binding_class_cb, (void *) php TSRMLS_CC);
 	xc_redo_pass_two(php->op_array TSRMLS_CC);
 	/* }}} */
 
