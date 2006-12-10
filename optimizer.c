@@ -367,6 +367,10 @@ void xc_optimize(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
 	xc_compile_result_t cr;
 
+	if (!op_array) {
+		return;
+	}
+
 	xc_compile_result_init_cur(&cr, op_array TSRMLS_CC);
 
 	xc_apply_op_array(&cr, (apply_func_t) xc_undo_pass_two TSRMLS_CC);
