@@ -224,8 +224,16 @@ static void bb_print(bb_t *bb, zend_op *opcodes) /* {{{ */
 /* }}} */
 #endif
 
-#define bbs_get(bbs, n) ((bb_t *) xc_stack_get(bbs, n))
-#define bbs_count(bbs) xc_stack_count(bbs)
+static bb_t *bbs_get(bbs_t *bbs, int n) /* {{{ */
+{
+	return (bb_t *) xc_stack_get(bbs, n);
+}
+/* }}} */
+static int bbs_count(bbs_t *bbs) /* {{{ */
+{
+	return xc_stack_count(bbs);
+}
+/* }}} */
 static void bbs_destroy(bbs_t *bbs) /* {{{ */
 {
 	bb_t *bb;
@@ -397,9 +405,11 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 	return SUCCESS;
 }
 /* }}} */
-static void bbs_restore_opnum(bbs_t *bbs) /* {{{ */
+static void bbs_restore_opnum(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
 {
 	int i;
+	bbid_t lasttrybbid;
+
 	for (i = 0; i < bbs_count(bbs); i ++) {
 		op_flowinfo_t fi;
 		bb_t *bb = bbs_get(bbs, i);
@@ -421,7 +431,23 @@ static void bbs_restore_opnum(bbs_t *bbs) /* {{{ */
 		}
 	}
 
-	/* TODO: rebuild zend_try_catch_element here */
+	lasttrybbid = BBID_INVALID;
+	op_array->last_try_catch = 0;
+	for (i = 0; i < bbs_count(bbs); i ++) {
+		bb_t *bb = bbs_get(bbs, i);
+
+		if (lasttrybbid != bb->catch) {
+			if (lasttrybbid != BBID_INVALID) {
+				int try_catch_offset = op_array->last_try_catch ++;
+
+				op_array->try_catch_array = erealloc(op_array->try_catch_array, sizeof(zend_try_catch_element) * op_array->last_try_catch);
+				op_array->try_catch_array[try_catch_offset].try_op = bbs_get(bbs, lasttrybbid)->opnum;
+				op_array->try_catch_array[try_catch_offset].catch_op = bbs_get(bbs, bb->id)->opnum;
+			}
+			lasttrybbid = bb->catch;
+		}
+	}
+	/* it is impossible to have last bb catched */
 }
 /* }}} */
 
@@ -455,7 +481,7 @@ static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 				bb_t *bb = bbs_get(&bbs, i);
 				bb->opnum = bb->opcodes - op_array->opcodes;
 			}
-			bbs_restore_opnum(&bbs);
+			bbs_restore_opnum(&bbs, op_array);
 		}
 		bbs_destroy(&bbs);
 	}
