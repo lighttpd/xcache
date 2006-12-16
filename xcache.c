@@ -1695,6 +1695,10 @@ PHP_FUNCTION(xcache_clear_cache)
 }
 /* }}} */
 
+#define VAR_DISABLED_WARNING() do { \
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "xcache.var_size is either 0 or too small to enable var data caching"); \
+} while (0)
+
 static int xc_entry_init_key_var(xc_entry_t *xce, zval *name TSRMLS_DC) /* {{{ */
 {
 	xc_hash_value_t hv;
@@ -1737,6 +1741,11 @@ PHP_FUNCTION(xcache_get)
 	xc_entry_data_var_t var;
 	zval *name;
 
+	if (!xc_var_caches) {
+		VAR_DISABLED_WARNING();
+		RETURN_NULL();
+	}
+
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &name) == FAILURE) {
 		return;
 	}
@@ -1769,6 +1778,11 @@ PHP_FUNCTION(xcache_set)
 	zval *name;
 	zval *value;
 
+	if (!xc_var_caches) {
+		VAR_DISABLED_WARNING();
+		RETURN_NULL();
+	}
+
 	xce.ttl = XG(var_ttl);
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zz|l", &name, &value, &xce.ttl) == FAILURE) {
 		return;
@@ -1799,6 +1813,11 @@ PHP_FUNCTION(xcache_isset)
 	xc_entry_t xce, *stored_xce;
 	xc_entry_data_var_t var;
 	zval *name;
+
+	if (!xc_var_caches) {
+		VAR_DISABLED_WARNING();
+		RETURN_FALSE;
+	}
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &name) == FAILURE) {
 		return;
@@ -1831,6 +1850,11 @@ PHP_FUNCTION(xcache_unset)
 	xc_entry_data_var_t var;
 	zval *name;
 
+	if (!xc_var_caches) {
+		VAR_DISABLED_WARNING();
+		RETURN_FALSE;
+	}
+
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &name) == FAILURE) {
 		return;
 	}
@@ -1857,6 +1881,11 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 	long count = 1;
 	long value = 0;
 	zval oldzval;
+
+	if (!xc_var_caches) {
+		VAR_DISABLED_WARNING();
+		RETURN_NULL();
+	}
 
 	xce.ttl = XG(var_ttl);
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|ll", &name, &count, &xce.ttl) == FAILURE) {
