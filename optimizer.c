@@ -229,7 +229,11 @@ static void op_print(int line, zend_op *first, zend_op *end) /* {{{ */
 		op_snprint(buf_r, sizeof(buf_r), &opline->result);
 		op_snprint(buf_1, sizeof(buf_1), &opline->op1);
 		op_snprint(buf_2, sizeof(buf_2), &opline->op2);
-		fprintf(stderr, "%3d %-15s%-5s%-20s%-20s\r\n", opline - first + line, xc_get_opcode(opline->opcode), buf_r, buf_1, buf_2);
+		fprintf(stderr,
+				"%3d %3d"
+				" %-25s%-5s%-20s%-20s%5lu\r\n"
+				, opline->lineno, opline - first + line
+				, xc_get_opcode(opline->opcode), buf_r, buf_1, buf_2, opline->extended_value);
 	}
 }
 /* }}} */
@@ -279,9 +283,9 @@ static void bb_print(bb_t *bb, zend_op *opcodes) /* {{{ */
 	op_get_flowinfo(&fi, last);
 
 	fprintf(stderr,
-			"#%-3d cnt:%-3d lno:%-3d"
+			"\r\n==== #%-3d cnt:%-3d lno:%-3d"
 			" %c%c"
-			" op1:%-3d op2:%-3d ext:%-3d fal:%-3d cat:%-3d %s\r\n"
+			" op1:%-3d op2:%-3d ext:%-3d fal:%-3d cat:%-3d %s ====\r\n"
 			, bb->id, bb->count, bb->alloc ? -1 : line
 			, bb->used ? 'U' : ' ', bb->alloc ? 'A' : ' '
 			, fi.jmpout_op1, fi.jmpout_op2, fi.jmpout_ext, bb->fall, bb->catch, xc_get_opcode(last->opcode)
