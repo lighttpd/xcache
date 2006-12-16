@@ -1,3 +1,9 @@
+2.0.0 2007-?-?
+== NEWS ==
+== ChangeLog ==
+ * fixed #56: xcache_set segfaults when xcache.var_size=0
+ 
+========
 1.2.0 2006-12-10
 NEWS
 ========
