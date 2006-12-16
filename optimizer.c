@@ -1,4 +1,4 @@
-#if 0
+#if 1
 #define DEBUG
 #endif
 
@@ -10,6 +10,13 @@
 #ifdef DEBUG
 #	include "processor.h"
 #	include "const_string.h"
+#	include "ext/standard/php_var.h"
+#endif
+
+#ifdef IS_CV
+#	define XCACHE_IS_CV IS_CV
+#else
+#	define XCACHE_IS_CV 16
 #endif
 
 typedef int bbid_t;
@@ -169,6 +176,64 @@ static int op_get_flowinfo(op_flowinfo_t *fi, zend_op *opline) /* {{{ */
 	return SUCCESS;
 }
 /* }}} */
+#ifdef DEBUG
+static void op_snprint(char *buf, int size, znode *op) /* {{{ */
+{
+	switch (op->op_type) {
+	case IS_CONST:
+		{
+			zval result;
+			zval *zv = &op->u.constant;
+			TSRMLS_FETCH();
+
+			php_start_ob_buffer(NULL, 0, 1 TSRMLS_CC);
+			php_var_export(&zv, 1 TSRMLS_CC);
+
+			php_ob_get_buffer(&result TSRMLS_CC); 
+			php_end_ob_buffer(0, 0 TSRMLS_CC);
+			snprintf(buf, size, Z_STRVAL(result));
+			zval_dtor(&result);
+		}
+		break;
+
+	case IS_TMP_VAR:
+		snprintf(buf, size, "t@%d", op->u.var);
+		break;
+
+	case XCACHE_IS_CV:
+	case IS_VAR:
+		snprintf(buf, size, "v@%d", op->u.var);
+		break;
+
+	case IS_UNUSED:
+		if (op->u.opline_num) {
+			snprintf(buf, size, "u#%d", op->u.opline_num);
+		}
+		else {
+			snprintf(buf, size, "-");
+		}
+		break;
+
+	default:
+		snprintf(buf, size, "%d %d", op->op_type, op->u.var);
+	}
+}
+/* }}} */
+static void op_print(int line, zend_op *first, zend_op *end) /* {{{ */
+{
+	zend_op *opline;
+	for (opline = first; opline < end; opline ++) {
+		char buf_r[20];
+		char buf_1[20];
+		char buf_2[20];
+		op_snprint(buf_r, sizeof(buf_r), &opline->result);
+		op_snprint(buf_1, sizeof(buf_1), &opline->op1);
+		op_snprint(buf_2, sizeof(buf_2), &opline->op2);
+		fprintf(stderr, "%3d %-15s%-5s%-20s%-20s\r\n", opline - first + line, xc_get_opcode(opline->opcode), buf_r, buf_1, buf_2);
+	}
+}
+/* }}} */
+#endif
 
 /*
  * basic block functions
@@ -207,19 +272,21 @@ static void bb_destroy(bb_t *bb) /* {{{ */
 #ifdef DEBUG
 static void bb_print(bb_t *bb, zend_op *opcodes) /* {{{ */
 {
+	int line = bb->opcodes - opcodes;
 	op_flowinfo_t fi;
 	zend_op *last = bb->opcodes + bb->count - 1;
 
 	op_get_flowinfo(&fi, last);
 
 	fprintf(stderr,
-			"%3d %3d %3d"
+			"#%-3d cnt:%-3d lno:%-3d"
 			" %c%c"
-			" %3d %3d %3d %3d %3d %s\r\n"
-			, bb->id, bb->count, bb->alloc ? -1 : bb->opcodes - opcodes
+			" op1:%-3d op2:%-3d ext:%-3d fal:%-3d cat:%-3d %s\r\n"
+			, bb->id, bb->count, bb->alloc ? -1 : line
 			, bb->used ? 'U' : ' ', bb->alloc ? 'A' : ' '
 			, fi.jmpout_op1, fi.jmpout_op2, fi.jmpout_ext, bb->fall, bb->catch, xc_get_opcode(last->opcode)
 			);
+	op_print(line, bb->opcodes, last + 1);
 }
 /* }}} */
 #endif
@@ -248,11 +315,6 @@ static void bbs_destroy(bbs_t *bbs) /* {{{ */
 static void bbs_print(bbs_t *bbs, zend_op *opcodes) /* {{{ */
 {
 	int i;
-	fprintf(stderr,
-			" id cnt lno"
-			" UA"
-			" op1 op2 ext fal cat opcode\r\n"
-			);
 	for (i = 0; i < xc_stack_count(bbs); i ++) {
 		bb_print(bbs_get(bbs, i), opcodes);
 	}
@@ -394,7 +456,7 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 		if (i >= count) {
 			break;
 		}
-		start = i + 1;
+		start = i - 1;
 		id = bbids[i];
 	}
 	/* }}} */
@@ -467,6 +529,7 @@ static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	TRACE("optimize file: %s", op_array->filename);
 	xc_dprint_zend_op_array(op_array, 0 TSRMLS_CC);
 #	endif
+	op_print(0, op_array->opcodes, op_array->opcodes + op_array->last);
 #endif
 
 	if (op_array_convert_switch(op_array) == SUCCESS) {
