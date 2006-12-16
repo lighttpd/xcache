@@ -375,23 +375,6 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 		bbids[i] = BBID_INVALID;
 	}
 
-	/*
-	start = 0;
-	id = 0;
-	for (i = 1; i < count; i ++) {
-		if (markbbhead[i]) {
-			for (; start < i; start ++) {
-				bbids[start] = id;
-			}
-			id ++;
-			start = i;
-		}
-	}
-
-	for (; start < count; start ++) {
-		bbids[start] = id;
-	}
-	*/
 	id = -1;
 	for (i = 0; i < count; i ++) {
 		if (markbbhead[i]) {
@@ -456,7 +439,7 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 		if (i >= count) {
 			break;
 		}
-		start = i - 1;
+		start = i;
 		id = bbids[i];
 	}
 	/* }}} */
