@@ -1,5 +1,5 @@
-#if 1
-#define DEBUG
+#if 0
+#	define DEBUG
 #endif
 
 #include "utils.h"
