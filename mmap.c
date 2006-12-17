@@ -175,14 +175,14 @@ static XC_SHM_INIT(xc_mmap_init) /* {{{ */
 		/* do not create file in /dev */
 		if (strncmp(shm->name, "/dev", 4) == 0) {
 			perror(shm->name);
-			errstr = "Cannot open file set by xcache.mmap_path";
+			errstr = "Cannot open file set by xcache.mmap_path, check the xcache.size/var_size against system limitation";
 			goto err;
 		}
 		fd = open(shm->name, O_CREAT | O_RDWR, XCACHE_MMAP_PERMISSION);
 		shm->newfile = 1;
 		if (fd == -1) {
 			perror(shm->name);
-			errstr = "Cannot open or create file set by xcache.mmap_path";
+			errstr = "Cannot open or create file set by xcache.mmap_path, check the path permission or check xcache.size/var_size against system limitation";
 			goto err;
 		}
 	}
