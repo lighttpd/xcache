@@ -1540,23 +1540,37 @@ static void xc_destroy() /* {{{ */
 		shm = xc_cache_destroy(xc_php_caches, &xc_php_hcache);
 		xc_php_caches = NULL;
 	}
+	xc_php_hcache.size = 0;
+
 	if (xc_var_caches) {
 		shm = xc_cache_destroy(xc_var_caches, &xc_var_hcache);
 		xc_var_caches = NULL;
 	}
+	xc_var_hcache.size = 0;
+	fprintf(stderr, "set 0\n");
+
 	if (shm) {
 		xc_shm_destroy(shm);
 	}
+
+	xc_initized = 0;
 }
 /* }}} */
 static int xc_init(int module_number TSRMLS_DC) /* {{{ */
 {
 	xc_shm_t *shm;
+	xc_shmsize_t shmsize = ALIGN(xc_php_size) + ALIGN(xc_var_size);
 
 	xc_php_caches = xc_var_caches = NULL;
+	shm = NULL;
+
+	if (shmsize < (size_t) xc_php_size || shmsize < (size_t) xc_var_size) {
+		zend_error(E_ERROR, "XCache: neither xcache.size nor xcache.var_size can be negative");
+		goto err;
+	}
 
 	if (xc_php_size || xc_var_size) {
-		CHECK(shm = xc_shm_init(xc_shm_scheme, ALIGN(xc_php_size) + ALIGN(xc_var_size), xc_readonly_protection, xc_mmap_path, NULL), "Cannot create shm");
+		CHECK(shm = xc_shm_init(xc_shm_scheme, shmsize, xc_readonly_protection, xc_mmap_path, NULL), "Cannot create shm");
 		if (!shm->handlers->can_readonly(shm)) {
 			xc_readonly_protection = 0;
 		}
@@ -1572,12 +1586,12 @@ static int xc_init(int module_number TSRMLS_DC) /* {{{ */
 			CHECK(xc_var_caches = xc_cache_init(shm, &xc_var_hcache, &xc_var_hentry, NULL, xc_var_size), "failed init variable cache");
 		}
 	}
-	return 1;
+	return SUCCESS;
 
 err:
+	xc_destroy();
 	if (xc_php_caches || xc_var_caches) {
-		xc_destroy();
-		/* shm destroied */
+		/* shm destroied in xc_destroy() */
 	}
 	else if (shm) {
 		xc_shm_destroy(shm);
@@ -2677,7 +2691,7 @@ static PHP_MINIT_FUNCTION(xcache)
 	xc_shm_init_modules();
 
 	if ((xc_php_size || xc_var_size) && xc_mmap_path && xc_mmap_path[0]) {
-		if (!xc_init(module_number TSRMLS_CC)) {
+		if (xc_init(module_number TSRMLS_CC) != SUCCESS) {
 			zend_error(E_ERROR, "XCache: Cannot init");
 			goto err_init;
 		}
@@ -2699,7 +2713,6 @@ static PHP_MSHUTDOWN_FUNCTION(xcache)
 {
 	if (xc_initized) {
 		xc_destroy();
-		xc_initized = 0;
 	}
 	if (xc_mmap_path) {
 		pefree(xc_mmap_path, 1);
