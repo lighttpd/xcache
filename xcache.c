@@ -1547,7 +1547,6 @@ static void xc_destroy() /* {{{ */
 		xc_var_caches = NULL;
 	}
 	xc_var_hcache.size = 0;
-	fprintf(stderr, "set 0\n");
 
 	if (shm) {
 		xc_shm_destroy(shm);
