@@ -7,7 +7,7 @@ define(`USEMEMCPY')
 dnl ================ main
 
 dnl {{{ basic
-define(`REDEF', `undefine(`$1') define(`$1', `$2')')
+define(`REDEF', `ifdef(`$1', `undefine(`$1')') define(`$1', `$2')')
 define(`MAKE_MACRONAME', `translit(`$1', ` ():
 ', `_____')')
 define(`ONCE', `ifdef(MAKE_MACRONAME(`ONCE $1'), `', `define(MAKE_MACRONAME(`ONCE $1'))$1')')
