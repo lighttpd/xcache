@@ -2621,7 +2621,7 @@ static ZEND_MODULE_POST_ZEND_DEACTIVATE_D(xcache)
 
 zend_module_entry xcache_module_entry = {
 	STANDARD_MODULE_HEADER,
-	"XCache",
+	XCACHE_NAME,
 	xcache_functions,
 	PHP_MINIT(xcache),
 	PHP_MSHUTDOWN(xcache),
