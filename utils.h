@@ -70,6 +70,8 @@ typedef struct {
 	HashTable tmp_function_table;
 	HashTable tmp_class_table;
 	HashTable tmp_auto_globals;
+	Bucket    *tmp_internal_function_tail;
+	Bucket    *tmp_internal_class_tail;
 } xc_sandbox_t;
 
 xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC);

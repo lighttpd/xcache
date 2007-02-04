@@ -1024,14 +1024,16 @@ static zend_op_array *xc_compile_php(xc_entry_data_php_t *php, zend_file_handle 
 	/* {{{ shallow copy, pointers only */ {
 		Bucket *b;
 		unsigned int i;
+		unsigned int j;
 
 #define COPY_H(vartype, var, cnt, name, datatype) do {        \
-	for (i = 0; b; i ++, b = b->pListNext) {                  \
-		vartype *data = &php->var[i];                         \
+	for (i = 0, j = 0; b; i ++, b = b->pListNext) {           \
+		vartype *data = &php->var[j];                         \
                                                               \
 		if (i < old_##cnt) {                                  \
 			continue;                                         \
 		}                                                     \
+		j ++;                                                 \
                                                               \
 		assert(i < old_##cnt + php->cnt);                     \
 		assert(b->pData);                                     \
@@ -1602,6 +1604,16 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 {
 	int i;
 
+	if (XG(internal_function_table).nTableSize == 0) {
+		zend_function tmp_func;
+		xc_cest_t tmp_cest;
+
+		zend_hash_init_ex(&XG(internal_function_table), 100, NULL, NULL, 1, 0);
+		zend_hash_copy(&XG(internal_function_table), CG(function_table), NULL, &tmp_func, sizeof(tmp_func));
+
+		zend_hash_init_ex(&XG(internal_class_table), 10, NULL, NULL, 1, 0);
+		zend_hash_copy(&XG(internal_class_table), CG(class_table), NULL, &tmp_cest, sizeof(tmp_cest));
+	}
 	if (xc_php_hcache.size && !XG(php_holds)) {
 		XG(php_holds) = calloc(xc_php_hcache.size, sizeof(xc_stack_t));
 		for (i = 0; i < xc_php_hcache.size; i ++) {
@@ -1675,6 +1687,9 @@ void xc_shutdown_globals(zend_xcache_globals* xcache_globals TSRMLS_DC)
 		free(xcache_globals->var_holds);
 		xcache_globals->var_holds = NULL;
 	}
+
+	zend_hash_destroy(&xcache_globals->internal_function_table);
+	zend_hash_destroy(&xcache_globals->internal_class_table);
 }
 /* }}} */
 

@@ -1,5 +1,7 @@
 
 #include "xcache.h"
+#include "stack.h"
+#include "xcache_globals.h"
 #include "utils.h"
 #ifdef ZEND_ENGINE_2_1
 #include "zend_vm.h"
@@ -530,6 +532,9 @@ static int xc_auto_global_arm(zend_auto_global *auto_global TSRMLS_DC) /* {{{ */
 xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /* {{{ */
 {
 	HashTable *h;
+	zend_function tmp_func;
+	xc_cest_t tmp_cest;
+
 	if (sandbox) {
 		memset(sandbox, 0, sizeof(sandbox[0]));
 	}
@@ -566,8 +571,14 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 #endif
 	h = OG(function_table);
 	zend_hash_init_ex(&TG(function_table), 128, NULL, h->pDestructor, h->persistent, h->bApplyProtection);
+	zend_hash_copy(&TG(function_table), &XG(internal_function_table), NULL, (void *) &tmp_func, sizeof(tmp_func));
+	TG(internal_class_tail) = TG(function_table).pListTail;
+
 	h = OG(class_table);
 	zend_hash_init_ex(&TG(class_table),     16, NULL, h->pDestructor, h->persistent, h->bApplyProtection);
+	zend_hash_copy(&TG(class_table), &XG(internal_class_table), NULL, (void *) &tmp_cest, sizeof(tmp_cest));
+	TG(internal_class_tail) = TG(class_table).pListTail;
+
 #ifdef ZEND_ENGINE_2_1
 	/* shallow copy, don't destruct */
 	h = OG(auto_globals);
@@ -612,7 +623,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 	}
 #endif
 
-	b = TG(function_table).pListHead;
+	b = TG(internal_function_tail) ? TG(internal_function_tail)->pListNext : TG(function_table).pListHead;
 	/* install function */
 	while (b != NULL) {
 		zend_function *func = (zend_function*) b->pData;
@@ -621,7 +632,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 		b = b->pListNext;
 	}
 
-	b = TG(class_table).pListHead;
+	b = TG(internal_class_tail) ? TG(internal_class_tail)->pListNext : TG(class_table).pListHead;
 	/* install class */
 	while (b != NULL) {
 		xc_install_class(sandbox->filename, (xc_cest_t*) b->pData, -1,
