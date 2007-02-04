@@ -87,6 +87,9 @@ function dump_class($name, $class, $indent = '')
 	}
 }
 
+if (!isset($argv[1])) {
+	die("Usage: $argv[0] <file>\n");
+}
 $pk = xcache_dasm_file($argv[1]);
 $op_array = $funcs = $classes = null;
 if (isset($pk['op_array'])) {
