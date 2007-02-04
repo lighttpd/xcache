@@ -31,3 +31,4 @@ processor.out
 processor_real.c
 run-tests.php
 structinfo.m4
+autom4te.cache
