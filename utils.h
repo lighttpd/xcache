@@ -31,7 +31,7 @@ static inline int TRACE_DUMMY(const char *fmt, ...)
 {
 	return 0;
 }
-#      define TRACE 1 ? 0 : TRACE_DUMMY
+#		define TRACE 1 ? 0 : TRACE_DUMMY
 #	else
 #		define TRACE(fmt, ...) do { } while (0)
 #	endif /* ZEND_WIN32 */
