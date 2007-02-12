@@ -3,19 +3,43 @@
 
 #ifdef DEBUG
 #	define IFDEBUG(x) (x)
-#	define TRACE(fmt, ...) \
-	xc_trace("%s:%d: " fmt "\r\n", __FILE__, __LINE__, __VA_ARGS__)
+int xc_vtrace(const char *fmt, va_list args);
 int xc_trace(const char *fmt, ...) ZEND_ATTRIBUTE_PTR_FORMAT(printf, 1, 2);
+
+#	ifdef ZEND_WIN32
+static inline int TRACE(const char *fmt, ...) 
+{
+	va_list args;
+	int ret;
+
+	va_start(args, fmt);
+	ret = xc_vtrace(fmt, args);
+	va_end(args);
+	return ret;
+}
+#	else
+#		define TRACE(fmt, ...) \
+		xc_trace("%s:%d: " fmt "\r\n", __FILE__, __LINE__, __VA_ARGS__)
+#	endif /* ZEND_WIN32 */
 #   undef NDEBUG
 #   undef inline
 #   define inline
-#else
-#	define TRACE(fmt, ...) do { } while (0)
+#else /* DEBUG */
+
+#	ifdef ZEND_WIN32
+static inline int TRACE(const char *fmt, ...) 
+{
+	return 0;
+}
+#	else
+#		define TRACE(fmt, ...) do { } while (0)
+#	endif /* ZEND_WIN32 */
+
 #	define IFDEBUG(x) do { } while (0)
 #   ifndef NDEBUG
 #       define NDEBUG
 #   endif
-#endif
+#endif /* DEBUG */
 #include <assert.h>
 
 typedef struct {

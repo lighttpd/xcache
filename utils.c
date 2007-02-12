@@ -729,17 +729,17 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, int install TSRMLS_DC) /* {{{ */
 /* }}} */
 int xc_vtrace(const char *fmt, va_list args) /* {{{ */
 {
-	vfprintf(stderr, fmt, args);
-	return 0;
+	return vfprintf(stderr, fmt, args);
 }
 /* }}} */
 int xc_trace(const char *fmt, ...) /* {{{ */
 {
 	va_list args;
+	int ret;
 
 	va_start(args, fmt);
-	xc_vtrace(fmt, args);
+	ret = xc_vtrace(fmt, args);
 	va_end(args);
-	return 0;
+	return ret;
 }
 /* }}} */
