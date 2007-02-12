@@ -27,10 +27,11 @@ static inline int TRACE(const char *fmt, ...)
 #else /* DEBUG */
 
 #	ifdef ZEND_WIN32
-static inline int TRACE(const char *fmt, ...) 
+static inline int TRACE_DUMMY(const char *fmt, ...)
 {
 	return 0;
 }
+#      define TRACE 1 ? 0 : TRACE_DUMMY
 #	else
 #		define TRACE(fmt, ...) do { } while (0)
 #	endif /* ZEND_WIN32 */
