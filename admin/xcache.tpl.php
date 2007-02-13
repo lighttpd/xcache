@@ -61,7 +61,7 @@ $b = new Cycle('class="col1"', 'class="col2"');
 	$l_clear_confirm = _T('Sure to clear?');
 	foreach ($cacheinfos as $i => $ci) {
 		echo "
-		<tr ", $a->next(), " height=\"20\">";
+		<tr ", $a->next(), ">";
 		$pavail = (int) ($ci['avail'] / $ci['size'] * 100);
 		$pused = 100 - $pavail;
 
