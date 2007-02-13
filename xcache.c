@@ -1323,7 +1323,6 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 
 	if (newlycompiled) {
 		xc_free_php(&php TSRMLS_CC);
-		xc_sandbox_free(&sandbox, 0 TSRMLS_CC);
 	}
 
 	if (stored_xce) {
@@ -1336,7 +1335,17 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 			efree(op_array);
 			h = NULL;
 		}
+		if (newlycompiled) {
+			xc_sandbox_free(&sandbox, 0 TSRMLS_CC);
+		}
 		return xc_compile_restore(stored_xce, h TSRMLS_CC);
+	}
+	else {
+		if (newlycompiled) {
+			/* install it */
+			CG(active_op_array) = op_array;
+			xc_sandbox_free(&sandbox, 1 TSRMLS_CC);
+		}
 	}
 	return op_array;
 
