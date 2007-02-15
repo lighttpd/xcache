@@ -63,16 +63,16 @@ if test "$PHP_XCACHE" != "no"; then
     AC_DEFINE([HAVE_XCACHE_DPRINT], 1, [Define to enable XCache debug print functions])
   fi
 
-  AC_PATH_PROGS([AWK], [gawk awk])
+  AC_PATH_PROGS([XCACHE_AWK], [gawk awk])
   dnl clean locale for gawk 3.1.5 assertion bug
-  if echo | LANG=C "$AWK" -- '' > /dev/null 2>&1 ; then
-    AWK="LANG=C $AWK"
+  if echo | LANG=C "$XCACHE_AWK" -- '' > /dev/null 2>&1 ; then
+    XCACHE_AWK="LANG=C $XCACHE_AWK"
   else
-    if echo | /usr/bin/env - "$AWK" -- '' > /dev/null 2>&1 ; then
-      AWK="/usr/bin/env - $AWK"
+    if echo | /usr/bin/env - "$XCACHE_AWK" -- '' > /dev/null 2>&1 ; then
+      XCACHE_AWK="/usr/bin/env - $XCACHE_AWK"
     fi
   fi
-  PHP_SUBST([AWK])
+  PHP_SUBST([XCACHE_AWK])
   AC_PATH_PROGS([M4], [m4])
   if echo | "$M4" -E > /dev/null 2>&1 ; then
     M4="$M4 -E"
