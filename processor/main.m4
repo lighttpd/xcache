@@ -7,7 +7,7 @@ define(`USEMEMCPY')
 dnl ================ main
 
 dnl {{{ basic
-define(`REDEF', `undefine(`$1') define(`$1', `$2')')
+define(`REDEF', `ifdef(`$1', `undefine(`$1')') define(`$1', `$2')')
 define(`MAKE_MACRONAME', `translit(`$1', ` ():
 ', `_____')')
 define(`ONCE', `ifdef(MAKE_MACRONAME(`ONCE $1'), `', `define(MAKE_MACRONAME(`ONCE $1'))$1')')
@@ -182,7 +182,7 @@ define(`LIST_DIFF', `dnl
 foreach(`i', `($1)', `pushdef(`item_'defn(`i'))')dnl allocate variable for items in $1 
 foreach(`i', `($2)', `pushdef(`item_'defn(`i'))undefine(`item_'defn(`i'))')dnl allocate variable for items in $2, and undefine it 
 foreach(`i', `($1)', `ifdef(`item_'defn(`i'), `defn(`i') ')')dnl see what is still defined
-foreach(`i', `($2)', `popdef(`item_'defn(`i'))')dnl
+foreach(`i', `($2)', `define(`item_'defn(`i'))popdef(`item_'defn(`i'))')dnl
 foreach(`i', `($1)', `popdef(`item_'defn(`i'))')dnl
 ')
 dnl }}}
