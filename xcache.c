@@ -728,6 +728,16 @@ static int xc_stat(const char *filename, const char *include_path, struct stat *
 #define HASH_STR_L(s, l) HASH_STR_S(s, l + 1)
 #define HASH_STR(s) HASH_STR_L(s, strlen(s) + 1)
 #define HASH_NUM(n) HASH(n)
+static inline xc_hash_value_t xc_hash_fold(xc_hash_value_t hvalue, const xc_hash_t *hasher) /* {{{ fold hash bits as needed */
+{
+	xc_hash_value_t folded = 0;
+	while (hvalue) {
+		folded ^= (hvalue & hasher->mask);
+		hvalue >>= hasher->bits;
+	}
+	return folded;
+}
+/* }}} */
 static inline xc_hash_value_t xc_entry_hash_name(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 {
 	return UNISW(NOTHING, UG(unicode) ? HASH_USTR_L(xce->name_type, xce->name.uni.val, xce->name.uni.len) :)
@@ -842,10 +852,9 @@ stat_done:
 	xce->name.str.len = strlen(filename);
 
 	hv = xc_entry_hash_php(xce TSRMLS_CC);
-	cacheid = (hv & xc_php_hcache.mask);
+	cacheid = xc_hash_fold(hv, &xc_php_hcache);
 	xce->cache = xc_php_caches[cacheid];
-	hv >>= xc_php_hcache.bits;
-	xce->hvalue = (hv & xc_php_hentry.mask);
+	xce->hvalue = xc_hash_fold(hv, &xc_php_hentry);
 
 	xce->type = XC_TYPE_PHP;
 	return SUCCESS;
