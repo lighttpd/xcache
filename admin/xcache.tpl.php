@@ -178,6 +178,7 @@ if ($cachelist) {
 			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('inode'); ?></a></th>
 			<?php } ?>
 			<?php } ?>
+			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('hash'); ?></a></th>
 			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Access'); ?></a></th>
 			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Create'); ?></a></th>
 			<?php if ($listname == 'Deleted') { ?>
@@ -227,6 +228,7 @@ ENTRY;
 				}
 			}
 			echo <<<ENTRY
+			<td int="{$entry['hvalue']}">{$entry['hvalue']}</td>
 			<td int="{$entry['atime']}">{$atime}</td>
 			<td int="{$entry['ctime']}">{$ctime}</td>
 ENTRY;
