@@ -510,6 +510,7 @@ static void xc_fillentry_dmz(xc_entry_t *entry, int del, zval *list TSRMLS_DC) /
 	add_assoc_long_ex(ei, ZEND_STRS("hits"),     entry->hits);
 	add_assoc_long_ex(ei, ZEND_STRS("ctime"),    entry->ctime);
 	add_assoc_long_ex(ei, ZEND_STRS("atime"),    entry->atime);
+	add_assoc_long_ex(ei, ZEND_STRS("hvalue"),   entry->hvalue);
 	if (del) {
 		add_assoc_long_ex(ei, ZEND_STRS("dtime"), entry->dtime);
 	}
