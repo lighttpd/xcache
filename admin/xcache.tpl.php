@@ -102,7 +102,9 @@ EOS;
 	</tr>
 	<?php } ?>
 </table>
-<?php echo _T('Free Blocks'); ?>:
+<div>
+	<?php echo _T('Free Blocks'); ?>:
+</div>
 <?php
 foreach ($cacheinfos as $i => $ci) {
 	$b->reset();
