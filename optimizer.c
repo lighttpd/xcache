@@ -555,6 +555,7 @@ static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 int xc_clear_flag_optimized(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
 	op_array->done_pass_two = 0;
+	return 0;
 }
 /* }}} */
 void xc_optimize(zend_op_array *op_array TSRMLS_DC) /* {{{ */
