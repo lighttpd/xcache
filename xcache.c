@@ -455,7 +455,13 @@ static void xc_fillinfo_dmz(int cachetype, xc_cache_t *cache, zval *return_value
 #endif
 	xc_mem_t *mem = cache->mem;
 	const xc_mem_handlers_t *handlers = mem->handlers;
-	zend_ulong interval = (cachetype == XC_TYPE_PHP) ? xc_php_gc_interval : xc_var_gc_interval;
+	zend_ulong interval;
+	if (cachetype == XC_TYPE_PHP) {
+		interval = xc_php_ttl ? xc_php_gc_interval : 0;
+	}
+	else {
+		interval = xc_var_gc_interval;
+	}
 
 	add_assoc_long_ex(return_value, ZEND_STRS("slots"),     cache->hentry->size);
 	add_assoc_long_ex(return_value, ZEND_STRS("compiling"), cache->compiling);
@@ -467,7 +473,8 @@ static void xc_fillinfo_dmz(int cachetype, xc_cache_t *cache, zval *return_value
 	add_assoc_long_ex(return_value, ZEND_STRS("cached"),    cache->entries_count);
 	add_assoc_long_ex(return_value, ZEND_STRS("deleted"),   cache->deletes_count);
 	if (interval) {
-		add_assoc_long_ex(return_value, ZEND_STRS("gc"),    (cache->last_gc_expires + interval) - XG(request_time));
+		time_t gc = (cache->last_gc_expires + interval) - XG(request_time);
+		add_assoc_long_ex(return_value, ZEND_STRS("gc"),    gc > 0 ? gc : 0);
 	}
 	else {
 		add_assoc_null_ex(return_value, ZEND_STRS("gc"));
