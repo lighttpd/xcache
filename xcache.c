@@ -2339,7 +2339,7 @@ PHP_INI_BEGIN()
 
 	STD_PHP_INI_BOOLEAN("xcache.cacher",                 "1", PHP_INI_ALL,    OnUpdateBool,        cacher,            zend_xcache_globals, xcache_globals)
 	STD_PHP_INI_BOOLEAN("xcache.stat",                   "1", PHP_INI_ALL,    OnUpdateBool,        stat,              zend_xcache_globals, xcache_globals)
-	STD_PHP_INI_BOOLEAN("xcache.enable_auth",            "1", PHP_INI_SYSTEM, OnUpdateBool,        auth_enabled,      zend_xcache_globals, xcache_globals)
+	STD_PHP_INI_BOOLEAN("xcache.admin.enable_auth",      "1", PHP_INI_SYSTEM, OnUpdateBool,        auth_enabled,      zend_xcache_globals, xcache_globals)
 #ifdef HAVE_XCACHE_OPTIMIZER
 	STD_PHP_INI_BOOLEAN("xcache.optimizer",              "0", PHP_INI_ALL,    OnUpdateBool,        optimizer,         zend_xcache_globals, xcache_globals)
 #endif
