@@ -1,5 +1,9 @@
 1.2.1 2007-?-?
 == NEWS ==
+
+== Ini Settings Changes ==
+ * new: xcache.admin.auth = On
+
 == ChangeLog ==
  * fixed #56: xcache_set segfaults when xcache.var_size=0
  
