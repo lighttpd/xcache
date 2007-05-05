@@ -1,20 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<?php
-echo <<<HEAD
-	<meta http-equiv="Content-Type" content="text/html; charset=$charset" />
-	<meta http-equiv="Content-Language" content="$lang" />
-	<script type="text/javascript" src="tablesort.js" charset="$charset"></script>
-HEAD;
-?>
-
-	<link rel="stylesheet" type="text/css" href="xcache.css" />
-	<title><?php echo sprintf(_T("XCache %s Administration"), $xcache_version); ?></title>
-</head>
-
-<body>
-<h1><?php echo sprintf(_T("XCache %s Administration"), $xcache_version); ?></h1>
+<?php include("header.tpl.php"); ?>
 <a href="help.php" target="_blank" id="help"><?php echo _T("Help") ?> &raquo;</a>
 <span class="switcher"><?php echo switcher("type", $types); ?></span>
 <?php
@@ -142,7 +126,9 @@ if ($cachelist) {
 		<caption>", _T("{$cachelist['type_name']} $listname"), "</caption>";
 		?>
 
+	<form action="" method="post">
 	<table cellspacing="0" cellpadding="4" class="cycles entrys" width="100%">
+		<col />
 		<col />
 		<col />
 		<col align="right" />
@@ -166,6 +152,9 @@ if ($cachelist) {
 		<tr ", $a->next(), ">";
 		?>
 
+			<?php if (!$isphp) { ?>
+			<th width="20">R</th>
+			<?php } ?>
 			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Cache'); ?></a></th>
 			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('entry'); ?></a></th>
 			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Hits'); ?></a></th>
@@ -209,9 +198,20 @@ if ($cachelist) {
 				$dtime = age($entry['dtime']);
 			}
 
+			if (!$isphp) {
+				echo <<<ENTRY
+					<td><input type="checkbox" name="remove[]" value="{$name}"/></td>
+ENTRY;
+				$uname = urlencode($entry['name']);
+				$namelink = "<a href=\"edit.php?name=$uname\">$name</a>";
+			}
+			else {
+				$namelink = $name;
+			}
+
 			echo <<<ENTRY
 			<td>{$entry['cache_name']} {$i}</td>
-			<td>{$name}</td>
+			<td>{$namelink}</td>
 			<td int="{$entry['hits']}">{$entry['hits']}</td>
 			<td int="{$entry['refcount']}">{$entry['refcount']}</td>
 			<td int="{$entry['size']}">{$size}</td>
@@ -247,6 +247,8 @@ ENTRY;
 		?>
 
 	</table>
+	<input type="submit" value="<?php echo _T("Remove Selected"); ?>">
+	</form>
 <?php
 	}
 	if (function_exists("ob_filter_path_nicer")) {
@@ -261,12 +263,4 @@ if ($moduleinfo) {
 HTML;
 }
 ?>
-<div class="footnote">
-<?php echo <<<EOS
-Powered By: XCache {$xcache_version}, {$xcache_modules}
-EOS;
-?>
-</div>
-
-</body>
-</html>
+<?php include("footer.tpl.php"); ?>

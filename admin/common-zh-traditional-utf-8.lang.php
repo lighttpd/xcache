@@ -96,10 +96,10 @@ $strings = array(
 		=> '位置',
 		'Module Info'
 		=> '組元訊息',
-		''
-		=> '',
-		''
-		=> '',
+		'Remove Selected'
+		=> '移除所选',
+		'Editing Variable %s'
+		=> '正在编辑变量 %s',
 		''
 		=> '',
 		);
