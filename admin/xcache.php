@@ -100,6 +100,15 @@ if (!extension_loaded('XCache')) {
 $pcnt = xcache_count(XC_TYPE_PHP);
 $vcnt = xcache_count(XC_TYPE_VAR);
 
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+	$remove = @ $_POST['remove'];
+	if ($remove && is_array($remove)) {
+		foreach ($remove as $name) {
+			xcache_unset($name);
+		}
+	}
+}
+
 $moduleinfo = null;
 $type_none = -1;
 if (!isset($_GET['type'])) {
