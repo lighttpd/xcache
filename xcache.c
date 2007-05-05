@@ -1963,6 +1963,7 @@ PHP_FUNCTION(xcache_get)
 	xc_entry_t xce, *stored_xce;
 	xc_entry_data_var_t var;
 	zval *name;
+	int found = 0;
 
 	if (!xc_var_caches) {
 		VAR_DISABLED_WARNING();
@@ -1979,6 +1980,7 @@ PHP_FUNCTION(xcache_get)
 		stored_xce = xc_entry_find_dmz(&xce TSRMLS_CC);
 		if (stored_xce) {
 			if (!VAR_ENTRY_EXPIRED(stored_xce)) {
+				found = 1;
 				xc_processor_restore_zval(return_value, stored_xce->data.var->value, stored_xce->data.var->have_references TSRMLS_CC);
 				/* return */
 				break;
@@ -1990,6 +1992,12 @@ PHP_FUNCTION(xcache_get)
 
 		RETVAL_NULL();
 	} LEAVE_LOCK(xce.cache);
+	if (found) {
+		xce.cache->hits ++;
+	}
+	else {
+		xce.cache->misses ++;
+	}
 }
 /* }}} */
 /* {{{ proto bool  xcache_set(string name, mixed value [, int ttl])
@@ -2036,6 +2044,7 @@ PHP_FUNCTION(xcache_isset)
 	xc_entry_t xce, *stored_xce;
 	xc_entry_data_var_t var;
 	zval *name;
+	int found = 0;
 
 	if (!xc_var_caches) {
 		VAR_DISABLED_WARNING();
@@ -2052,6 +2061,7 @@ PHP_FUNCTION(xcache_isset)
 		stored_xce = xc_entry_find_dmz(&xce TSRMLS_CC);
 		if (stored_xce) {
 			if (!VAR_ENTRY_EXPIRED(stored_xce)) {
+				found = 1;
 				RETVAL_TRUE;
 				/* return */
 				break;
@@ -2063,6 +2073,12 @@ PHP_FUNCTION(xcache_isset)
 
 		RETVAL_FALSE;
 	} LEAVE_LOCK(xce.cache);
+	if (found) {
+		xce.cache->hits ++;
+	}
+	else {
+		xce.cache->misses ++;
+	}
 }
 /* }}} */
 /* {{{ proto bool  xcache_unset(string name)
