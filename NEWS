@@ -1,6 +1,7 @@
 2.0.0 2007-?-?
 == NEWS ==
 == ChangeLog ==
+ * wrong http auth realm
  * #86: remove/edit variable in admin page
  * fixed #77: hits/misses was not updated
  * fixed #56: xcache_set segfaults when xcache.var_size=0
