@@ -459,6 +459,7 @@ static void bbs_restore_opnum(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
 {
 	int i;
 	bbid_t lasttrybbid;
+	bbid_t lastcatchbbid;
 
 	for (i = 0; i < bbs_count(bbs); i ++) {
 		op_flowinfo_t fi;
@@ -481,20 +482,22 @@ static void bbs_restore_opnum(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
 		}
 	}
 
-	lasttrybbid = BBID_INVALID;
+	lasttrybbid   = BBID_INVALID;
+	lastcatchbbid = BBID_INVALID;
 	op_array->last_try_catch = 0;
 	for (i = 0; i < bbs_count(bbs); i ++) {
 		bb_t *bb = bbs_get(bbs, i);
 
-		if (lasttrybbid != bb->catch) {
-			if (lasttrybbid != BBID_INVALID) {
+		if (lastcatchbbid != bb->catch) {
+			if (lasttrybbid != BBID_INVALID && lastcatchbbid != BBID_INVALID) {
 				int try_catch_offset = op_array->last_try_catch ++;
 
 				op_array->try_catch_array = erealloc(op_array->try_catch_array, sizeof(zend_try_catch_element) * op_array->last_try_catch);
 				op_array->try_catch_array[try_catch_offset].try_op = bbs_get(bbs, lasttrybbid)->opnum;
-				op_array->try_catch_array[try_catch_offset].catch_op = bbs_get(bbs, bb->id)->opnum;
+				op_array->try_catch_array[try_catch_offset].catch_op = bbs_get(bbs, lastcatchbbid)->opnum;
 			}
-			lasttrybbid = bb->catch;
+			lasttrybbid   = i;
+			lastcatchbbid = bb->catch;
 		}
 	}
 	/* it is impossible to have last bb catched */
@@ -548,6 +551,7 @@ static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	TRACE("%s", "after compiles");
 	xc_dprint_zend_op_array(op_array, 0 TSRMLS_CC);
 #	endif
+	op_print(0, op_array->opcodes, op_array->opcodes + op_array->last);
 #endif
 	return 0;
 }
