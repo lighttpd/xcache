@@ -22,7 +22,7 @@ form {margin: 0; padding: 0}
 .percent { border: 1px solid black; width: 80%; height: 20px; }
 .percent div { font-size: 1px; line-height: 1px; width: 100%;}
 .percent .pavail { background: blue; }
-.switcher, h1 { text-align: center; display: block; }
+.switcher, h1, h2 { text-align: center; display: block; }
 .switcher * { color: blue; }
 .switcher a.active { font-weight: bold; font-size: 130%; color: black; }
 #help { display: block; float: right; }

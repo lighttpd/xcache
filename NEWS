@@ -5,6 +5,7 @@
  * new: xcache.admin.enable_auth = On
 
 == ChangeLog ==
+ * #86: remove/edit variable in admin page
  * fixed #56: xcache_set segfaults when xcache.var_size=0
  
 ========
