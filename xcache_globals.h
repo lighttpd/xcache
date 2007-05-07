@@ -15,6 +15,9 @@ ZEND_BEGIN_MODULE_GLOBALS(xcache)
 	time_t request_time;
 	long   var_ttl;
 	zend_bool auth_enabled;
+
+	HashTable internal_function_table;
+	HashTable internal_class_table;
 ZEND_END_MODULE_GLOBALS(xcache)
 
 ZEND_EXTERN_MODULE_GLOBALS(xcache)

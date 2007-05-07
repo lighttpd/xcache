@@ -7,6 +7,7 @@
 == ChangeLog ==
  * #86: remove/edit variable in admin page
  * fixed #77: hits/misses was not updated
+ * fixed #59: pass by reference for internal function was broken
  * fixed #56: xcache_set segfaults when xcache.var_size=0
  
 ========
