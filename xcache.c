@@ -1026,7 +1026,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 
 #define COPY_H(vartype, var, cnt, name, datatype) do {        \
 	for (i = 0, j = 0; b; i ++, b = b->pListNext) {           \
-		vartype *data = &php->var[j];                         \
+		vartype *data = &php.var[j];                          \
                                                               \
 		if (i < old_##cnt) {                                  \
 			continue;                                         \
