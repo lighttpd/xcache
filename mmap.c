@@ -31,7 +31,7 @@
 #endif
 
 #include "php.h"
-#define XC_SHM_IMPL
+#define XC_SHM_IMPL _xc_mmap_shm_t
 #include "xc_shm.h"
 
 #ifndef max
@@ -39,7 +39,7 @@
 #endif
 
 /* {{{ xc_shm_t */
-struct _xc_shm_t {
+struct _xc_mmap_shm_t {
 	xc_shm_handlers_t *handlers;
 	void *ptr;
 	void *ptr_ro;
