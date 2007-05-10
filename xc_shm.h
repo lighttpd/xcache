@@ -1,6 +1,15 @@
 #ifndef XC_SHM_H
 #define XC_SHM_H
-typedef struct _xc_shm_t xc_shm_t;
+typedef struct _xc_shm_handlers_t xc_shm_handlers_t;
+
+#ifndef XC_SHM_IMPL
+struct _xc_shm_t {
+	const xc_shm_handlers_t *handlers;
+};
+#define XC_SHM_IMPL _xc_shm_t
+#endif
+
+typedef struct XC_SHM_IMPL xc_shm_t;
 typedef size_t xc_shmsize_t;
 
 #include "mem.h"
@@ -33,7 +42,7 @@ typedef size_t xc_shmsize_t;
 	, xc_##name##_memdestroy       \
 }
 
-typedef struct {
+struct _xc_shm_handlers_t {
 	const xc_mem_handlers_t *memhandlers;
 	XC_SHM_CAN_READONLY((*can_readonly));
 	XC_SHM_IS_READWRITE((*is_readwrite));
@@ -45,14 +54,8 @@ typedef struct {
 
 	XC_SHM_MEMINIT((*meminit));
 	XC_SHM_MEMDESTROY((*memdestroy));
-} xc_shm_handlers_t;
-
-
-#ifndef XC_SHM_IMPL
-struct _xc_shm_t {
-	const xc_shm_handlers_t *handlers;
 };
-#endif
+
 typedef struct _xc_shm_scheme_t xc_shm_scheme_t;
 
 void xc_shm_init_modules();
