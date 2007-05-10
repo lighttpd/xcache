@@ -1,5 +1,5 @@
-#define XC_SHM_IMPL
-#define XC_MEM_IMPL
+#define XC_SHM_IMPL _xc_malloc_shm_t
+#define XC_MEM_IMPL _xc_malloc_mem_t
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -8,7 +8,7 @@
 #include "align.h"
 #include "utils.h"
 
-struct _xc_mem_t {
+struct _xc_malloc_mem_t {
 	const xc_mem_handlers_t *handlers;
 	xc_shm_t                *shm;
 	xc_memsize_t size;
@@ -106,8 +106,8 @@ static XC_MEM_DESTROY(xc_mem_malloc_destroy) /* {{{ */
 }
 /* }}} */
 
-/* {{{ xc_shm_t */
-struct _xc_shm_t {
+/* {{{ _xc_malloc_shm_t */
+struct _xc_malloc_shm_t {
 	xc_shm_handlers_t *handlers;
 	xc_shmsize_t       size;
 	xc_shmsize_t       memoffset;

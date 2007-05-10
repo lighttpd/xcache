@@ -1,5 +1,18 @@
-typedef struct _xc_mem_t xc_mem_t;
-typedef struct _xc_block_t xc_block_t;
+typedef struct _xc_mem_handlers_t xc_mem_handlers_t;
+
+#ifndef XC_MEM_IMPL
+struct _xc_mem_t {
+	const xc_mem_handlers_t *handlers;
+	xc_shm_t                *shm;
+};
+#   define XC_MEM_IMPL _xc_mem_t
+#endif
+
+#ifndef XC_MEMBLOCK_IMPL
+#   define XC_MEMBLOCK_IMPL _xc_block_t
+#endif
+typedef struct XC_MEM_IMPL xc_mem_t;
+typedef struct XC_MEMBLOCK_IMPL xc_block_t;
 typedef unsigned int xc_memsize_t;
 
 /* shm::mem */
@@ -37,7 +50,7 @@ typedef unsigned int xc_memsize_t;
 	, xc_##name##_destroy          \
 }
 
-typedef struct {
+struct _xc_mem_handlers_t {
 	XC_MEM_MALLOC((*malloc));
 	XC_MEM_FREE((*free));
 	XC_MEM_CALLOC((*calloc));
@@ -53,14 +66,7 @@ typedef struct {
 
 	XC_MEM_INIT((*init));
 	XC_MEM_DESTROY((*destroy));
-} xc_mem_handlers_t;
-
-#ifndef XC_MEM_IMPL
-struct _xc_mem_t {
-	const xc_mem_handlers_t *handlers;
-	xc_shm_t                *shm;
 };
-#endif
 
 int xc_mem_scheme_register(const char *name, const xc_mem_handlers_t *handlers);
 const xc_mem_handlers_t *xc_mem_scheme_find(const char *name);

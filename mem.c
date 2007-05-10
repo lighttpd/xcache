@@ -8,8 +8,8 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#define XC_SHM_IMPL
-#define XC_MEM_IMPL
+#define XC_MEMBLOCK_IMPL _xc_mem_block_t
+#define XC_MEM_IMPL _xc_mem_mem_t
 #include "xc_shm.h"
 #include "align.h"
 #include "utils.h"
@@ -30,7 +30,7 @@
 #define PSUB(p1, p2) (CHAR_PTR(p1) - CHAR_PTR(p2))
 
 /* {{{ mem */
-struct _xc_block_t {
+struct _xc_mem_block_t {
 #ifdef ALLOC_DEBUG_BLOCK_CHECK
 	unsigned int magic;
 #endif
@@ -38,7 +38,7 @@ struct _xc_block_t {
 	xc_block_t *next;  /* not used after alloc */
 };
 
-struct _xc_mem_t {
+struct _xc_mem_mem_t {
 	const xc_mem_handlers_t *handlers;
 	xc_shm_t                *shm;
 	xc_memsize_t size;
