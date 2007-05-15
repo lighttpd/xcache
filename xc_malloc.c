@@ -15,32 +15,62 @@ struct _xc_malloc_mem_t {
 	xc_memsize_t avail;       /* total free */
 };
 
+/* {{{ _xc_malloc_shm_t */
+struct _xc_malloc_shm_t {
+	xc_shm_handlers_t *handlers;
+	xc_shmsize_t       size;
+	xc_shmsize_t       memoffset;
+#ifdef HAVE_XCACHE_TEST
+	HashTable blocks;
+#endif
+};
+/* }}} */
+
 #define CHECK(x, e) do { if ((x) == NULL) { zend_error(E_ERROR, "XCache: " e); goto err; } } while (0)
+
+static void *xc_add_to_blocks(xc_mem_t *mem, void *p, size_t size) /* {{{ */
+{
+#ifdef HAVE_XCACHE_TEST
+	if (p) {
+		zend_hash_add(&mem->shm->blocks, (void *) &p, sizeof(p), (void *) &size, sizeof(size), NULL);
+	}
+#endif
+	return p;
+}
+/* }}} */
+static void xc_del_from_blocks(xc_mem_t *mem, void *p) /* {{{ */
+{
+#ifdef HAVE_XCACHE_TEST
+	zend_hash_del(&mem->shm->blocks, (void *) &p, sizeof(p));
+#endif
+}
+/* }}} */
 
 static XC_MEM_MALLOC(xc_malloc_malloc) /* {{{ */
 {
-	return malloc(size);
+	return xc_add_to_blocks(mem, malloc(size), size);
 }
 /* }}} */
 static XC_MEM_FREE(xc_malloc_free) /* {{{ return block size freed */
 {
+	xc_del_from_blocks(mem, (void *) p);
 	free((void *) p);
 	return 0;
 }
 /* }}} */
 static XC_MEM_CALLOC(xc_malloc_calloc) /* {{{ */
 {
-	return calloc(memb, size);
+	return xc_add_to_blocks(mem, calloc(memb, size), size);
 }
 /* }}} */
 static XC_MEM_REALLOC(xc_malloc_realloc) /* {{{ */
 {
-	return realloc((void *) p, size);
+	return xc_add_to_blocks(mem, realloc((void *) p, size), size);
 }
 /* }}} */
 static XC_MEM_STRNDUP(xc_malloc_strndup) /* {{{ */
 {
-	char *p = malloc(len);
+	char *p = xc_add_to_blocks(mem, malloc(len), len);
 	if (!p) {
 		return NULL;
 	}
@@ -106,14 +136,6 @@ static XC_MEM_DESTROY(xc_mem_malloc_destroy) /* {{{ */
 }
 /* }}} */
 
-/* {{{ _xc_malloc_shm_t */
-struct _xc_malloc_shm_t {
-	xc_shm_handlers_t *handlers;
-	xc_shmsize_t       size;
-	xc_shmsize_t       memoffset;
-};
-/* }}} */
-
 static XC_SHM_CAN_READONLY(xc_malloc_can_readonly) /* {{{ */
 {
 	return 0;
@@ -121,6 +143,19 @@ static XC_SHM_CAN_READONLY(xc_malloc_can_readonly) /* {{{ */
 /* }}} */
 static XC_SHM_IS_READWRITE(xc_malloc_is_readwrite) /* {{{ */
 {
+	HashPosition pos;
+	size_t *psize;
+	char **ptr;
+
+	zend_hash_internal_pointer_reset_ex(&shm->blocks, &pos);
+	while (zend_hash_get_current_data_ex(&shm->blocks, (void **) &psize, &pos) == SUCCESS) {
+		zend_hash_get_current_key_ex(&shm->blocks, (void *) &ptr, NULL, NULL, 0, &pos);
+		if ((char *) p >= *ptr && (char *) p < *ptr + *psize) {
+			return 1;
+		}
+		zend_hash_move_forward_ex(&shm->blocks, &pos);
+	}
+
 	return 0;
 }
 /* }}} */
@@ -143,6 +178,9 @@ static XC_SHM_TO_READONLY(xc_malloc_to_readonly) /* {{{ */
 static XC_SHM_DESTROY(xc_malloc_destroy) /* {{{ */
 {
 	free(shm);
+#ifdef HAVE_XCACHE_TEST
+	zend_hash_destroy(&shm->blocks);
+#endif
 	return;
 }
 /* }}} */
@@ -152,6 +190,9 @@ static XC_SHM_INIT(xc_malloc_init) /* {{{ */
 	CHECK(shm = calloc(1, sizeof(xc_shm_t)), "shm OOM");
 	shm->size = size;
 
+#ifdef HAVE_XCACHE_TEST
+	zend_hash_init(&shm->blocks, 64, NULL, NULL, 1);
+#endif
 	return shm;
 err:
 	return NULL;
