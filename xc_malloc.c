@@ -177,10 +177,10 @@ static XC_SHM_TO_READONLY(xc_malloc_to_readonly) /* {{{ */
 
 static XC_SHM_DESTROY(xc_malloc_destroy) /* {{{ */
 {
-	free(shm);
 #ifdef HAVE_XCACHE_TEST
 	zend_hash_destroy(&shm->blocks);
 #endif
+	free(shm);
 	return;
 }
 /* }}} */
