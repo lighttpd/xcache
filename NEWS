@@ -1,6 +1,7 @@
 2.0.0 2007-?-?
 == NEWS ==
 == ChangeLog ==
+ * could not show module info in admin page when XCache is the last module
  * wrong http auth realm
  * #86: remove/edit variable in admin page
  * fixed #77: hits/misses was not updated
