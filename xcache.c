@@ -1634,10 +1634,10 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 		zend_function tmp_func;
 		xc_cest_t tmp_cest;
 
-		zend_hash_init_ex(&XG(internal_function_table), 100, NULL, NULL, 1, 0);
+		zend_hash_init_ex(&XG(internal_function_table), 100, NULL, CG(function_table)->pDestructor, 1, 0);
 		zend_hash_copy(&XG(internal_function_table), CG(function_table), (copy_ctor_func_t) function_add_ref, &tmp_func, sizeof(tmp_func));
 
-		zend_hash_init_ex(&XG(internal_class_table), 10, NULL, NULL, 1, 0);
+		zend_hash_init_ex(&XG(internal_class_table), 10, NULL, CG(class_table)->pDestructor, 1, 0);
 		zend_hash_copy(&XG(internal_class_table), CG(class_table), (copy_ctor_func_t) xc_zend_class_add_ref, &tmp_cest, sizeof(tmp_cest));
 	}
 	if (xc_php_hcache.size && !XG(php_holds)) {
