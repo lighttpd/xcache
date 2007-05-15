@@ -203,7 +203,7 @@ default:
 	ob_start();
 	phpinfo(INFO_MODULES);
 	$moduleinfo = ob_get_clean();
-	if (preg_match('!XCache</a></h2>(.*?)<h2><a name="module_!is', $moduleinfo, $m)) {
+	if (preg_match('!XCache</a></h2>(.*?)<h2>!is', $moduleinfo, $m)) {
 		$moduleinfo = $m[1];
 	}
 	else {
