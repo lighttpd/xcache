@@ -2609,24 +2609,24 @@ static PHP_MINFO_FUNCTION(xcache)
 /* {{{ extension startup */
 static void xc_zend_extension_register(zend_extension *new_extension, DL_HANDLE handle)
 {
-    zend_extension extension;
+	zend_extension extension;
 
-    extension = *new_extension;
-    extension.handle = handle;
+	extension = *new_extension;
+	extension.handle = handle;
 
-    zend_extension_dispatch_message(ZEND_EXTMSG_NEW_EXTENSION, &extension);
+	zend_extension_dispatch_message(ZEND_EXTMSG_NEW_EXTENSION, &extension);
 
-    zend_llist_prepend_element(&zend_extensions, &extension);
+	zend_llist_prepend_element(&zend_extensions, &extension);
 	TRACE("%s", "registered");
 }
 
 static int xc_zend_extension_startup(zend_extension *extension)
 {
-    if (extension->startup) {
-        if (extension->startup(extension) != SUCCESS) {
+	if (extension->startup) {
+		if (extension->startup(extension) != SUCCESS) {
 			return FAILURE;
-        }
-    }
+		}
+	}
 	return SUCCESS;
 }
 /* }}} */
