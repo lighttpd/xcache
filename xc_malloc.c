@@ -143,6 +143,7 @@ static XC_SHM_CAN_READONLY(xc_malloc_can_readonly) /* {{{ */
 /* }}} */
 static XC_SHM_IS_READWRITE(xc_malloc_is_readwrite) /* {{{ */
 {
+#ifdef HAVE_XCACHE_TEST
 	HashPosition pos;
 	size_t *psize;
 	char **ptr;
@@ -155,6 +156,7 @@ static XC_SHM_IS_READWRITE(xc_malloc_is_readwrite) /* {{{ */
 		}
 		zend_hash_move_forward_ex(&shm->blocks, &pos);
 	}
+#endif
 
 	return 0;
 }
