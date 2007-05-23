@@ -1741,7 +1741,7 @@ static int xcache_admin_auth_check(TSRMLS_D) /* {{{ */
 		zend_bailout();
 	}
 	if (strlen(admin_pass) != 32) {
-		php_error_docref(NULL TSRMLS_CC, E_ERROR, "unexpect %d bytes of xcache.admin.pass, expected 32 bytes, the password after md5()", strlen(admin_pass));
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "unexpect %lu bytes of xcache.admin.pass, expected 32 bytes, the password after md5()", (unsigned long) strlen(admin_pass));
 		zend_bailout();
 	}
 

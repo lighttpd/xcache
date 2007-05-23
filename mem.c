@@ -294,7 +294,7 @@ static XC_MEM_INIT(xc_mem_init) /* {{{ */
 #define MINSIZE (ALIGN(sizeof(xc_mem_t)) + sizeof(xc_block_t))
 	/* requires at least the header and 1 tail block */
 	if (size < MINSIZE) {
-		fprintf(stderr, "xc_mem_init requires %d bytes at least\n", MINSIZE);
+		fprintf(stderr, "xc_mem_init requires %lu bytes at least\n", (unsigned long) MINSIZE);
 		return NULL;
 	}
 	mem->shm = shm;
