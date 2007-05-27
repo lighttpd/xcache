@@ -1,4 +1,11 @@
 2.0.0 2007-?-?
+Ini Settings Changes
+========
+ * new: xcache.experimental = Off
+
+ChangeLog
+========
+ * new: xcache.stat = On
  * could not show module info in admin page when XCache is the last module
  * wrong http auth realm
  * #86: remove/edit variable in admin page
