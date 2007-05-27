@@ -1,4 +1,4 @@
-/* size = 151 */
+/* size = 152 */
 static const char *const xc_opcode_names[] = {
 /* 0 */	"NOP",
 /* 1 */	"ADD",
@@ -151,5 +151,6 @@ static const char *const xc_opcode_names[] = {
 /* 148 */	"ISSET_ISEMPTY_PROP_OBJ",
 /* 149 */	"HANDLE_EXCEPTION",
 /* 150 */	"USER_OPCODE",
-/* 151 */	"U_NORMALIZE"
+/* 151 */	"U_NORMALIZE",
+/* 152 */	"JMP_SET"
 };
