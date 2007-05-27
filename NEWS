@@ -1,11 +1,4 @@
 2.0.0 2007-?-?
-== NEWS ==
-== ChangeLog ==
- * could not show module info in admin page when XCache is the last module
- * wrong http auth realm
- * #86: remove/edit variable in admin page
- * fixed #77: hits/misses was not updated
- * fixed #56: xcache_set segfaults when xcache.var_size=0
  
 ========
 1.2.0 2006-12-10
@@ -15,143 +8,20 @@ NEWS
  * minor admin/coverage-viewer page improves
  * compatible with suhosin/ZendOptimizer
  * xcache_get reference handling
-
-Ini Settings Changes
-========
- * new: xcache.stat = On
- * new: xcache.coverager =  Off
- * chg: xcache.coveragedump_directory default to ""
- * del: xcache.coveragedumper = Off
-
-New APIs
-========
- * array xcache_coverager_decode(string data)
- * void  xcache_coverager_start([bool clean = true])
- * void  xcache_coverager_stop([bool clean = false])
- * array xcache_coverager_get([bool clean = false])
-
-ChangeLog
-========
- * [290] [291] [292] build with the m4 on solaris
- * [283] removed zend_append_version_info. not needed after [282] 
- * [282] fix possible alloca() scope problem in lock 
- * [281] keep config.nice on make xcachesvnclean 
- * [279] fixed #48, was leaking info when cacher is not enabled by size 
- * [280] [278] trunk: fix coredump on shutdown when loaded as "extension" and after "suhosin" or "zend optimizer". thanks to Alex, Cristian and Esser 
- * [271] fix auto detection of php-cli/php-cgi for test 
- * [270] make [269] pass test cases 
- * [269] do not destruct shallow copied tmp_auto_globals. also improve copying of other hash tables
- * [268] full compatible with auto_globals_jit, no need to disable it in ini from now on 
- * [250] fixed css class on switcher
- * [231] fix zval reference handling
- * [230] update dprint support, added configure option: --enable-xcache-dprint
- * [228] more robust coverager
- * [227] cacher: remove redundant open_basedir check which broke php-src/ext/standard/tests/file/bug24313.phpt 
- * [221] cacher: fix eleak in op_array non-shadow-copy (readonly_protection=on)
- * [220] fixed #36, Bug in inherited static class variables
- * [219] fix prototype for readonly_protection=off, fix testcase Zend/tests/bug37632.phpt 
- * [217] kill leak warning on debug build
- * [216] avoid crash on php compiler error
- * [215] add `make xcachetest` to run xcache enabled test
- * [214] [212] fixed #41, early class binding
- * [272] [267] [263] [200] fixes for php6
- * [224] [193] kill 64bit warning when self test is enabled 
- * [190] trick to load and work with zend optimizer 
- * [189] call op_array_ctor handler on restore to be more compatible with other zend_extension 
- * [257] [183] xcache module is not required by coverage viewer any more
- * [165] xcache.stat support to allow tuning off stat (new ini)
- * [164] better way to handle system level ini settings so it can be display in phpinfo standardly
+ * new apis for coverager
+ * some ini settings changed
 
 1.1.0 2006-11-11
 ========
-cacher:
  * fix xcache_get issue on ttl 0 data
- * coverager: avoid crash when php failed to compile file
+ * avoid crash when php failed to compile file when coverager enabled
  * gc expired items, new ini
-   * xcache.ttl
-   * xcache.gc_interval
-   * xcache.var_ttl
-   * xcache.var_maxttl
-   * xcache.var_gc_interval 
  * Partial php 5.2 support
  * "Cannot redeclare ()" bug
- * [95] FIX #20, default: --enable-xcache-constant=yes
- * [89] FIX #19 prototype inherit from abstract class
- * [88] FIX possible fix for #14 "Cannot redeclare ()"
- * [86] FIX #14, #17, #18
-
-Translations:
- * [128] Chinese translation for xcache.ini
- * [124] Chinese translation for coverager
- * [135] Chinese Traditional translation for admin page. thanks to Finjon Kiang.
- * [123] Chinese translation for admin page
-
-Admin:
- * FIX cache corruption on clear button click
- * FIX refcount
- * use phpinfo style
-
-Coverager:
- * use phpinfo style
- * percent bar updated
-
-Others:
- * fix build on rare arch
- * fix build on Mac OS X
- * kill compiler warnings
+ * bug fixes
+ * Chinese Simplified/Traditional translations
+ * admin page fixes and applied phpinfo style
+ * coverage viewer page use phpinfo style
+ * fix build on rare arch and Mac OS X
  * zts build
- * all fixes from <=1.0.2
-
-ChangeLog
-========
- * merged [254] fix xcache.var_ttl displaying in info, fix xcache_get for ttl-unlimited
- * merged [250] admin: fix switcher class on active
- * merged [249] return 0 s instead of empty for deltatime
- * merged [201] coverager: avoid crash when upstream failed to compile file
- * merged from trunk: 159,161-162,167-180,182,184,186-187,194
-   * [194] PHP_5_2: new element in zend_brk_cont_element
-   * [186] [187] fix build on some rare arch
-   * [184] fix tplcov
-   * [178] fix type processor_t conflict with Mac OS X
- * remove redundant open_basedir check, it's done before compiling
- * trick in_compilation state, don't trigger __autoload at compile time
- * FIX conflict between sandbox and user error handler 
- * [154] fix segv on MSHUTDOWN
- * [153] win32/vc build fix
- * [150] avoid crash when OOM on mem_realloc
- * [148] reconstruct shm/allocator
- * [147] show module info in statistics page
- * [146] avoid reading of uninitialized data. thanks to valgrind
- * [144] compat size displaying in admin page func
- * [143] fixed string parameter parsing arg type for disassembler functions. thanks to check_paramaters.php
- * [141] fix cache clear corruption bug
- * [140] fix refcount on cache #1 #2 …
- * [133] admin-page: be more friendly if XCache isn't loaded
- * [132] fix zts on calling destroy_op_array
- * [131] move open_files out of sandbox, it's not needed
- * [130] improve locking for compile
- * [137] [138] changed the coding way of unlinking list. fixed ttl expires dead loop
- * [114] gc expired items, new ini: xcache.ttl xcache.gc_interval xcache.var_ttl …
- * [126] fix xcache_isset reported by http://forum.lighttpd.net/topic/1397
- * [119] fix leak in xcache.test=1; XCACHE_VERSION/XCACHE_MODULES length off-by-one
- * [118] show gc countdown in admin page
- * [113] zts build fix
- * [112] avoid crash when OOM on mem_(calloc|realloc|strndup)
- * [108] update percent bar to vertical/avail
- * [107] show XCache version in admin page
- * [105] trigger jit on $_SERVER when needed
- * [101] note: xcache.mmap_path is a file
- * [100] FIX: alloc'ed wrong size for string on restore
- * [99]  sohosin compatible & TSRM fix.
- * [96]  remove tailing \0 in filename of administration html output. reported by …
- * [94]  PHP_5_2: __tostring cache was MFH by php
- * [93]  try to show both count/size assert before abort
- * [92]  PHP_5_2: auto module_global is maintained by php engine
- * [90] [91] kill compiler warnings
- * [87]  XCACHE_INDENT fallback
- * [84]  handle without inodes
- * [79]  fix messy XCACHE_MAP_FAILED checking
- * [78]  catch up with PHP_5_2, zend_property_info.ce
- * [77]  leakcheck
-
- (not all changesets is list here)
+ * includes all fixes from <=1.0.2
