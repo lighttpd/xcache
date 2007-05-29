@@ -87,6 +87,7 @@ static xc_cache_t **xc_var_caches = NULL;
 
 static zend_bool xc_initized = 0;
 static zend_compile_file_t *origin_compile_file;
+static zend_llist_element  *xc_llist_zend_extension;
 
 static zend_bool xc_test = 0;
 static zend_bool xc_readonly_protection = 0;
@@ -2621,6 +2622,53 @@ static void xc_zend_extension_register(zend_extension *new_extension, DL_HANDLE 
 	TRACE("%s", "registered");
 }
 
+static zend_llist_element *xc_llist_get_element_by_zend_extension(zend_llist *l, const char *extension_name)
+{
+	zend_llist_element *element;
+
+	for (element = zend_extensions.head; element; element = element->next) {
+		zend_extension *extension = (zend_extension *) element->data;
+
+		if (!strcmp(extension->name, extension_name)) {
+			return element;
+		}
+	}
+	return NULL;
+}
+
+static void xc_llist_prepend(zend_llist *l, zend_llist_element *element)
+{
+	element->next = l->head;
+	element->prev = NULL;
+	if (l->head) {
+		l->head->prev = element;
+	}
+	else {
+		l->tail = element;
+	}
+	l->head = element;
+	++l->count;
+}
+
+static void xc_llist_unlink(zend_llist *l, zend_llist_element *element)
+{
+	if ((element)->prev) {
+		(element)->prev->next = (element)->next;
+	}
+	else {
+		(l)->head = (element)->next;
+	}
+
+	if ((element)->next) {
+		(element)->next->prev = (element)->prev;
+	}
+	else {
+		(l)->tail = (element)->prev;
+	}
+
+	--l->count;
+}
+
 static int xc_zend_extension_startup(zend_extension *extension)
 {
 	if (extension->startup) {
@@ -2867,7 +2915,6 @@ ZEND_GET_MODULE(xcache)
 #endif
 /* }}} */
 static startup_func_t xc_last_ext_startup;
-static zend_llist_element *xc_llist_element;
 static int xc_zend_startup_last(zend_extension *extension) /* {{{ */
 {
 	/* restore */
@@ -2877,7 +2924,8 @@ static int xc_zend_startup_last(zend_extension *extension) /* {{{ */
 			return FAILURE;
 		}
 	}
-	xc_zend_extension_register(&zend_extension_entry, 0);
+	assert(xc_llist_zend_extension);
+	xc_llist_prepend(&zend_extensions, xc_llist_zend_extension);
 	if (!xc_module_gotup) {
 		return zend_startup_module(&xcache_module_entry);
 	}
@@ -2887,16 +2935,15 @@ static int xc_zend_startup_last(zend_extension *extension) /* {{{ */
 ZEND_DLEXPORT int xcache_zend_startup(zend_extension *extension) /* {{{ */
 {
 	xc_zend_extension_gotup = 1;
-	xc_llist_element = NULL;
 	if (zend_llist_count(&zend_extensions) > 1) {
 		zend_llist_position lpos;
 		zend_extension *ext;
 
-		ext = zend_get_extension(XCACHE_NAME);
-		xc_zend_remove_extension(ext);
+		xc_llist_zend_extension = xc_llist_get_element_by_zend_extension(&zend_extensions, XCACHE_NAME);
+		xc_llist_unlink(&zend_extensions, xc_llist_zend_extension);
 
 		ext = (zend_extension *) zend_llist_get_last_ex(&zend_extensions, &lpos);
-		assert(ext);
+		assert(ext && ext != xc_llist_zend_extension);
 		xc_last_ext_startup = ext->startup;
 		ext->startup = xc_zend_startup_last;
 	}
