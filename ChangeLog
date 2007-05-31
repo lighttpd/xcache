@@ -9,6 +9,7 @@ ChangeLog
  * could not show module info in admin page when XCache is the last module
  * wrong http auth realm
  * #86: remove/edit variable in admin page
+ * fixed #92: Zend Optimizer compatibility issue
  * fixed #77: hits/misses was not updated
  * fixed #56: xcache_set segfaults when xcache.var_size=0
 
