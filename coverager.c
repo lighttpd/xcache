@@ -16,7 +16,7 @@ typedef HashTable *coverager_t;
 #define PCOV_HEADER_MAGIC 0x564f4350
 
 static char *xc_coveragedump_dir = NULL;
-static zend_compile_file_t *old_compile_file;
+static zend_compile_file_t *old_compile_file = NULL;
 
 #if 0
 #define DEBUG
