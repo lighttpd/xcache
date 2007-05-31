@@ -86,8 +86,8 @@ static xc_cache_t **xc_php_caches = NULL;
 static xc_cache_t **xc_var_caches = NULL;
 
 static zend_bool xc_initized = 0;
-static zend_compile_file_t *old_compile_file;
-static zend_llist_element  *xc_llist_zend_extension;
+static zend_compile_file_t *old_compile_file = NULL;
+static zend_llist_element  *xc_llist_zend_extension = NULL;
 
 static zend_bool xc_test = 0;
 static zend_bool xc_readonly_protection = 0;
@@ -2914,7 +2914,7 @@ zend_module_entry xcache_module_entry = {
 ZEND_GET_MODULE(xcache)
 #endif
 /* }}} */
-static startup_func_t xc_last_ext_startup;
+static startup_func_t xc_last_ext_startup = NULL;
 static int xc_zend_startup_last(zend_extension *extension) /* {{{ */
 {
 	/* restore */
