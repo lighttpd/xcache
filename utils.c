@@ -623,7 +623,7 @@ static void xc_early_binding_cb(zend_op *opline, int oplineno, void *data TSRMLS
 	xc_do_early_binding(CG(active_op_array), OG(class_table), oplineno TSRMLS_CC);
 }
 /* }}} */
-static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
+static void xc_sandbox_install(xc_sandbox_t *sandbox, xc_install_action_t install TSRMLS_DC) /* {{{ */
 {
 	int i;
 	Bucket *b;
@@ -667,15 +667,17 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 	}
 #endif
 
-	xc_undo_pass_two(CG(active_op_array) TSRMLS_CC);
-	xc_foreach_early_binding_class(CG(active_op_array), xc_early_binding_cb, (void *) sandbox TSRMLS_CC);
-	xc_redo_pass_two(CG(active_op_array) TSRMLS_CC);
+	if (install != XC_InstallNoBinding) {
+		xc_undo_pass_two(CG(active_op_array) TSRMLS_CC);
+		xc_foreach_early_binding_class(CG(active_op_array), xc_early_binding_cb, (void *) sandbox TSRMLS_CC);
+		xc_redo_pass_two(CG(active_op_array) TSRMLS_CC);
+	}
 
 	i = 1;
 	zend_hash_add(&OG(included_files), sandbox->filename, strlen(sandbox->filename) + 1, (void *)&i, sizeof(int), NULL);
 }
 /* }}} */
-void xc_sandbox_free(xc_sandbox_t *sandbox, int install TSRMLS_DC) /* {{{ */
+void xc_sandbox_free(xc_sandbox_t *sandbox, xc_install_action_t install TSRMLS_DC) /* {{{ */
 {
 	/* restore first first install function/class */
 #ifdef HAVE_XCACHE_CONSTANT
@@ -688,11 +690,11 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, int install TSRMLS_DC) /* {{{ */
 	CG(auto_globals)   = OG(auto_globals);
 #endif
 
-	if (install) {
+	if (install != XC_NoInstall) {
 		CG(in_compilation)    = 1;
 		CG(compiled_filename) = sandbox->filename;
 		CG(zend_lineno)       = 0;
-		xc_sandbox_install(sandbox TSRMLS_CC);
+		xc_sandbox_install(sandbox, install TSRMLS_CC);
 		CG(in_compilation)    = 0;
 		CG(compiled_filename) = NULL;
 

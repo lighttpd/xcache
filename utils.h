@@ -99,6 +99,12 @@ typedef struct {
 	Bucket    *tmp_internal_class_tail;
 } xc_sandbox_t;
 
+typedef enum _xc_install_action_t {
+    XC_NoInstall,
+    XC_Install,
+    XC_InstallNoBinding
+} xc_install_action_t;
+
 void xc_zend_class_add_ref(zend_class_entry ZESW(*ce, **ce));
 xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC);
-void xc_sandbox_free(xc_sandbox_t *sandbox, int install TSRMLS_DC);
+void xc_sandbox_free(xc_sandbox_t *sandbox, xc_install_action_t install TSRMLS_DC);
