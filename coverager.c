@@ -16,7 +16,7 @@ typedef HashTable *coverager_t;
 #define PCOV_HEADER_MAGIC 0x564f4350
 
 static char *xc_coveragedump_dir = NULL;
-static zend_compile_file_t *origin_compile_file;
+static zend_compile_file_t *old_compile_file;
 
 #if 0
 #define DEBUG
@@ -435,7 +435,7 @@ static zend_op_array *xc_compile_file_for_coverage(zend_file_handle *h, int type
 {
 	zend_op_array *op_array;
 
-	op_array = origin_compile_file(h, type TSRMLS_CC);
+	op_array = old_compile_file(h, type TSRMLS_CC);
 	if (op_array) {
 		if (XG(coverager)) {
 			xc_coverager_initenv(TSRMLS_C);
@@ -464,7 +464,7 @@ void xc_coverager_handle_ext_stmt(zend_op_array *op_array, zend_uchar op) /* {{{
 /* init/destroy */
 int xc_coverager_init(int module_number TSRMLS_DC) /* {{{ */
 {
-	origin_compile_file = zend_compile_file;
+	old_compile_file = zend_compile_file;
 	zend_compile_file = xc_compile_file_for_coverage;
 
 	if (cfg_get_string("xcache.coveragedump_directory", &xc_coveragedump_dir) == SUCCESS && xc_coveragedump_dir) {
@@ -484,8 +484,8 @@ int xc_coverager_init(int module_number TSRMLS_DC) /* {{{ */
 /* }}} */
 void xc_coverager_destroy() /* {{{ */
 {
-	if (origin_compile_file == xc_compile_file_for_coverage) {
-		zend_compile_file = origin_compile_file;
+	if (old_compile_file == xc_compile_file_for_coverage) {
+		zend_compile_file = old_compile_file;
 	}
 	if (xc_coveragedump_dir) {
 		xc_coveragedump_dir = NULL;
