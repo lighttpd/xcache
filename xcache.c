@@ -97,6 +97,7 @@ static xc_cache_t **xc_php_caches = NULL;
 static xc_cache_t **xc_var_caches = NULL;
 
 static zend_bool xc_initized = 0;
+static zend_compile_file_t *origin_compile_file = NULL;
 static zend_compile_file_t *old_compile_file = NULL;
 static zend_llist_element  *xc_llist_zend_extension = NULL;
 
@@ -837,6 +838,12 @@ static void xc_cache_early_binding_class_cb(zend_op *opline, int oplineno, void 
 	}
 }
 /* }}} */
+static zend_op_array *xc_check_initial_compile_file(zend_file_handle *h, int type TSRMLS_DC) /* {{{ */
+{
+	XG(initial_compile_file_called) = 1;
+	return origin_compile_file(h, type TSRMLS_CC);
+}
+/* }}} */
 static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /* {{{ */
 {
 	xc_sandbox_t sandbox;
@@ -940,6 +947,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	old_funcinfo_cnt  = zend_hash_num_elements(CG(function_table));
 	old_constinfo_cnt  = zend_hash_num_elements(EG(zend_constants));
 
+	XG(initial_compile_file_called) = 0;
 	zend_try {
 		op_array = old_compile_file(h, type TSRMLS_CC);
 	} zend_catch {
@@ -953,6 +961,11 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	if (op_array == NULL) {
 		goto err_oparray;
 	}
+
+	if (!XG(initial_compile_file_called)) {
+		xc_sandbox_free(&sandbox, XC_InstallNoBinding TSRMLS_CC);
+        return op_array;
+    }
 
 	filename = h->opened_path ? h->opened_path : h->filename;
 	/* none-inode enabled entry hash/compare on name
@@ -1124,15 +1137,15 @@ err_bailout:
 
 	if (xc_test && stored_xce) {
 		/* free it, no install. restore now */
-		xc_sandbox_free(&sandbox, 0 TSRMLS_CC);
+		xc_sandbox_free(&sandbox, XC_NoInstall TSRMLS_CC);
 	}
 	else if (!op_array) {
 		/* failed to compile free it, no install */
-		xc_sandbox_free(&sandbox, 0 TSRMLS_CC);
+		xc_sandbox_free(&sandbox, XC_NoInstall TSRMLS_CC);
 	}
 	else {
 		CG(active_op_array) = op_array;
-		xc_sandbox_free(&sandbox, 1 TSRMLS_CC);
+		xc_sandbox_free(&sandbox, XC_Install TSRMLS_CC);
 	}
 
 	ENTER_LOCK(cache) {
@@ -1377,6 +1390,11 @@ static void xc_destroy() /* {{{ */
 	if (old_compile_file) {
 		zend_compile_file = old_compile_file;
 		old_compile_file = NULL;
+	}
+
+	if (origin_compile_file) {
+		zend_compile_file = origin_compile_file;
+		origin_compile_file = NULL;
 	}
 
 	if (xc_php_caches) {
@@ -2745,7 +2763,7 @@ zend_module_entry xcache_module_entry = {
 ZEND_GET_MODULE(xcache)
 #endif
 /* }}} */
-static startup_func_t xc_last_ext_startup = NULL;
+static startup_func_t xc_last_ext_startup;
 static int xc_zend_startup_last(zend_extension *extension) /* {{{ */
 {
 	/* restore */
@@ -2766,6 +2784,12 @@ static int xc_zend_startup_last(zend_extension *extension) /* {{{ */
 ZEND_DLEXPORT int xcache_zend_startup(zend_extension *extension) /* {{{ */
 {
 	xc_zend_extension_gotup = 1;
+
+	if (!origin_compile_file) {
+		origin_compile_file = zend_compile_file;
+		zend_compile_file = xc_check_initial_compile_file;
+	}
+
 	if (zend_llist_count(&zend_extensions) > 1) {
 		zend_llist_position lpos;
 		zend_extension *ext;
