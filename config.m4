@@ -74,8 +74,10 @@ if test "$PHP_XCACHE" != "no"; then
   fi
   PHP_SUBST([XCACHE_AWK])
   AC_PATH_PROGS([M4], [m4])
-  if echo | "$M4" -E > /dev/null 2>&1 ; then
-    M4="$M4 -E"
+  if test "$PHP_XCACHE_TEST" != "no"; then
+    if echo | "$M4" -E > /dev/null 2>&1 ; then
+      M4="$M4 -E"
+    fi
   fi
    dnl fix for solaris m4: size of the push-back and argument
   if echo | "$M4" -B 102400 > /dev/null 2>&1 ; then
