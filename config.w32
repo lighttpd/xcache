@@ -79,9 +79,9 @@ if (PHP_XCACHE != "no") {
 	MFO.Close();
 
 	var mfo = file_get_contents(mfofile);
-	mfo.match(/(.*\\xcache)\\xcache.obj/);
+	mfo.match(/(.*)\\xcache.obj:/);
 	var builddir = RegExp.$1;
-	mfo.match(/(.*\$\(CC\).* )\/c.*\\xcache\\xcache.c.*/i);
+	mfo.match(/(.*\$\(CC\).* )\/c.*\\xcache.c.*/i);
 	var ccrule = RegExp.$1;
 
 	MFO = FSO.OpenTextFile(mfofile, 8);
