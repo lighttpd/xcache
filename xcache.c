@@ -1680,13 +1680,12 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 		}
 	}
 
-	if (XG(cacher)) {
 #if PHP_API_VERSION <= 20041225
-		XG(request_time) = time(NULL);
+	XG(request_time) = time(NULL);
 #else
-		XG(request_time) = sapi_get_request_time(TSRMLS_C);
+	XG(request_time) = sapi_get_request_time(TSRMLS_C);
 #endif
-	}
+
 #ifdef HAVE_XCACHE_COVERAGER
 	xc_coverager_request_init(TSRMLS_C);
 #endif
