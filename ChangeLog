@@ -4,6 +4,7 @@
 
 == ChangeLog ==
  * #86: remove/edit variable in admin page
+ * fixed #94: Garbage collector disabled when xcache.cacher set to off
  * fixed #92: Zend Optimizer compatibility issue
  * fixed #77: hits/misses was not updated
  * fixed #59: pass by reference for internal function was broken
