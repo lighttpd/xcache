@@ -74,9 +74,30 @@ function _T($str)
 	return $str;
 }
 
+function stripaddslashes_array($value, $mqs = false)
+{
+	if (is_array($value)) {
+		foreach($value as $k => $v) {
+			$value[$k] = stripaddslashes_array($v, $mqs);
+		}
+	}
+	else if(is_string($value)) {
+		$value = $mqs ? str_replace('\'\'', '\'', $value) : stripslashes($value);
+	}
+	return $value;
+}
+
 error_reporting(E_ALL);
 ini_set('display_errors', 'On');
 define('REQUEST_TIME', time());
+
+if (get_magic_quotes_gpc()) {
+	$mqs = (bool) ini_get('magic_quotes_sybase');
+	$_GET = stripaddslashes_array($_GET, $mqs);
+	$_POST = stripaddslashes_array($_POST, $mqs);
+	$_REQUEST = stripaddslashes_array($_REQUEST, $mqs);
+}
+ini_set('magic_quotes_runtime', '0');
 
 $charset = "UTF-8";
 if (file_exists("./config.php")) {
