@@ -11,11 +11,12 @@ $name = $_GET['name'];
 $vcnt = xcache_count(XC_TYPE_VAR);
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-	xcache_set($name, $_POST['value']);
+	eval('$value = ' . $_POST['value']);
+	xcache_set($name, $value);
 	header("Location: xcache.php?type=" . XC_TYPE_VAR);
 	exit;
 }
-$value = xcache_get($name);
+$value = var_export(xcache_get($name), true);
 
 $xcache_version = XCACHE_VERSION;
 $xcache_modules = XCACHE_MODULES;
