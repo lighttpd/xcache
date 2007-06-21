@@ -92,6 +92,9 @@ if (!extension_loaded('XCache')) {
 	if (preg_match('!<td class="v">(.*\\.ini)!', $info, $m)) {
 		echo "Please check $m[1]";
 	}
+	else if (preg_match('!Configuration File \\(php.ini\\) Path *</td><td class="v">([^<]+)!', $info, $m)) {
+		echo "Please put a php.ini in $m[1] and load XCache extension";
+	}
 	else {
 		echo "You don't even have a php.ini yet?";
 	}
