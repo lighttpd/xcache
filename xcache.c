@@ -2879,6 +2879,11 @@ static PHP_MSHUTDOWN_FUNCTION(xcache)
 		xc_zend_remove_extension(ext);
 	}
 	UNREGISTER_INI_ENTRIES();
+
+	xc_module_gotup = 0;
+	xc_zend_extension_gotup = 0;
+	xc_zend_extension_faked = 0;
+
 	return SUCCESS;
 }
 /* }}} */
