@@ -2001,6 +2001,7 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 				/* do it in place */
 				stored_var = stored_xce->data.var;
 				if (Z_TYPE_P(stored_var->value) == IS_LONG) {
+					zval *zv;
 					stored_xce->ctime = XG(request_time);
 					stored_xce->ttl   = xce.ttl;
 #ifdef DEBUG
@@ -2009,7 +2010,9 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 					value = Z_LVAL_P(stored_var->value);
 					value += (inc == 1 ? count : - count);
 					RETVAL_LONG(value);
-					Z_LVAL_P(stored_var->value) = value;
+
+					zv = (zval *) xce.cache->shm->handlers->to_readwrite(xce.cache->shm, (char *) stored_var->value);
+					Z_LVAL_P(zv) = value;
 					break; /* leave lock */
 				}
 				else {
