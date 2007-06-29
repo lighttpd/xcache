@@ -9,6 +9,7 @@ ChangeLog
  * could not show module info in admin page when XCache is the last module
  * wrong http auth realm
  * #86: remove/edit variable in admin page
+ * fixed #109: fast inc/dec was trying to break ro protection
  * fixed #101, #105: Fixed compatibility issue for apache 1.x
  * fixed #94: Garbage collector disabled when xcache.cacher set to off
  * fixed #92: Zend Optimizer compatibility issue
