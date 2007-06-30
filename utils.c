@@ -583,7 +583,7 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 		zend_function tmp_func;
 		zend_hash_copy(&TG(function_table), &XG(internal_function_table), (copy_ctor_func_t) function_add_ref, (void *) &tmp_func, sizeof(tmp_func));
 	}
-	TG(internal_class_tail) = TG(function_table).pListTail;
+	TG(internal_function_tail) = TG(function_table).pListTail;
 
 	h = OG(class_table);
 	zend_hash_init_ex(&TG(class_table),     16, NULL, h->pDestructor, h->persistent, h->bApplyProtection);
