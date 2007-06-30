@@ -1656,7 +1656,7 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 {
 	int i;
 
-	if (XG(internal_function_table).nTableSize == 0) {
+	if (!XG(internal_table_copied)) {
 		zend_function tmp_func;
 		xc_cest_t tmp_cest;
 
@@ -1668,6 +1668,8 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 
 		zend_hash_copy(&XG(internal_function_table), CG(function_table), (copy_ctor_func_t) function_add_ref, &tmp_func, sizeof(tmp_func));
 		zend_hash_copy(&XG(internal_class_table), CG(class_table), (copy_ctor_func_t) xc_zend_class_add_ref, &tmp_cest, sizeof(tmp_cest));
+
+		XG(internal_table_copied) = 1;
 	}
 	if (xc_php_hcache.size && !XG(php_holds)) {
 		XG(php_holds) = calloc(xc_php_hcache.size, sizeof(xc_stack_t));
@@ -1717,7 +1719,6 @@ void xc_init_globals(zend_xcache_globals* xcache_globals TSRMLS_DC)
 
 	zend_hash_init_ex(&xcache_globals->internal_function_table, 1, NULL, NULL, 1, 0);
 	zend_hash_init_ex(&xcache_globals->internal_class_table,    1, NULL, NULL, 1, 0);
-
 }
 /* }}} */
 /* {{{ PHP_GSHUTDOWN_FUNCTION(xcache) */
@@ -1746,8 +1747,10 @@ void xc_shutdown_globals(zend_xcache_globals* xcache_globals TSRMLS_DC)
 		xcache_globals->var_holds = NULL;
 	}
 
-	zend_hash_destroy(&xcache_globals->internal_function_table);
-	zend_hash_destroy(&xcache_globals->internal_class_table);
+	if (XG(internal_table_copied)) {
+		zend_hash_destroy(&xcache_globals->internal_function_table);
+		zend_hash_destroy(&xcache_globals->internal_class_table);
+	}
 }
 /* }}} */
 
