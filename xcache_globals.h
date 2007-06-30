@@ -19,6 +19,7 @@ ZEND_BEGIN_MODULE_GLOBALS(xcache)
 
 	HashTable internal_function_table;
 	HashTable internal_class_table;
+	zend_bool internal_table_copied;
 ZEND_END_MODULE_GLOBALS(xcache)
 
 ZEND_EXTERN_MODULE_GLOBALS(xcache)
