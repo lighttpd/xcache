@@ -1747,7 +1747,7 @@ void xc_shutdown_globals(zend_xcache_globals* xcache_globals TSRMLS_DC)
 		xcache_globals->var_holds = NULL;
 	}
 
-	if (XG(internal_table_copied)) {
+	if (xcache_globals->internal_table_copied) {
 		zend_hash_destroy(&xcache_globals->internal_function_table);
 		zend_hash_destroy(&xcache_globals->internal_class_table);
 	}
