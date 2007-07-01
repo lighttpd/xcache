@@ -1,4 +1,4 @@
-1.2.1 2007-?-?
+1.2.1 2007-07-01
 ========
  * compatibility fix for apache 1.x, which init XCache module correctly
  * full Zend Optimizer compatibility
