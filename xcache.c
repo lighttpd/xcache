@@ -606,6 +606,7 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 {
 	zend_uint i;
 	xc_entry_data_php_t *p = xce->data.php;
+	zend_op_array *old_active_op_array = CG(active_op_array);
 #ifndef ZEND_ENGINE_2
 	/* new ptr which is stored inside CG(class_table) */
 	xc_cest_t **new_cest_ptrs = (xc_cest_t **)do_alloca(sizeof(xc_cest_t*) * p->classinfo_cnt);
@@ -671,6 +672,7 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 #ifndef ZEND_ENGINE_2
 	free_alloca(new_cest_ptrs);
 #endif
+	CG(active_op_array) = old_active_op_array;
 	return p->op_array;
 }
 /* }}} */
@@ -1380,9 +1382,11 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	}
 	else {
 		if (newlycompiled) {
+			zend_op_array *old_active_op_array = CG(active_op_array);
 			/* install it */
 			CG(active_op_array) = op_array;
 			xc_sandbox_free(&sandbox, XC_Install TSRMLS_CC);
+			CG(active_op_array) = old_active_op_array;
 		}
 	}
 	return op_array;
