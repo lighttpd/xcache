@@ -5,6 +5,7 @@ Ini Settings Changes
 
 ChangeLog
 ========
+ * #55: segv php tokenizer on certain special situation
  * new: xcache.stat = On
  * could not show module info in admin page when XCache is the last module
  * wrong http auth realm
