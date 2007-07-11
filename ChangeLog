@@ -1,4 +1,8 @@
-1.2.1 2007-?-?
+1.2.2 2007-?-?
+== ChangeLog ==
+ * #55: segv php tokenizer on certain special situation
+
+1.2.1 2007-07-01
 == Ini Settings Changes ==
  * new: xcache.admin.enable_auth = On
 
