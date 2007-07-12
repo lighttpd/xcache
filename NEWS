@@ -1,5 +1,6 @@
 1.2.2 2007-?-?
 ========
+ * bug fix for compatibility with Zend Optimizer and other non-cachable
  * a rare segv bug with token_get_all
 
 1.2.1 2007-07-01
