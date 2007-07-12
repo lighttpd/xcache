@@ -994,6 +994,9 @@ static zend_op_array *xc_compile_php(xc_entry_data_php_t *php, zend_file_handle 
 
 	if (!XG(initial_compile_file_called)) {
 		xc_sandbox_free(&sandbox, XC_InstallNoBinding TSRMLS_CC);
+		ENTER_LOCK(cache) {
+			cache->compiling = 0;
+		} LEAVE_LOCK(cache);
 		return op_array;
 	}
 

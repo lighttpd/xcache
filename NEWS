@@ -1,5 +1,6 @@
 2.0.0 2007-?-?
 ========
+ * bug fix for compatibility with Zend Optimizer and other non-cachable
  * a rare segv bug with token_get_all
  * compatibility fix for apache 1.x, which init XCache module correctly
  * full Zend Optimizer compatibility
