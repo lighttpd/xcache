@@ -966,8 +966,11 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 
 	if (!XG(initial_compile_file_called)) {
 		xc_sandbox_free(&sandbox, XC_InstallNoBinding TSRMLS_CC);
-        return op_array;
-    }
+		ENTER_LOCK(cache) {
+			cache->compiling = 0;
+		} LEAVE_LOCK(cache);
+		return op_array;
+	}
 
 	filename = h->opened_path ? h->opened_path : h->filename;
 	/* none-inode enabled entry hash/compare on name
