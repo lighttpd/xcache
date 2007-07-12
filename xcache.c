@@ -968,6 +968,8 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 		xc_sandbox_free(&sandbox, XC_InstallNoBinding TSRMLS_CC);
 		ENTER_LOCK(cache) {
 			cache->compiling = 0;
+			/* it's not cachable, but don't scare the users with high misses */
+			cache->misses --;
 		} LEAVE_LOCK(cache);
 		return op_array;
 	}
