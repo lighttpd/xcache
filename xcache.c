@@ -416,6 +416,7 @@ static void xc_fillinfo_dmz(int cachetype, xc_cache_t *cache, zval *return_value
 	add_assoc_long_ex(return_value, ZEND_STRS("hits"),      cache->hits);
 	add_assoc_long_ex(return_value, ZEND_STRS("clogs"),     cache->clogs);
 	add_assoc_long_ex(return_value, ZEND_STRS("ooms"),      cache->ooms);
+	add_assoc_long_ex(return_value, ZEND_STRS("errors"),    cache->errors);
 
 	add_assoc_long_ex(return_value, ZEND_STRS("cached"),    cache->entries_count);
 	add_assoc_long_ex(return_value, ZEND_STRS("deleted"),   cache->deletes_count);
@@ -1161,6 +1162,7 @@ err_bailout:
 		cache->compiling = 0;
 	} LEAVE_LOCK(cache);
 	if (catched) {
+		cache->errors ++;
 		zend_bailout();
 	}
 	if (xc_test && stored_xce) {

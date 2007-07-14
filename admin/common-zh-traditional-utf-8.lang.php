@@ -33,6 +33,8 @@ $strings = array(
 		=> '阻塞',
 		'OOMs'
 		=> '記憶體不足',
+		'Errors'
+		=> '错误',
 		'Protected'
 		=> '保護',
 		'Cached'
