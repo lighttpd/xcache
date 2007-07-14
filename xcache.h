@@ -176,6 +176,7 @@ typedef struct {
 	zend_ulong hits;
 	zend_ulong clogs;
 	zend_ulong ooms;
+	zend_ulong errors;
 	xc_lock_t  *lck;
 	xc_shm_t   *shm; /* to which shm contains us */
 	xc_mem_t   *mem; /* to which mem contains us */
