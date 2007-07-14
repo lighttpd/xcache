@@ -10,6 +10,7 @@
 <dt><?php echo _T('Misses'); ?>: </dt><dd>共享内存错过次数, 错过=请求的php或者变量并不在该共享内存内</dd>
 <dt><?php echo _T('Clogs'); ?>: </dt><dd>编译阻塞跳过, 阻塞=当需该共享内存区负责编译时, 其他进程/现成无法访问此共享内存. 跳过=XCache 自动判断阻塞的共享内存区自动跳过阻塞等待, 直接使用非共享内存方式继续处理请求</dd>
 <dt><?php echo _T('OOMs'); ?>: </dt><dd>内存不足次数, 显示需要存储新数据但是共享内存区内存不足的次数. 如果出现太频繁请考虑加大配置中的 xcache.size 或者 xcache.var_size</dd>
+<dt><?php echo _T('Errors'); ?>: </dt><dd>编译错误, 显示您的脚本被编译时出错的次数. 如果您发现这个数字不断增长, 您应该检查什么脚本产生错误. 参考 <a href="http://www.php.net/manual/en/ref.errorfunc.php#ini.error-log">ini.error-log</a> and <a href="http://cn2.php.net/manual/en/ref.errorfunc.php#ini.display-errors">ini.display-errors</a></dd>
 <dt><?php echo _T('Protected'); ?>: </dt><dd>显示该 Cache 是否支持并启用 <a href="http://trac.lighttpd.net/xcache/wiki/ReadonlyProtection">readonly_protection</a></dd>
 <dt><?php echo _T('Cached'); ?>: </dt><dd>共享内存于该共享内存区的项目条数</dd>
 <dt><?php echo _T('Deleted'); ?>: </dt><dd>共享内存区内将要删除的项目 (已经删除但是还被某些进程占用)</dd>

@@ -34,13 +34,14 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		<th><?php echo _T('Misses'); ?></th>
 		<th><?php echo _T('Clogs'); ?></th>
 		<th><?php echo _T('OOMs'); ?></th>
+		<th><?php echo _T('Errors'); ?></th>
 		<th><?php echo _T('Protected'); ?></th>
 		<th><?php echo _T('Cached'); ?></th>
 		<th><?php echo _T('Deleted'); ?></th>
 		<th><?php echo _T('GC'); ?></th>
 	</tr>
 	<?php
-	$numkeys = explode(',', 'slots,size,avail,hits,misses,clogs,ooms,cached,deleted');
+	$numkeys = explode(',', 'slots,size,avail,hits,misses,clogs,ooms,errors,cached,deleted');
 	$l_clear = _T('Clear');
 	$l_clear_confirm = _T('Sure to clear?');
 	foreach ($cacheinfos as $i => $ci) {
@@ -75,6 +76,7 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		<td>{$ci['misses']}</td>
 		<td>{$ci['clogs']}</td>
 		<td>{$ci['ooms']}</td>
+		<td>{$ci['errors']}</td>
 		<td>{$ci['can_readonly']}</td>
 		<td>{$ci['cached']}</td>
 		<td>{$ci['deleted']}</td>
