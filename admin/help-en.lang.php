@@ -11,7 +11,7 @@
 <dt><?php echo _T('Clogs'); ?>: </dt><dd>Compiling Clogs, clog=compiling is needed but avoided to wait(be blocked) when the cache is busy compiling already</dd>
 <dt><?php echo _T('OOMs'); ?>: </dt><dd>Out Of Memory, how many times a new item should be stored but there isn't enough memory in the cache, think of increasing the xcache.size or xcache.var_size</dd>
 <dt><?php echo _T('Errors'); ?>: </dt><dd>Compiler errors, how many times your script is compiled but failed. You should really check what is happening if you see this value increase. See <a href="http://www.php.net/manual/en/ref.errorfunc.php#ini.error-log">ini.error-log</a> and <a href="http://cn2.php.net/manual/en/ref.errorfunc.php#ini.display-errors">ini.display-errors</a></dd>
-<dt><?php echo _T('Protected'); ?>: </dt><dd>Whether <a href="http://trac.lighttpd.net/xcache/wiki/ReadonlyProtection">readonly_protection</a> is available and enable on this cache</dd>
+<dt><?php echo _T('Protected'); ?>: </dt><dd>Whether <a href="http://xcache.lighttpd.net/wiki/ReadonlyProtection">readonly_protection</a> is available and enable on this cache</dd>
 <dt><?php echo _T('Cached'); ?>: </dt><dd>Number of entries stored in this cache</dd>
 <dt><?php echo _T('Deleted'); ?>: </dt><dd>Number of entries is pending in delete list (expired but referenced)</dd>
 <dt><?php echo _T('GC'); ?>: </dt><dd>Seconds count down of Garbage Collection</dd>
