@@ -28,6 +28,6 @@ HEAD;
 <?php include(get_language_file("help")); ?>
 </div>
 
-<?php echo _T('See also'); ?>: <a href="http://trac.lighttpd.net/xcache/wiki/PhpIni">setting php.ini for XCache</a> in the <a href="http://trac.lighttpd.net/xcache/">XCache wiki</a>
+<?php echo _T('See also'); ?>: <a href="http://xcache.lighttpd.net/wiki/PhpIni">setting php.ini for XCache</a> in the <a href="http://xcache.lighttpd.net/">XCache wiki</a>
 </body>
 </html>
