@@ -11,7 +11,7 @@
 <dt><?php echo _T('Clogs'); ?>: </dt><dd>編譯阻塞跳過，阻塞=當需該共享記憶體區負責編譯時，其他程序/現成無法存取此共享記憶體. 跳過=XCache 自動判斷阻塞的共享記憶體區自動跳過阻塞等待，直接使用非共享記憶體方式繼續處理請求</dd>
 <dt><?php echo _T('OOMs'); ?>: </dt><dd>記憶體不足次數，顯示需要儲存新資料但是共享記憶體區記憶體不足的次數. 如果出現太頻繁請考慮加大配置中的 xcache.size 或者 xcache.var_size</dd>
 <dt><?php echo _T('Errors'); ?>: </dt><dd>编译错误, 显示您的脚本被编译时出错的次数. 如果您发现这个数字不断增长, 您应该检查什么脚本产生错误. 参考 <a href="http://www.php.net/manual/en/ref.errorfunc.php#ini.error-log">ini.error-log</a> and <a href="http://cn2.php.net/manual/en/ref.errorfunc.php#ini.display-errors">ini.display-errors</a></dd>
-<dt><?php echo _T('Protected'); ?>: </dt><dd>顯示該 Cache 是否支援並啟用 <a href="http://trac.lighttpd.net/xcache/wiki/ReadonlyProtection">readonly_protection</a></dd>
+<dt><?php echo _T('Protected'); ?>: </dt><dd>顯示該 Cache 是否支援並啟用 <a href="http://xcache.lighttpd.net/xcache/wiki/ReadonlyProtection">readonly_protection</a></dd>
 <dt><?php echo _T('Cached'); ?>: </dt><dd>共享記憶體於該共享記憶體區的項目個數</dd>
 <dt><?php echo _T('Deleted'); ?>: </dt><dd>共享記憶體區內將要刪除的項目 (已經刪除但是還被某些程序佔用)</dd>
 <dt><?php echo _T('GC'); ?>: </dt><dd>垃圾回收的倒數計時</dd>
