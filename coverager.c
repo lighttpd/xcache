@@ -520,7 +520,7 @@ PHP_FUNCTION(xcache_coverager_decode)
 	}
 
 	for (; len >= sizeof(long) * 2; len -= sizeof(long) * 2, p += 2) {
-		add_index_long(return_value, p[0], p[1]);
+		add_index_long(return_value, p[0], p[1] < 0 ? 0 : p[1]);
 	}
 }
 /* }}} */
