@@ -313,7 +313,7 @@ function sprint_cov($cov, $lines, $encode = true)
 				$line = $lastattr . $line;
 			}
 
-			if (preg_match('!(<span[^>]+>|</span>).*$!', $line, $m)) {
+			if (preg_match('!(<span[^>]+>|</span>)[^<>]*$!', $line, $m)) {
 				if ($m[1] == '</span>') {
 					$lastattr = null;
 				}
