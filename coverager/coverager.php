@@ -107,7 +107,11 @@ class XcacheCoverageViewer
 				$source = implode('', $lines);
 				ob_start();
 				highlight_string($source);
-				$lines = explode('<br />', str_replace("\n", "", ob_get_clean()));
+				$lines = str_replace("\n", "", ob_get_clean());
+				$lines = str_replace('<code>', '', $lines);
+				$lines = str_replace('</code>', '', $lines);
+				$lines = preg_replace('(^<span[^>]*>|</span>$)', '', $lines);
+				$lines = explode('<br />', $lines);
 				$last = array_pop($lines);
 				$filecov = sprint_cov($fileinfo['cov'], $lines, false);
 				$filecov .= $last;
@@ -294,10 +298,30 @@ class XcacheCoverageViewer
 
 function sprint_cov($cov, $lines, $encode = true)
 {
+	$lastattr = null;
 	foreach ($lines as $l => $line) {
 		$offs = $l + 1;
 		if ($encode) {
 			$line = str_replace("\n", "", htmlspecialchars($line));
+		}
+		else if ($line !== "") {
+			if (substr($line, 0, 7) == '</span>') {
+				$lastattr = null;
+				$line = substr($line, 7);
+			}
+			else if (isset($lastattr)) {
+				$line = $lastattr . $line;
+			}
+
+			if (preg_match('!(<span[^>]+>|</span>).*$!', $line, $m)) {
+				if ($m[1] == '</span>') {
+					$lastattr = null;
+				}
+				else {
+					$line .= '</span>';
+					$lastattr = $m[1];
+				}
+			}
 		}
 		if (isset($cov[$offs])) {
 			$lines[$l] = sprintf("<li class=\"line%sCov\"> %s\t%s\n</li>"
@@ -311,6 +335,7 @@ function sprint_cov($cov, $lines, $encode = true)
 	}
 	return implode('', $lines);
 }
+
 if (!function_exists('xcache_coverager_decode')) {
 	function xcache_coverager_decode($bytes)
 	{
