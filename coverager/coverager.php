@@ -300,13 +300,13 @@ function sprint_cov($cov, $lines, $encode = true)
 			$line = str_replace("\n", "", htmlspecialchars($line));
 		}
 		if (isset($cov[$offs])) {
-			$lines[$l] = sprintf("<li class=\"line%sCov\"> %s\t%s</li>\n"
+			$lines[$l] = sprintf("<li class=\"line%sCov\"> %s\t%s\n</li>"
 					, $cov[$offs] ? '' : 'No'
 					, $cov[$offs]
 					, $line);
 		}
 		else {
-			$lines[$l] = "<li>\t$line</li>\n";
+			$lines[$l] = "<li>\t$line\n</li>";
 		}
 	}
 	return implode('', $lines);
