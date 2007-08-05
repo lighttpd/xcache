@@ -19,12 +19,16 @@ static xc_shm_scheme_t xc_shm_schemes[10];
 void xc_shm_init_modules() /* {{{ */
 {
 	extern void xc_shm_mem_init();
+#ifdef HAVE_XCACHE_TEST
 	extern void xc_shm_malloc_register();
+#endif
 	extern void xc_shm_mmap_register();
 
 	memset(xc_shm_schemes, 0, sizeof(xc_shm_schemes));
 	xc_shm_mem_init();
+#ifdef HAVE_XCACHE_TEST
 	xc_shm_malloc_register();
+#endif
 	xc_shm_mmap_register();
 }
 /* }}} */

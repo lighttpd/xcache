@@ -27,7 +27,6 @@ if test "$PHP_XCACHE" != "no"; then
                   xcache.c \
                   mmap.c \
                   mem.c \
-                  xc_malloc.c \
                   xc_shm.c \
                   const_string.c \
                   opcode_spec.c \
@@ -51,6 +50,7 @@ if test "$PHP_XCACHE" != "no"; then
   [  --enable-xcache-test            XCache: Enable self test - FOR DEVELOPERS ONLY!!], no, no)
   if test "$PHP_XCACHE_TEST" != "no"; then
     XCACHE_ENABLE_TEST=-DXCACHE_ENABLE_TEST
+    xcache_sources="$xcache_sources xc_malloc.c"
     AC_DEFINE([HAVE_XCACHE_TEST], 1, [Define to enable XCache self test])
   else
     XCACHE_ENABLE_TEST=
