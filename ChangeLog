@@ -1,6 +1,7 @@
 1.2.2 2007-?-?
 == ChangeLog ==
  * bug fix for compatibility with Zend Optimizer and other non-cachable
+ * #102: segv when var cacher is too small
  * #55: segv php tokenizer on certain special situation
 
 1.2.1 2007-07-01
