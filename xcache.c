@@ -1650,11 +1650,12 @@ static int xc_init(int module_number TSRMLS_DC) /* {{{ */
 	return SUCCESS;
 
 err:
-	xc_destroy();
 	if (xc_php_caches || xc_var_caches) {
+		xc_destroy();
 		/* shm destroied in xc_destroy() */
 	}
 	else if (shm) {
+		xc_destroy();
 		xc_shm_destroy(shm);
 	}
 	return 0;
