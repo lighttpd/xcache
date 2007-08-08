@@ -769,7 +769,7 @@ not_relative_path:
 		/* fall */
 
 stat_done:
-		delta = XG(request_time) - pbuf->st_mtime < 2;
+		delta = XG(request_time) - pbuf->st_mtime;
 		if (abs(delta) < 2 && !xc_test) {
 			return 0;
 		}
