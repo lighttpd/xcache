@@ -775,6 +775,7 @@ static int xc_entry_init_key_php(xc_entry_t *xce, char *filename, char *opened_p
 	int cacheid;
 	xc_entry_data_php_t *php;
 	char *ptr;
+	time_t delta;
 
 	if (!filename || !SG(request_info).path_translated) {
 		return FAILURE;
@@ -829,7 +830,8 @@ not_relative_path:
 		/* fall */
 
 stat_done:
-		if (XG(request_time) - pbuf->st_mtime < 2 && !xc_test) {
+		delta = XG(request_time) - pbuf->st_mtime < 2;
+		if (abs(delta) < 2 && !xc_test) {
 			return FAILURE;
 		}
 
