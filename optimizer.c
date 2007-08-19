@@ -6,6 +6,7 @@
 #include "optimizer.h"
 /* the "vector" stack */
 #include "stack.h"
+#include "xcache_globals.h"
 
 #ifdef DEBUG
 #	include "processor.h"
@@ -18,7 +19,6 @@
 #else
 #	define XCACHE_IS_CV 16
 #endif
-#define optimized_flag done_pass_two
 
 typedef int bbid_t;
 enum {
@@ -515,12 +515,6 @@ static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 		return 0;
 	}
 
-	/* don't optimize twice */
-	if (op_array->optimized_flag) {
-		return 0;
-	}
-	op_array->optimized_flag = 1;
-
 #ifdef DEBUG
 #	if 0
 	TRACE("optimize file: %s", op_array->filename);
@@ -556,28 +550,11 @@ static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	return 0;
 }
 /* }}} */
-static int xc_clear_flag_optimized(zend_op_array *op_array TSRMLS_DC) /* {{{ */
+void xc_optimizer_op_array_handler(zend_op_array *op_array) /* {{{ */
 {
-	op_array->done_pass_two = 0;
-	return 0;
-}
-/* }}} */
-void xc_optimize(zend_op_array *op_array TSRMLS_DC) /* {{{ */
-{
-	xc_compile_result_t cr;
-
-	if (!op_array) {
-		return;
+	TSRMLS_FETCH();
+	if (XG(optimizer)) {
+		xc_optimize_op_array(op_array TSRMLS_CC);
 	}
-
-	xc_compile_result_init_cur(&cr, op_array TSRMLS_CC);
-
-	xc_apply_op_array(&cr, (apply_func_t) xc_undo_pass_two TSRMLS_CC);
-	/* op_array->done_pass_two is now used as if it's op_array->flag_optimized */
-	xc_apply_op_array(&cr, (apply_func_t) xc_optimize_op_array TSRMLS_CC);
-	xc_apply_op_array(&cr, (apply_func_t) xc_clear_flag_optimized TSRMLS_CC);
-	xc_apply_op_array(&cr, (apply_func_t) xc_redo_pass_two TSRMLS_CC);
-
-	xc_compile_result_free(&cr);
 }
 /* }}} */

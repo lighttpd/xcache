@@ -1,4 +1,4 @@
 #include "php.h"
 #include "xcache.h"
 
-void xc_optimize(zend_op_array *op_array TSRMLS_DC);
+void xc_optimizer_op_array_handler(zend_op_array *op_array);

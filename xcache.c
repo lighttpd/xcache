@@ -999,11 +999,6 @@ static zend_op_array *xc_compile_php(xc_entry_data_php_t *php, zend_file_handle 
 		return op_array;
 	}
 
-#ifdef HAVE_XCACHE_OPTIMIZER
-	if (XG(optimizer)) {
-		xc_optimize(op_array TSRMLS_CC);
-	}
-#endif
 	/* }}} */
 	/* {{{ prepare */
 	php->op_array      = op_array;
@@ -1199,11 +1194,6 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	TRACE("type = %d\n", h->type);
 	if (!XG(cacher)) {
 		op_array = old_compile_file(h, type TSRMLS_CC);
-#ifdef HAVE_XCACHE_OPTIMIZER
-		if (XG(optimizer)) {
-			xc_optimize(op_array TSRMLS_CC);
-		}
-#endif
 		return op_array;
 	}
 
@@ -3050,7 +3040,11 @@ ZEND_DLEXPORT zend_extension zend_extension_entry = {
 	NULL,           /* activate_func_t */
 	NULL,           /* deactivate_func_t */
 	NULL,           /* message_handler_func_t */
+#ifdef HAVE_XCACHE_OPTIMIZER
+	xc_optimizer_op_array_handler,
+#else
 	NULL,           /* op_array_handler_func_t */
+#endif
 	xcache_statement_handler,
 	xcache_fcall_begin_handler,
 	xcache_fcall_end_handler,
