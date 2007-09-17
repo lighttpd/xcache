@@ -3,6 +3,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "xc_shm.h"
 #include "php.h"
 #include "align.h"
