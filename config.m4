@@ -43,9 +43,6 @@ if test "$PHP_XCACHE" != "no"; then
   XCACHE_OPTION([decoder],      [decoder     ], [XCACHE_DECODER],      [(N/A)])
   AC_DEFINE_UNQUOTED([XCACHE_MODULES], "$XCACHE_MODULES", [Define what modules is built with XCache])
 
-  PHP_NEW_EXTENSION(xcache, $xcache_sources, $ext_shared)
-  PHP_ADD_MAKEFILE_FRAGMENT()
-
   PHP_ARG_ENABLE(xcache-test, for XCache self test,
   [  --enable-xcache-test            XCache: Enable self test - FOR DEVELOPERS ONLY!!], no, no)
   if test "$PHP_XCACHE_TEST" != "no"; then
@@ -62,6 +59,9 @@ if test "$PHP_XCACHE" != "no"; then
   if test "$PHP_XCACHE_DPRINT" != "no"; then
     AC_DEFINE([HAVE_XCACHE_DPRINT], 1, [Define to enable XCache debug print functions])
   fi
+
+  PHP_NEW_EXTENSION(xcache, $xcache_sources, $ext_shared)
+  PHP_ADD_MAKEFILE_FRAGMENT()
 
   AC_PATH_PROGS([XCACHE_AWK], [gawk awk])
   dnl clean locale for gawk 3.1.5 assertion bug

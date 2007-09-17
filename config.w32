@@ -70,6 +70,23 @@ if (PHP_XCACHE != "no") {
 	}
 	DEFINE("XCACHE_INDENT", indent);
 	// }}}
+	// {{{ check for xcache-test
+	ARG_ENABLE("xcache-test", "XCache: Enable self test - FOR DEVELOPERS ONLY!!", "no");
+	if (PHP_XCACHE_TEST != "no") {
+		ADD_FLAG("XCACHE_ENABLE_TEST", "-DXCACHE_ENABLE_TEST");
+		xcache_sources += " xc_malloc.c";
+		AC_DEFINE("HAVE_XCACHE_TEST", 1, "Define to enable XCache self test");
+	}
+	else {
+		ADD_FLAG("XCACHE_ENABLE_TEST", "");
+	}
+	// }}}
+	// {{{ check for xcache-test
+	ARG_ENABLE("xcache-dprint", "XCache: Enable self debug print functions - FOR DEVELOPERS ONLY!!", "no");
+	if (PHP_XCACHE_DPRINT != "no") {
+		AC_DEFINE("HAVE_XCACHE_DPRINT", 1, "Define to enable XCache debug print functions");
+	}
+	// }}}
 	// {{{ create extension
 	EXTENSION("xcache", xcache_sources);
 	var srcdir = configure_module_dirname;
@@ -108,25 +125,8 @@ if (PHP_XCACHE != "no") {
 	MFO.WriteLine(frag);
 	ADD_FLAG("CFLAGS_XCACHE", "/I " + builddir);
 	/// }}}
-	// {{{ check for xcache-test
-	ARG_ENABLE("xcache-test", "XCache: Enable self test - FOR DEVELOPERS ONLY!!", "no");
-	if (PHP_XCACHE_TEST != "no") {
-		ADD_FLAG("XCACHE_ENABLE_TEST", "-DXCACHE_ENABLE_TEST");
-		xcache_sources += " xc_malloc.c";
-		AC_DEFINE("HAVE_XCACHE_TEST", 1, "Define to enable XCache self test");
-	}
-	else {
-		ADD_FLAG("XCACHE_ENABLE_TEST", "");
-	}
-	// }}}
 	XCACHE_PROC_SOURCES=glob(srcdir + "\\processor\\*.m4").join(' ');
 	ADD_FLAG("XCACHE_PROC_SOURCES", XCACHE_PROC_SOURCES);
-	// {{{ check for xcache-test
-	ARG_ENABLE("xcache-dprint", "XCache: Enable self debug print functions - FOR DEVELOPERS ONLY!!", "no");
-	if (PHP_XCACHE_TEST != "no") {
-		AC_DEFINE("HAVE_XCACHE_TEST", 1, "Define to enable XCache debug print functions");
-	}
-	// }}}
 	// {{{ check for opcode_spec_def.h
 	STDOUT.Write("Checking if you have opcode_spec_def.h for XCache ... ");
 	var file = srcdir + "\\opcode_spec_def.h";
