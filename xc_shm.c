@@ -8,6 +8,10 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "xc_shm.h"
 
 struct _xc_shm_scheme_t {
