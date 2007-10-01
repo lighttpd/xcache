@@ -364,6 +364,9 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	COPY(create_object)
 	COPY(get_iterator)
 	COPY(interface_gets_implemented)
+#ifdef ZEND_ENGINE_2_3
+	COPY(get_static_method)
+#endif
 	COPY(serialize)
 	COPY(unserialize)
 	/* deal with it inside xc_fix_method */
@@ -381,6 +384,9 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 # endif
 #endif
 	COPY(__call)
+#ifdef ZEND_CALLSTATIC_FUNC_NAME
+	COPY(__callstatic)
+#endif
 	/* # NOT DONE */
 	COPY(module)
 #else
