@@ -256,6 +256,9 @@ dnl FIXME: handle common.function_name here
 		SET_IF_SAME_NAME(__isset);
 #endif
 		SET_IF_SAME_NAME(__call);
+#ifdef ZEND_CALLSTATIC_FUNC_NAME
+		SET_IF_SAME_NAME(__callstatic);
+#endif
 #if defined(ZEND_ENGINE_2_2) || PHP_MAJOR_VERSION >= 6
 		SET_IF_SAME_NAME(__tostring);
 #endif
