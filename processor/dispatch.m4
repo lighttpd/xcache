@@ -1,6 +1,7 @@
 dnl DISPATCH(1:type, 2:elm)
 define(`DISPATCH', `
 	DBG(`$0($*)')
+	assert(sizeof($1) == sizeof(src->$2));
 	ifelse(
 		`$1', `zend_bool',        `PROC_INT(`$2', `u',  `$1')'
 	, `$1', `zend_uchar',       `PROC_INT(`$2', `u',  `$1')'
