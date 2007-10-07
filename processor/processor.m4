@@ -83,6 +83,9 @@ DEF_STRUCT_P_FUNC(`zval', , `dnl {{{
 		DONE(refcount)
 		DONE(type)
 		DONE(is_ref)
+#ifdef ZEND_ENGINE_2_3
+		COPY(idx_type)
+#endif
 	} while(0);
 	return;
 	', `
@@ -147,6 +150,9 @@ dnl }}}
 		DISPATCH(zval_data_type, type)
 		DISPATCH(zend_uchar, is_ref)
 		DISPATCH(zend_ushort, refcount)
+#ifdef ZEND_ENGINE_2_3
+		DISPATCH(zend_uchar, idx_type)
+#endif
 	')dnl IFDASM
 ')
 dnl }}}
