@@ -150,6 +150,9 @@ static int op_get_flowinfo(op_flowinfo_t *fi, zend_op *opline) /* {{{ */
 	case ZEND_JMPNZ:
 	case ZEND_JMPZ_EX:
 	case ZEND_JMPNZ_EX:
+#ifdef ZEND_JMP_SET
+	case ZEND_JMP_SET:
+#endif
 #ifdef ZEND_JMP_NO_CTOR
 	case ZEND_JMP_NO_CTOR:
 #endif
@@ -346,9 +349,12 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 	bbid_t id;
 	op_flowinfo_t fi;
 	zend_op *opline;
-	bbid_t *bbids          = do_alloca(count * sizeof(bbid_t));
-	bbid_t *catchbbids     = do_alloca(count * sizeof(bbid_t));
-	zend_bool *markbbhead  = do_alloca(count * sizeof(zend_bool));
+	ALLOCA_FLAG(use_heap_bbids)
+	ALLOCA_FLAG(use_heap_catchbbids)
+	ALLOCA_FLAG(use_heap_markbbhead)
+	bbid_t *bbids          = my_do_alloca(count * sizeof(bbid_t),    use_heap_bbids);
+	bbid_t *catchbbids     = my_do_alloca(count * sizeof(bbid_t),    use_heap_catchbbids);
+	zend_bool *markbbhead  = my_do_alloca(count * sizeof(zend_bool), use_heap_markbbhead);
 
 	/* {{{ mark jmpin/jumpout */
 	memset(markbbhead,  0, count * sizeof(zend_bool));
@@ -449,9 +455,9 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 	}
 	/* }}} */
 
-	free_alloca(catchbbids);
-	free_alloca(bbids);
-	free_alloca(markbbhead);
+	my_free_alloca(markbbhead, use_heap_markbbhead);
+	my_free_alloca(catchbbids, use_heap_catchbbids);
+	my_free_alloca(bbids,      use_heap_bbids);
 	return SUCCESS;
 }
 /* }}} */

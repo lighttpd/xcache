@@ -608,9 +608,11 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 	zend_uint i;
 	xc_entry_data_php_t *p = xce->data.php;
 	zend_op_array *old_active_op_array = CG(active_op_array);
+	ALLOCA_FLAG(use_heap)
+
 #ifndef ZEND_ENGINE_2
 	/* new ptr which is stored inside CG(class_table) */
-	xc_cest_t **new_cest_ptrs = (xc_cest_t **)do_alloca(sizeof(xc_cest_t*) * p->classinfo_cnt);
+	xc_cest_t **new_cest_ptrs = (xc_cest_t **)my_do_alloca(sizeof(xc_cest_t*) * p->classinfo_cnt, use_heap);
 #endif
 
 	CG(active_op_array) = p->op_array;
@@ -671,7 +673,7 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 	}
 
 #ifndef ZEND_ENGINE_2
-	free_alloca(new_cest_ptrs);
+	my_free_alloca(new_cest_ptrs, use_heap);
 #endif
 	CG(active_op_array) = old_active_op_array;
 	return p->op_array;
@@ -715,8 +717,9 @@ static int xc_stat(const char *filename, const char *include_path, struct stat *
 	char *tokbuf;
 	int size = strlen(include_path) + 1;
 	char tokens[] = { DEFAULT_DIR_SEPARATOR, '\0' };
+	ALLOCA_FLAG(use_heap)
 
-	paths = (char *)do_alloca(size);
+	paths = (char *)my_do_alloca(size, use_heap);
 	memcpy(paths, include_path, size);
 
 	for (path = php_strtok_r(paths, tokens, &tokbuf); path; path = php_strtok_r(NULL, tokens, &tokbuf)) {
@@ -724,12 +727,12 @@ static int xc_stat(const char *filename, const char *include_path, struct stat *
 			continue;
 		}
 		if (VCWD_STAT(filepath, pbuf) == 0) {
-			free_alloca(paths);
+			my_free_alloca(paths, use_heap);
 			return SUCCESS;
 		}
 	}
 
-	free_alloca(paths);
+	my_free_alloca(paths, use_heap);
 
 	return FAILURE;
 }
@@ -887,6 +890,7 @@ static int xc_entry_init_key_php_md5(xc_entry_data_php_t *php, xc_entry_t *xce T
 	int             n;
 	php_stream     *stream;
 	xc_hash_value_t hv;
+	ulong           old_rsid = EG(regular_list).nNextFreeElement;
 
 	stream = php_stream_open_wrapper(xce->name.str.val, "rb", USE_PATH | REPORT_ERRORS | ENFORCE_SAFE_MODE | STREAM_DISABLE_OPEN_BASEDIR, NULL);
 	if (!stream) {
@@ -900,6 +904,9 @@ static int xc_entry_init_key_php_md5(xc_entry_data_php_t *php, xc_entry_t *xce T
 	PHP_MD5Final((unsigned char *) php->md5, &context);
 
 	php_stream_close(stream);
+	if (EG(regular_list).nNextFreeElement = old_rsid + 1) {
+		EG(regular_list).nNextFreeElement = old_rsid;
+	}
 
 	if (n < 0) {
 		return FAILURE;
