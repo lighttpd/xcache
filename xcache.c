@@ -608,9 +608,8 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 	zend_uint i;
 	xc_entry_data_php_t *p = xce->data.php;
 	zend_op_array *old_active_op_array = CG(active_op_array);
-	ALLOCA_FLAG(use_heap)
-
 #ifndef ZEND_ENGINE_2
+	ALLOCA_FLAG(use_heap)
 	/* new ptr which is stored inside CG(class_table) */
 	xc_cest_t **new_cest_ptrs = (xc_cest_t **)my_do_alloca(sizeof(xc_cest_t*) * p->classinfo_cnt, use_heap);
 #endif
