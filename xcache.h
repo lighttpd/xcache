@@ -9,6 +9,7 @@
 #include <php.h>
 #include <zend_compile.h>
 #include <zend_API.h>
+#include <zend.h>
 #include "php_ini.h"
 #include "zend_hash.h"
 
@@ -35,6 +36,24 @@
 #	define ZESW(v1, v2) v1
 #else
 #	define ZESW(v1, v2) v2
+#endif
+
+#ifdef ALLOCA_FLAG
+#	define my_do_alloca(size, use_heap) do_alloca(size, use_heap)
+#	define my_free_alloca(size, use_heap) free_alloca(size, use_heap)
+#else
+#	define my_do_alloca(size, use_heap) do_alloca(size)
+#	define my_free_alloca(size, use_heap) free_alloca(size)
+#	define ALLOCA_FLAG(x)
+#endif
+#ifndef Z_SET_ISREF
+#	define Z_SET_ISREF(z) (z).is_ref = 1;
+#endif
+#ifndef Z_UNSET_ISREF
+#	define Z_UNSET_ISREF(z) (z).is_ref = 0;
+#endif
+#ifndef Z_SET_REFCOUNT
+#	define Z_SET_REFCOUNT(z, rc) (z).refcount = rc;
 #endif
 
 /* {{{ dirty fix for PHP 6 */
