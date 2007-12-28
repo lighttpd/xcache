@@ -78,7 +78,7 @@ DEF_STRUCT_P_FUNC(`zval', , `dnl {{{
 		zval_dtor(dst);
 		*dst = *src;
 		zval_copy_ctor(dst);
-		ZVAL_REFCOUNT(dst) = 1;
+		Z_SET_REFCOUNT(*dst, 1);
 		DONE(value)
 		DONE(type)
 #ifdef ZEND_ENGINE_2_3
