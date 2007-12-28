@@ -903,7 +903,7 @@ static int xc_entry_init_key_php_md5(xc_entry_data_php_t *php, xc_entry_t *xce T
 	PHP_MD5Final((unsigned char *) php->md5, &context);
 
 	php_stream_close(stream);
-	if (EG(regular_list).nNextFreeElement = old_rsid + 1) {
+	if (EG(regular_list).nNextFreeElement == old_rsid + 1) {
 		EG(regular_list).nNextFreeElement = old_rsid;
 	}
 
