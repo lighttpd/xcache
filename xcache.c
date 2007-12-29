@@ -2929,11 +2929,28 @@ static ZEND_MODULE_POST_ZEND_DEACTIVATE_D(xcache)
 	return SUCCESS;
 }
 /* }}} */
+/* {{{ module dependencies */
+#if ZEND_MODULE_API_NO >= 20050922
+static const zend_module_dep xcache_module_deps[] = {
+	ZEND_MOD_REQUIRED("standard")
+	ZEND_MOD_CONFLICTS("apc")
+	ZEND_MOD_CONFLICTS("eAccelerator")
+	ZEND_MOD_CONFLICTS("Turck MMCache")
+	{NULL, NULL, NULL}
+};
+#endif
+/* }}} */ 
 /* {{{ module definition structure */
 
 zend_module_entry xcache_module_entry = {
+#if ZEND_MODULE_API_NO >= 20050922
+	STANDARD_MODULE_HEADER_EX,
+	NULL,
+	xcache_module_deps,
+#else
 	STANDARD_MODULE_HEADER,
-	"XCache",
+#endif
+	XCACHE_NAME,
 	xcache_functions,
 	PHP_MINIT(xcache),
 	PHP_MSHUTDOWN(xcache),
