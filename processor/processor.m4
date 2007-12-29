@@ -95,7 +95,7 @@ DEF_STRUCT_P_FUNC(`zval', , `dnl {{{
 		/* Variable information */
 dnl {{{ zvalue_value
 		DISABLECHECK(`
-		switch (src->type & ~IS_CONSTANT_INDEX) {
+		switch ((Z_TYPE_P(src) & IS_CONSTANT_TYPE_MASK)) {
 			case IS_LONG:
 			case IS_RESOURCE:
 			case IS_BOOL:
