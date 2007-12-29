@@ -1,7 +1,8 @@
-1.2.2 2007-?-?
+1.2.2 2007-12-29
 == ChangeLog ==
  * live with wrong system time: allow caching files with mtime in further
  * bug fix for compatibility with Zend Optimizer and other non-cachable
+ * #59: Maximum execution time of 60 seconds exceeded
  * #102: segv when var cacher is too small
  * #55: segv php tokenizer on certain special situation
 

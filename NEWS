@@ -1,7 +1,9 @@
-1.2.2 2007-?-?
+1.2.2 2007-12-29
 ========
+ * live with wrong system time: allow caching files with mtime in further
  * bug fix for compatibility with Zend Optimizer and other non-cachable
  * a rare segv bug with token_get_all
+ * minor bug fixes
 
 1.2.1 2007-07-01
 ========
