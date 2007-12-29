@@ -5,6 +5,7 @@ Ini Settings Changes
 
 ChangeLog
 ========
+ * added module dependency
  * live with wrong system time: allow caching files with mtime in further
  * bug fix for compatibility with Zend Optimizer and other non-cachable
  * new: xcache.stat = On
