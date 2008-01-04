@@ -525,6 +525,24 @@ static void xc_sandbox_error_cb(int type, const char *error_filename, const uint
 
 	sandbox = (xc_sandbox_t *) XG(sandbox);
 	assert(sandbox != NULL);
+	if (type != E_STRICT) {
+		/* give up, and user handler is not supported in this case */
+		int i;
+		zend_uint orig_lineno = CG(zend_lineno);
+		zend_error_cb = sandbox->orig_zend_error_cb;
+
+		for (i = 0; i < sandbox->compilererror_cnt; i ++) {
+			compilererror = &sandbox->compilererrors[i];
+			CG(zend_lineno) = compilererror->lineno;
+			zend_error(E_STRICT, "%s", compilererror->error);
+		}
+		CG(zend_lineno) = orig_lineno;
+		sandbox->compilererror_cnt = 0;
+
+		sandbox->orig_zend_error_cb(type, error_filename, error_lineno, format, args);
+		return;
+	}
+
 	if (sandbox->compilererror_cnt <= sandbox->compilererror_size) {
 		if (sandbox->compilererror_size) {
 			sandbox->compilererror_size += 16;
@@ -536,7 +554,6 @@ static void xc_sandbox_error_cb(int type, const char *error_filename, const uint
 		}
 	}
 	compilererror = &sandbox->compilererrors[sandbox->compilererror_cnt++];
-	compilererror->type   = type;
 	compilererror->lineno = error_lineno;
 	compilererror->error_len = zend_vspprintf(&compilererror->error, 0, format, args);
 }
@@ -720,7 +737,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox, xc_install_action_t instal
 	for (i = 0; i < sandbox->compilererror_cnt; i ++) {
 		xc_compilererror_t *error = &sandbox->compilererrors[i];
 		CG(zend_lineno) = error->lineno;
-		zend_error(error->type, "%s", error->error);
+		zend_error(E_STRICT, "%s", error->error);
 	}
 	CG(zend_lineno) = 0;
 #endif
