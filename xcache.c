@@ -1165,7 +1165,12 @@ static zend_op_array *xc_compile_restore(xc_entry_t *stored_xce, zend_file_handl
 		catched = 1;
 	} zend_end_try();
 
-	xc_free_php(&php TSRMLS_CC);
+	if (php.funcinfos) {
+		efree(php.funcinfos);
+	}
+	if (php.classinfos) {
+		efree(php.classinfos);
+	}
 
 	if (catched) {
 		zend_bailout();
