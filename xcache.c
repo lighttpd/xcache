@@ -1476,6 +1476,36 @@ int xc_is_shm(const void *p) /* {{{ */
 }
 /* }}} */
 
+/* {{{ xc_gc_op_array_t */
+typedef struct {
+	zend_uint num_args;
+	zend_arg_info *arg_info;
+} xc_gc_op_array_t;
+/* }}} */
+void xc_gc_add_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
+{
+	xc_gc_op_array_t gc_op_array;
+	gc_op_array.num_args = op_array->num_args;
+	gc_op_array.arg_info = op_array->arg_info;
+	zend_hash_next_index_insert(&XG(gc_op_arrays), (void *) &gc_op_array, sizeof(gc_op_array), NULL);
+}
+/* }}} */
+static void xc_gc_op_array(void *pDest) /* {{{ */
+{
+	xc_gc_op_array_t *op_array = (xc_gc_op_array_t *) pDest;
+	zend_uint i;
+	if (op_array->arg_info) {
+		for (i = 0; i < op_array->num_args; i++) {
+			efree((char*)op_array->arg_info[i].name);
+			if (op_array->arg_info[i].class_name) {
+				efree((char*)op_array->arg_info[i].class_name);
+			}
+		}
+		efree(op_array->arg_info);
+	}
+}
+/* }}} */
+
 /* module helper function */
 static int xc_init_constant(int module_number TSRMLS_DC) /* {{{ */
 {
@@ -1710,6 +1740,8 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 		}
 	}
 
+	zend_hash_init(&XG(gc_op_arrays), 32, NULL, xc_gc_op_array, 0);
+
 #if PHP_API_VERSION <= 20041225
 	XG(request_time) = time(NULL);
 #else
@@ -1724,6 +1756,7 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 static void xc_request_shutdown(TSRMLS_D) /* {{{ */
 {
 	xc_entry_unholds(TSRMLS_C);
+	zend_hash_destroy(&XG(gc_op_arrays));
 	xc_gc_expires_php(TSRMLS_C);
 	xc_gc_expires_var(TSRMLS_C);
 	xc_gc_deletes(TSRMLS_C);

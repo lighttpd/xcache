@@ -360,5 +360,6 @@ extern zend_module_entry xcache_module_entry;
 int xc_is_rw(const void *p);
 int xc_is_ro(const void *p);
 int xc_is_shm(const void *p);
+void xc_gc_add_op_array(zend_op_array *op_array TSRMLS_DC);
 
 #endif /* __XCACHE_H */
