@@ -265,6 +265,14 @@ typedef struct {
 #endif
 typedef enum { XC_TYPE_PHP, XC_TYPE_VAR } xc_entry_type_t;
 typedef char xc_md5sum_t[16];
+/* {{{ xc_compilererror_t */
+typedef struct {
+	int type;
+	uint lineno;
+	int error_len;
+	char *error;
+} xc_compilererror_t;
+/* }}} */
 /* {{{ xc_entry_data_php_t */
 struct _xc_entry_data_php_t {
 	xc_hash_value_t hvalue; /* hash of md5 */
@@ -295,6 +303,11 @@ struct _xc_entry_data_php_t {
 #ifdef ZEND_ENGINE_2_1
 	zend_uint autoglobal_cnt;
 	xc_autoglobal_t *autoglobals;
+#endif
+
+#ifdef E_STRICT
+	zend_uint compilererror_cnt;
+	xc_compilererror_t *compilererrors;
 #endif
 
 	zend_bool  have_references;

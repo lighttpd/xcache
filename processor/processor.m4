@@ -740,6 +740,15 @@ DEF_STRUCT_P_FUNC(`xc_autoglobal_t', , `dnl {{{
 ')
 dnl }}}
 #endif
+#ifdef E_STRICT
+DEF_STRUCT_P_FUNC(`xc_compilererror_t', , `dnl {{{
+	DISPATCH(int, type)
+	DISPATCH(uint, lineno)
+	DISPATCH(int, error_len)
+	PROC_STRING_L(error, error_len)
+')
+dnl }}}
+#endif
 DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 	zend_uint i;
 
@@ -787,6 +796,14 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 		COPY(autoglobals)
 	', `
 		STRUCT_ARRAY(autoglobal_cnt, xc_autoglobal_t, autoglobals)
+	')
+#endif
+#ifdef E_STRICT
+	DISPATCH(zend_uint, compilererror_cnt)
+	IFRESTORE(`
+		COPY(compilererrors)
+	', `
+		STRUCT_ARRAY(compilererror_cnt, xc_compilererror_t, compilererrors)
 	')
 #endif
 	DISPATCH(zend_bool, have_early_binding)
