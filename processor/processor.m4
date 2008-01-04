@@ -763,7 +763,11 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 
 #ifdef HAVE_XCACHE_CONSTANT
 	DISPATCH(zend_uint, constinfo_cnt)
-	STRUCT_ARRAY(constinfo_cnt, xc_constinfo_t, constinfos)
+	IFRESTORE(`
+		COPY(constinfos)
+	', `
+		STRUCT_ARRAY(constinfo_cnt, xc_constinfo_t, constinfos)
+	')
 #endif
 
 	DISPATCH(zend_uint, funcinfo_cnt)
@@ -776,12 +780,16 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 		')
 	')
 	STRUCT_ARRAY(classinfo_cnt, xc_classinfo_t, classinfos)
+	popdef(`BEFORE_LOOP')
 #ifdef ZEND_ENGINE_2_1
 	DISPATCH(zend_uint, autoglobal_cnt)
-	STRUCT_ARRAY(autoglobal_cnt, xc_autoglobal_t, autoglobals)
+	IFRESTORE(`
+		COPY(autoglobals)
+	', `
+		STRUCT_ARRAY(autoglobal_cnt, xc_autoglobal_t, autoglobals)
+	')
 #endif
 	DISPATCH(zend_bool, have_early_binding)
-	popdef(`BEFORE_LOOP')
 	DISPATCH(zend_bool, have_references)
 ')
 dnl }}}
