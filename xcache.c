@@ -664,6 +664,15 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 		zend_u_is_auto_global(aginfo->type, aginfo->key, aginfo->key_len TSRMLS_CC);
 	}
 #endif
+#ifdef E_STRICT
+	/* restore trigger errors */
+	for (i = 0; i < p->compilererror_cnt; i ++) {
+		xc_compilererror_t *error = &p->compilererrors[i];
+		CG(zend_lineno) = error->lineno;
+		zend_error(error->type, "%s", error->error);
+	}
+	CG(zend_lineno) = 0;
+#endif
 
 	i = 1;
 	zend_hash_add(&EG(included_files), xce->name.str.val, xce->name.str.len+1, (void *)&i, sizeof(int), NULL);
@@ -1114,6 +1123,10 @@ static zend_op_array *xc_compile_php(xc_entry_data_php_t *php, zend_file_handle 
 #endif
 	}
 	/* }}} */
+#ifdef E_STRICT
+	php->compilererrors = ((xc_sandbox_t *) XG(sandbox))->compilererrors;
+	php->compilererror_cnt = ((xc_sandbox_t *) XG(sandbox))->compilererror_cnt;
+#endif
 	/* {{{ find inherited classes that should be early-binding */
 	php->have_early_binding = 0;
 	for (i = 0; i < php->classinfo_cnt; i ++) {
