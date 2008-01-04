@@ -1648,13 +1648,11 @@ static void xc_destroy() /* {{{ */
 		shm = xc_cache_destroy(xc_php_caches, &xc_php_hcache);
 		xc_php_caches = NULL;
 	}
-	xc_php_hcache.size = 0;
 
 	if (xc_var_caches) {
 		shm = xc_cache_destroy(xc_var_caches, &xc_var_hcache);
 		xc_var_caches = NULL;
 	}
-	xc_var_hcache.size = 0;
 
 	if (shm) {
 		xc_shm_destroy(shm);
@@ -1733,7 +1731,7 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 		}
 	}
 
-	if (xc_var_hcache.size && !XG(var_holds)) {
+	if (xc_initized && xc_var_hcache.size && !XG(var_holds)) {
 		XG(var_holds) = calloc(xc_var_hcache.size, sizeof(xc_stack_t));
 		for (i = 0; i < xc_var_hcache.size; i ++) {
 			xc_stack_init(&XG(var_holds[i]));
