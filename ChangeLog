@@ -5,7 +5,7 @@ Ini Settings Changes
 
 ChangeLog
 ========
- * compiler errors: all compiler warning (e.g.: E_STRICT) is now cached and is supported for user handler
+ * compiler errors: all compiler warning (E_STRICT only currently) is now cached and is supported for user handler
  * added module dependency
  * live with wrong system time: allow caching files with mtime in further
  * bug fix for compatibility with Zend Optimizer and other non-cachable
