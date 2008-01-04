@@ -1496,9 +1496,9 @@ static void xc_gc_op_array(void *pDest) /* {{{ */
 	zend_uint i;
 	if (op_array->arg_info) {
 		for (i = 0; i < op_array->num_args; i++) {
-			efree((char*)op_array->arg_info[i].name);
-			if (op_array->arg_info[i].class_name) {
-				efree((char*)op_array->arg_info[i].class_name);
+			efree((char *) ZSTR_V(op_array->arg_info[i].name));
+			if (ZSTR_V(op_array->arg_info[i].class_name)) {
+				efree((char *) ZSTR_V(op_array->arg_info[i].class_name));
 			}
 		}
 		efree(op_array->arg_info);
