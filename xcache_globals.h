@@ -17,6 +17,8 @@ ZEND_BEGIN_MODULE_GLOBALS(xcache)
 	time_t request_time;
 	long   var_ttl;
 
+	HashTable gc_op_arrays;
+
 	HashTable internal_function_table;
 	HashTable internal_class_table;
 	zend_bool internal_table_copied;
