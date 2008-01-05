@@ -59,7 +59,7 @@ define(`DEF_HASH_TABLE_FUNC', `
 						keysize ++;
 					}
 				}
-				add_u_assoc_zval_ex(dst, BUCKET_KEY_TYPE(b), buf, keysize, zv);
+				add_u_assoc_zval_ex(dst, BUCKET_KEY_TYPE(b), ZSTR(buf), keysize, zv);
 			}
 			')
 

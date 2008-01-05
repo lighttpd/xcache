@@ -56,9 +56,7 @@ dnl }}}
 dnl {{{ zend_brk_cont_element
 DEF_STRUCT_P_FUNC(`zend_brk_cont_element', , `
 #ifdef ZEND_ENGINE_2_2
-#ifndef IS_UNICODE
 	DISPATCH(int, start)
-#endif
 #endif
 	DISPATCH(int, cont)
 	DISPATCH(int, brk)
@@ -282,7 +280,7 @@ DEF_STRUCT_P_FUNC(`zend_property_info', , `
 	PROC_ZSTRING_L(, doc_comment, doc_comment_len)
 #endif
 	dnl isnt in php6 yet
-#if defined(ZEND_ENGINE_2_2) && !defined(IS_UNICODE)
+#if defined(ZEND_ENGINE_2_2)
 	PROC_CLASS_ENTRY_P(ce)
 #endif
 ')

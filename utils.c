@@ -583,15 +583,6 @@ static int xc_auto_global_arm(zend_auto_global *auto_global TSRMLS_DC) /* {{{ */
 /* }}} */
 #endif
 
-void xc_zend_class_add_ref(zend_class_entry ZESW(*ce, **ce))
-{
-#ifdef ZEND_ENGINE_2
-	(*ce)->refcount++;
-#else
-	(*ce->refcount)++;
-#endif
-}
-
 xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /* {{{ */
 {
 	HashTable *h;
@@ -634,7 +625,7 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 	zend_hash_init_ex(&TG(function_table), 128, NULL, h->pDestructor, h->persistent, h->bApplyProtection);
 	{
 		zend_function tmp_func;
-		zend_hash_copy(&TG(function_table), &XG(internal_function_table), (copy_ctor_func_t) function_add_ref, (void *) &tmp_func, sizeof(tmp_func));
+		zend_hash_copy(&TG(function_table), &XG(internal_function_table), NULL, (void *) &tmp_func, sizeof(tmp_func));
 	}
 	TG(internal_function_tail) = TG(function_table).pListTail;
 
@@ -643,7 +634,7 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 #if 0 && TODO
 	{
 		xc_cest_t tmp_cest;
-		zend_hash_copy(&TG(class_table), &XG(internal_class_table), (copy_ctor_func_t) xc_zend_class_add_ref, (void *) &tmp_cest, sizeof(tmp_cest));
+		zend_hash_copy(&TG(class_table), &XG(internal_class_table), NULL, (void *) &tmp_cest, sizeof(tmp_cest));
 	}
 #endif
 	TG(internal_class_tail) = TG(class_table).pListTail;
