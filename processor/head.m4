@@ -215,10 +215,11 @@ static zend_class_entry *xc_get_class(xc_processor_t *processor, zend_ulong clas
 /* }}} */
 #ifdef ZEND_ENGINE_2
 /* fix method on store */
-static void xc_fix_method(xc_processor_t *processor, zend_op_array *dst) /* {{{ */
+static void xc_fix_method(xc_processor_t *processor, zend_op_array *dst TSRMLS_DC) /* {{{ */
 {
 	zend_function *zf = (zend_function *) dst;
 	zend_class_entry *ce = processor->active_class_entry_dst;
+	const zend_class_entry *srcce = processor->active_class_entry_src;
 
 	/* Fixing up the default functions for objects here since
 	 * we need to compare with the newly allocated functions
@@ -239,16 +240,7 @@ static void xc_fix_method(xc_processor_t *processor, zend_op_array *dst) /* {{{ 
 		ce->clone = zf;
 	}
 	else {
-dnl FIXME: handle common.function_name here
-#define SET_IF_SAME_NAME(member) \
-		do { \
-			if (!strcasecmp(ZSTR_S(zf->common.function_name), #member)) { \
-				ce->member = zf; \
-			} \
-		} \
-		while(0)
-		/* if(ce->member && !strcmp(zf->common.function_name, ce->member->common.function_name)) { \ */
-
+	pushdef(`SET_IF_SAME_NAMEs', `
 		SET_IF_SAME_NAME(__get);
 		SET_IF_SAME_NAME(__set);
 #ifdef ZEND_ENGINE_2_1
@@ -262,8 +254,37 @@ dnl FIXME: handle common.function_name here
 #if defined(ZEND_ENGINE_2_2) || PHP_MAJOR_VERSION >= 6
 		SET_IF_SAME_NAME(__tostring);
 #endif
+	')
+#ifdef IS_UNICODE
+		if (UG(unicode)) {
+#define SET_IF_SAME_NAME(member) \
+			do { \
+				if (srcce->member && u_strcmp(ZSTR_S(zf->common.function_name), ZSTR_S(srcce->member->common.function_name)) == 0) { \
+					ce->member = zf; \
+				} \
+			} \
+			while(0)
 
+			SET_IF_SAME_NAMEs()
 #undef SET_IF_SAME_NAME
+		}
+		else
+#endif
+		do {
+#define SET_IF_SAME_NAME(member) \
+			do { \
+				if (srcce->member && strcmp(ZSTR_S(zf->common.function_name), ZSTR_S(srcce->member->common.function_name)) == 0) { \
+					ce->member = zf; \
+				} \
+			} \
+			while(0)
+
+			SET_IF_SAME_NAMEs()
+#undef SET_IF_SAME_NAME
+		} while (0);
+
+	popdef(`SET_IF_SAME_NAMEs')
+
 	}
 }
 /* }}} */

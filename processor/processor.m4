@@ -667,19 +667,14 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	')
 #endif
 
-	IFRESTORE(`
 #ifdef ZEND_ENGINE_2
+	PROC_CLASS_ENTRY_P(scope)
+	IFCOPY(`
 		if (src->scope) {
-			dst->scope = xc_get_class(processor, (zend_ulong) src->scope);
-			xc_fix_method(processor, dst);
+			xc_fix_method(processor, dst TSRMLS_CC);
 		}
-		DONE(scope)
-#endif
-	', `
-#ifdef ZEND_ENGINE_2
-		PROC_CLASS_ENTRY_P(scope)
-#endif
 	')
+#endif
 
 	IFRESTORE(`
 		if (xc_have_op_array_ctor) {
