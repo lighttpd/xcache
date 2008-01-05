@@ -698,6 +698,7 @@ DEF_STRUCT_P_FUNC(`xc_constinfo_t', , `dnl {{{
 	IFRESTORE(`COPY(key)', `
 		PROC_ZSTRING_N(type, key, key_size)
 	')
+	DISPATCH(ulong, h)
 	STRUCT(zend_constant, constant)
 ')
 dnl }}}
@@ -710,6 +711,7 @@ DEF_STRUCT_P_FUNC(`xc_funcinfo_t', , `dnl {{{
 	IFRESTORE(`COPY(key)', `
 		PROC_ZSTRING_N(type, key, key_size)
 	')
+	DISPATCH(ulong, h)
 	STRUCT(zend_function, func)
 ')
 dnl }}}
@@ -721,6 +723,7 @@ DEF_STRUCT_P_FUNC(`xc_classinfo_t', , `dnl {{{
 	IFRESTORE(`COPY(key)', `
 		PROC_ZSTRING_N(type, key, key_size)
 	')
+	DISPATCH(ulong, h)
 #ifdef ZEND_ENGINE_2
 	STRUCT_P(zend_class_entry, cest)
 #else
@@ -738,6 +741,7 @@ DEF_STRUCT_P_FUNC(`xc_autoglobal_t', , `dnl {{{
 	IFRESTORE(`COPY(key)', `
 		PROC_ZSTRING_L(type, key, key_len)
 	')
+	DISPATCH(ulong, h)
 ')
 dnl }}}
 #endif
