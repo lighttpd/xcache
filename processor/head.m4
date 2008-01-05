@@ -114,12 +114,7 @@ static inline int xc_zstrlen_char(zstr s)
 /* {{{ xc_zstrlen_uchar */
 static inline int xc_zstrlen_uchar(zstr s)
 {
-	int i;
-	UChar *p = ZSTR_U(s);
-	for (i = 0; *p; i ++, p++) {
-		/* empty */
-	}
-	return i;
+	return u_strlen(ZSTR_U(s));
 }
 /* }}} */
 /* {{{ xc_zstrlen */
