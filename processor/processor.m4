@@ -645,7 +645,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 				if (src->prototype != NULL
 				 && zend_u_hash_find(&(processor->active_class_entry_dst->parent->function_table),
 						UG(unicode) ? IS_UNICODE : IS_STRING,
-						src->function_name, xc_zstrlen(UG(unicode), src->function_name) + 1,
+						src->function_name, xc_zstrlen(UG(unicode) ? IS_UNICODE : IS_STRING, src->function_name) + 1,
 						(void **) &parent) == SUCCESS) {
 					/* see do_inherit_method_check() */
 					if ((parent->common.fn_flags & ZEND_ACC_ABSTRACT)) {
