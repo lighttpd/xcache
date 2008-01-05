@@ -774,11 +774,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 
 #ifdef HAVE_XCACHE_CONSTANT
 	DISPATCH(zend_uint, constinfo_cnt)
-	IFRESTORE(`
-		COPY(constinfos)
-	', `
-		STRUCT_ARRAY(constinfo_cnt, xc_constinfo_t, constinfos)
-	')
+	STRUCT_ARRAY(constinfo_cnt, xc_constinfo_t, constinfos)
 #endif
 
 	DISPATCH(zend_uint, funcinfo_cnt)
