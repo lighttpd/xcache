@@ -259,7 +259,7 @@ static void xc_fix_method(xc_processor_t *processor, zend_op_array *dst TSRMLS_D
 		if (UG(unicode)) {
 #define SET_IF_SAME_NAME(member) \
 			do { \
-				if (srcce->member && u_strcmp(ZSTR_S(zf->common.function_name), ZSTR_S(srcce->member->common.function_name)) == 0) { \
+				if (srcce->member && u_strcmp(ZSTR_U(zf->common.function_name), ZSTR_U(srcce->member->common.function_name)) == 0) { \
 					ce->member = zf; \
 				} \
 			} \
