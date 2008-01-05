@@ -240,7 +240,7 @@ DEF_STRUCT_P_FUNC(`zend_constant', , `dnl {{{
 	DISPATCH(uint, name_len)
 	pushdef(`emalloc', `malloc($1)')
 	pushdef(`ecalloc', `calloc($1, $2)')
-	PROC_ZSTRING_L(, name, name_len)
+	PROC_ZSTRING_N(, name, name_len)
 	popdef(`ecalloc')
 	popdef(`emalloc')
 	DISPATCH(int, module_number)
