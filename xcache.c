@@ -1178,6 +1178,9 @@ static zend_op_array *xc_compile_restore(xc_entry_t *stored_xce, zend_file_handl
 		catched = 1;
 	} zend_end_try();
 
+	if (php.constinfos) {
+		efree(php.constinfos);
+	}
 	if (php.funcinfos) {
 		efree(php.funcinfos);
 	}
