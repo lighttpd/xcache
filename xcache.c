@@ -621,7 +621,7 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 	for (i = 0; i < p->constinfo_cnt; i ++) {
 		xc_constinfo_t *ci = &p->constinfos[i];
 		xc_install_constant(xce->name.str.val, &ci->constant,
-				UNISW(0, ci->type), ci->key, ci->key_size TSRMLS_CC);
+				UNISW(0, ci->type), ci->key, ci->key_size, ci->h TSRMLS_CC);
 	}
 #endif
 
@@ -629,7 +629,7 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 	for (i = 0; i < p->funcinfo_cnt; i ++) {
 		xc_funcinfo_t  *fi = &p->funcinfos[i];
 		xc_install_function(xce->name.str.val, &fi->func,
-				UNISW(0, fi->type), fi->key, fi->key_size TSRMLS_CC);
+				UNISW(0, fi->type), fi->key, fi->key_size, fi->h TSRMLS_CC);
 	}
 
 	/* install class */
@@ -646,7 +646,7 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 		new_cest_ptrs[i] =
 #endif
 		xc_install_class(xce->name.str.val, &ci->cest, ci->oplineno,
-				UNISW(0, ci->type), ci->key, ci->key_size TSRMLS_CC);
+				UNISW(0, ci->type), ci->key, ci->key_size, ci->h TSRMLS_CC);
 	}
 
 #ifdef ZEND_ENGINE_2_1
@@ -655,7 +655,7 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 		xc_autoglobal_t *aginfo = &p->autoglobals[i];
 		/*
 		zend_auto_global *auto_global;
-		if (zend_u_hash_find(CG(auto_globals), aginfo->type, aginfo->key, aginfo->key_len+1, (void **) &auto_global)==SUCCESS) {
+		if (zend_u_hash_quick_find(CG(auto_globals), aginfo->type, aginfo->key, aginfo->key_len+1, aginfo->h, (void **) &auto_global)==SUCCESS) {
 			if (auto_global->armed) {
 				auto_global->armed = auto_global->auto_global_callback(auto_global->name, auto_global->name_len TSRMLS_CC);
 			}
@@ -1086,6 +1086,7 @@ static zend_op_array *xc_compile_php(xc_entry_data_php_t *php, zend_file_handle 
 			ZSTR_U(data->key)      = BUCKET_KEY_U(b);         \
 		}                                                     \
 		data->key_size   = b->nKeyLength;                     \
+		data->h          = b->h;                              \
 	}                                                         \
 } while(0)
 
@@ -1118,6 +1119,7 @@ static zend_op_array *xc_compile_php(xc_entry_data_php_t *php, zend_file_handle 
 					ZSTR_U(data->key)     = BUCKET_KEY_U(b);
 				}
 				data->key_len = b->nKeyLength - 1;
+				data->h       = b->h;
 			}
 		}
 #endif
