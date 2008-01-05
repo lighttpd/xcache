@@ -786,6 +786,7 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, xc_install_action_t install TSRMLS_D
 	/* restore orig here, as EG/CG holded tmp before */
 	memcpy(&EG(included_files), &OG(included_files), sizeof(EG(included_files)));
 
+#ifdef E_STRICT
 	if (sandbox->compilererrors) {
 		int i;
 		for (i = 0; i < sandbox->compilererror_cnt; i ++) {
@@ -793,6 +794,7 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, xc_install_action_t install TSRMLS_D
 		}
 		efree(sandbox->compilererrors);
 	}
+#endif
 	if (sandbox->alloc) {
 		efree(sandbox);
 	}

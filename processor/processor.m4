@@ -508,8 +508,10 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		dst->refcount[0] = 1000;
 		/* deep */
 		STRUCT_P(HashTable, static_variables, HashTable_zval_ptr)
+#ifdef ZEND_ENGINE_2
 		STRUCT_ARRAY_I(num_args, zend_arg_info, arg_info)
 		xc_gc_add_op_array(dst TSRMLS_CC);
+#endif
 		define(`SKIPASSERT_ONCE')
 	}
 	else
