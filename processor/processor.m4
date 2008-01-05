@@ -474,6 +474,9 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 #ifdef ZEND_ENGINE_2_1
 	IFCOPY(`
 		switch (src->opcode) {
+#ifdef ZEND_GOTO
+			case ZEND_GOTO:
+#endif
 			case ZEND_JMP:
 				dst->op1.u.jmp_addr = processor->active_opcodes_dst + (src->op1.u.jmp_addr - processor->active_opcodes_src);
 				break;
