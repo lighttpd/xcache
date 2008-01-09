@@ -376,7 +376,7 @@ static void xc_gc_expires_php(TSRMLS_D) /* {{{ */
 {
 	int i, c;
 
-	if (!xc_php_ttl || !xc_php_gc_interval) {
+	if (!xc_php_ttl || !xc_php_gc_interval || !xc_php_caches) {
 		return;
 	}
 
@@ -389,7 +389,7 @@ static void xc_gc_expires_var(TSRMLS_D) /* {{{ */
 {
 	int i, c;
 
-	if (!xc_var_gc_interval) {
+	if (!xc_var_gc_interval || !xc_var_caches) {
 		return;
 	}
 
@@ -437,12 +437,16 @@ static void xc_gc_deletes(TSRMLS_D) /* {{{ */
 {
 	int i, c;
 
-	for (i = 0, c = xc_php_hcache.size; i < c; i ++) {
-		xc_gc_deletes_one(xc_php_caches[i] TSRMLS_CC);
+	if (xc_php_caches) {
+		for (i = 0, c = xc_php_hcache.size; i < c; i ++) {
+			xc_gc_deletes_one(xc_php_caches[i] TSRMLS_CC);
+		}
 	}
 
-	for (i = 0, c = xc_var_hcache.size; i < c; i ++) {
-		xc_gc_deletes_one(xc_var_caches[i] TSRMLS_CC);
+	if (xc_var_caches) {
+		for (i = 0, c = xc_var_hcache.size; i < c; i ++) {
+			xc_gc_deletes_one(xc_var_caches[i] TSRMLS_CC);
+		}
 	}
 }
 /* }}} */
@@ -714,8 +718,13 @@ static inline void xc_entry_unholds_real(xc_stack_t *holds, xc_cache_t **caches,
 /* }}} */
 static void xc_entry_unholds(TSRMLS_D) /* {{{ */
 {
-	xc_entry_unholds_real(XG(php_holds), xc_php_caches, xc_php_hcache.size TSRMLS_CC);
-	xc_entry_unholds_real(XG(var_holds), xc_var_caches, xc_var_hcache.size TSRMLS_CC);
+	if (xc_php_caches) {
+		xc_entry_unholds_real(XG(php_holds), xc_php_caches, xc_php_hcache.size TSRMLS_CC);
+	}
+
+	if (xc_var_caches) {
+		xc_entry_unholds_real(XG(var_holds), xc_var_caches, xc_var_hcache.size TSRMLS_CC);
+	}
 }
 /* }}} */
 static int xc_stat(const char *filename, const char *include_path, struct stat *pbuf TSRMLS_DC) /* {{{ */
@@ -1435,19 +1444,22 @@ int xc_is_rw(const void *p) /* {{{ */
 {
 	xc_shm_t *shm;
 	int i;
-	if (!xc_initized) {
-		return 0;
-	}
-	for (i = 0; i < xc_php_hcache.size; i ++) {
-		shm = xc_php_caches[i]->shm;
-		if (shm->handlers->is_readwrite(shm, p)) {
-			return 1;
+
+	if (xc_php_caches) {
+		for (i = 0; i < xc_php_hcache.size; i ++) {
+			shm = xc_php_caches[i]->shm;
+			if (shm->handlers->is_readwrite(shm, p)) {
+				return 1;
+			}
 		}
 	}
-	for (i = 0; i < xc_var_hcache.size; i ++) {
-		shm = xc_var_caches[i]->shm;
-		if (shm->handlers->is_readwrite(shm, p)) {
-			return 1;
+
+	if (xc_var_caches) {
+		for (i = 0; i < xc_var_hcache.size; i ++) {
+			shm = xc_var_caches[i]->shm;
+			if (shm->handlers->is_readwrite(shm, p)) {
+				return 1;
+			}
 		}
 	}
 	return 0;
@@ -1457,19 +1469,22 @@ int xc_is_ro(const void *p) /* {{{ */
 {
 	xc_shm_t *shm;
 	int i;
-	if (!xc_initized) {
-		return 0;
-	}
-	for (i = 0; i < xc_php_hcache.size; i ++) {
-		shm = xc_php_caches[i]->shm;
-		if (shm->handlers->is_readonly(shm, p)) {
-			return 1;
+
+	if (xc_php_caches) {
+		for (i = 0; i < xc_php_hcache.size; i ++) {
+			shm = xc_php_caches[i]->shm;
+			if (shm->handlers->is_readonly(shm, p)) {
+				return 1;
+			}
 		}
 	}
-	for (i = 0; i < xc_var_hcache.size; i ++) {
-		shm = xc_var_caches[i]->shm;
-		if (shm->handlers->is_readonly(shm, p)) {
-			return 1;
+
+	if (xc_var_caches) {
+		for (i = 0; i < xc_var_hcache.size; i ++) {
+			shm = xc_var_caches[i]->shm;
+			if (shm->handlers->is_readonly(shm, p)) {
+				return 1;
+			}
 		}
 	}
 	return 0;
@@ -1733,14 +1748,14 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 
 		XG(internal_table_copied) = 1;
 	}
-	if (xc_php_hcache.size && !XG(php_holds)) {
+	if (xc_php_caches && !XG(php_holds)) {
 		XG(php_holds) = calloc(xc_php_hcache.size, sizeof(xc_stack_t));
 		for (i = 0; i < xc_php_hcache.size; i ++) {
 			xc_stack_init(&XG(php_holds[i]));
 		}
 	}
 
-	if (xc_initized && xc_var_hcache.size && !XG(var_holds)) {
+	if (xc_var_caches && !XG(var_holds)) {
 		XG(var_holds) = calloc(xc_var_hcache.size, sizeof(xc_stack_t));
 		for (i = 0; i < xc_var_hcache.size; i ++) {
 			xc_stack_init(&XG(var_holds[i]));
