@@ -70,6 +70,8 @@ $strings = array(
 		=> '建議參考',
 		'GC'
 		=> 'GC',
+		'Total'
+		=> '总共',
 		'Cache'
 		=> '快取',
 		'Caches'

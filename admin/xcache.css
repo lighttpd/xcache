@@ -17,17 +17,15 @@ th { font-size: 12px; }
 .moduleinfo .v {background-color: #cccccc; color: #000000;}
 .button { }
 span.sortarrow { color: white; text-decoration: none; }
-.freeblocks { float: left; margin-right: 4px;}
-.freeblocks td { text-align: right; }
 form {margin: 0; padding: 0}
 
 .percent { height: 3px; margin-bottom: 1px; background: gray; border: 1px solid gray; border-top: 0px; border-bottom: 0px; }
 .percent div { float: left; height: 100%; }
 .percent .pavail { background: green; }
 
-.usagegraph { height: 16px; }
-.usagegraph div { float: left; height: 3px; width: 4px; border: solid gray; border-width: 0 0px 1px 0; }
-.usagegraph { border: 1px solid gray; border-bottom: 0px; }
+.freeblockgraph { height: 16px; }
+.freeblockgraph div { float: left; height: 3px; width: 4px; border: solid gray; border-width: 0 0px 1px 0; }
+.freeblockgraph { border: 1px solid gray; border-bottom: 0px; }
 
 .switcher, h1, h2 { text-align: center; display: block; }
 .switcher * { color: blue; }

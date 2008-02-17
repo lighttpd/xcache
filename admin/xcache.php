@@ -168,7 +168,15 @@ function processClear()
 	if (isset($type)) {
 		$cacheid = (int) (isset($_POST['cacheid']) ? $_POST['cacheid'] : 0);
 		if (isset($_POST['clearcache'])) {
-			xcache_clear_cache($type, $cacheid);
+			$count = xcache_count($type);
+			if ($cacheid == $count) {
+				for ($cacheid = 0; $cacheid < $count; $cacheid ++) {
+					xcache_clear_cache($type, $cacheid);
+				}
+			}
+			else {
+				xcache_clear_cache($type, $cacheid);
+			}
 		}
 	}
 }
@@ -176,6 +184,7 @@ processClear();
 // }}}
 // {{{ load info/list
 $cacheinfos = array();
+$total = array();
 for ($i = 0; $i < $pcnt; $i ++) {
 	$data = xcache_info(XC_TYPE_PHP, $i);
 	if ($type === XC_TYPE_PHP) {
@@ -185,7 +194,35 @@ for ($i = 0; $i < $pcnt; $i ++) {
 	$data['cache_name'] = "php#$i";
 	$data['cacheid'] = $i;
 	$cacheinfos[] = $data;
+	if ($pcnt >= 2) {
+		foreach ($data as $k => $v) {
+			switch ($k) {
+			case 'type':
+			case 'cache_name':
+			case 'cacheid':
+			case 'free_blocks':
+				continue 2;
+			}
+			if (!isset($total[$k])) {
+				$total[$k] = $v;
+			}
+			else {
+				$total[$k] += $v;
+			}
+		}
+	}
 }
+
+if ($pcnt >= 2) {
+	$total['type'] = XC_TYPE_PHP;
+	$total['cache_name'] = _T('Total');
+	$total['cacheid'] = $pcnt;
+	$total['gc'] = null;
+	$total['istotal'] = true;
+	$cacheinfos[] = $total;
+}
+
+$total = array();
 for ($i = 0; $i < $vcnt; $i ++) {
 	$data = xcache_info(XC_TYPE_VAR, $i);
 	if ($type === XC_TYPE_VAR) {
@@ -195,6 +232,33 @@ for ($i = 0; $i < $vcnt; $i ++) {
 	$data['cache_name'] = "var#$i";
 	$data['cacheid'] = $i;
 	$cacheinfos[] = $data;
+	if ($pcnt >= 2) {
+		foreach ($data as $k => $v) {
+			switch ($k) {
+			case 'type':
+			case 'cache_name':
+			case 'cacheid':
+			case 'free_blocks':
+			case 'gc':
+				continue 2;
+			}
+			if (!isset($total[$k])) {
+				$total[$k] = $v;
+			}
+			else {
+				$total[$k] += $v;
+			}
+		}
+	}
+}
+
+if ($vcnt >= 2) {
+	$total['type'] = XC_TYPE_VAR;
+	$total['cache_name'] = _T('Total');
+	$total['cacheid'] = $vcnt;
+	$total['gc'] = null;
+	$total['istotal'] = true;
+	$cacheinfos[] = $total;
 }
 // }}}
 // {{{ merge the list
@@ -209,6 +273,9 @@ case XC_TYPE_VAR:
 		$cachelist['type_name'] = 'php';
 	}
 	foreach ($cacheinfos as $i => $c) {
+		if (!empty($c['istotal'])) {
+			continue;
+		}
 		if ($c['type'] == $type && isset($c['cache_list'])) {
 			foreach ($c['cache_list'] as $e) {
 				$e['cache_name'] = $c['cache_name'];
