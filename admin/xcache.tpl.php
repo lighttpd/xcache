@@ -72,15 +72,15 @@ $b = new Cycle('class="col1"', 'class="col2"');
 			></div
 			><div class="usagegraph" style="width: {$w}px">{$graph}</div
 		></td>
-		<td>
-			<form method="post">
-				<div>
-					<input type="hidden" name="type" value="{$ci['type']}">
-					<input type="hidden" name="cacheid" value="{$ci['cacheid']}">
-					<input type="submit" name="clearcache" value="{$l_clear}" class="submit" onclick="return confirm('{$l_clear_confirm}');" />
-				</div>
-			</form>
-		</td>
+		<td
+			><form method="post"
+				><div
+					><input type="hidden" name="type" value="{$ci['type']}"
+					/><input type="hidden" name="cacheid" value="{$ci['cacheid']}"
+					/><input type="submit" name="clearcache" value="{$l_clear}" class="submit" onclick="return confirm('{$l_clear_confirm}');"
+				/></div
+			></form
+		></td>
 		<td>{$ci['compiling']}</td>
 		<td>{$ci['hits']}</td>
 		<td>{$ci['misses']}</td>
