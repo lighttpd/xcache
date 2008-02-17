@@ -28,8 +28,8 @@ function str($src, $indent = '') // {{{
 
 	if (is_array($src)) {
 		die_error('array str');
-		$src = new Decompiler_Array($src);
-		return $src->__toString($indent);
+		$src = new Decompiler_Array($src, false, $indent);
+		return $src->__toString();
 	}
 
 	if (is_object($src)) {
@@ -164,9 +164,9 @@ class Decompiler_Box // {{{
 		$this->obj = &$obj;
 	}
 
-	function __toString($indent)
+	function __toString()
 	{
-		return $this->obj->__toString($indent);
+		return $this->obj->__toString();
 	}
 }
 // }}}
@@ -257,17 +257,19 @@ class Decompiler_ListBox extends Decompiler_Box // {{{
 class Decompiler_Array extends Decompiler_Value // {{{
 {
 	var $needExport = false;
+	var $indent = '';
 
-	function Decompiler_Array($value = array(), $needexport = false)
+	function Decompiler_Array($value = array(), $needexport = false, $indent = '')
 	{
 		$this->value = $value;
 		$this->needExport = $needexport;
+		$this->indent = $indent;
 	}
 
-	function __toString($indent)
+	function __toString()
 	{
 		$exp = "array(";
-		$indent .= INDENT;
+		$indent = $this->indent . INDENT;
 		$assoclen = 0;
 		$multiline = 0;
 		$i = 0;
@@ -334,7 +336,7 @@ class Decompiler_ForeachBox extends Decompiler_Box // {{{
 {
 	var $iskey;
 
-	function __toString($indent)
+	function __toString()
 	{
 		return 'foreach (' . '';
 	}

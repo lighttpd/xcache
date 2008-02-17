@@ -223,6 +223,13 @@ typedef struct {
 
 	time_t     last_gc_deletes;
 	time_t     last_gc_expires;
+
+	time_t     hits_by_hour_cur_time;
+	zend_uint  hits_by_hour_cur_slot;
+	zend_ulong hits_by_hour[24];
+	time_t     hits_by_second_cur_time;
+	zend_uint  hits_by_second_cur_slot;
+	zend_ulong hits_by_second[5];
 } xc_cache_t;
 /* }}} */
 /* {{{ xc_classinfo_t */

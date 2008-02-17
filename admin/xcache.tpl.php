@@ -16,6 +16,9 @@ $b = new Cycle('class="col1"', 'class="col2"');
 	<col align="right" />
 	<col align="right" />
 	<col align="right" />
+	<col />
+	<col align="right" />
+	<col align="right" />
 	<col align="right" />
 	<col align="right" />
 	<col align="right" />
@@ -31,6 +34,9 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		<th><?php echo _T('Clear'); ?></th>
 		<th><?php echo _T('Compiling'); ?></th>
 		<th><?php echo _T('Hits'); ?></th>
+		<th><?php echo _T('Hits/H'); ?></th>
+		<th><?php echo _T('Hits 24H'); ?></th>
+		<th><?php echo _T('Hits/S'); ?></th>
 		<th><?php echo _T('Misses'); ?></th>
 		<th><?php echo _T('Clogs'); ?></th>
 		<th><?php echo _T('OOMs'); ?></th>
@@ -64,6 +70,12 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		$ci_size  = size($ci['size']);
 		$ci_avail = size($ci['avail']);
 		$ci = number_formats($ci, $numkeys);
+
+		$hits_avg_h     = number_format(array_avg($ci['hits_by_hour']), 2);
+		$hits_avg_s     = number_format(array_avg($ci['hits_by_second']), 2);
+		$hits_graph_h   = hits_to_graph($ci['hits_by_hour']);
+		$hits_graph_h_w = count($ci['hits_by_hour']) * 2;
+
 		if (!empty($ci['istotal'])) {
 			$ci['compiling']    = '-';
 			$ci['can_readonly'] = '-';
@@ -94,6 +106,9 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		></td>
 		<td>{$ci['compiling']}</td>
 		<td>{$ci['hits']}</td>
+		<td>{$hits_avg_h}</td>
+		<td><div class="hitsgraph" style="width: {$hits_graph_h_w}px">{$hits_graph_h}</div></td>
+		<td>{$hits_avg_s}</td>
 		<td>{$ci['misses']}</td>
 		<td>{$ci['clogs']}</td>
 		<td>{$ci['ooms']}</td>

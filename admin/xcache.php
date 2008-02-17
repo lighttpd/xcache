@@ -113,6 +113,72 @@ function freeblock_to_graph($freeblocks, $size)
 	return implode('', $html);
 }
 
+function calc_total(&$total, $data)
+{
+	foreach ($data as $k => $v) {
+		switch ($k) {
+		case 'type':
+		case 'cache_name':
+		case 'cacheid':
+		case 'free_blocks':
+			continue 2;
+		}
+		if (!isset($total[$k])) {
+			$total[$k] = $v;
+		}
+		else {
+			switch ($k) {
+			case 'his_by_hour':
+			case 'his_by_second':
+				foreach ($data[$k] as $kk => $vv) {
+					$total[$k][$kk] += $vv;
+				}
+				break;
+
+			default:
+				$total[$k] += $v;
+			}
+		}
+	}
+}
+
+function array_avg($a)
+{
+	if (count($a) == 0) {
+		return '';
+	}
+	return array_sum($a) / count($a);
+}
+
+function bar_percent($percent)
+{
+	$r = 220 + (int) ($percent * 25);
+	$g = $b = 220 - (int) ($percent * 220);
+	$percent = (int) ($percent * 100);
+	return '<div>'
+		. '<div style="height: ' . (100 - $percent) . '%"></div>'
+		. '<div style="background: rgb(' . "$r,$g,$b" . '); height: ' . $percent . '%"></div>'
+		. '</div>';
+}
+
+function hits_to_graph($hits)
+{
+	$max = 0;
+	foreach ($hits as $v) {
+		if ($max < $v) {
+			$max = $v;
+		}
+	}
+	if (!$max) {
+		return '';
+	}
+	$html = array();
+	foreach ($hits as $v) {
+		$html[] = bar_percent($v / $max);
+	}
+	return implode('', $html);
+}
+
 function switcher($name, $options)
 {
 	$n = isset($_GET[$name]) ? $_GET[$name] : null;
@@ -195,21 +261,7 @@ for ($i = 0; $i < $pcnt; $i ++) {
 	$data['cacheid'] = $i;
 	$cacheinfos[] = $data;
 	if ($pcnt >= 2) {
-		foreach ($data as $k => $v) {
-			switch ($k) {
-			case 'type':
-			case 'cache_name':
-			case 'cacheid':
-			case 'free_blocks':
-				continue 2;
-			}
-			if (!isset($total[$k])) {
-				$total[$k] = $v;
-			}
-			else {
-				$total[$k] += $v;
-			}
-		}
+		calc_total($total, $data);
 	}
 }
 
@@ -233,22 +285,7 @@ for ($i = 0; $i < $vcnt; $i ++) {
 	$data['cacheid'] = $i;
 	$cacheinfos[] = $data;
 	if ($pcnt >= 2) {
-		foreach ($data as $k => $v) {
-			switch ($k) {
-			case 'type':
-			case 'cache_name':
-			case 'cacheid':
-			case 'free_blocks':
-			case 'gc':
-				continue 2;
-			}
-			if (!isset($total[$k])) {
-				$total[$k] = $v;
-			}
-			else {
-				$total[$k] += $v;
-			}
-		}
+		calc_total($total, $data);
 	}
 }
 

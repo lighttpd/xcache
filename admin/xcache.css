@@ -27,6 +27,10 @@ form {margin: 0; padding: 0}
 .freeblockgraph div { float: left; height: 3px; width: 4px; border: solid gray; border-width: 0 0px 1px 0; }
 .freeblockgraph { border: 1px solid gray; border-bottom: 0px; }
 
+.hitsgraph { height: 20px; border: solid gray; border-width: 1px 0 1px 0; margin: auto; }
+.hitsgraph div { float: left; width: 2px; height: 100%; }
+.bitsgraph div div { float: none; width: 100%; }
+
 .switcher, h1, h2 { text-align: center; display: block; }
 .switcher * { color: blue; }
 .switcher a.active { font-weight: bold; font-size: 130%; color: black; }
