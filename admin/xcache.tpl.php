@@ -113,7 +113,7 @@ if ($cachelist) {
 		?>
 
 	<form action="" method="post">
-	<table cellspacing="0" cellpadding="4" class="cycles entrys" width="100%">
+	<table cellspacing="0" cellpadding="4" class="cycles entries" width="100%">
 		<col />
 		<col />
 		<col />
