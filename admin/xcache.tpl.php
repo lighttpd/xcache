@@ -50,16 +50,28 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		$pavail = (int) ($ci['avail'] / $ci['size'] * 100);
 		$pused = 100 - $pavail;
 
-		$graph = freeblock_to_graph($ci['free_blocks'], $ci['size']);
 		$w = $free_graph_width;
 		$tdwidth = $w + 2;
+		if (empty($ci['istotal'])) {
+			$graph = freeblock_to_graph($ci['free_blocks'], $ci['size']);
+			$freeblockgraph = "<div class=\"freeblockgraph\" style=\"width: {$w}px\">{$graph}</div>";
+		}
+		else {
+			$freeblockgraph = '';
+		}
 
 		$ci_slots = size($ci['slots']);
 		$ci_size  = size($ci['size']);
 		$ci_avail = size($ci['avail']);
 		$ci = number_formats($ci, $numkeys);
-		$ci['compiling']    = $ci['type'] == $type_php ? ($ci['compiling'] ? 'yes' : 'no') : '-';
-		$ci['can_readonly'] = $ci['can_readonly'] ? 'yes' : 'no';
+		if (!empty($ci['istotal'])) {
+			$ci['compiling']    = '-';
+			$ci['can_readonly'] = '-';
+		}
+		else {
+			$ci['compiling']    = $ci['type'] == $type_php ? ($ci['compiling'] ? 'yes' : 'no') : '-';
+			$ci['can_readonly'] = $ci['can_readonly'] ? 'yes' : 'no';
+		}
 		echo <<<EOS
 		<th>{$ci['cache_name']}</th>
 		<td title="{$ci['slots']}">{$ci_slots}</td>
@@ -70,8 +82,7 @@ $b = new Cycle('class="col1"', 'class="col2"');
 				><div style="width: {$pavail}%" class="pavail"></div
 				><div style="width: {$pused}%" class="pused"></div
 			></div
-			><div class="usagegraph" style="width: {$w}px">{$graph}</div
-		></td>
+		>{$freeblockgraph}</td>
 		<td
 			><form method="post"
 				><div
