@@ -7,6 +7,9 @@
 <dt><?php echo _T('Clear'); ?>: </dt><dd>清除按钮, 点击按钮清除对应共享内存区的数据</dd>
 <dt><?php echo _T('Compiling'); ?>: </dt><dd>编译标记, 当共享内存区正在编译 php 脚本时标记为 "yes"</dd>
 <dt><?php echo _T('Hits'); ?>: </dt><dd>共享内存命中次数, 命中=从该共享内存载入php或者变量</dd>
+<dt><?php echo _T('Hits/H'); ?>: </dt><dd>每小时命中次数. 只统计最后 24 小时</dd>
+<dt><?php echo _T('Hits 24H'); ?>: </dt><dd>24 小时命中分布图. 图表现是最后 24 小时的命中次数</dd>
+<dt><?php echo _T('Hits/S'); ?>: </dt><dd>每秒命中次数. 只统计最后 5 秒</dd>
 <dt><?php echo _T('Misses'); ?>: </dt><dd>共享内存错过次数, 错过=请求的php或者变量并不在该共享内存内</dd>
 <dt><?php echo _T('Clogs'); ?>: </dt><dd>编译阻塞跳过, 阻塞=当需该共享内存区负责编译时, 其他进程/现成无法访问此共享内存. 跳过=XCache 自动判断阻塞的共享内存区自动跳过阻塞等待, 直接使用非共享内存方式继续处理请求</dd>
 <dt><?php echo _T('OOMs'); ?>: </dt><dd>内存不足次数, 显示需要存储新数据但是共享内存区内存不足的次数. 如果出现太频繁请考虑加大配置中的 xcache.size 或者 xcache.var_size</dd>

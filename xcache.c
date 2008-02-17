@@ -312,6 +312,55 @@ static void xc_entry_hold_var_dmz(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 #endif
+static inline zend_uint advance_wrapped(zend_uint val, zend_uint count) /* {{{ */
+{
+	if (val + 1 >= count) {
+		return 0;
+	}
+	return val + 1;
+}
+/* }}} */
+static void xc_counters_inc(time_t *curtime, zend_uint *curslot, time_t period, zend_ulong *counters, zend_uint count TSRMLS_DC) /* {{{ */
+{
+	time_t n = XG(request_time) / period;
+	if (*curtime != n) {
+		zend_uint target_slot = n % count;
+		if (n - *curtime > period) {
+			memset(counters, 0, sizeof(counters[0]) * count);
+		}
+		else {
+			zend_uint slot;
+			for (slot = advance_wrapped(*curslot, count);
+					slot != target_slot;
+					slot = advance_wrapped(slot, count)) {
+				counters[slot] = 0;
+			}
+			counters[target_slot] = 0;
+		}
+		*curtime = n;
+		*curslot = target_slot;
+	}
+	counters[*curslot] ++;
+}
+/* }}} */
+static void xc_cache_hit_dmz(xc_cache_t *cache TSRMLS_DC) /* {{{ */
+{
+	cache->hits ++;
+
+	xc_counters_inc(&cache->hits_by_hour_cur_time
+			, &cache->hits_by_hour_cur_slot, 60 * 60
+			, cache->hits_by_hour
+			, sizeof(cache->hits_by_hour) / sizeof(cache->hits_by_hour[0])
+			TSRMLS_CC);
+
+	xc_counters_inc(&cache->hits_by_second_cur_time
+			, &cache->hits_by_second_cur_slot
+			, 1
+			, cache->hits_by_second
+			, sizeof(cache->hits_by_second) / sizeof(cache->hits_by_second[0])
+			TSRMLS_CC);
+}
+/* }}} */
 
 /* helper function that loop through each entry */
 #define XC_ENTRY_APPLY_FUNC(name) int name(xc_entry_t *entry TSRMLS_DC)
@@ -454,7 +503,8 @@ static void xc_gc_deletes(TSRMLS_D) /* {{{ */
 /* helper functions for user functions */
 static void xc_fillinfo_dmz(int cachetype, xc_cache_t *cache, zval *return_value TSRMLS_DC) /* {{{ */
 {
-	zval *blocks;
+	zval *blocks, *hits;
+	int i;
 	const xc_block_t *b;
 #ifndef NDEBUG
 	xc_memsize_t avail = 0;
@@ -486,6 +536,19 @@ static void xc_fillinfo_dmz(int cachetype, xc_cache_t *cache, zval *return_value
 	else {
 		add_assoc_null_ex(return_value, ZEND_STRS("gc"));
 	}
+	MAKE_STD_ZVAL(hits);
+	array_init(hits);
+	for (i = 0; i < sizeof(cache->hits_by_hour) / sizeof(cache->hits_by_hour[0]); i ++) {
+		add_next_index_long(hits, (long) cache->hits_by_hour[i]);
+	}
+	add_assoc_zval_ex(return_value, ZEND_STRS("hits_by_hour"), hits);
+
+	MAKE_STD_ZVAL(hits);
+	array_init(hits);
+	for (i = 0; i < sizeof(cache->hits_by_second) / sizeof(cache->hits_by_second[0]); i ++) {
+		add_next_index_long(hits, (long) cache->hits_by_second[i]);
+	}
+	add_assoc_zval_ex(return_value, ZEND_STRS("hits_by_second"), hits);
 
 	MAKE_STD_ZVAL(blocks);
 	array_init(blocks);
@@ -1256,7 +1319,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	ENTER_LOCK_EX(cache) {
 		stored_xce = xc_entry_find_dmz(&xce TSRMLS_CC);
 		if (stored_xce) {
-			cache->hits ++;
+			xc_cache_hit_dmz(cache TSRMLS_CC);
 
 			TRACE("hit %s, holding", stored_xce->name.str.val);
 			xc_entry_hold_php_dmz(stored_xce TSRMLS_CC);
@@ -2112,7 +2175,7 @@ PHP_FUNCTION(xcache_get)
 		RETVAL_NULL();
 	} LEAVE_LOCK(xce.cache);
 	if (found) {
-		xce.cache->hits ++;
+		xc_cache_hit_dmz(xce.cache TSRMLS_CC);
 	}
 	else {
 		xce.cache->misses ++;
@@ -2193,7 +2256,7 @@ PHP_FUNCTION(xcache_isset)
 		RETVAL_FALSE;
 	} LEAVE_LOCK(xce.cache);
 	if (found) {
-		xce.cache->hits ++;
+		xc_cache_hit_dmz(xce.cache TSRMLS_CC);
 	}
 	else {
 		xce.cache->misses ++;

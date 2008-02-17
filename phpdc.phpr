@@ -12,7 +12,7 @@ if (!isset($argv)) {
 	$argc = $_SERVER['argc'];
 }
 
-$dc = &new Decompiler();
+$dc = new Decompiler();
 if (isset($argv[1])) {
 	$dc->decompileFile($argv[1]);
 }

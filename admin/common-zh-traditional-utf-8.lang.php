@@ -27,6 +27,12 @@ $strings = array(
 		=> '%',
 		'Hits'
 		=> '命中',
+		'Hits 24H'
+		=> '24H 分布',
+		'Hits/H'
+		=> '命中/H',
+		'Hits/S'
+		=> '命中/S',
 		'Misses'
 		=> '錯過',
 		'Clogs'

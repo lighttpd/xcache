@@ -14,7 +14,11 @@ BEGIN {
 			print "error" $0
 			exit
 		}
-		printf "\tOPSPEC(%10s, %10s, %10s, %10s)\n", array[1], array[2], array[3], array[4]
+		comment = "";
+		if (match($0, /\/\* (\d+) \*\//, comments)) {
+			comment = comments[1];
+		}
+		printf "\tOPSPEC(%10s, %10s, %10s, %10s)%s\n", array[1], array[2], array[3], array[4], comment;
 		next
 	}
 }

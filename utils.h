@@ -99,7 +99,7 @@ typedef struct {
 
 #ifdef E_STRICT
 	int orig_user_error_handler_error_reporting;
-	ZEND_API void (*orig_zend_error_cb)(int type, const char *error_filename, const uint error_lineno, const char *format, va_list args);
+	void (*orig_zend_error_cb)(int type, const char *error_filename, const uint error_lineno, const char *format, va_list args);
 	zend_uint compilererror_cnt;
 	zend_uint compilererror_size;
 	xc_compilererror_t *compilererrors;
