@@ -74,6 +74,39 @@ function age($time)
 	return '0 s';
 }
 
+function freeblock_to_graph($freeblocks, $size)
+{
+	global $free_graph_width;
+
+	// cached in static variable
+	static $graph_initial;
+	if (!isset($graph_initial)) {
+		for ($i = 0; $i < $free_graph_width; $i ++) {
+			$graph_initial[$i] = 0;
+		}
+	}
+	$graph = $graph_initial;
+	foreach ($freeblocks as $b) {
+		$begin = $b['offset'] / $size * $free_graph_width;
+		$end = ($b['offset'] + $b['size']) / $size * $free_graph_width;
+
+		$graph[(int) $begin] += 1 - ($begin - (int) $begin);
+		$graph[(int) $end] += ($end - (int) $end);
+		for ($i = (int) $begin + 1, $e = (int) $end; $i < $e; $i ++) {
+			$graph[$i] = 1;
+		}
+	}
+	$html = array();
+	$c = 255;
+	foreach ($graph as $k => $v) {
+		$v = (int) ($v * $c);
+		$r = $g = $c - $v;
+		$b = $c;
+		$html[] = '<div style="background: rgb(' . "$r,$g,$b" . ')"></div>';
+	}
+	return implode('', $html);
+}
+
 function switcher($name, $options)
 {
 	$n = isset($_GET[$name]) ? $_GET[$name] : null;
