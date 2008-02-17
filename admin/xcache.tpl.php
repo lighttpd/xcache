@@ -50,6 +50,10 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		$pavail = (int) ($ci['avail'] / $ci['size'] * 100);
 		$pused = 100 - $pavail;
 
+		$graph = freeblock_to_graph($ci['free_blocks'], $ci['size']);
+		$w = $free_graph_width;
+		$tdwidth = $w + 2;
+
 		$ci_slots = size($ci['slots']);
 		$ci_size  = size($ci['size']);
 		$ci_avail = size($ci['avail']);
@@ -61,7 +65,13 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		<td title="{$ci['slots']}">{$ci_slots}</td>
 		<td title="{$ci['size']}">{$ci_size}</td>
 		<td title="{$ci['avail']}">{$ci_avail}</td>
-		<td title="{$pavail} %"><div class="percent"><div style="height: {$pused}%" class="pused">&nbsp;</div><div style="height: {$pavail}%" class="pavail">&nbsp;</div></div></td>
+		<td title="{$pavail} %" width="{$tdwidth}"
+			><div class="percent" style="width: {$w}px"
+				><div style="width: {$pavail}%" class="pavail"></div
+				><div style="width: {$pused}%" class="pused"></div
+			></div
+			><div class="usagegraph" style="width: {$w}px">{$graph}</div
+		></td>
 		<td>
 			<form method="post">
 				<div>
@@ -88,32 +98,6 @@ EOS;
 	</tr>
 	<?php } ?>
 </table>
-<div>
-	<?php echo _T('Free Blocks'); ?>:
-</div>
-<?php
-foreach ($cacheinfos as $i => $ci) {
-	$b->reset();
-?>
-<table cellspacing="0" cellpadding="4" class="cycles freeblocks">
-	<tr>
-		<th><?php echo $ci['cache_name']; ?> <?php echo _T("size"); ?><br><?php echo _T("offset"); ?></th>
-	<?php
-	foreach ($ci['free_blocks'] as $block) {
-		$size   = size($block['size']);
-		$offset = size($block['offset']);
-
-		$c = $b->next();
-		echo "
-		<td $c><nobr>$size<br>$offset</nobr></td>";
-	}
-	?>
-
-	</tr>
-</table>
-<?php
-}
-?>
 <div style="clear: both">&nbsp;</div>
 <?php
 
