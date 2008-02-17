@@ -90,10 +90,16 @@ function freeblock_to_graph($freeblocks, $size)
 		$begin = $b['offset'] / $size * $free_graph_width;
 		$end = ($b['offset'] + $b['size']) / $size * $free_graph_width;
 
-		$graph[(int) $begin] += 1 - ($begin - (int) $begin);
-		$graph[(int) $end] += ($end - (int) $end);
-		for ($i = (int) $begin + 1, $e = (int) $end; $i < $e; $i ++) {
-			$graph[$i] = 1;
+		if ((int) $begin == (int) $end) {
+			$v = $end - $begin;
+			$graph[(int) $v] += $v - (int) $v;
+		}
+		else {
+			$graph[(int) $begin] += 1 - ($begin - (int) $begin);
+			$graph[(int) $end] += $end - (int) $end;
+			for ($i = (int) $begin + 1, $e = (int) $end; $i < $e; $i ++) {
+				$graph[$i] += 1;
+			}
 		}
 	}
 	$html = array();
