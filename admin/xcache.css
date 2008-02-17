@@ -1,6 +1,7 @@
 input, table { font-family: sans-serif; }
 input { font-size: 12px; }
 table { border-collapse: collapse; font-size: 11px; }
+table { white-space: pre; }
 table.cycles { border: 1px solid black; margin-top: 5px; margin-bottom: 5px; }
 table.cycles .col1 { background-color: #f5f5f5; }
 table.cycles .col2 { background-color: #e0e0e0; }
