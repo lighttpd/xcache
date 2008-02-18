@@ -469,6 +469,7 @@ int xc_coverager_init(int module_number TSRMLS_DC) /* {{{ */
 	zend_compile_file = xc_compile_file_for_coverage;
 
 	if (cfg_get_string("xcache.coveragedump_directory", &xc_coveragedump_dir) == SUCCESS && xc_coveragedump_dir) {
+		xc_coveragedump_dir = pestrdup(xc_coveragedump_dir, 1);
 		int len = strlen(xc_coveragedump_dir);
 		if (len) {
 			if (xc_coveragedump_dir[len - 1] == '/') {
@@ -476,6 +477,7 @@ int xc_coverager_init(int module_number TSRMLS_DC) /* {{{ */
 			}
 		}
 		if (!strlen(xc_coveragedump_dir)) {
+			pefree(xc_coveragedump_dir, 1);
 			xc_coveragedump_dir = NULL;
 		}
 	}
@@ -489,6 +491,7 @@ void xc_coverager_destroy() /* {{{ */
 		zend_compile_file = old_compile_file;
 	}
 	if (xc_coveragedump_dir) {
+		pefree(xc_coveragedump_dir, 1);
 		xc_coveragedump_dir = NULL;
 	}
 }
