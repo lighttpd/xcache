@@ -21,7 +21,7 @@ form {margin: 0; padding: 0}
 
 .percent { height: 3px; margin-bottom: 1px; background: gray; border: 1px solid gray; }
 .percent div { float: left; height: 100%; }
-.percent .pvalue { background: limegreen; }
+.pvalue { background: limegreen; }
 
 .blocksgraph { height: 16px; }
 .blocksgraph div { float: left; height: 3px; width: 4px; border: solid gray; border-width: 0 0px 1px 0; }
@@ -39,3 +39,6 @@ form {margin: 0; padding: 0}
 dl { overflow: hidden; }
 dt { font-weight: bold; clear: both; float: left; width: 100px; text-align: right; margin: 0; }
 dd { margin: 0; }
+.blockarea { overflow: hidden; _width: 1px; }
+div.legend { float: left; border: 1px solid gray; font: 12px/12px monospace; }
+div.legendtitle { float: left; padding: 2px; padding-right: 10px; font: 12px/12px monospace; }

@@ -130,7 +130,16 @@ EOS;
 	</tr>
 	<?php } ?>
 </table>
-<div style="clear: both">&nbsp;</div>
+<div class="blockarea legends">
+	<div class="legendtitle"><?php echo _T('Legends:'); ?></div>
+	<div class="legend pvalue">&nbsp;&nbsp;</div>
+	<div class="legendtitle"><?php echo _T(isset($free_graph_width) ? '% Free' : '% Used'); ?></div>
+	<div class="legend" style="background: rgb(0,0,255)">&nbsp;&nbsp;</div>
+	<div class="legendtitle"><?php echo _T(isset($free_graph_width) ? 'Free Blocks' : 'Used Blocks'); ?></div>
+	<div class="legend" style="background: rgb(255,0,0)">&nbsp;&nbsp;</div>
+	<div class="legendtitle"><?php echo _T('Hits'); ?></div>
+<div>
+</div>
 <?php
 
 if ($cachelist) {
