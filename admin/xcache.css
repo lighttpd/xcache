@@ -19,7 +19,7 @@ th { font-size: 12px; }
 span.sortarrow { color: white; text-decoration: none; }
 form {margin: 0; padding: 0}
 
-.percent { height: 3px; margin-bottom: 1px; background: gray; border: 1px solid gray; }
+.percent { height: 3px; margin-bottom: 1px; border: 1px solid gray; }
 .percent div { float: left; height: 100%; }
 .pvalue { background: limegreen; }
 
