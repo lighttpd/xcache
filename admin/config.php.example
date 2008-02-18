@@ -11,8 +11,10 @@ $charset = "UTF-8";
 // developers only
 $show_todo_strings = false;
 
-// width of graph for free blocks
-$free_graph_width = 120;
+// width of graph for free or usage blocks
+$usage_graph_width = 120;
+// do not define both with
+// $free_graph_width = 120;
 
 // this function is detected by xcache.tpl.php, and enabled if function_exists
 // this ob filter is applied for the cache list, not the whole page

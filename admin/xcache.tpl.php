@@ -30,7 +30,7 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		<th><?php echo _T('Slots'); ?></th>
 		<th><?php echo _T('Size'); ?></th>
 		<th><?php echo _T('Avail'); ?></th>
-		<th><?php echo _T('%'); ?></th>
+		<th><?php echo _T(isset($free_graph_width) ? '% Free' : '% Used'); ?></th>
 		<th><?php echo _T('Clear'); ?></th>
 		<th><?php echo _T('Compiling'); ?></th>
 		<th><?php echo _T('Hits'); ?></th>
@@ -53,17 +53,23 @@ $b = new Cycle('class="col1"', 'class="col2"');
 	foreach ($cacheinfos as $i => $ci) {
 		echo "
 		<tr ", $a->next(), ">";
-		$pavail = (int) ($ci['avail'] / $ci['size'] * 100);
-		$pused = 100 - $pavail;
+		$pvalue = (int) ($ci['avail'] / $ci['size'] * 100);
+		$pempty = 100 - $pvalue;
+		if (!isset($free_graph_width)) {
+			// swap
+			$tmp = $pvalue;
+			$pvalue = $pempty;
+			$pempty = $tmp;
+		}
 
-		$w = $free_graph_width;
+		$w = $graph_width;
 		$tdwidth = $w + 2;
 		if (empty($ci['istotal'])) {
 			$graph = freeblock_to_graph($ci['free_blocks'], $ci['size']);
-			$freeblockgraph = "<div class=\"freeblockgraph\" style=\"width: {$w}px\">{$graph}</div>";
+			$blocksgraph = "<div class=\"blocksgraph\" style=\"width: {$w}px\">{$graph}</div>";
 		}
 		else {
-			$freeblockgraph = '';
+			$blocksgraph = '';
 		}
 
 		$ci_slots = size($ci['slots']);
@@ -89,12 +95,12 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		<td title="{$ci['slots']}">{$ci_slots}</td>
 		<td title="{$ci['size']}">{$ci_size}</td>
 		<td title="{$ci['avail']}">{$ci_avail}</td>
-		<td title="{$pavail} %" width="{$tdwidth}"
+		<td title="{$pvalue} %" width="{$tdwidth}"
 			><div class="percent" style="width: {$w}px"
-				><div style="width: {$pavail}%" class="pavail"></div
-				><div style="width: {$pused}%" class="pused"></div
+				><div style="width: {$pvalue}%" class="pvalue"></div
+				><div style="width: {$pempty}%" class="pempty"></div
 			></div
-		>{$freeblockgraph}</td>
+		>{$blocksgraph}</td>
 		<td
 			><form method="post"
 				><div

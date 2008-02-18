@@ -76,19 +76,17 @@ function age($time)
 
 function freeblock_to_graph($freeblocks, $size)
 {
-	global $free_graph_width;
+	global $graph_width, $usage_graph_width, $free_graph_width;
 
 	// cached in static variable
 	static $graph_initial;
 	if (!isset($graph_initial)) {
-		for ($i = 0; $i < $free_graph_width; $i ++) {
-			$graph_initial[$i] = 0;
-		}
+		$graph_initial = array_fill(0, $graph_width, 0);
 	}
 	$graph = $graph_initial;
 	foreach ($freeblocks as $b) {
-		$begin = $b['offset'] / $size * $free_graph_width;
-		$end = ($b['offset'] + $b['size']) / $size * $free_graph_width;
+		$begin = $b['offset'] / $size * $graph_width;
+		$end = ($b['offset'] + $b['size']) / $size * $graph_width;
 
 		if ((int) $begin == (int) $end) {
 			$v = $end - $begin;
@@ -105,6 +103,9 @@ function freeblock_to_graph($freeblocks, $size)
 	$html = array();
 	$c = 255;
 	foreach ($graph as $k => $v) {
+		if (!isset($free_graph_width)) {
+			$v = 1 - $v;
+		}
 		$v = (int) ($v * $c);
 		$r = $g = $c - $v;
 		$b = $c;

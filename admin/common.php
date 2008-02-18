@@ -108,8 +108,9 @@ include(get_language_file("common"));
 if (!isset($lang)) {
 	$lang = 'en-us';
 }
-if (!isset($free_graph_width)) {
-	$free_graph_width = 120;
+if (!isset($usage_graph_width) && !isset($free_graph_width)) {
+	$usage_graph_width = 120;
 }
+$graph_width = isset($free_graph_width) ? $free_graph_width : $usage_graph_width;
 
 ?>
