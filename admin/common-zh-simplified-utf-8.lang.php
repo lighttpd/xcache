@@ -78,6 +78,12 @@ $strings = array(
 		=> '建议参考',
 		'GC'
 		=> 'GC',
+		'Legends:'
+		=> '图例:',
+		'Used Blocks'
+		=> '已用块',
+		'Free Blocks'
+		=> '未用块',
 		'Total'
 		=> '总共',
 		'Cache'
