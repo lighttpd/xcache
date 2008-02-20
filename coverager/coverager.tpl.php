@@ -1,4 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <?php
@@ -55,7 +55,8 @@ function dir_head()
 	$l_lns = _T("Lines");
 	$l_tds = _T("TODO");
 	return <<<EOS
-	<table align="center" cellpadding="2" cellspacing="0" border="0" class="cycles">
+<div class="table-center">
+	<table cellpadding="2" cellspacing="0" border="0" class="cycles center">
 	<tr>
 		<th>{$l_dir}</th><th>{$l_per}</th><th>{$l_hit}</th><th>{$l_lns}</th><th>{$l_tds}</th>
 	</tr>
@@ -104,6 +105,7 @@ function dir_foot()
 {
 	return <<<EOS
 	</table>
+</div>
 EOS;
 }
 
@@ -116,8 +118,8 @@ function file_head()
 	$l_hit = _T("Hits");
 	$l_lns = _T("Lines");
 	return <<<EOS
-	<br>
-	<table align="center" cellpadding="2" cellspacing="0" border="0" class="cycles">
+<div class="center-table">
+	<table cellpadding="2" cellspacing="0" border="0" class="cycles center">
 	<tr>
 		<th>{$l_fil}</th><th>{$l_per}</th><th>{$l_hit}</th><th>{$l_lns}</th>
 	</tr>
@@ -161,6 +163,7 @@ function file_foot()
 {
 	return <<<EOS
     </table>
+</div>
 EOS;
 }
 
@@ -171,7 +174,9 @@ if ($action == 'dir') {
 	}
 	$path_html = htmlspecialchars($path);
 	echo <<<EOS
-	<a href="?">$l_root</a> $path<br />
+	<div>
+		<a href="?">$l_root</a> $path<br />
+	</div>
 EOS;
 	echo dir_head($dirinfo);
 	echo dir_row($dirinfo, $path);
@@ -198,7 +203,9 @@ else if ($action == 'file') {
 	$dir_url = urlencode($dir);
 	$dir_html = htmlspecialchars($dir);
 	echo <<<EOS
-	<a href="?">$l_root</a> <a href="?path={$dir_url}">{$dir_html}</a>/<strong>{$filename}</strong><br />
+	<div>
+		<a href="?">$l_root</a> <a href="?path={$dir_url}">{$dir_html}</a>/<strong>{$filename}</strong><br />
+	</div>
 EOS;
 
 	echo file_head();
@@ -208,19 +215,25 @@ EOS;
 	if ($tplfile) {
 		$tplfile_html = htmlspecialchars($tplfile);
 		echo <<<EOS
-		<a href="#tpl">{$tplfile_html}</a><br />
+		<div>
+			<a href="#tpl">{$tplfile_html}</a><br />
+		</div>
 EOS;
 	}
 	if (function_exists('ob_filter_path_nicer')) {
 		ob_end_flush();
 	}
 	echo <<<EOS
-	<pre class="code"><ol>{$filecov}</ol></pre>
+	<div class="code">
+		<ol>{$filecov}</ol>
+	</div>
 EOS;
 	if ($tplfile) {
 		echo <<<EOS
 	<a name="tpl">{$tplfile}</a>
-	<pre class="code"><ol>{$tplcov}</ol></pre>
+	<div class="code">
+		<ol>{$tplcov}</ol>
+	</div>
 EOS;
 	}
 }
