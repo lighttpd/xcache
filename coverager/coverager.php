@@ -113,7 +113,7 @@ class XcacheCoverageViewer
 				$lines = preg_replace('(^<span[^>]*>|</span>$)', '', $lines);
 				$lines = explode('<br />', $lines);
 				$last = array_pop($lines);
-				$lines[count($lines) - 1] = $last;
+				$lines[count($lines) - 1] .= $last;
 				$filecov = sprint_cov($fileinfo['cov'], $lines, false);
 				unset($source);
 			}
