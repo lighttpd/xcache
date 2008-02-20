@@ -138,7 +138,6 @@ EOS;
 	<div class="legendtitle"><?php echo _T(isset($free_graph_width) ? 'Free Blocks' : 'Used Blocks'); ?></div>
 	<div class="legend" style="background: rgb(255,0,0)">&nbsp;&nbsp;</div>
 	<div class="legendtitle"><?php echo _T('Hits'); ?></div>
-<div>
 </div>
 <?php
 
