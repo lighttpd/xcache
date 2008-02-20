@@ -1,6 +1,7 @@
 input, table { font-family: sans-serif; }
 input { font-size: 12px; }
-table { border-collapse: collapse; font-size: 11px; }
+table { border-collapse: collapse; font-size: 11px; margin: 0; margin-bottom: 10px; }
+table caption, h2 { font-size: 16px; font-weight: bold; text-align: left; padding-top: 20px; margin-bottom: 2px; }
 table { white-space: pre; }
 table.cycles { border: 1px solid black; margin-top: 5px; margin-bottom: 5px; }
 table.cycles .col1 { background-color: #f5f5f5; }
@@ -31,7 +32,7 @@ form {margin: 0; padding: 0}
 .hitsgraph div { float: left; width: 2px; height: 100%; }
 .bitsgraph div div { float: none; width: 100%; }
 
-.switcher, h1, h2 { text-align: center; display: block; }
+.switcher, h1 { text-align: center; display: block; }
 .switcher * { color: blue; }
 .switcher a.active { font-weight: bold; font-size: 130%; color: black; }
 #help { display: block; float: right; }

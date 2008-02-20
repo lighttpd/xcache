@@ -113,8 +113,8 @@ class XcacheCoverageViewer
 				$lines = preg_replace('(^<span[^>]*>|</span>$)', '', $lines);
 				$lines = explode('<br />', $lines);
 				$last = array_pop($lines);
+				$lines[count($lines) - 1] = $last;
 				$filecov = sprint_cov($fileinfo['cov'], $lines, false);
-				$filecov .= $last;
 				unset($source);
 			}
 			else {
@@ -324,13 +324,13 @@ function sprint_cov($cov, $lines, $encode = true)
 			}
 		}
 		if (isset($cov[$offs])) {
-			$lines[$l] = sprintf("<li class=\"line%sCov\"> %s\t%s\n</li>"
+			$lines[$l] = sprintf("<li class=\"line%sCov\"><pre class=\"code\"> %s\t%s\n</pre></li>"
 					, $cov[$offs] ? '' : 'No'
 					, $cov[$offs]
 					, $line);
 		}
 		else {
-			$lines[$l] = "<li>\t$line\n</li>";
+			$lines[$l] = "<li><pre class=\"code\">\t$line\n</pre></li>";
 		}
 	}
 	return implode('', $lines);

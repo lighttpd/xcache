@@ -1,12 +1,14 @@
 <?php include("header.tpl.php"); ?>
-<a href="help.php" target="_blank" id="help"><?php echo _T("Help") ?> &raquo;</a>
-<span class="switcher"><?php echo switcher("type", $types); ?></span>
+<div id="help">
+	<a href="help.php"><?php echo _T("Help") ?> &raquo;</a>
+</div>
+<div class="switcher"><?php echo switcher("type", $types); ?></div>
 <?php
 $a = new Cycle('class="col1"', 'class="col2"');
 $b = new Cycle('class="col1"', 'class="col2"');
 ?>
-<?php echo _T('Caches'); ?>:
 <table cellspacing="0" cellpadding="4" class="cycles">
+	<caption><?php echo _T('Caches'); ?></caption>
 	<col />
 	<col align="right" />
 	<col align="right" />
@@ -63,7 +65,6 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		}
 
 		$w = $graph_width;
-		$tdwidth = $w + 2;
 		if (empty($ci['istotal'])) {
 			$graph = freeblock_to_graph($ci['free_blocks'], $ci['size']);
 			$blocksgraph = "<div class=\"blocksgraph\" style=\"width: {$w}px\">{$graph}</div>";
@@ -95,14 +96,14 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		<td title="{$ci['slots']}">{$ci_slots}</td>
 		<td title="{$ci['size']}">{$ci_size}</td>
 		<td title="{$ci['avail']}">{$ci_avail}</td>
-		<td title="{$pvalue} %" width="{$tdwidth}"
+		<td title="{$pvalue} %"
 			><div class="percent" style="width: {$w}px"
 				><div style="width: {$pvalue}%" class="pvalue"></div
 				><div style="width: {$pempty}%" class="pempty"></div
 			></div
 		>{$blocksgraph}</td>
 		<td
-			><form method="post"
+			><form method="post" action=""
 				><div
 					><input type="hidden" name="type" value="{$ci['type']}"
 					/><input type="hidden" name="cacheid" value="{$ci['cacheid']}"
@@ -148,12 +149,11 @@ if ($cachelist) {
 	}
 	foreach (array('Cached' => $cachelist['cache_list'], 'Deleted' => $cachelist['deleted_list']) as $listname => $entries) {
 		$a->reset();
-		echo "
-		<caption>", _T("{$cachelist['type_name']} $listname"), "</caption>";
 		?>
 
 	<form action="" method="post">
 	<table cellspacing="0" cellpadding="4" class="cycles entries" width="100%">
+		<caption><?php echo _T("{$cachelist['type_name']} $listname"); ?></caption>
 		<col />
 		<col />
 		<col />
