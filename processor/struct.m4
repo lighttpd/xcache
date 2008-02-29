@@ -59,7 +59,7 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 		')')
 
 		IFDPRINT(`
-			fprintf(stderr, "%s", " {\n");
+			fprintf(stderr, "%s", "{\n");
 			indent ++;
 		')
 		$3`'
@@ -145,7 +145,7 @@ dnl {{{ STRUCT_P(1:type, 2:elm, 3:name=type)
 define(`STRUCT_P', `
 	DBG(`$0($*)')
 	if (src->$2) {
-		IFDPRINT(`INDENT()`'fprintf(stderr, "$1:$2");')
+		IFDPRINT(`INDENT()`'fprintf(stderr, "$1:$2 ");')
 		STRUCT_P_EX(`$1', `dst->$2', `src->$2', `$2', `$3')
 	}
 	else {
@@ -159,7 +159,7 @@ dnl {{{ STRUCT(1:type, 2:elm, 3:name=type)
 define(`STRUCT', `
 	DBG(`$0($*)')
 	assert(sizeof($1) == sizeof(src->$2));
-	IFDPRINT(`INDENT()`'fprintf(stderr, "$1:$2");')
+	IFDPRINT(`INDENT()`'fprintf(stderr, "$1:$2 ");')
 	STRUCT_P_EX(`$1', `dst->$2', `src->$2', `$2', `$3', `&')
 	DONE(`$2')
 ')
