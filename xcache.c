@@ -2389,6 +2389,20 @@ PHP_FUNCTION(xcache_dec)
 	xc_var_inc_dec(-1, INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 /* }}} */
+#ifdef HAVE_XCACHE_DPRINT
+/* {{{ proto bool  xcache_dprint(mixed value)
+   Prints variable (or value) internal struct (debug only) */
+PHP_FUNCTION(xcache_dprint)
+{
+	zval *value;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &value) == FAILURE) {
+		return;
+	}
+	xc_dprint_zval(value, 0 TSRMLS_CC);
+}
+/* }}} */
+#endif
 /* {{{ proto string xcache_asm(string filename)
  */
 #ifdef HAVE_XCACHE_ASSEMBLER
@@ -2614,6 +2628,9 @@ static function_entry xcache_functions[] = /* {{{ */
 	PHP_FE(xcache_set,               NULL)
 	PHP_FE(xcache_isset,             NULL)
 	PHP_FE(xcache_unset,             NULL)
+#ifdef HAVE_XCACHE_DPRINT
+	PHP_FE(xcache_dprint,            NULL)
+#endif
 	{NULL, NULL,                     NULL}
 };
 /* }}} */
