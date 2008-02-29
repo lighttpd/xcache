@@ -1966,10 +1966,10 @@ static int xcache_admin_auth_check(TSRMLS_D) /* {{{ */
 		}
 	}
 
-#define STR "WWW-authenticate: Basic Realm=\"XCache Administration\""
+#define STR "HTTP/1.0 401 Unauthorized"
 	sapi_add_header_ex(STR, sizeof(STR) - 1, 1, 1 TSRMLS_CC);
 #undef STR
-#define STR "HTTP/1.0 401 Unauthorized"
+#define STR "WWW-authenticate: Basic Realm=\"XCache Administration\""
 	sapi_add_header_ex(STR, sizeof(STR) - 1, 1, 1 TSRMLS_CC);
 #undef STR
 	ZEND_PUTS("XCache Auth Failed. User and Password is case sense\n");
