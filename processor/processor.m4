@@ -210,7 +210,7 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 			IFCOPY(`
 				dnl fprintf(stderr, "copy from %p to %p\n", src[0], dst[0]);
 			')
-			IFDPRINT(`INDENT()`'fprintf(stderr, "[%p]", src[0]);')
+			IFDPRINT(`INDENT()`'fprintf(stderr, "[%p] ", src[0]);')
 			STRUCT_P_EX(zval, dst[0], src[0], `[0]', `', ` ')
 			FIXPOINTER_EX(zval, dst[0])
 		} while (0);
