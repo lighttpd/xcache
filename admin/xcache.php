@@ -151,14 +151,15 @@ function array_avg($a)
 	return array_sum($a) / count($a);
 }
 
-function bar_percent($percent)
+function bar_percent($percent, $active)
 {
 	$r = 220 + (int) ($percent * 25);
 	$g = $b = 220 - (int) ($percent * 220);
 	$percent = (int) ($percent * 100);
+	$a = $active ? ' active' : '';
 	return '<div>'
-		. '<div style="height: ' . (100 - $percent) . '%"></div>'
-		. '<div style="background: rgb(' . "$r,$g,$b" . '); height: ' . $percent . '%"></div>'
+		. '<div class="barf' . $a . '" style="height: ' . (100 - $percent) . '%"></div>'
+		. '<div class="barv' . $a . '" style="background: rgb(' . "$r,$g,$b" . '); height: ' . $percent . '%"></div>'
 		. '</div>';
 }
 
@@ -173,9 +174,10 @@ function hits_to_graph($hits)
 	if (!$max) {
 		return '';
 	}
+	$t = (time() / (60 * 60)) % 24;
 	$html = array();
-	foreach ($hits as $v) {
-		$html[] = bar_percent($v / $max);
+	foreach ($hits as $i => $v) {
+		$html[] = bar_percent($v / $max, $i == $t);
 	}
 	return implode('', $html);
 }
