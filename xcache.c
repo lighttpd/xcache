@@ -19,6 +19,7 @@
 #include "ext/standard/md5.h"
 #include "ext/standard/php_math.h"
 #include "ext/standard/php_string.h"
+#include "ext/date/php_date.h"
 #include "zend_extensions.h"
 #include "SAPI.h"
 
