@@ -18,6 +18,7 @@
 #include "ext/standard/info.h"
 #include "ext/standard/md5.h"
 #include "ext/standard/php_math.h"
+#include "ext/standard/php_string.h"
 #include "zend_extensions.h"
 #include "SAPI.h"
 
@@ -856,6 +857,25 @@ static inline xc_hash_value_t xc_entry_hash_php(xc_entry_t *xce TSRMLS_DC) /* {{
 	return xc_entry_hash_name(xce TSRMLS_CC);
 }
 /* }}} */
+static inline xc_hash_value_t xc_entry_hash_php_basename(xc_entry_t *xce TSRMLS_DC) /* {{{ */
+{
+#ifdef IS_UNICODE
+	if (UG(unicode) && xce->name_type == IS_UNICODE) {
+		UChar *basename;
+		int basename_len;
+		php_u_basename(xce->name.uni.val, xce->name.uni.len, NULL_ZSTR, 0, &basename, &basename_len TSRMLS_CC);
+		return HASH_USTR_L(IS_UNICODE, basename, basename_len);
+	}
+	else
+#endif
+	{
+		char *basename;
+		UNISW(size_t, int) basename_len;
+		php_basename(xce->name.str.val, xce->name.str.len, "", 0, &basename, &basename_len TSRMLS_CC);
+		return HASH_STR_L(basename, basename_len);
+	}
+}
+/* }}} */
 static int xc_entry_init_key_php(xc_entry_t *xce, char *filename, char *opened_path_buffer TSRMLS_DC) /* {{{ */
 {
 	struct stat buf, *pbuf;
@@ -954,9 +974,16 @@ stat_done:
 	xce->name.str.val = filename;
 	xce->name.str.len = strlen(filename);
 
-	hv = xc_entry_hash_php(xce TSRMLS_CC);
-	cacheid = xc_hash_fold(hv, &xc_php_hcache);
+	if (xc_php_hcache.size > 1) {
+		hv = xc_entry_hash_php_basename(xce TSRMLS_CC);
+		cacheid = xc_hash_fold(hv, &xc_php_hcache);
+	}
+	else {
+		cacheid = 0;
+	}
 	xce->cache = xc_php_caches[cacheid];
+
+	hv = xc_entry_hash_php(xce TSRMLS_CC);
 	xce->hvalue = xc_hash_fold(hv, &xc_php_hentry);
 
 	xce->type = XC_TYPE_PHP;
