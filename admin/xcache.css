@@ -30,6 +30,7 @@ form {margin: 0; padding: 0}
 
 .hitsgraph { height: 20px; margin: auto; }
 .hitsgraph div { float: left; width: 2px; height: 100%; }
+.hitsgraph div:hover { background: gray; }
 .hitsgraph div div { float: none; width: 100%; }
 .hitsgraph div div.barf { border: 0px solid gray; border-width: 1px 0 0 0; }
 .hitsgraph div div.barv { border: 0px solid gray; border-width: 0 0 1px 0; }
