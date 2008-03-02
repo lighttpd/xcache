@@ -86,6 +86,11 @@ static xc_cache_t **xc_php_caches = NULL;
 static xc_cache_t **xc_var_caches = NULL;
 
 static zend_bool xc_initized = 0;
+static time_t xc_init_time = 0;
+static long unsigned xc_init_instance_id = 0;
+#ifdef ZTS
+static long unsigned xc_init_instance_subid = 0;
+#endif
 static zend_compile_file_t *origin_compile_file = NULL;
 static zend_compile_file_t *old_compile_file = NULL;
 static zend_llist_element  *xc_llist_zend_extension = NULL;
@@ -2768,6 +2773,16 @@ static PHP_MINFO_FUNCTION(xcache)
 	php_info_print_table_row(2, "Version", XCACHE_VERSION);
 	php_info_print_table_row(2, "Modules Built", XCACHE_MODULES);
 	php_info_print_table_row(2, "Readonly Protection", xc_readonly_protection ? "enabled" : "N/A");
+	ptr = php_format_date("Y-m-d H:i:s", sizeof("Y-m-d H:i:s") - 1, xc_init_time, 1 TSRMLS_CC);
+	php_info_print_table_row(2, "Cache Init Time", ptr);
+	efree(ptr);
+
+#ifdef ZTS
+	snprintf(buf, sizeof(buf), "%lu.%lu", xc_init_instance_id, xc_init_instance_subid);
+#else
+	snprintf(buf, sizeof(buf), "%lu", xc_init_instance_id);
+#endif
+	php_info_print_table_row(2, "Cache Instance Id", buf);
 
 	if (xc_php_size) {
 		ptr = _php_math_number_format(xc_php_size, 0, '.', ',');
@@ -3002,6 +3017,11 @@ static PHP_MINIT_FUNCTION(xcache)
 			goto err_init;
 		}
 		xc_initized = 1;
+		xc_init_time = time(NULL);
+		xc_init_instance_id = getpid();
+#ifdef ZTS
+		xc_init_instance_subid = tsrm_thread_id();
+#endif
 	}
 
 #ifdef HAVE_XCACHE_COVERAGER
