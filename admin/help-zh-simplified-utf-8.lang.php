@@ -3,7 +3,7 @@
 <dt><?php echo _T('Slots'); ?>: </dt><dd>Hash 槽个数, 对应 php.ini 里的设置</dd>
 <dt><?php echo _T('Size'); ?>: </dt><dd>共享内存区大小, 单位: 字节</dd>
 <dt><?php echo _T('Avail'); ?>: </dt><dd>可用内存, 对应共享内存区的剩余内存字节数</dd>
-<dt><?php echo _T('%'); ?>: </dt><dd>百分比, 条状显示可用内存的比例</dd>
+<dt><?php echo _T('% Used'); ?>: </dt><dd>百分比, 条状显示可用内存的比例, 以及显示分配块状态</dd>
 <dt><?php echo _T('Clear'); ?>: </dt><dd>清除按钮, 点击按钮清除对应共享内存区的数据</dd>
 <dt><?php echo _T('Compiling'); ?>: </dt><dd>编译标记, 当共享内存区正在编译 php 脚本时标记为 "yes"</dd>
 <dt><?php echo _T('Hits'); ?>: </dt><dd>共享内存命中次数, 命中=从该共享内存载入php或者变量</dd>
