@@ -3,7 +3,7 @@
 <dt><?php echo _T('Slots'); ?>: </dt><dd>Number of hash slots. the setting from your php.ini</dd>
 <dt><?php echo _T('Size'); ?>: </dt><dd>Cache Size, Size of the cache (or cache chunk), in bytes</dd>
 <dt><?php echo _T('Avail'); ?>: </dt><dd>Available Memory, free memory in bytes of this cache</dd>
-<dt><?php echo _T('%'); ?>: </dt><dd>Percent, A bar shows how much memory available in percent</dd>
+<dt><?php echo _T('% Used'); ?>: </dt><dd>Percent, A bar shows how much memory available in percent, and memory blocks status</dd>
 <dt><?php echo _T('Clear'); ?>: </dt><dd>Clear Button, Press the button to clean this cache</dd>
 <dt><?php echo _T('Compiling'); ?>: </dt><dd>Compiling flag, "yes" if the cache is busy compiling php script</dd>
 <dt><?php echo _T('Hits'); ?>: </dt><dd>Cache Hits, hit=a var/php is loaded from this cache</dd>

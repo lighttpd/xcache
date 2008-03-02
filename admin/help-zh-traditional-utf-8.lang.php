@@ -3,7 +3,7 @@
 <dt><?php echo _T('Slots'); ?>: </dt><dd>Hash 槽個數，對應 php.ini 裡的設置</dd>
 <dt><?php echo _T('Size'); ?>: </dt><dd>共享記憶體區大小，單位：位元</dd>
 <dt><?php echo _T('Avail'); ?>: </dt><dd>可用記憶體，對應共享記憶體區的剩餘記憶體位元數</dd>
-<dt><?php echo _T('%'); ?>: </dt><dd>百分比，條狀顯示可用記憶體的比例</dd>
+<dt><?php echo _T('% Used'); ?>: </dt><dd>百分比，條狀顯示可用記憶體的比例</dd>
 <dt><?php echo _T('Clear'); ?>: </dt><dd>清除按鈕，點擊按鈕清除對應共享記憶體區的資料</dd>
 <dt><?php echo _T('Compiling'); ?>: </dt><dd>編譯標記，當共享記憶體區正在編譯 php 指令時標記為 "yes"</dd>
 <dt><?php echo _T('Hits'); ?>: </dt><dd>共享記憶體命中次數，命中=從該共享記憶體載入php或者變數</dd>
