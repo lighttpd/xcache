@@ -3220,7 +3220,7 @@ ZEND_DLEXPORT int xcache_zend_startup(zend_extension *extension) /* {{{ */
 		xc_llist_unlink(&zend_extensions, xc_llist_zend_extension);
 
 		ext = (zend_extension *) zend_llist_get_last_ex(&zend_extensions, &lpos);
-		assert(ext && ext != xc_llist_zend_extension);
+		assert(ext && ext != (zend_extension *) xc_llist_zend_extension->data);
 		xc_last_ext_startup = ext->startup;
 		ext->startup = xc_zend_startup_last;
 	}
