@@ -1,7 +1,7 @@
 #include "php.h"
 #include "xcache.h"
 
-#ifdef DEBUG
+#ifdef XCACHE_DEBUG
 #	define IFDEBUG(x) (x)
 int xc_vtrace(const char *fmt, va_list args);
 int xc_trace(const char *fmt, ...) ZEND_ATTRIBUTE_PTR_FORMAT(printf, 1, 2);
@@ -24,7 +24,7 @@ static inline int TRACE(const char *fmt, ...)
 #   undef NDEBUG
 #   undef inline
 #   define inline
-#else /* DEBUG */
+#else /* XCACHE_DEBUG */
 
 #	ifdef ZEND_WIN32
 static inline int TRACE_DUMMY(const char *fmt, ...)
@@ -40,7 +40,7 @@ static inline int TRACE_DUMMY(const char *fmt, ...)
 #   ifndef NDEBUG
 #       define NDEBUG
 #   endif
-#endif /* DEBUG */
+#endif /* XCACHE_DEBUG */
 #include <assert.h>
 
 typedef struct {

@@ -1,6 +1,6 @@
 
 #if 0
-#define DEBUG
+#define XCACHE_DEBUG
 #endif
 
 #if 0
@@ -1028,7 +1028,7 @@ static int xc_entry_init_key_php_md5(xc_entry_data_php_t *php, xc_entry_t *xce T
 	hv = xc_php_hash_md5(php TSRMLS_CC);
 	php->cache  = xce->cache;
 	php->hvalue = (hv & php->cache->hphp->mask);
-#ifdef DEBUG
+#ifdef XCACHE_DEBUG
 	{
 		char md5str[33];
 		make_digest(md5str, (unsigned char *) php->md5);

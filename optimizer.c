@@ -1,5 +1,5 @@
 #if 0
-#	define DEBUG
+#	define XCACHE_DEBUG
 #endif
 
 #include "utils.h"
@@ -8,7 +8,7 @@
 #include "stack.h"
 #include "xcache_globals.h"
 
-#ifdef DEBUG
+#ifdef XCACHE_DEBUG
 #	include "processor.h"
 #	include "const_string.h"
 #	include "ext/standard/php_var.h"
@@ -180,7 +180,7 @@ static int op_get_flowinfo(op_flowinfo_t *fi, zend_op *opline) /* {{{ */
 	return SUCCESS;
 }
 /* }}} */
-#ifdef DEBUG
+#ifdef XCACHE_DEBUG
 static void op_snprint(char *buf, int size, znode *op) /* {{{ */
 {
 	switch (op->op_type) {
@@ -277,7 +277,7 @@ static void bb_destroy(bb_t *bb) /* {{{ */
 	efree(bb);
 }
 /* }}} */
-#ifdef DEBUG
+#ifdef XCACHE_DEBUG
 static void bb_print(bb_t *bb, zend_op *opcodes) /* {{{ */
 {
 	int line = bb->opcodes - opcodes;
@@ -319,7 +319,7 @@ static void bbs_destroy(bbs_t *bbs) /* {{{ */
 	xc_stack_destroy(bbs);
 }
 /* }}} */
-#ifdef DEBUG
+#ifdef XCACHE_DEBUG
 static void bbs_print(bbs_t *bbs, zend_op *opcodes) /* {{{ */
 {
 	int i;
@@ -407,7 +407,7 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 			catchbbids[j] = bbids[e->catch_op];
 		}
 	}
-#ifdef DEBUG
+#ifdef XCACHE_DEBUG
 	for (i = 0; i < count; i ++) {
 		TRACE("catchbbids[%d] = %d", i, catchbbids[i]);
 	}
@@ -521,7 +521,7 @@ static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 		return 0;
 	}
 
-#ifdef DEBUG
+#ifdef XCACHE_DEBUG
 #	if 0
 	TRACE("optimize file: %s", op_array->filename);
 	xc_dprint_zend_op_array(op_array, 0 TSRMLS_CC);
@@ -533,7 +533,7 @@ static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 		bbs_init(&bbs);
 		if (bbs_build_from(&bbs, op_array, op_array->last) == SUCCESS) {
 			int i;
-#ifdef DEBUG
+#ifdef XCACHE_DEBUG
 			bbs_print(&bbs, op_array->opcodes);
 #endif
 			/* TODO: calc opnum after basic block move */
@@ -546,7 +546,7 @@ static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 		bbs_destroy(&bbs);
 	}
 
-#ifdef DEBUG
+#ifdef XCACHE_DEBUG
 #	if 0
 	TRACE("%s", "after compiles");
 	xc_dprint_zend_op_array(op_array, 0 TSRMLS_CC);

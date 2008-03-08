@@ -1,9 +1,15 @@
 #ifdef TEST
 #include <limits.h>
 #include <stdio.h>
+#	define XCACHE_DEBUG
 #else
 #include <php.h>
 #endif
+
+#ifdef XCACHE_DEBUG
+#	define ALLOC_DEBUG_BLOCK_CHECK
+#endif
+
 
 #include <assert.h>
 #include <stdlib.h>
@@ -13,13 +19,6 @@
 #include "xc_shm.h"
 #include "align.h"
 #include "utils.h"
-
-#ifdef TEST
-#	define DEBUG
-#endif
-#ifdef DEBUG
-#	define ALLOC_DEBUG_BLOCK_CHECK
-#endif
 
 #if 0
 #undef ALLOC_DEBUG_BLOCK_CHECK

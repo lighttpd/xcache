@@ -1,3 +1,7 @@
+#if 0
+#define XCACHE_DEBUG
+#endif
+
 #include <stdio.h>
 #include "xcache.h"
 #include "ext/standard/flock_compat.h"
@@ -17,10 +21,6 @@ typedef HashTable *coverager_t;
 
 static char *xc_coveragedump_dir = NULL;
 static zend_compile_file_t *old_compile_file = NULL;
-
-#if 0
-#define DEBUG
-#endif
 
 /* dumper */
 static void xc_destroy_coverage(void *pDest) /* {{{ */
