@@ -871,9 +871,12 @@ static inline xc_hash_value_t xc_entry_hash_php_basename(xc_entry_t *xce TSRMLS_
 #endif
 	{
 		char *basename;
+		xc_hash_value_t h;
 		UNISW(size_t, int) basename_len;
 		php_basename(xce->name.str.val, xce->name.str.len, "", 0, &basename, &basename_len TSRMLS_CC);
-		return HASH_STR_L(basename, basename_len);
+		h = HASH_STR_L(basename, basename_len);
+		efree(basename);
+		return h;
 	}
 }
 /* }}} */
