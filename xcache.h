@@ -5,6 +5,7 @@
 #define XCACHE_AUTHOR     "mOo"
 #define XCACHE_COPYRIGHT  "Copyright (c) 2005-2007"
 #define XCACHE_URL        "http://xcache.lighttpd.net"
+#define XCACHE_WIKI_URL   XCACHE_URL "/wiki"
 
 #include <php.h>
 #include <zend_compile.h>

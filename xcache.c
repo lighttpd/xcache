@@ -1955,11 +1955,13 @@ static int xcache_admin_auth_check(TSRMLS_D) /* {{{ */
 	}
 
 	if (admin_user == NULL || admin_pass == NULL) {
-		php_error_docref(NULL TSRMLS_CC, E_ERROR, "xcache.admin.user and xcache.admin.pass is required");
+		php_error_docref(XCACHE_WIKI_URL "/InstallAdministration" TSRMLS_CC, E_ERROR,
+				"xcache.admin.user and/or xcache.admin.pass settings is not configured."
+				" Make sure you've modified the correct php ini file for your php used in webserver.");
 		zend_bailout();
 	}
 	if (strlen(admin_pass) != 32) {
-		php_error_docref(NULL TSRMLS_CC, E_ERROR, "unexpect %lu bytes of xcache.admin.pass, expected 32 bytes, the password after md5()", (unsigned long) strlen(admin_pass));
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "xcache.admin.pass is %lu chars unexpectedly, it is supposed to be the password after md5() which should be 32 chars", (unsigned long) strlen(admin_pass));
 		zend_bailout();
 	}
 
@@ -2008,7 +2010,22 @@ static int xcache_admin_auth_check(TSRMLS_D) /* {{{ */
 #define STR "WWW-authenticate: Basic Realm=\"XCache Administration\""
 	sapi_add_header_ex(STR, sizeof(STR) - 1, 1, 1 TSRMLS_CC);
 #undef STR
-	ZEND_PUTS("XCache Auth Failed. User and Password is case sense\n");
+#define STR "Content-type: text/html; charset=UTF-8"
+	sapi_add_header_ex(STR, sizeof(STR) - 1, 1, 1 TSRMLS_CC);
+#undef STR
+	ZEND_PUTS("<html>\n");
+	ZEND_PUTS("<head><title>XCache Authentication Failed</title></head>\n");
+	ZEND_PUTS("<body>\n");
+	ZEND_PUTS("<h1>XCache Authentication Failed</h1>\n");
+	ZEND_PUTS("<p>You're not authorized to access this page due to wrong username and/or password you typed.<br />The following check points is suggested:</p>\n");
+	ZEND_PUTS("<ul>\n");
+	ZEND_PUTS("<li>Be aware that `Username' and `Password' is case sense. Check capslock status led on your keyboard, and punch left/right Shift keys once for each</li>\n");
+	ZEND_PUTS("<li>Make sure the md5 password is generated correctly. You may use <a href=\"mkpassword.php\">mkpassword.php</a></li>\n");
+	ZEND_PUTS("<li>Reload browser cache by pressing F5 and/or Ctrl+F5, or simply clear browser cache after you've updated username/password in php ini.</li>\n");
+	ZEND_PUTS("</ul>\n");
+	ZEND_PUTS("Check <a href=\"" XCACHE_WIKI_URL "/InstallAdministration\">XCache wiki page</a> for more information.\n");
+	ZEND_PUTS("</body>\n");
+	ZEND_PUTS("</html>\n");
 
 	zend_bailout();
 	return 0;
