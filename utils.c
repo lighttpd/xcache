@@ -564,7 +564,7 @@ static void xc_sandbox_error_cb(int type, const char *error_filename, const uint
 	}
 	compilererror = &sandbox->compilererrors[sandbox->compilererror_cnt++];
 	compilererror->lineno = error_lineno;
-	compilererror->error_len = zend_vspprintf(&compilererror->error, 0, format, args);
+	compilererror->error_len = vspprintf(&compilererror->error, 0, format, args);
 }
 /* }}} */
 #endif
