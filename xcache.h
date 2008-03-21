@@ -242,7 +242,9 @@ typedef struct {
 	zend_uint key_size;
 	ulong     h;
 	xc_cest_t cest;
+#ifndef ZEND_COMPILE_DELAYED_BINDING
 	int       oplineno;
+#endif
 } xc_classinfo_t;
 /* }}} */
 #ifdef HAVE_XCACHE_CONSTANT
@@ -315,7 +317,9 @@ struct _xc_entry_data_php_t {
 
 	zend_uint classinfo_cnt;
 	xc_classinfo_t *classinfos;
+#ifndef ZEND_COMPILE_DELAYED_BINDING
 	zend_bool have_early_binding;
+#endif
 
 #ifdef ZEND_ENGINE_2_1
 	zend_uint autoglobal_cnt;

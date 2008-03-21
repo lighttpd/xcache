@@ -104,6 +104,10 @@ typedef struct {
 	zend_uint compilererror_size;
 	xc_compilererror_t *compilererrors;
 #endif
+
+#ifdef ZEND_COMPILE_IGNORE_INTERNAL_CLASSES
+	zend_uint orig_compiler_options;
+#endif
 } xc_sandbox_t;
 
 typedef enum _xc_install_action_t {

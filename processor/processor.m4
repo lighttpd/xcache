@@ -505,7 +505,12 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	dnl readonly_protection=on
 	dnl main op_array && have early binding
 	zend_uint ii;
-	if (!processor->readonly_protection && !(src == processor->php_src->op_array && processor->php_src->have_early_binding)) {
+#ifdef ZEND_COMPILE_DELAYED_BINDING
+	zend_bool need_early_binding = 0;
+#else
+	zend_bool need_early_binding = processor->php_src->have_early_binding;
+#endif
+	if (!processor->readonly_protection && !(src == processor->php_src->op_array && need_early_binding)) {
 		/* really fast shallow copy */
 		memcpy(dst, src, sizeof(src[0]));
 		dst->refcount[0] = 1000;
@@ -632,6 +637,9 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	DISPATCH(int, doc_comment_len)
 	PROC_ZSTRING_L(, doc_comment, doc_comment_len)
 #endif
+#ifdef ZEND_COMPILE_DELAYED_BINDING
+	DISPATCH(zend_uint, early_binding);
+#endif
 
 	/* reserved */
 	DONE(reserved)
@@ -729,7 +737,9 @@ DEF_STRUCT_P_FUNC(`xc_classinfo_t', , `dnl {{{
 #else
 	STRUCT(zend_class_entry, cest)
 #endif
+#ifndef ZEND_COMPILE_DELAYED_BINDING
 	DISPATCH(int, oplineno)
+#endif
 ')
 dnl }}}
 #ifdef ZEND_ENGINE_2_1
@@ -806,7 +816,9 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 		STRUCT_ARRAY(compilererror_cnt, xc_compilererror_t, compilererrors)
 	')
 #endif
+#ifndef ZEND_COMPILE_DELAYED_BINDING
 	DISPATCH(zend_bool, have_early_binding)
+#endif
 	DISPATCH(zend_bool, have_references)
 ')
 dnl }}}

@@ -719,8 +719,13 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 		}
 		new_cest_ptrs[i] =
 #endif
+#ifdef ZEND_COMPILE_DELAYED_BINDING
+		xc_install_class(xce->name.str.val, &ci->cest, -1,
+				UNISW(0, ci->type), ci->key, ci->key_size, ci->h TSRMLS_CC);
+#else
 		xc_install_class(xce->name.str.val, &ci->cest, ci->oplineno,
 				UNISW(0, ci->type), ci->key, ci->key_size, ci->h TSRMLS_CC);
+#endif
 	}
 
 #ifdef ZEND_ENGINE_2_1
@@ -1042,6 +1047,7 @@ static int xc_entry_init_key_php_md5(xc_entry_data_php_t *php, xc_entry_t *xce T
 	return SUCCESS;
 }
 /* }}} */
+#ifndef ZEND_COMPILE_DELAYED_BINDING
 static void xc_cache_early_binding_class_cb(zend_op *opline, int oplineno, void *data TSRMLS_DC) /* {{{ */
 {
 	char *class_name;
@@ -1069,6 +1075,7 @@ static void xc_cache_early_binding_class_cb(zend_op *opline, int oplineno, void 
 	}
 }
 /* }}} */
+#endif
 static void xc_free_php(xc_entry_data_php_t *php TSRMLS_DC) /* {{{ */
 {
 #define X_FREE(var) do {\
@@ -1237,6 +1244,7 @@ static zend_op_array *xc_compile_php(xc_entry_data_php_t *php, zend_file_handle 
 	php->compilererrors = ((xc_sandbox_t *) XG(sandbox))->compilererrors;
 	php->compilererror_cnt = ((xc_sandbox_t *) XG(sandbox))->compilererror_cnt;
 #endif
+#ifndef ZEND_COMPILE_DELAYED_BINDING
 	/* {{{ find inherited classes that should be early-binding */
 	php->have_early_binding = 0;
 	for (i = 0; i < php->classinfo_cnt; i ++) {
@@ -1247,6 +1255,7 @@ static zend_op_array *xc_compile_php(xc_entry_data_php_t *php, zend_file_handle 
 	xc_foreach_early_binding_class(php->op_array, xc_cache_early_binding_class_cb, (void *) php TSRMLS_CC);
 	xc_redo_pass_two(php->op_array TSRMLS_CC);
 	/* }}} */
+#endif
 
 	return op_array;
 

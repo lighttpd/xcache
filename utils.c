@@ -499,9 +499,11 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, int op
 					cest, sizeof(xc_cest_t),
 					ZESW(&stored_ce_ptr, NULL)
 					);
+#ifndef ZEND_COMPILE_DELAYED_BINDING
 		if (oplineno != -1) {
 			xc_do_early_binding(CG(active_op_array), CG(class_table), oplineno TSRMLS_CC);
 		}
+#endif
 	}
 	else if (zend_u_hash_quick_add(CG(class_table), type, key, len, h,
 				cest, sizeof(xc_cest_t),
@@ -672,6 +674,13 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 	zend_error_cb = xc_sandbox_error_cb;
 #endif
 
+#ifdef ZEND_COMPILE_IGNORE_INTERNAL_CLASSES
+	sandbox->orig_compiler_options = CG(compiler_options);
+	/* Using ZEND_COMPILE_IGNORE_INTERNAL_CLASSES for ZEND_FETCH_CLASS_RT_NS_CHECK
+	 */
+	CG(compiler_options) |= ZEND_COMPILE_IGNORE_INTERNAL_CLASSES | ZEND_COMPILE_DELAYED_BINDING;
+#endif
+
 	XG(sandbox) = (void *) sandbox;
 	return sandbox;
 }
@@ -727,9 +736,13 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox, xc_install_action_t instal
 #endif
 
 	if (install != XC_InstallNoBinding) {
+#ifdef ZEND_COMPILE_DELAYED_BINDING
+		zend_do_delayed_early_binding(CG(active_op_array) TSRMLS_CC);
+#else
 		xc_undo_pass_two(CG(active_op_array) TSRMLS_CC);
 		xc_foreach_early_binding_class(CG(active_op_array), xc_early_binding_cb, (void *) sandbox TSRMLS_CC);
 		xc_redo_pass_two(CG(active_op_array) TSRMLS_CC);
+#endif
 	}
 
 #ifdef E_STRICT
@@ -804,6 +817,11 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, xc_install_action_t install TSRMLS_D
 		efree(sandbox->compilererrors);
 	}
 #endif
+
+#ifdef ZEND_COMPILE_IGNORE_INTERNAL_CLASSES
+	CG(compiler_options) = sandbox->orig_compiler_options;
+#endif
+
 	if (sandbox->alloc) {
 		efree(sandbox);
 	}
