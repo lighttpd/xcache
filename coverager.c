@@ -245,7 +245,11 @@ void xc_coverager_request_init(TSRMLS_D) /* {{{ */
 {
 	if (XG(coverager)) {
 		xc_coverager_enable(TSRMLS_C);
+#ifdef ZEND_COMPILE_EXTENDED_INFO
+		CG(compiler_options) |= ZEND_COMPILE_EXTENDED_INFO;
+#else
 		CG(extended_info) = 1;
+#endif
 	}
 	else {
 		XG(coverage_enabled) = 0;
