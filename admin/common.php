@@ -91,7 +91,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 'On');
 define('REQUEST_TIME', time());
 
-if (get_magic_quotes_gpc()) {
+if (function_exists('get_magic_quotes_gpc') && @get_magic_quotes_gpc()) {
 	$mqs = (bool) ini_get('magic_quotes_sybase');
 	$_GET = stripaddslashes_array($_GET, $mqs);
 	$_POST = stripaddslashes_array($_POST, $mqs);
