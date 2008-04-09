@@ -39,7 +39,10 @@
 #	define ZESW(v1, v2) v2
 #endif
 
-#ifdef ALLOCA_FLAG
+#ifdef do_alloca_with_limit
+#	define my_do_alloca(size, use_heap) do_alloca_with_limit(size, use_heap)
+#	define my_free_alloca(size, use_heap) free_alloca_with_limit(size, use_heap)
+#elif defined(ALLOCA_FLAG)
 #	define my_do_alloca(size, use_heap) do_alloca(size, use_heap)
 #	define my_free_alloca(size, use_heap) free_alloca(size, use_heap)
 #else
