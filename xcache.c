@@ -19,7 +19,9 @@
 #include "ext/standard/md5.h"
 #include "ext/standard/php_math.h"
 #include "ext/standard/php_string.h"
+#ifdef ZEND_ENGINE_2_1
 #include "ext/date/php_date.h"
+#endif
 #include "zend_extensions.h"
 #include "SAPI.h"
 
@@ -878,7 +880,12 @@ static inline xc_hash_value_t xc_entry_hash_php_basename(xc_entry_t *xce TSRMLS_
 		char *basename;
 		xc_hash_value_t h;
 		UNISW(size_t, int) basename_len;
+#ifdef ZEND_ENGINE_2
 		php_basename(xce->name.str.val, xce->name.str.len, "", 0, &basename, &basename_len TSRMLS_CC);
+#else
+		basename = php_basename(xce->name.str.val, xce->name.str.len, "", 0);
+		basename_len = strlen(basename);
+#endif
 		h = HASH_STR_L(basename, basename_len);
 		efree(basename);
 		return h;
@@ -2830,9 +2837,14 @@ static PHP_MINFO_FUNCTION(xcache)
 	php_info_print_table_row(2, "Version", XCACHE_VERSION);
 	php_info_print_table_row(2, "Modules Built", XCACHE_MODULES);
 	php_info_print_table_row(2, "Readonly Protection", xc_readonly_protection ? "enabled" : "N/A");
+#ifdef ZEND_ENGINE_2_1
 	ptr = php_format_date("Y-m-d H:i:s", sizeof("Y-m-d H:i:s") - 1, xc_init_time, 1 TSRMLS_CC);
 	php_info_print_table_row(2, "Cache Init Time", ptr);
 	efree(ptr);
+#else
+	snprintf(buf, sizeof(buf), "%lu", (long unsigned) xc_init_time);
+	php_info_print_table_row(2, "Cache Init Time", buf);
+#endif
 
 #ifdef ZTS
 	snprintf(buf, sizeof(buf), "%lu.%lu", xc_init_instance_id, xc_init_instance_subid);
