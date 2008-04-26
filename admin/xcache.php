@@ -129,8 +129,8 @@ function calc_total(&$total, $data)
 		}
 		else {
 			switch ($k) {
-			case 'his_by_hour':
-			case 'his_by_second':
+			case 'hits_by_hour':
+			case 'hits_by_second':
 				foreach ($data[$k] as $kk => $vv) {
 					$total[$k][$kk] += $vv;
 				}
