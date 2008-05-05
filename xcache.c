@@ -833,7 +833,7 @@ static int xc_stat(const char *filename, const char *include_path, struct stat *
 /* }}} */
 
 #define HASH(i) (i)
-#define HASH_USTR_L(t, s, l) HASH(zend_u_inline_hash_func(t, s, (l + 1) * sizeof(UChar)))
+#define HASH_ZSTR_L(t, s, l) HASH(zend_u_inline_hash_func(t, s, (l + 1) * sizeof(UChar)))
 #define HASH_STR_S(s, l) HASH(zend_inline_hash_func(s, l))
 #define HASH_STR_L(s, l) HASH_STR_S(s, l + 1)
 #define HASH_STR(s) HASH_STR_L(s, strlen(s) + 1)
@@ -850,7 +850,7 @@ static inline xc_hash_value_t xc_hash_fold(xc_hash_value_t hvalue, const xc_hash
 /* }}} */
 static inline xc_hash_value_t xc_entry_hash_name(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 {
-	return UNISW(NOTHING, UG(unicode) ? HASH_USTR_L(xce->name_type, xce->name.uni.val, xce->name.uni.len) :)
+	return UNISW(NOTHING, UG(unicode) ? HASH_ZSTR_L(xce->name_type, xce->name.uni.val, xce->name.uni.len) :)
 		HASH_STR_L(xce->name.str.val, xce->name.str.len);
 }
 /* }}} */
@@ -869,10 +869,10 @@ static inline xc_hash_value_t xc_entry_hash_php_basename(xc_entry_t *xce TSRMLS_
 {
 #ifdef IS_UNICODE
 	if (UG(unicode) && xce->name_type == IS_UNICODE) {
-		UChar *basename;
+		zstr basename;
 		int basename_len;
-		php_u_basename(xce->name.uni.val, xce->name.uni.len, NULL_ZSTR, 0, &basename, &basename_len TSRMLS_CC);
-		return HASH_USTR_L(IS_UNICODE, basename, basename_len);
+		php_u_basename(xce->name.ustr.val, xce->name.ustr.len, NULL, 0, &basename.u, &basename_len TSRMLS_CC);
+		return HASH_ZSTR_L(IS_UNICODE, basename, basename_len);
 	}
 	else
 #endif
