@@ -19,13 +19,13 @@
 #include "ext/standard/md5.h"
 #include "ext/standard/php_math.h"
 #include "ext/standard/php_string.h"
-#ifdef ZEND_ENGINE_2_1
-#include "ext/date/php_date.h"
-#endif
 #include "zend_extensions.h"
 #include "SAPI.h"
 
 #include "xcache.h"
+#ifdef ZEND_ENGINE_2_1
+#include "ext/date/php_date.h"
+#endif
 #include "optimizer.h"
 #include "coverager.h"
 #include "disassembler.h"
@@ -3089,7 +3089,11 @@ static PHP_MINIT_FUNCTION(xcache)
 		}
 		xc_initized = 1;
 		xc_init_time = time(NULL);
+#ifdef PHP_WIN32
+		xc_init_instance_id = GetCurrentProcessId();
+#else
 		xc_init_instance_id = getpid();
+#endif
 #ifdef ZTS
 		xc_init_instance_subid = tsrm_thread_id();
 #endif
