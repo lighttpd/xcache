@@ -1106,7 +1106,6 @@ static zend_op_array *xc_compile_php(xc_entry_data_php_t *php, zend_file_handle 
 {
 	zend_op_array *op_array;
 	int old_constinfo_cnt, old_funcinfo_cnt, old_classinfo_cnt;
-	int i;
 	zend_bool catched = 0;
 
 	/* {{{ compile */
@@ -1254,8 +1253,11 @@ static zend_op_array *xc_compile_php(xc_entry_data_php_t *php, zend_file_handle 
 #ifndef ZEND_COMPILE_DELAYED_BINDING
 	/* {{{ find inherited classes that should be early-binding */
 	php->have_early_binding = 0;
-	for (i = 0; i < php->classinfo_cnt; i ++) {
-		php->classinfos[i].oplineno = -1;
+	{
+		int i;
+		for (i = 0; i < php->classinfo_cnt; i ++) {
+			php->classinfos[i].oplineno = -1;
+		}
 	}
 
 	xc_undo_pass_two(php->op_array TSRMLS_CC);
