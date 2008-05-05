@@ -538,7 +538,7 @@ static void xc_sandbox_error_cb(int type, const char *error_filename, const uint
 	assert(sandbox != NULL);
 	if (type != E_STRICT) {
 		/* give up, and user handler is not supported in this case */
-		int i;
+		zend_uint i;
 		zend_uint orig_lineno = CG(zend_lineno);
 		zend_error_cb = sandbox->orig_zend_error_cb;
 
@@ -693,7 +693,7 @@ static void xc_early_binding_cb(zend_op *opline, int oplineno, void *data TSRMLS
 /* }}} */
 static void xc_sandbox_install(xc_sandbox_t *sandbox, xc_install_action_t install TSRMLS_DC) /* {{{ */
 {
-	int i;
+	zend_uint i;
 	Bucket *b;
 
 #ifdef HAVE_XCACHE_CONSTANT
@@ -810,7 +810,7 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, xc_install_action_t install TSRMLS_D
 
 #ifdef E_STRICT
 	if (sandbox->compilererrors) {
-		int i;
+		zend_uint i;
 		for (i = 0; i < sandbox->compilererror_cnt; i ++) {
 			efree(sandbox->compilererrors[i].error);
 		}
