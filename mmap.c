@@ -198,7 +198,7 @@ static XC_SHM_INIT(xc_mmap_init) /* {{{ */
 
 	if (shm->ptr == XCACHE_MAP_FAILED) {
 		perror(shm->name);
-		errstr = "Failed creating file mappping";
+		errstr = "Failed creating file mapping";
 		shm->ptr = NULL;
 		goto err;
 	}
