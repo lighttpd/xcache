@@ -580,7 +580,9 @@ static void xc_fillinfo_dmz(int cachetype, xc_cache_t *cache, zval *return_value
 #endif
 	}
 	add_assoc_zval_ex(return_value, ZEND_STRS("free_blocks"), blocks);
+#ifndef NDEBUG
 	assert(avail == handlers->avail(mem));
+#endif
 }
 /* }}} */
 static void xc_fillentry_dmz(xc_entry_t *entry, int del, zval *list TSRMLS_DC) /* {{{ */
