@@ -102,7 +102,11 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
 #else
 	OPSPEC(    UNUSED,        STD,     UNUSED,        VAR)
 #endif
+#ifdef ZEND_ENGINE_2_3
+	OPSPEC(       STD,        STD,        STD,        STD)
+#else
 	OPSPEC(    UNUSED,        STD,     OPLINE,     UNUSED)
+#endif
 	OPSPEC(    UNUSED,        TMP,     UNUSED,     UNUSED)
 	OPSPEC(       BIT,        STD,        STD,        TMP)
 	OPSPEC(       BIT,        STD,        STD,        TMP)
@@ -192,15 +196,22 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
 	OPSPEC(     CLASS,        STD,        STD,      CLASS)
 	OPSPEC(    UNUSED,        STD,        STD,     UNUSED)
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED)
+#ifdef ZEND_ENGINE_2_3
+	OPSPEC(   DECLARE,        STD,        STD,     UNUSED)
+#else
 	OPSPEC(    UNUSED,        STD,     UNUSED,     UNUSED)
+#endif
 	OPSPEC(     IFACE,      CLASS,      CLASS,     UNUSED)
 	OPSPEC(    UNUSED,      CLASS,        STD,     UNUSED)
 	OPSPEC(    UNUSED,      CLASS,     UNUSED,     UNUSED)
 	OPSPEC(    UNUSED,        STD,        STD,        VAR)
 	OPSPEC(     ISSET,        STD,        STD,        TMP)
 	OPSPEC(       STD,     UNUSED,     UNUSED,        STD)
-# ifdef ZEND_ENGINE_2_1
+# ifdef ZEND_ENGINE_2_3
+	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED)
+	OPSPEC(    UNUSED,        STD,    JMPADDR,     UNUSED)
+# elif ZEND_ENGINE_2_1
 	OPSPEC(       STD,     UNUSED,     UNUSED,        STD)
-# endif    
+# endif
 #endif
 };
