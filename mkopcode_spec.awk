@@ -9,16 +9,19 @@ BEGIN {
 
 /OPDEF/ {
 	if (started) {
-		sub(/".*"/, "")
 		if (!match($0, /EXT_([^ |]+).*OP[1S]_([^ |]+).*OP2_([^ |]+).*RES_([^ |)]+).*/, array)) {
 			print "error" $0
 			exit
 		}
-		comment = "";
-		if (match($0, /\/\* (\d+) \*\//, comments)) {
-			comment = comments[1];
+		id = "";
+		if (match($0, /\/\* *([0-9]+) *\*\//, m)) {
+			id = m[1];
 		}
-		printf "\tOPSPEC(%10s, %10s, %10s, %10s)%s\n", array[1], array[2], array[3], array[4], comment;
+		name = "";
+		if (match($0, /"([^"]+)"/, m)) {
+			name = m[1];
+		}
+		printf "\tOPSPEC(%10s, %10s, %10s, %10s) /* %s %s */\n", array[1], array[2], array[3], array[4], id, name;
 		next
 	}
 }
