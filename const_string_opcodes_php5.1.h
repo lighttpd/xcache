@@ -1,4 +1,4 @@
-/* size = 153 */
+/* size = 154 */
 static const char *const xc_opcode_names[] = {
 /* 0 */	"NOP",
 /* 1 */	"ADD",

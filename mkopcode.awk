@@ -53,7 +53,7 @@ END {
 		opcodes[111] = "ZEND_INIT_FCALL_BY_FUNC";
 		opcodes[112] = "UNDEF";
 	}
-	printf "/* size = %d */\n", max;
+	printf "/* size = %d */\n", max + 1;
 	print "static const char *const xc_opcode_names[] = {";
 	for (i = 0; i <= max; i ++) {
 		if (i != 0) {
