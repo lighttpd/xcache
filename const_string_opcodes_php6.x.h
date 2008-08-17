@@ -1,4 +1,4 @@
-/* size = 152 */
+/* size = 153 */
 static const char *const xc_opcode_names[] = {
 /* 0 */	"NOP",
 /* 1 */	"ADD",
@@ -145,12 +145,13 @@ static const char *const xc_opcode_names[] = {
 /* 142 */	"RAISE_ABSTRACT_ERROR",
 /* 143 */	"DECLARE_CONST",
 /* 144 */	"ADD_INTERFACE",
-/* 145 */	"UNDEF",
+/* 145 */	"DECLARE_INHERITED_CLASS_DELAYED",
 /* 146 */	"VERIFY_ABSTRACT_CLASS",
 /* 147 */	"ASSIGN_DIM",
 /* 148 */	"ISSET_ISEMPTY_PROP_OBJ",
 /* 149 */	"HANDLE_EXCEPTION",
 /* 150 */	"USER_OPCODE",
 /* 151 */	"U_NORMALIZE",
-/* 152 */	"JMP_SET"
+/* 152 */	"JMP_SET",
+/* 153 */	"DECLARE_LAMBDA_FUNCTION"
 };

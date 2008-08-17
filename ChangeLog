@@ -5,21 +5,37 @@ Ini Settings Changes
 
 ChangeLog
 ========
+ * fixed #102: segv when var cacher is too small
+ * fixed #55: segv php tokenizer on certain special situation
  * compiler errors: all compiler warning (E_STRICT only currently) is now cached and is supported for user handler
+ * could not show module info in admin page when XCache is the last module
+ * wrong http auth realm
+
+1.3.0 2008-?-?
+== ChangeLog ==
+ * PHP 5.3 support
+
+1.2.2 2007-12-29
+== ChangeLog ==
  * added module dependency
  * live with wrong system time: allow caching files with mtime in further
  * bug fix for compatibility with Zend Optimizer and other non-cachable
- * new: xcache.stat = On
- * could not show module info in admin page when XCache is the last module
- * wrong http auth realm
+ * #59: Maximum execution time of 60 seconds exceeded
+ * #102: segv when var cacher is too small
+ * #55: segv php tokenizer on certain special situation
+
+1.2.1 2007-07-01
+== Ini Settings Changes ==
+ * new: xcache.admin.enable_auth = On
+
+== ChangeLog ==
  * #86: remove/edit variable in admin page
- * fixed #102: segv when var cacher is too small
- * fixed #55: segv php tokenizer on certain special situation
  * fixed #109: fast inc/dec was trying to break ro protection
  * fixed #101, #105: Fixed compatibility issue for apache 1.x
  * fixed #94: Garbage collector disabled when xcache.cacher set to off
  * fixed #92: Zend Optimizer compatibility issue
  * fixed #77: hits/misses was not updated
+ * fixed #59: pass by reference for internal function was broken
  * fixed #56: xcache_set segfaults when xcache.var_size=0
 
 ========
