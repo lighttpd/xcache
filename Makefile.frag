@@ -14,7 +14,7 @@ $(XCACHE_STRUCTINFO_OUT): $(XCACHE_INCLUDES_I) $(srcdir)/mkstructinfo.awk
 	-$(XCACHE_AWK) -f $(srcdir)/mkstructinfo.awk < $(XCACHE_INCLUDES_I) > $(XCACHE_STRUCTINFO_OUT).tmp && mv -f $(XCACHE_STRUCTINFO_OUT).tmp $(XCACHE_STRUCTINFO_OUT)
 
 $(XCACHE_PROC_OUT): $(XCACHE_PROC_SRC) $(XCACHE_STRUCTINFO_OUT) $(XCACHE_PROC_SOURCES)
-	$(M4) -D srcdir="$(srcdir)" -D builddir="$(builddir)" $(XCACHE_ENABLE_TEST) $(XCACHE_PROC_SRC) > $(XCACHE_PROC_OUT).tmp
+	$(M4) -D srcdir='`'"$(srcdir)'" -D builddir='`'"$(builddir)'" $(XCACHE_ENABLE_TEST) $(XCACHE_PROC_SRC) > $(XCACHE_PROC_OUT).tmp
 	mv -f $(XCACHE_PROC_OUT).tmp $(XCACHE_PROC_OUT)
 
 $(XCACHE_PROC_H): $(XCACHE_PROC_OUT)
