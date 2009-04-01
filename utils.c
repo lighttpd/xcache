@@ -594,6 +594,14 @@ static int xc_auto_global_arm(zend_auto_global *auto_global TSRMLS_DC) /* {{{ */
 /* }}} */
 #endif
 
+static void xc_copy_zend_constant(zend_constant *c) /* {{{ */
+{
+	c->name = zend_strndup(c->name, c->name_len - 1);
+	if (!(c->flags & CONST_PERSISTENT)) {
+		zval_copy_ctor(&c->value);
+	}
+}
+/* }}} */
 xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /* {{{ */
 {
 	HashTable *h;
@@ -631,6 +639,10 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 #ifdef HAVE_XCACHE_CONSTANT
 	h = OG(zend_constants);
 	zend_hash_init_ex(&TG(zend_constants),  20, NULL, h->pDestructor, h->persistent, h->bApplyProtection);
+	{
+		zend_constant tmp_const;
+		zend_hash_copy(&TG(zend_constants), &XG(internal_constant_table), (copy_ctor_func_t) xc_copy_zend_constant, (void *) &tmp_const, sizeof(tmp_const));
+	}
 #endif
 	h = OG(function_table);
 	zend_hash_init_ex(&TG(function_table), 128, NULL, h->pDestructor, h->persistent, h->bApplyProtection);
@@ -678,7 +690,7 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 	sandbox->orig_compiler_options = CG(compiler_options);
 	/* Using ZEND_COMPILE_IGNORE_INTERNAL_CLASSES for ZEND_FETCH_CLASS_RT_NS_CHECK
 	 */
-	CG(compiler_options) |= ZEND_COMPILE_IGNORE_INTERNAL_CLASSES | ZEND_COMPILE_DELAYED_BINDING;
+	CG(compiler_options) |= ZEND_COMPILE_IGNORE_INTERNAL_CLASSES | ZEND_COMPILE_NO_CONSTANT_SUBSTITUTION | ZEND_COMPILE_DELAYED_BINDING;
 #endif
 
 	XG(sandbox) = (void *) sandbox;
@@ -697,7 +709,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox, xc_install_action_t instal
 	Bucket *b;
 
 #ifdef HAVE_XCACHE_CONSTANT
-	b = TG(zend_constants).pListHead;
+	b = /*TG(internal_constant_tail) ? TG(internal_constant_tail)->pListNext :*/ TG(zend_constants).pListHead;
 	/* install constants */
 	while (b != NULL) {
 		zend_constant *c = (zend_constant*) b->pData;
