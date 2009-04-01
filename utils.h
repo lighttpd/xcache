@@ -94,6 +94,9 @@ typedef struct {
 	HashTable tmp_function_table;
 	HashTable tmp_class_table;
 	HashTable tmp_auto_globals;
+#ifdef HAVE_XCACHE_CONSTANT
+	Bucket    *tmp_internal_constant_tail;
+#endif
 	Bucket    *tmp_internal_function_tail;
 	Bucket    *tmp_internal_class_tail;
 
