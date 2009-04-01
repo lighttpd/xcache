@@ -38,6 +38,7 @@ xcachesvnclean: clean
 	cat $(srcdir)/.cvsignore | grep -v ^Makefile | grep -v ^config.nice | xargs rm -rf
 
 xcachetest:
+	$(SED) "s#\\./modules/#$(top_builddir)/modules/#" < $(srcdir)/xcache-test.ini > $(top_builddir)/tmp-php.ini
 	TEST_PHP_SRCDIR=$(top_srcdir) \
 	CC="$(CC)" \
-		$(srcdir)/run-xcachetest -d 'open_basedir=' -d 'safe_mode=0' -d 'output_buffering=0' -d 'memory_limit=-1' $(top_srcdir)/run-tests.php $(TESTS) $(TEST_ARGS) -c $(srcdir)/xcache-test.ini
+		$(srcdir)/run-xcachetest -d 'open_basedir=' -d 'safe_mode=0' -d 'output_buffering=0' -d 'memory_limit=-1' $(top_srcdir)/run-tests.php $(TESTS) $(TEST_ARGS) -c $(top_builddir)/tmp-php.ini
