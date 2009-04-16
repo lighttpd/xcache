@@ -11,12 +11,24 @@ $name = $_GET['name'];
 $vcnt = xcache_count(XC_TYPE_VAR);
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-	eval('$value = ' . $_POST['value']);
+	if ($enable_eval) {
+		eval('$value = ' . $_POST['value']);
+	}
+	else {
+		$value = $_POST['value'];
+	}
 	xcache_set($name, $value);
 	header("Location: xcache.php?type=" . XC_TYPE_VAR);
 	exit;
 }
-$value = var_export(xcache_get($name), true);
+$value = xcache_get($name);
+if ($enable_eval) {
+	$value = var_export($value, true);
+	$editable = true;
+}
+else {
+	$editable = is_string($value);
+}
 
 $xcache_version = XCACHE_VERSION;
 $xcache_modules = XCACHE_MODULES;

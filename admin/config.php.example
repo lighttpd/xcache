@@ -16,6 +16,10 @@ $usage_graph_width = 120;
 // do not define both with
 // $free_graph_width = 120;
 
+// only enable if you have password protection for admin page
+// enabling this option will cause user to eval() whatever code they want
+$enable_eval = false;
+
 // this function is detected by xcache.tpl.php, and enabled if function_exists
 // this ob filter is applied for the cache list, not the whole page
 function ob_filter_path_nicer($o)
