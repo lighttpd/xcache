@@ -27,7 +27,13 @@ if ($enable_eval) {
 	$editable = true;
 }
 else {
-	$editable = is_string($value);
+	if (is_string($value)) {
+		$editable = true;
+	}
+	else {
+		$editable = false;
+		$value = var_export($value, true);
+	}
 }
 
 $xcache_version = XCACHE_VERSION;
