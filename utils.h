@@ -122,4 +122,12 @@ typedef enum _xc_install_action_t {
 void xc_zend_class_add_ref(zend_class_entry ZESW(*ce, **ce));
 xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC);
 void xc_sandbox_free(xc_sandbox_t *sandbox, xc_install_action_t install TSRMLS_DC);
-void xc_copy_zend_constant(zend_constant *c);
+
+typedef zend_bool (*xc_if_func_t)(void *data);
+
+void xc_hash_copy_if(HashTable *target, HashTable *source, copy_ctor_func_t pCopyConstructor, void *tmp, uint size, xc_if_func_t checker);
+#ifdef HAVE_XCACHE_CONSTANT
+void xc_zend_constant_ctor(zend_constant *c);
+void xc_zend_constant_dtor(zend_constant *c);
+void xc_copy_internal_zend_constants(HashTable *target, HashTable *source);
+#endif

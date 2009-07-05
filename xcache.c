@@ -1853,9 +1853,6 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 	int i;
 
 	if (!XG(internal_table_copied)) {
-#ifdef HAVE_XCACHE_CONSTANT
-		zend_constant tmp_const;
-#endif
 		zend_function tmp_func;
 		xc_cest_t tmp_cest;
 
@@ -1866,13 +1863,13 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 		zend_hash_destroy(&XG(internal_class_table));
 
 #ifdef HAVE_XCACHE_CONSTANT
-		zend_hash_init_ex(&XG(internal_constant_table), 20,  NULL, NULL, 1, 0);
+		zend_hash_init_ex(&XG(internal_constant_table), 20,  NULL, (dtor_func_t) xc_zend_constant_dtor, 1, 0);
 #endif
 		zend_hash_init_ex(&XG(internal_function_table), 100, NULL, NULL, 1, 0);
 		zend_hash_init_ex(&XG(internal_class_table),    10,  NULL, NULL, 1, 0);
 
 #ifdef HAVE_XCACHE_CONSTANT
-		zend_hash_copy(&XG(internal_constant_table), EG(zend_constants), (copy_ctor_func_t) xc_copy_zend_constant, &tmp_const, sizeof(tmp_const));
+		xc_copy_internal_zend_constants(&XG(internal_constant_table), EG(zend_constants));
 #endif
 		zend_hash_copy(&XG(internal_function_table), CG(function_table), NULL, &tmp_func, sizeof(tmp_func));
 		zend_hash_copy(&XG(internal_class_table), CG(class_table), NULL, &tmp_cest, sizeof(tmp_cest));
@@ -1933,7 +1930,7 @@ void xc_init_globals(zend_xcache_globals* xcache_globals TSRMLS_DC)
 	memset(xcache_globals, 0, sizeof(zend_xcache_globals));
 
 #ifdef HAVE_XCACHE_CONSTANT
-	zend_hash_init_ex(&xcache_globals->internal_constant_table, 1, NULL, NULL, 1, 0);
+	zend_hash_init_ex(&xcache_globals->internal_constant_table, 1, NULL, (dtor_func_t) xc_zend_constant_dtor, 1, 0);
 #endif
 	zend_hash_init_ex(&xcache_globals->internal_function_table, 1, NULL, NULL, 1, 0);
 	zend_hash_init_ex(&xcache_globals->internal_class_table,    1, NULL, NULL, 1, 0);
