@@ -596,18 +596,63 @@ static int xc_auto_global_arm(zend_auto_global *auto_global TSRMLS_DC) /* {{{ */
 /* }}} */
 #endif
 
-void xc_copy_zend_constant(zend_constant *c) /* {{{ */
+void xc_hash_copy_if(HashTable *target, HashTable *source, copy_ctor_func_t pCopyConstructor, void *tmp, uint size, xc_if_func_t checker) /* {{{ */
 {
+	Bucket *p;
+	void *new_entry;
+	zend_bool setTargetPointer;
+
+	setTargetPointer = !target->pInternalPointer;
+	p = source->pListHead;
+	while (p) {
+		if (checker(p->pData)) {
+			if (setTargetPointer && source->pInternalPointer == p) {
+				target->pInternalPointer = NULL;
+			}
+			if (p->nKeyLength) {
+				zend_hash_quick_update(target, p->arKey, p->nKeyLength, p->h, p->pData, size, &new_entry);
+			} else {
+				zend_hash_index_update(target, p->h, p->pData, size, &new_entry);
+			}
+			if (pCopyConstructor) {
+				pCopyConstructor(new_entry);
+			}
+		}
+		p = p->pListNext;
+	}
+	if (!target->pInternalPointer) {
+		target->pInternalPointer = target->pListHead;
+	}
+}
+/* }}} */
+#ifdef HAVE_XCACHE_CONSTANT
+static zend_bool xc_is_internal_zend_constant(zend_constant *c) /* {{{ */
+{
+	return (c->flags & CONST_PERSISTENT) ? 1 : 0;
+}
+/* }}} */
+void xc_zend_constant_ctor(zend_constant *c) /* {{{ */
+{
+	assert((c->flags & CONST_PERSISTENT));
 #ifdef IS_UNICODE
 	c->name.u = zend_ustrndup(c->name.u, c->name_len - 1);
 #else
 	c->name = zend_strndup(c->name, c->name_len - 1);
 #endif
-	if (!(c->flags & CONST_PERSISTENT)) {
-		zval_copy_ctor(&c->value);
-	}
 }
 /* }}} */
+void xc_zend_constant_dtor(zend_constant *c) /* {{{ */
+{
+	free(ZSTR_U(c->name));
+}
+/* }}} */
+void xc_copy_internal_zend_constants(HashTable *target, HashTable *source) /* {{{ */
+{
+	zend_constant tmp_const;
+	xc_hash_copy_if(target, source, (copy_ctor_func_t) xc_zend_constant_ctor, (void *) &tmp_const, sizeof(zend_constant), (xc_if_func_t) xc_is_internal_zend_constant);
+}
+/* }}} */
+#endif
 xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /* {{{ */
 {
 	HashTable *h;
@@ -645,9 +690,10 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 #ifdef HAVE_XCACHE_CONSTANT
 	h = OG(zend_constants);
 	zend_hash_init_ex(&TG(zend_constants),  20, NULL, h->pDestructor, h->persistent, h->bApplyProtection);
+	xc_copy_internal_zend_constants(&TG(zend_constants), &XG(internal_constant_table));
 	{
 		zend_constant tmp_const;
-		zend_hash_copy(&TG(zend_constants), &XG(internal_constant_table), (copy_ctor_func_t) xc_copy_zend_constant, (void *) &tmp_const, sizeof(tmp_const));
+		zend_hash_copy(&TG(zend_constants), &XG(internal_constant_table), (copy_ctor_func_t) xc_zend_constant_ctor, (void *) &tmp_const, sizeof(tmp_const));
 	}
 #endif
 	h = OG(function_table);
