@@ -58,6 +58,8 @@ $strings = array(
 		=> '设备',
 		'inode'
 		=> 'Inode',
+		'hash'
+		=> 'Hash',
 		'Access'
 		=> '访问',
 		'Create'
