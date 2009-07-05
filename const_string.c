@@ -88,17 +88,13 @@ const char *xc_get_data_type(zend_uchar data_type)
 /* }}} */
 /* {{{ xc_get_opcode */
 #if PHP_MAJOR_VERSION >= 6
-#	include     "const_string_opcodes_php6.x.h"
-#else
-#	ifdef ZEND_ENGINE_2_1
-#		include     "const_string_opcodes_php5.1.h"
-#	else
-#		ifdef ZEND_ENGINE_2
-#			include "const_string_opcodes_php5.0.h"
-#		else
-#			include "const_string_opcodes_php4.x.h"
-#		endif
-#	endif
+#	include "const_string_opcodes_php6.x.h"
+#elif defined(ZEND_ENGINE_2_3)
+#	include "const_string_opcodes_php5.3.h"
+#elif defined(ZEND_ENGINE_2_1)
+#	include "const_string_opcodes_php5.1.h"
+#elif defined(ZEND_ENGINE_2)
+#	include "const_string_opcodes_php5.0.h"
 #endif
 
 zend_uchar xc_get_opcode_count()

@@ -80,11 +80,13 @@ DEF_STRUCT_P_FUNC(`zval', , `dnl {{{
 		zval_copy_ctor(dst);
 		ZVAL_REFCOUNT(dst) = 1;
 		DONE(value)
-		DONE(refcount)
 		DONE(type)
-		DONE(is_ref)
 #ifdef ZEND_ENGINE_2_3
-		COPY(idx_type)
+		DONE(is_ref__gc)
+		DONE(refcount__gc)
+#else
+		DONE(is_ref)
+		DONE(refcount)
 #endif
 	} while(0);
 	return;
@@ -148,14 +150,18 @@ proc_unicode:
 dnl }}}
 		DONE(value)
 		DISPATCH(zval_data_type, type)
+#ifdef ZEND_ENGINE_2_3
+		DISPATCH(zend_uchar, is_ref__gc)
+#else
 		DISPATCH(zend_uchar, is_ref)
-#ifdef ZEND_ENGINE_2
+#endif
+
+#ifdef ZEND_ENGINE_2_3
+		DISPATCH(zend_uint, refcount__gc)
+#elif defined(ZEND_ENGINE_2)
 		DISPATCH(zend_uint, refcount)
 #else
 		DISPATCH(zend_ushort, refcount)
-#endif
-#ifdef ZEND_ENGINE_2_3
-		DISPATCH(zend_uchar, idx_type)
 #endif
 	')dnl IFDASM
 ')
@@ -478,6 +484,9 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 			case ZEND_JMPNZ:
 			case ZEND_JMPZ_EX:
 			case ZEND_JMPNZ_EX:
+#ifdef ZEND_JMP_SET
+			case ZEND_JMP_SET:
+#endif
 				dst->op2.u.jmp_addr = processor->active_opcodes_dst + (src->op2.u.jmp_addr - processor->active_opcodes_src);
 				break;
 

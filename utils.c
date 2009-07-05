@@ -19,7 +19,7 @@
 #endif
 
 #define OP_ZVAL_DTOR(op) do { \
-	(op).u.constant.is_ref = 0; \
+	Z_UNSET_ISREF((op).u.constant); \
 	zval_dtor(&(op).u.constant); \
 } while(0)
 xc_compile_result_t *xc_compile_result_init(xc_compile_result_t *cr, /* {{{ */
@@ -151,6 +151,9 @@ int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 			case ZEND_JMPNZ:
 			case ZEND_JMPZ_EX:
 			case ZEND_JMPNZ_EX:
+#ifdef ZEND_JMP_SET
+			case ZEND_JMP_SET:
+#endif
 				opline->op2.u.opline_num = opline->op2.u.jmp_addr - op_array->opcodes;
 				assert(opline->op2.u.opline_num < op_array->last);
 				break;
@@ -180,12 +183,13 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	end = opline + op_array->last;
 	while (opline < end) {
 		if (opline->op1.op_type == IS_CONST) {
-			opline->op1.u.constant.is_ref = 1;
-			opline->op1.u.constant.refcount = 2; /* Make sure is_ref won't be reset */
+			Z_SET_ISREF(opline->op1.u.constant);
+			Z_SET_REFCOUNT(opline->op1.u.constant, 2); /* Make sure is_ref won't be reset */
+
 		}
 		if (opline->op2.op_type == IS_CONST) {
-			opline->op2.u.constant.is_ref = 1;
-			opline->op2.u.constant.refcount = 2;
+			Z_SET_ISREF(opline->op2.u.constant);
+			Z_SET_REFCOUNT(opline->op2.u.constant, 2);
 		}
 #ifdef ZEND_ENGINE_2_1
 		switch (opline->opcode) {
@@ -197,6 +201,9 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 			case ZEND_JMPNZ:
 			case ZEND_JMPZ_EX:
 			case ZEND_JMPNZ_EX:
+#ifdef ZEND_JMP_SET
+			case ZEND_JMP_SET:
+#endif
 				assert(opline->op2.u.opline_num < op_array->last);
 				opline->op2.u.jmp_addr = op_array->opcodes + opline->op2.u.opline_num;
 				break;
@@ -298,6 +305,9 @@ int xc_foreach_early_binding_class(zend_op_array *op_array, void (*callback)(zen
 			case ZEND_JMPNZ:
 			case ZEND_JMPZ_EX:
 			case ZEND_JMPNZ_EX:
+#ifdef ZEND_JMP_SET
+			case ZEND_JMP_SET:
+#endif
 				next = begin + opline->op2.u.opline_num;
 				break;
 
