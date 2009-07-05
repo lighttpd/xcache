@@ -1285,9 +1285,9 @@ static void xc_gc_op_array(void *pDest) /* {{{ */
 	zend_uint i;
 	if (op_array->arg_info) {
 		for (i = 0; i < op_array->num_args; i++) {
-			efree((char*)op_array->arg_info[i].name);
-			if (op_array->arg_info[i].class_name) {
-				efree((char*)op_array->arg_info[i].class_name);
+			efree((char *) ZSTR_V(op_array->arg_info[i].name));
+			if (ZSTR_V(op_array->arg_info[i].class_name)) {
+				efree((char *) ZSTR_V(op_array->arg_info[i].class_name));
 			}
 		}
 		efree(op_array->arg_info);
@@ -1433,13 +1433,11 @@ static void xc_destroy() /* {{{ */
 		shm = xc_cache_destroy(xc_php_caches, &xc_php_hcache);
 		xc_php_caches = NULL;
 	}
-	xc_php_hcache.size = 0;
 
 	if (xc_var_caches) {
 		shm = xc_cache_destroy(xc_var_caches, &xc_var_hcache);
 		xc_var_caches = NULL;
 	}
-	xc_var_hcache.size = 0;
 
 	if (shm) {
 		xc_shm_destroy(shm);
@@ -1517,7 +1515,7 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 		}
 	}
 
-	if (xc_var_hcache.size && !XG(var_holds)) {
+	if (xc_initized && xc_var_hcache.size && !XG(var_holds)) {
 		XG(var_holds) = calloc(xc_var_hcache.size, sizeof(xc_stack_t));
 		for (i = 0; i < xc_var_hcache.size; i ++) {
 			xc_stack_init(&XG(var_holds[i]));
