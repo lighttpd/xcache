@@ -3,7 +3,7 @@
 #define XCACHE_NAME       "XCache"
 #define XCACHE_VERSION    "2.0.0-dev"
 #define XCACHE_AUTHOR     "mOo"
-#define XCACHE_COPYRIGHT  "Copyright (c) 2005-2007"
+#define XCACHE_COPYRIGHT  "Copyright (c) 2005-2009"
 #define XCACHE_URL        "http://xcache.lighttpd.net"
 #define XCACHE_WIKI_URL   XCACHE_URL "/wiki"
 
