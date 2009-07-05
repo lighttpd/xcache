@@ -445,7 +445,6 @@ static void xc_fillentry_dmz(xc_entry_t *entry, int del, zval *list TSRMLS_DC) /
 	ALLOC_INIT_ZVAL(ei);
 	array_init(ei);
 
-	add_assoc_long_ex(ei, ZEND_STRS("size"),     entry->size);
 	add_assoc_long_ex(ei, ZEND_STRS("refcount"), entry->refcount);
 	add_assoc_long_ex(ei, ZEND_STRS("hits"),     entry->hits);
 	add_assoc_long_ex(ei, ZEND_STRS("ctime"),    entry->ctime);
@@ -476,6 +475,8 @@ static void xc_fillentry_dmz(xc_entry_t *entry, int del, zval *list TSRMLS_DC) /
 	switch (entry->type) {
 		case XC_TYPE_PHP:
 			php = entry->data.php;
+			add_assoc_long_ex(ei, ZEND_STRS("size"),          entry->size + php->size);
+			add_assoc_long_ex(ei, ZEND_STRS("phprefcount"),   php->refcount);
 			add_assoc_long_ex(ei, ZEND_STRS("sourcesize"),    php->sourcesize);
 #ifdef HAVE_INODE
 			add_assoc_long_ex(ei, ZEND_STRS("device"),        php->device);
@@ -492,8 +493,10 @@ static void xc_fillentry_dmz(xc_entry_t *entry, int del, zval *list TSRMLS_DC) /
 			add_assoc_long_ex(ei, ZEND_STRS("autoglobal_cnt"),php->autoglobal_cnt);
 #endif
 			break;
+
 		case XC_TYPE_VAR:
 			var = entry->data.var;
+			add_assoc_long_ex(ei, ZEND_STRS("size"),          entry->size);
 			break;
 
 		default:

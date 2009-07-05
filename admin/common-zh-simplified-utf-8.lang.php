@@ -50,6 +50,8 @@ $strings = array(
 		=> '项目',
 		'Refcount'
 		=> '引用数',
+		'PhpShared'
+		=> '共享',
 		'SrcSize'
 		=> '源大小',
 		'Modify'

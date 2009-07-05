@@ -40,4 +40,4 @@ xcachesvnclean: clean
 xcachetest:
 	TEST_PHP_SRCDIR=$(top_srcdir) \
 	CC="$(CC)" \
-		$(srcdir)/run-xcachetest -d 'open_basedir=' -d 'safe_mode=0' -d 'output_buffering=0' -d 'memory_limit=-1' $(top_srcdir)/run-tests.php $(TESTS) -c $(srcdir)/xcache-test.ini
+		$(srcdir)/run-xcachetest -d 'open_basedir=' -d 'safe_mode=0' -d 'output_buffering=0' -d 'memory_limit=-1' $(top_srcdir)/run-tests.php $(TESTS) $(TEST_ARGS) -c $(srcdir)/xcache-test.ini
