@@ -894,11 +894,6 @@ stat_done:
 	return SUCCESS;
 }
 /* }}} */
-static inline xc_hash_value_t xc_php_hash_md5(xc_entry_data_php_t *php TSRMLS_DC) /* {{{ */
-{
-	return HASH_STR_S(php->md5, sizeof(php->md5));
-}
-/* }}} */
 #ifndef ZEND_COMPILE_DELAYED_BINDING
 static void xc_cache_early_binding_class_cb(zend_op *opline, int oplineno, void *data TSRMLS_DC) /* {{{ */
 {
@@ -998,7 +993,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 		if (stored_xce) {
 			TRACE("found %s, catch it", stored_xce->name.str.val);
 			xc_entry_hold_php_dmz(stored_xce TSRMLS_CC);
-			xc_cache_hit_dmz(cache);
+			xc_cache_hit_dmz(cache TSRMLS_CC);
 			break;
 		}
 
