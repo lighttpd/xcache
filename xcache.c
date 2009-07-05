@@ -650,13 +650,13 @@ static int xc_stat(const char *filename, const char *include_path, struct stat *
 		}
 		if (VCWD_STAT(filepath, pbuf) == 0) {
 			free_alloca(paths);
-			return 0;
+			return SUCCESS;
 		}
 	}
 
 	free_alloca(paths);
 
-	return 1;
+	return FAILURE;
 }
 /* }}} */
 
@@ -702,7 +702,11 @@ static int xc_entry_init_key_php(xc_entry_t *xce, char *filename, char *opened_p
 	time_t delta;
 
 	if (!filename || !SG(request_info).path_translated) {
-		return 0;
+		return FAILURE;
+	}
+
+	if (strstr(filename, "://") != NULL) {
+		return FAILURE;
 	}
 
 	php = xce->data.php;
@@ -720,7 +724,7 @@ static int xc_entry_init_key_php(xc_entry_t *xce, char *filename, char *opened_p
 		pbuf = &buf;
 		if (IS_ABSOLUTE_PATH(filename, strlen(filename))) {
 			if (VCWD_STAT(filename, pbuf) != 0) {
-				return 0;
+				return FAILURE;
 			}
 			goto stat_done;
 		}
@@ -736,15 +740,15 @@ static int xc_entry_init_key_php(xc_entry_t *xce, char *filename, char *opened_p
 			}
 
 			if (VCWD_STAT(filename, pbuf) != 0) {
-				return 0;
+				return FAILURE;
 			}
 			goto stat_done;
 		}
 not_relative_path:
 
 		/* use include_path */
-		if (xc_stat(filename, PG(include_path), pbuf TSRMLS_CC) != 0) {   
-			return 0;
+		if (xc_stat(filename, PG(include_path), pbuf TSRMLS_CC) != SUCCESS) {
+			return FAILURE;
 		}
 
 		/* fall */
@@ -752,7 +756,7 @@ not_relative_path:
 stat_done:
 		delta = XG(request_time) - pbuf->st_mtime;
 		if (abs(delta) < 2 && !xc_test) {
-			return 0;
+			return FAILURE;
 		}
 
 		php->mtime        = pbuf->st_mtime;
@@ -778,7 +782,7 @@ stat_done:
 		/* hash on filename, let's expand it to real path */
 		filename = expand_filepath(filename, opened_path_buffer TSRMLS_CC);
 		if (filename == NULL) {
-			return 0;
+			return FAILURE;
 		}
 	}
 
@@ -792,7 +796,12 @@ stat_done:
 	xce->hvalue = xc_hash_fold(hv, &xc_php_hentry);
 
 	xce->type = XC_TYPE_PHP;
-	return 1;
+	return SUCCESS;
+}
+/* }}} */
+static inline xc_hash_value_t xc_php_hash_md5(xc_entry_data_php_t *php TSRMLS_DC) /* {{{ */
+{
+	return HASH_STR_S(php->md5, sizeof(php->md5));
 }
 /* }}} */
 static void xc_cache_early_binding_class_cb(zend_op *opline, int oplineno, void *data TSRMLS_DC) /* {{{ */
@@ -865,7 +874,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 
 	filename = h->opened_path ? h->opened_path : h->filename;
 	xce.data.php = &php;
-	if (!xc_entry_init_key_php(&xce, filename, opened_path_buffer TSRMLS_CC)) {
+	if (xc_entry_init_key_php(&xce, filename, opened_path_buffer TSRMLS_CC) != SUCCESS) {
 		return old_compile_file(h, type TSRMLS_CC);
 	}
 	cache = xce.cache;
