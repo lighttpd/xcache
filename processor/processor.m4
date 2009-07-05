@@ -799,7 +799,6 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 #ifndef ZEND_COMPILE_DELAYED_BINDING
 	DISPATCH(zend_bool, have_early_binding)
 #endif
-	DISPATCH(zend_bool, have_references)
 ')
 dnl }}}
 DEF_STRUCT_P_FUNC(`xc_entry_data_var_t', , `dnl {{{
@@ -861,9 +860,11 @@ DEF_STRUCT_P_FUNC(`xc_entry_t', , `
 		case XC_TYPE_PHP:
 			STRUCT_P(xc_entry_data_php_t, data.php)
 			break;
+
 		case XC_TYPE_VAR:
 			STRUCT_P(xc_entry_data_var_t, data.var)
 			break;
+
 		default:
 			assert(0);
 		}
