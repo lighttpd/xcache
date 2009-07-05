@@ -8,12 +8,12 @@ ChangeLog
  * fixed #102: segv when var cacher is too small
  * fixed #55: segv php tokenizer on certain special situation
  * compiler errors: all compiler warning (E_STRICT only currently) is now cached and is supported for user handler
- * could not show module info in admin page when XCache is the last module
- * wrong http auth realm
 
-1.3.0 2008-?-?
+1.3.0 2009-?-?
 == ChangeLog ==
  * PHP 5.3 support
+ * could not show module info in admin page when XCache is the last module
+ * wrong http auth realm
 
 1.2.2 2007-12-29
 == ChangeLog ==
