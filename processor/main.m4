@@ -110,7 +110,11 @@ define(`PROC_CLASS_ENTRY_P_EX', `
 	if ($2) {
 		IFSTORE(`$1 = (zend_class_entry *) xc_get_class_num(processor, $2);')
 		IFRESTORE(`$1 = xc_get_class(processor, (zend_ulong) $2);')
+#ifdef IS_UNICODE
 		IFDASM(`add_assoc_unicodel_ex(dst, ZEND_STRS("$3"), ZSTR_U($2->name), $2->name_length, 1);')
+#else
+		IFDASM(`add_assoc_stringl_ex(dst, ZEND_STRS("$3"), $2->name, $2->name_length, 1);')
+#endif
 	}
 	else {
 		COPYNULL_EX(`$1', `$3')
