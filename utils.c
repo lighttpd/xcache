@@ -527,52 +527,6 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, int op
 #define TG(x) (sandbox->tmp_##x)
 #define OG(x) (sandbox->orig_##x)
 /* }}} */
-<<<<<<< .working
-=======
-#ifdef E_STRICT
-static void xc_sandbox_error_cb(int type, const char *error_filename, const uint error_lineno, const char *format, va_list args) /* {{{ */
-{
-	xc_compilererror_t *compilererror;
-	xc_sandbox_t *sandbox;
-	TSRMLS_FETCH();
-
-	sandbox = (xc_sandbox_t *) XG(sandbox);
-	assert(sandbox != NULL);
-	if (type != E_STRICT) {
-		/* give up, and user handler is not supported in this case */
-		zend_uint i;
-		zend_uint orig_lineno = CG(zend_lineno);
-		zend_error_cb = sandbox->orig_zend_error_cb;
-
-		for (i = 0; i < sandbox->compilererror_cnt; i ++) {
-			compilererror = &sandbox->compilererrors[i];
-			CG(zend_lineno) = compilererror->lineno;
-			zend_error(E_STRICT, "%s", compilererror->error);
-		}
-		CG(zend_lineno) = orig_lineno;
-		sandbox->compilererror_cnt = 0;
-
-		sandbox->orig_zend_error_cb(type, error_filename, error_lineno, format, args);
-		return;
-	}
-
-	if (sandbox->compilererror_cnt <= sandbox->compilererror_size) {
-		if (sandbox->compilererror_size) {
-			sandbox->compilererror_size += 16;
-			sandbox->compilererrors = erealloc(sandbox->compilererrors, sandbox->compilererror_size * sizeof(sandbox->compilererrors));
-		}
-		else {
-			sandbox->compilererror_size = 16;
-			sandbox->compilererrors = emalloc(sandbox->compilererror_size * sizeof(sandbox->compilererrors));
-		}
-	}
-	compilererror = &sandbox->compilererrors[sandbox->compilererror_cnt++];
-	compilererror->lineno = error_lineno;
-	compilererror->error_len = vspprintf(&compilererror->error, 0, format, args);
-}
-/* }}} */
-#endif
->>>>>>> .merge-right.r559
 #ifdef ZEND_ENGINE_2_1
 static zend_bool xc_auto_global_callback(char *name, uint name_len TSRMLS_DC) /* {{{ */
 {
