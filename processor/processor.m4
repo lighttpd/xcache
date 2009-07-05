@@ -149,7 +149,11 @@ dnl }}}
 		DONE(value)
 		DISPATCH(zval_data_type, type)
 		DISPATCH(zend_uchar, is_ref)
+#ifdef ZEND_ENGINE_2
+		DISPATCH(zend_uint, refcount)
+#else
 		DISPATCH(zend_ushort, refcount)
+#endif
 #ifdef ZEND_ENGINE_2_3
 		DISPATCH(zend_uchar, idx_type)
 #endif
