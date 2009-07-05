@@ -55,6 +55,9 @@
 #ifndef Z_SET_REFCOUNT
 #	define Z_SET_REFCOUNT(z, rc) (z).refcount = rc;
 #endif
+#ifndef IS_CONSTANT_TYPE_MASK
+#	define IS_CONSTANT_TYPE_MASK 0xf
+#endif
 
 /* {{{ dirty fix for PHP 6 */
 #ifdef add_assoc_long_ex

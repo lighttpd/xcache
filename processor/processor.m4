@@ -78,7 +78,7 @@ DEF_STRUCT_P_FUNC(`zval', , `dnl {{{
 		zval_dtor(dst);
 		*dst = *src;
 		zval_copy_ctor(dst);
-		ZVAL_REFCOUNT(dst) = 1;
+		Z_SET_REFCOUNT(*dst, 1);
 		DONE(value)
 		DONE(type)
 #ifdef ZEND_ENGINE_2_3
@@ -95,7 +95,7 @@ DEF_STRUCT_P_FUNC(`zval', , `dnl {{{
 		/* Variable information */
 dnl {{{ zvalue_value
 		DISABLECHECK(`
-		switch (src->type & ~IS_CONSTANT_INDEX) {
+		switch ((Z_TYPE_P(src) & IS_CONSTANT_TYPE_MASK)) {
 			case IS_LONG:
 			case IS_RESOURCE:
 			case IS_BOOL:
@@ -755,7 +755,11 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 
 #ifdef HAVE_XCACHE_CONSTANT
 	DISPATCH(zend_uint, constinfo_cnt)
-	STRUCT_ARRAY(constinfo_cnt, xc_constinfo_t, constinfos)
+	IFRESTORE(`
+		COPY(constinfos)
+	', `
+		STRUCT_ARRAY(constinfo_cnt, xc_constinfo_t, constinfos)
+	')
 #endif
 
 	DISPATCH(zend_uint, funcinfo_cnt)
@@ -768,12 +772,16 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 		')
 	')
 	STRUCT_ARRAY(classinfo_cnt, xc_classinfo_t, classinfos)
+	popdef(`BEFORE_LOOP')
 #ifdef ZEND_ENGINE_2_1
 	DISPATCH(zend_uint, autoglobal_cnt)
-	STRUCT_ARRAY(autoglobal_cnt, xc_autoglobal_t, autoglobals)
+	IFRESTORE(`
+		COPY(autoglobals)
+	', `
+		STRUCT_ARRAY(autoglobal_cnt, xc_autoglobal_t, autoglobals)
+	')
 #endif
 	DISPATCH(zend_bool, have_early_binding)
-	popdef(`BEFORE_LOOP')
 ')
 dnl }}}
 DEF_STRUCT_P_FUNC(`xc_entry_data_var_t', , `dnl {{{
