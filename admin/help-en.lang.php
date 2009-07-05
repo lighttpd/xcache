@@ -3,10 +3,13 @@
 <dt><?php echo _T('Slots'); ?>: </dt><dd>Number of hash slots. the setting from your php.ini</dd>
 <dt><?php echo _T('Size'); ?>: </dt><dd>Cache Size, Size of the cache (or cache chunk), in bytes</dd>
 <dt><?php echo _T('Avail'); ?>: </dt><dd>Available Memory, free memory in bytes of this cache</dd>
-<dt><?php echo _T('%'); ?>: </dt><dd>Percent, A bar shows how much memory available in percent</dd>
+<dt><?php echo _T('% Used'); ?>: </dt><dd>Percent, A bar shows how much memory available in percent, and memory blocks status</dd>
 <dt><?php echo _T('Clear'); ?>: </dt><dd>Clear Button, Press the button to clean this cache</dd>
 <dt><?php echo _T('Compiling'); ?>: </dt><dd>Compiling flag, "yes" if the cache is busy compiling php script</dd>
 <dt><?php echo _T('Hits'); ?>: </dt><dd>Cache Hits, hit=a var/php is loaded from this cache</dd>
+<dt><?php echo _T('Hits/H'); ?>: </dt><dd>Average Hits per Hour. Only last 24 hours is logged</dd>
+<dt><?php echo _T('Hits 24H'); ?>: </dt><dd>Hits 24 Hours. Hits graph of last 24 hours</dd>
+<dt><?php echo _T('Hits/S'); ?>: </dt><dd>Average Hits per Second. Only last 5 seconds is logged</dd>
 <dt><?php echo _T('Misses'); ?>: </dt><dd>Cache Misses, miss=a var/php is requested but not in the cache</dd>
 <dt><?php echo _T('Clogs'); ?>: </dt><dd>Compiling Clogs, clog=compiling is needed but avoided to wait(be blocked) when the cache is busy compiling already</dd>
 <dt><?php echo _T('OOMs'); ?>: </dt><dd>Out Of Memory, how many times a new item should be stored but there isn't enough memory in the cache, think of increasing the xcache.size or xcache.var_size</dd>

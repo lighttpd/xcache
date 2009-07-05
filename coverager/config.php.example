@@ -21,7 +21,7 @@ $usecache = false;
 function ob_filter_path_nicer($o)
 {
 	$sep = DIRECTORY_SEPARATOR;
-	$o = str_replace($_SERVER['DOCUMENT_ROOT'],  "{DOCROOT}$sep", $o);
+	$o = str_replace($_SERVER['DOCUMENT_ROOT'],  "{DOCROOT}" . (substr($d, -1) == $sep ? $sep : ""), $o);
 	$xcachedir = realpath(dirname(__FILE__) . "$sep..$sep");
 	$o = str_replace($xcachedir . $sep, "{XCache}$sep", $o);
 	if ($sep == '/') {
