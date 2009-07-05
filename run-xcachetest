@@ -18,7 +18,7 @@ fi
 test -z "$PHP_SRC" && PHP_SRC=./php-src
 if test -z "$TEST_PHP_USER" ; then
 	TEST_PHP_USER="$PHP_SRC/tests"
-	for i in Zend ZendEngine2 ext/standard/tests ext/reflection/tests ; do
+	for i in Zend ZendEngine2 ext/standard/tests ext/reflection/tests ext/spl/tests; do
 		if test -d "$PHP_SRC/$i" ; then
 			TEST_PHP_USER="$TEST_PHP_USER,$PHP_SRC/$i"
 		fi

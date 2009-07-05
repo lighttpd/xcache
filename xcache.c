@@ -86,6 +86,11 @@ static xc_cache_t **xc_php_caches = NULL;
 static xc_cache_t **xc_var_caches = NULL;
 
 static zend_bool xc_initized = 0;
+static time_t xc_init_time = 0;
+static long unsigned xc_init_instance_id = 0;
+#ifdef ZTS
+static long unsigned xc_init_instance_subid = 0;
+#endif
 static zend_compile_file_t *origin_compile_file = NULL;
 static zend_compile_file_t *old_compile_file = NULL;
 static zend_llist_element  *xc_llist_zend_extension = NULL;
@@ -246,6 +251,55 @@ static void xc_entry_hold_var_dmz(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 #endif
+static inline zend_uint advance_wrapped(zend_uint val, zend_uint count) /* {{{ */
+{
+	if (val + 1 >= count) {
+		return 0;
+	}
+	return val + 1;
+}
+/* }}} */
+static void xc_counters_inc(time_t *curtime, zend_uint *curslot, time_t period, zend_ulong *counters, zend_uint count TSRMLS_DC) /* {{{ */
+{
+	time_t n = XG(request_time) / period;
+	if (*curtime != n) {
+		zend_uint target_slot = n % count;
+		if (n - *curtime > period) {
+			memset(counters, 0, sizeof(counters[0]) * count);
+		}
+		else {
+			zend_uint slot;
+			for (slot = advance_wrapped(*curslot, count);
+					slot != target_slot;
+					slot = advance_wrapped(slot, count)) {
+				counters[slot] = 0;
+			}
+			counters[target_slot] = 0;
+		}
+		*curtime = n;
+		*curslot = target_slot;
+	}
+	counters[*curslot] ++;
+}
+/* }}} */
+static void xc_cache_hit_dmz(xc_cache_t *cache TSRMLS_DC) /* {{{ */
+{
+	cache->hits ++;
+
+	xc_counters_inc(&cache->hits_by_hour_cur_time
+			, &cache->hits_by_hour_cur_slot, 60 * 60
+			, cache->hits_by_hour
+			, sizeof(cache->hits_by_hour) / sizeof(cache->hits_by_hour[0])
+			TSRMLS_CC);
+
+	xc_counters_inc(&cache->hits_by_second_cur_time
+			, &cache->hits_by_second_cur_slot
+			, 1
+			, cache->hits_by_second
+			, sizeof(cache->hits_by_second) / sizeof(cache->hits_by_second[0])
+			TSRMLS_CC);
+}
+/* }}} */
 
 /* helper function that loop through each entry */
 #define XC_ENTRY_APPLY_FUNC(name) int name(xc_entry_t *entry TSRMLS_DC)
@@ -310,7 +364,7 @@ static void xc_gc_expires_php(TSRMLS_D) /* {{{ */
 {
 	int i, c;
 
-	if (!xc_php_ttl || !xc_php_gc_interval) {
+	if (!xc_php_ttl || !xc_php_gc_interval || !xc_php_caches) {
 		return;
 	}
 
@@ -323,7 +377,7 @@ static void xc_gc_expires_var(TSRMLS_D) /* {{{ */
 {
 	int i, c;
 
-	if (!xc_var_gc_interval) {
+	if (!xc_var_gc_interval || !xc_var_caches) {
 		return;
 	}
 
@@ -371,12 +425,16 @@ static void xc_gc_deletes(TSRMLS_D) /* {{{ */
 {
 	int i, c;
 
-	for (i = 0, c = xc_php_hcache.size; i < c; i ++) {
-		xc_gc_deletes_one(xc_php_caches[i] TSRMLS_CC);
+	if (xc_php_caches) {
+		for (i = 0, c = xc_php_hcache.size; i < c; i ++) {
+			xc_gc_deletes_one(xc_php_caches[i] TSRMLS_CC);
+		}
 	}
 
-	for (i = 0, c = xc_var_hcache.size; i < c; i ++) {
-		xc_gc_deletes_one(xc_var_caches[i] TSRMLS_CC);
+	if (xc_var_caches) {
+		for (i = 0, c = xc_var_hcache.size; i < c; i ++) {
+			xc_gc_deletes_one(xc_var_caches[i] TSRMLS_CC);
+		}
 	}
 }
 /* }}} */
@@ -384,7 +442,8 @@ static void xc_gc_deletes(TSRMLS_D) /* {{{ */
 /* helper functions for user functions */
 static void xc_fillinfo_dmz(int cachetype, xc_cache_t *cache, zval *return_value TSRMLS_DC) /* {{{ */
 {
-	zval *blocks;
+	zval *blocks, *hits;
+	int i;
 	const xc_block_t *b;
 #ifndef NDEBUG
 	xc_memsize_t avail = 0;
@@ -416,6 +475,19 @@ static void xc_fillinfo_dmz(int cachetype, xc_cache_t *cache, zval *return_value
 	else {
 		add_assoc_null_ex(return_value, ZEND_STRS("gc"));
 	}
+	MAKE_STD_ZVAL(hits);
+	array_init(hits);
+	for (i = 0; i < sizeof(cache->hits_by_hour) / sizeof(cache->hits_by_hour[0]); i ++) {
+		add_next_index_long(hits, (long) cache->hits_by_hour[i]);
+	}
+	add_assoc_zval_ex(return_value, ZEND_STRS("hits_by_hour"), hits);
+
+	MAKE_STD_ZVAL(hits);
+	array_init(hits);
+	for (i = 0; i < sizeof(cache->hits_by_second) / sizeof(cache->hits_by_second[0]); i ++) {
+		add_next_index_long(hits, (long) cache->hits_by_second[i]);
+	}
+	add_assoc_zval_ex(return_value, ZEND_STRS("hits_by_second"), hits);
 
 	MAKE_STD_ZVAL(blocks);
 	array_init(blocks);
@@ -639,8 +711,13 @@ static inline void xc_entry_unholds_real(xc_stack_t *holds, xc_cache_t **caches,
 /* }}} */
 static void xc_entry_unholds(TSRMLS_D) /* {{{ */
 {
-	xc_entry_unholds_real(XG(php_holds), xc_php_caches, xc_php_hcache.size TSRMLS_CC);
-	xc_entry_unholds_real(XG(var_holds), xc_var_caches, xc_var_hcache.size TSRMLS_CC);
+	if (xc_php_caches) {
+		xc_entry_unholds_real(XG(php_holds), xc_php_caches, xc_php_hcache.size TSRMLS_CC);
+	}
+
+	if (xc_var_caches) {
+		xc_entry_unholds_real(XG(var_holds), xc_var_caches, xc_var_hcache.size TSRMLS_CC);
+	}
 }
 /* }}} */
 static int xc_stat(const char *filename, const char *include_path, struct stat *pbuf TSRMLS_DC) /* {{{ */
@@ -913,7 +990,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 		if (stored_xce) {
 			TRACE("found %s, catch it", stored_xce->name.str.val);
 			xc_entry_hold_php_dmz(stored_xce TSRMLS_CC);
-			cache->hits ++;
+			xc_cache_hit_dmz(cache);
 			break;
 		}
 
@@ -1221,19 +1298,22 @@ int xc_is_rw(const void *p) /* {{{ */
 {
 	xc_shm_t *shm;
 	int i;
-	if (!xc_initized) {
-		return 0;
-	}
-	for (i = 0; i < xc_php_hcache.size; i ++) {
-		shm = xc_php_caches[i]->shm;
-		if (shm->handlers->is_readwrite(shm, p)) {
-			return 1;
+
+	if (xc_php_caches) {
+		for (i = 0; i < xc_php_hcache.size; i ++) {
+			shm = xc_php_caches[i]->shm;
+			if (shm->handlers->is_readwrite(shm, p)) {
+				return 1;
+			}
 		}
 	}
-	for (i = 0; i < xc_var_hcache.size; i ++) {
-		shm = xc_var_caches[i]->shm;
-		if (shm->handlers->is_readwrite(shm, p)) {
-			return 1;
+
+	if (xc_var_caches) {
+		for (i = 0; i < xc_var_hcache.size; i ++) {
+			shm = xc_var_caches[i]->shm;
+			if (shm->handlers->is_readwrite(shm, p)) {
+				return 1;
+			}
 		}
 	}
 	return 0;
@@ -1243,19 +1323,22 @@ int xc_is_ro(const void *p) /* {{{ */
 {
 	xc_shm_t *shm;
 	int i;
-	if (!xc_initized) {
-		return 0;
-	}
-	for (i = 0; i < xc_php_hcache.size; i ++) {
-		shm = xc_php_caches[i]->shm;
-		if (shm->handlers->is_readonly(shm, p)) {
-			return 1;
+
+	if (xc_php_caches) {
+		for (i = 0; i < xc_php_hcache.size; i ++) {
+			shm = xc_php_caches[i]->shm;
+			if (shm->handlers->is_readonly(shm, p)) {
+				return 1;
+			}
 		}
 	}
-	for (i = 0; i < xc_var_hcache.size; i ++) {
-		shm = xc_var_caches[i]->shm;
-		if (shm->handlers->is_readonly(shm, p)) {
-			return 1;
+
+	if (xc_var_caches) {
+		for (i = 0; i < xc_var_hcache.size; i ++) {
+			shm = xc_var_caches[i]->shm;
+			if (shm->handlers->is_readonly(shm, p)) {
+				return 1;
+			}
 		}
 	}
 	return 0;
@@ -1514,14 +1597,14 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 
 		XG(internal_table_copied) = 1;
 	}
-	if (xc_php_hcache.size && !XG(php_holds)) {
+	if (xc_php_caches && !XG(php_holds)) {
 		XG(php_holds) = calloc(xc_php_hcache.size, sizeof(xc_stack_t));
 		for (i = 0; i < xc_php_hcache.size; i ++) {
 			xc_stack_init(&XG(php_holds[i]));
 		}
 	}
 
-	if (xc_initized && xc_var_hcache.size && !XG(var_holds)) {
+	if (xc_var_caches && !XG(var_holds)) {
 		XG(var_holds) = calloc(xc_var_hcache.size, sizeof(xc_stack_t));
 		for (i = 0; i < xc_var_hcache.size; i ++) {
 			xc_stack_init(&XG(var_holds[i]));
@@ -1674,10 +1757,10 @@ static int xcache_admin_auth_check(TSRMLS_D) /* {{{ */
 		}
 	}
 
-#define STR "WWW-authenticate: Basic Realm=\"XCache Administration\""
+#define STR "HTTP/1.0 401 Unauthorized"
 	sapi_add_header_ex(STR, sizeof(STR) - 1, 1, 1 TSRMLS_CC);
 #undef STR
-#define STR "HTTP/1.0 401 Unauthorized"
+#define STR "WWW-authenticate: Basic Realm=\"XCache Administration\""
 	sapi_add_header_ex(STR, sizeof(STR) - 1, 1, 1 TSRMLS_CC);
 #undef STR
 	ZEND_PUTS("XCache Auth Failed. User and Password is case sense\n");
@@ -1883,7 +1966,7 @@ PHP_FUNCTION(xcache_get)
 		RETVAL_NULL();
 	} LEAVE_LOCK(xce.cache);
 	if (found) {
-		xce.cache->hits ++;
+		xc_cache_hit_dmz(xce.cache TSRMLS_CC);
 	}
 	else {
 		xce.cache->misses ++;
@@ -1964,7 +2047,7 @@ PHP_FUNCTION(xcache_isset)
 		RETVAL_FALSE;
 	} LEAVE_LOCK(xce.cache);
 	if (found) {
-		xce.cache->hits ++;
+		xc_cache_hit_dmz(xce.cache TSRMLS_CC);
 	}
 	else {
 		xce.cache->misses ++;
@@ -2097,6 +2180,20 @@ PHP_FUNCTION(xcache_dec)
 	xc_var_inc_dec(-1, INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 /* }}} */
+#ifdef HAVE_XCACHE_DPRINT
+/* {{{ proto bool  xcache_dprint(mixed value)
+   Prints variable (or value) internal struct (debug only) */
+PHP_FUNCTION(xcache_dprint)
+{
+	zval *value;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &value) == FAILURE) {
+		return;
+	}
+	xc_dprint_zval(value, 0 TSRMLS_CC);
+}
+/* }}} */
+#endif
 /* {{{ proto string xcache_asm(string filename)
  */
 #ifdef HAVE_XCACHE_ASSEMBLER
@@ -2322,6 +2419,9 @@ static function_entry xcache_functions[] = /* {{{ */
 	PHP_FE(xcache_set,               NULL)
 	PHP_FE(xcache_isset,             NULL)
 	PHP_FE(xcache_unset,             NULL)
+#ifdef HAVE_XCACHE_DPRINT
+	PHP_FE(xcache_dprint,            NULL)
+#endif
 	{NULL, NULL,                     NULL}
 };
 /* }}} */
@@ -2459,6 +2559,16 @@ static PHP_MINFO_FUNCTION(xcache)
 	php_info_print_table_row(2, "Version", XCACHE_VERSION);
 	php_info_print_table_row(2, "Modules Built", XCACHE_MODULES);
 	php_info_print_table_row(2, "Readonly Protection", xc_readonly_protection ? "enabled" : "N/A");
+	ptr = php_format_date("Y-m-d H:i:s", sizeof("Y-m-d H:i:s") - 1, xc_init_time, 1 TSRMLS_CC);
+	php_info_print_table_row(2, "Cache Init Time", ptr);
+	efree(ptr);
+
+#ifdef ZTS
+	snprintf(buf, sizeof(buf), "%lu.%lu", xc_init_instance_id, xc_init_instance_subid);
+#else
+	snprintf(buf, sizeof(buf), "%lu", xc_init_instance_id);
+#endif
+	php_info_print_table_row(2, "Cache Instance Id", buf);
 
 	if (xc_php_size) {
 		ptr = _php_math_number_format(xc_php_size, 0, '.', ',');
@@ -2693,6 +2803,11 @@ static PHP_MINIT_FUNCTION(xcache)
 			goto err_init;
 		}
 		xc_initized = 1;
+		xc_init_time = time(NULL);
+		xc_init_instance_id = getpid();
+#ifdef ZTS
+		xc_init_instance_subid = tsrm_thread_id();
+#endif
 	}
 
 #ifdef HAVE_XCACHE_COVERAGER

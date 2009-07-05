@@ -1,12 +1,14 @@
 <?php include("header.tpl.php"); ?>
-<a href="help.php" target="_blank" id="help"><?php echo _T("Help") ?> &raquo;</a>
-<span class="switcher"><?php echo switcher("type", $types); ?></span>
+<div id="help">
+	<a href="help.php"><?php echo _T("Help") ?> &raquo;</a>
+</div>
+<div class="switcher"><?php echo switcher("type", $types); ?></div>
 <?php
 $a = new Cycle('class="col1"', 'class="col2"');
 $b = new Cycle('class="col1"', 'class="col2"');
 ?>
-<?php echo _T('Caches'); ?>:
 <table cellspacing="0" cellpadding="4" class="cycles">
+	<caption><?php echo _T('Caches'); ?></caption>
 	<col />
 	<col align="right" />
 	<col align="right" />
@@ -14,6 +16,9 @@ $b = new Cycle('class="col1"', 'class="col2"');
 	<col />
 	<col />
 	<col align="right" />
+	<col align="right" />
+	<col align="right" />
+	<col />
 	<col align="right" />
 	<col align="right" />
 	<col align="right" />
@@ -27,10 +32,13 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		<th><?php echo _T('Slots'); ?></th>
 		<th><?php echo _T('Size'); ?></th>
 		<th><?php echo _T('Avail'); ?></th>
-		<th><?php echo _T('%'); ?></th>
+		<th><?php echo _T(isset($free_graph_width) ? '% Free' : '% Used'); ?></th>
 		<th><?php echo _T('Clear'); ?></th>
 		<th><?php echo _T('Compiling'); ?></th>
 		<th><?php echo _T('Hits'); ?></th>
+		<th><?php echo _T('Hits/H'); ?></th>
+		<th><?php echo _T('Hits 24H'); ?></th>
+		<th><?php echo _T('Hits/S'); ?></th>
 		<th><?php echo _T('Misses'); ?></th>
 		<th><?php echo _T('Clogs'); ?></th>
 		<th><?php echo _T('OOMs'); ?></th>
@@ -47,32 +55,67 @@ $b = new Cycle('class="col1"', 'class="col2"');
 	foreach ($cacheinfos as $i => $ci) {
 		echo "
 		<tr ", $a->next(), ">";
-		$pavail = (int) ($ci['avail'] / $ci['size'] * 100);
-		$pused = 100 - $pavail;
+		$pvalue = (int) ($ci['avail'] / $ci['size'] * 100);
+		$pempty = 100 - $pvalue;
+		if (!isset($free_graph_width)) {
+			// swap
+			$tmp = $pvalue;
+			$pvalue = $pempty;
+			$pempty = $tmp;
+		}
+
+		$w = $graph_width;
+		if (empty($ci['istotal'])) {
+			$graph = freeblock_to_graph($ci['free_blocks'], $ci['size']);
+			$blocksgraph = "<div class=\"blocksgraph\" style=\"width: {$w}px\">{$graph}</div>";
+		}
+		else {
+			$blocksgraph = '';
+		}
 
 		$ci_slots = size($ci['slots']);
 		$ci_size  = size($ci['size']);
 		$ci_avail = size($ci['avail']);
 		$ci = number_formats($ci, $numkeys);
-		$ci['compiling']    = $ci['type'] == $type_php ? ($ci['compiling'] ? 'yes' : 'no') : '-';
-		$ci['can_readonly'] = $ci['can_readonly'] ? 'yes' : 'no';
+
+		$hits_avg_h     = number_format(array_avg($ci['hits_by_hour']), 2);
+		$hits_avg_s     = number_format(array_avg($ci['hits_by_second']), 2);
+		$hits_graph_h   = hits_to_graph($ci['hits_by_hour']);
+		$hits_graph_h_w = count($ci['hits_by_hour']) * 2;
+
+		if (!empty($ci['istotal'])) {
+			$ci['compiling']    = '-';
+			$ci['can_readonly'] = '-';
+		}
+		else {
+			$ci['compiling']    = $ci['type'] == $type_php ? ($ci['compiling'] ? 'yes' : 'no') : '-';
+			$ci['can_readonly'] = $ci['can_readonly'] ? 'yes' : 'no';
+		}
 		echo <<<EOS
 		<th>{$ci['cache_name']}</th>
 		<td title="{$ci['slots']}">{$ci_slots}</td>
 		<td title="{$ci['size']}">{$ci_size}</td>
 		<td title="{$ci['avail']}">{$ci_avail}</td>
-		<td title="{$pavail} %"><div class="percent"><div style="height: {$pused}%" class="pused">&nbsp;</div><div style="height: {$pavail}%" class="pavail">&nbsp;</div></div></td>
-		<td>
-			<form method="post">
-				<div>
-					<input type="hidden" name="type" value="{$ci['type']}">
-					<input type="hidden" name="cacheid" value="{$ci['cacheid']}">
-					<input type="submit" name="clearcache" value="{$l_clear}" class="submit" onclick="return confirm('{$l_clear_confirm}');" />
-				</div>
-			</form>
-		</td>
+		<td title="{$pvalue} %"
+			><div class="percent" style="width: {$w}px"
+				><div style="width: {$pvalue}%" class="pvalue"></div
+				><div style="width: {$pempty}%" class="pempty"></div
+			></div
+		>{$blocksgraph}</td>
+		<td
+			><form method="post" action=""
+				><div
+					><input type="hidden" name="type" value="{$ci['type']}"
+					/><input type="hidden" name="cacheid" value="{$ci['cacheid']}"
+					/><input type="submit" name="clearcache" value="{$l_clear}" class="submit" onclick="return confirm('{$l_clear_confirm}');"
+				/></div
+			></form
+		></td>
 		<td>{$ci['compiling']}</td>
 		<td>{$ci['hits']}</td>
+		<td>{$hits_avg_h}</td>
+		<td><div class="hitsgraph" style="width: {$hits_graph_h_w}px">{$hits_graph_h}</div></td>
+		<td>{$hits_avg_s}</td>
 		<td>{$ci['misses']}</td>
 		<td>{$ci['clogs']}</td>
 		<td>{$ci['ooms']}</td>
@@ -88,33 +131,15 @@ EOS;
 	</tr>
 	<?php } ?>
 </table>
-<div>
-	<?php echo _T('Free Blocks'); ?>:
+<div class="blockarea legends">
+	<div class="legendtitle"><?php echo _T('Legends:'); ?></div>
+	<div class="legend pvalue">&nbsp;&nbsp;</div>
+	<div class="legendtitle"><?php echo _T(isset($free_graph_width) ? '% Free' : '% Used'); ?></div>
+	<div class="legend" style="background: rgb(0,0,255)">&nbsp;&nbsp;</div>
+	<div class="legendtitle"><?php echo _T(isset($free_graph_width) ? 'Free Blocks' : 'Used Blocks'); ?></div>
+	<div class="legend" style="background: rgb(255,0,0)">&nbsp;&nbsp;</div>
+	<div class="legendtitle"><?php echo _T('Hits'); ?></div>
 </div>
-<?php
-foreach ($cacheinfos as $i => $ci) {
-	$b->reset();
-?>
-<table cellspacing="0" cellpadding="4" class="cycles freeblocks">
-	<tr>
-		<th><?php echo $ci['cache_name']; ?> <?php echo _T("size"); ?><br><?php echo _T("offset"); ?></th>
-	<?php
-	foreach ($ci['free_blocks'] as $block) {
-		$size   = size($block['size']);
-		$offset = size($block['offset']);
-
-		$c = $b->next();
-		echo "
-		<td $c><nobr>$size<br>$offset</nobr></td>";
-	}
-	?>
-
-	</tr>
-</table>
-<?php
-}
-?>
-<div style="clear: both">&nbsp;</div>
 <?php
 
 if ($cachelist) {
@@ -124,12 +149,11 @@ if ($cachelist) {
 	}
 	foreach (array('Cached' => $cachelist['cache_list'], 'Deleted' => $cachelist['deleted_list']) as $listname => $entries) {
 		$a->reset();
-		echo "
-		<caption>", _T("{$cachelist['type_name']} $listname"), "</caption>";
 		?>
 
 	<form action="" method="post">
-	<table cellspacing="0" cellpadding="4" class="cycles entrys" width="100%">
+	<table cellspacing="0" cellpadding="4" class="cycles entries" width="100%">
+		<caption><?php echo _T("{$cachelist['type_name']} $listname"); ?></caption>
 		<col />
 		<col />
 		<col />

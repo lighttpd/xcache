@@ -1,6 +1,8 @@
 input, table { font-family: sans-serif; }
 input { font-size: 12px; }
-table { border-collapse: collapse; font-size: 11px; }
+table { border-collapse: collapse; font-size: 11px; margin: 0; margin-bottom: 10px; }
+table caption, h2 { font-size: 16px; font-weight: bold; text-align: left; padding-top: 20px; margin-bottom: 2px; }
+table { white-space: pre; }
 table.cycles { border: 1px solid black; margin-top: 5px; margin-bottom: 5px; }
 table.cycles .col1 { background-color: #f5f5f5; }
 table.cycles .col2 { background-color: #e0e0e0; }
@@ -16,13 +18,26 @@ th { font-size: 12px; }
 .moduleinfo .v {background-color: #cccccc; color: #000000;}
 .button { }
 span.sortarrow { color: white; text-decoration: none; }
-.freeblocks { float: left; margin-right: 4px;}
-.freeblocks td { text-align: right; }
 form {margin: 0; padding: 0}
-.percent { border: 1px solid black; width: 80%; height: 20px; }
-.percent div { font-size: 1px; line-height: 1px; width: 100%;}
-.percent .pavail { background: blue; }
-.switcher, h1, h2 { text-align: center; display: block; }
+
+.percent { height: 3px; margin-bottom: 1px; border: 1px solid gray; }
+.percent div { float: left; height: 100%; }
+.pvalue { background: limegreen; }
+
+.blocksgraph { height: 16px; }
+.blocksgraph div { float: left; height: 3px; width: 4px; border: solid gray; border-width: 0 0px 1px 0; }
+.blocksgraph { border: 1px solid gray; border-bottom: 0px; }
+
+.hitsgraph { height: 20px; margin: auto; }
+.hitsgraph div { float: left; width: 2px; height: 100%; }
+.hitsgraph div:hover { background: gray; }
+.hitsgraph div div { float: none; width: 100%; }
+.hitsgraph div div.barf { border: 0px solid gray; border-width: 1px 0 0 0; }
+.hitsgraph div div.barv { border: 0px solid gray; border-width: 0 0 1px 0; }
+.hitsgraph div div.barf.active { border-color: yellow; }
+.hitsgraph div div.barv.active { border-color: yellow; }
+
+.switcher, h1 { text-align: center; display: block; }
 .switcher * { color: blue; }
 .switcher a.active { font-weight: bold; font-size: 130%; color: black; }
 #help { display: block; float: right; }
@@ -30,3 +45,6 @@ form {margin: 0; padding: 0}
 dl { overflow: hidden; }
 dt { font-weight: bold; clear: both; float: left; width: 100px; text-align: right; margin: 0; }
 dd { margin: 0; }
+.blockarea { overflow: hidden; _width: 1px; }
+div.legend { float: left; border: 1px solid gray; font: 12px/12px monospace; }
+div.legendtitle { float: left; padding: 2px; padding-right: 10px; font: 12px/12px monospace; }

@@ -23,10 +23,18 @@ $strings = array(
 		=> '確認要清除嗎?',
 		'Compiling'
 		=> '編譯中',
-		'%'
-		=> '%',
+		'% Free'
+		=> '% 剩余',
+		'% Used'
+		=> '% 已用',
 		'Hits'
 		=> '命中',
+		'Hits 24H'
+		=> '24H 分布',
+		'Hits/H'
+		=> '命中/H',
+		'Hits/S'
+		=> '命中/S',
 		'Misses'
 		=> '錯過',
 		'Clogs'
@@ -68,6 +76,14 @@ $strings = array(
 		=> '建議參考',
 		'GC'
 		=> 'GC',
+		'Legends:'
+		=> '图例:',
+		'Used Blocks'
+		=> '已用块',
+		'Free Blocks'
+		=> '未用块',
+		'Total'
+		=> '总共',
 		'Cache'
 		=> '快取',
 		'Caches'
