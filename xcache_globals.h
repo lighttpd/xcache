@@ -21,6 +21,9 @@ ZEND_BEGIN_MODULE_GLOBALS(xcache)
 	HashTable gc_op_arrays;
 #endif
 
+#ifdef HAVE_XCACHE_CONSTANT
+	HashTable internal_constant_table;
+#endif
 	HashTable internal_function_table;
 	HashTable internal_class_table;
 	zend_bool internal_table_copied;
