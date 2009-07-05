@@ -1,3 +1,7 @@
+#if 0
+#define XCACHE_DEBUG
+#endif
+
 #include <stdio.h>
 #include "xcache.h"
 #include "ext/standard/flock_compat.h"
@@ -17,10 +21,6 @@ typedef HashTable *coverager_t;
 
 static char *xc_coveragedump_dir = NULL;
 static zend_compile_file_t *old_compile_file = NULL;
-
-#if 0
-#define DEBUG
-#endif
 
 /* dumper */
 static void xc_destroy_coverage(void *pDest) /* {{{ */
@@ -245,7 +245,11 @@ void xc_coverager_request_init(TSRMLS_D) /* {{{ */
 {
 	if (XG(coverager)) {
 		xc_coverager_enable(TSRMLS_C);
+#ifdef ZEND_COMPILE_EXTENDED_INFO
+		CG(compiler_options) |= ZEND_COMPILE_EXTENDED_INFO;
+#else
 		CG(extended_info) = 1;
+#endif
 	}
 	else {
 		XG(coverage_enabled) = 0;
@@ -469,8 +473,9 @@ int xc_coverager_init(int module_number TSRMLS_DC) /* {{{ */
 	zend_compile_file = xc_compile_file_for_coverage;
 
 	if (cfg_get_string("xcache.coveragedump_directory", &xc_coveragedump_dir) == SUCCESS && xc_coveragedump_dir) {
+		int len;
 		xc_coveragedump_dir = pestrdup(xc_coveragedump_dir, 1);
-		int len = strlen(xc_coveragedump_dir);
+		len = strlen(xc_coveragedump_dir);
 		if (len) {
 			if (xc_coveragedump_dir[len - 1] == '/') {
 				xc_coveragedump_dir[len - 1] = '\0';

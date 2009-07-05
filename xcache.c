@@ -1,6 +1,6 @@
 
 #if 0
-#define DEBUG
+#define XCACHE_DEBUG
 #endif
 
 #if 0
@@ -22,6 +22,9 @@
 #include "SAPI.h"
 
 #include "xcache.h"
+#ifdef ZEND_ENGINE_2_1
+#include "ext/date/php_date.h"
+#endif
 #include "optimizer.h"
 #include "coverager.h"
 #include "disassembler.h"
@@ -651,8 +654,13 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 		}
 		new_cest_ptrs[i] =
 #endif
+#ifdef ZEND_COMPILE_DELAYED_BINDING
+		xc_install_class(xce->name.str.val, &ci->cest, -1,
+				UNISW(0, ci->type), ci->key, ci->key_size, ci->h TSRMLS_CC);
+#else
 		xc_install_class(xce->name.str.val, &ci->cest, ci->oplineno,
 				UNISW(0, ci->type), ci->key, ci->key_size, ci->h TSRMLS_CC);
+#endif
 	}
 
 #ifdef ZEND_ENGINE_2_1
@@ -749,7 +757,7 @@ static int xc_stat(const char *filename, const char *include_path, struct stat *
 /* }}} */
 
 #define HASH(i) (i)
-#define HASH_USTR_L(t, s, l) HASH(zend_u_inline_hash_func(t, s, (l + 1) * sizeof(UChar)))
+#define HASH_ZSTR_L(t, s, l) HASH(zend_u_inline_hash_func(t, s, (l + 1) * sizeof(UChar)))
 #define HASH_STR_L(s, l) HASH(zend_inline_hash_func(s, l + 1))
 #define HASH_STR(s) HASH_STR_L(s, strlen(s) + 1)
 #define HASH_NUM(n) HASH(n)
@@ -765,7 +773,7 @@ static inline xc_hash_value_t xc_hash_fold(xc_hash_value_t hvalue, const xc_hash
 /* }}} */
 static inline xc_hash_value_t xc_entry_hash_name(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 {
-	return UNISW(NOTHING, UG(unicode) ? HASH_USTR_L(xce->name_type, xce->name.uni.val, xce->name.uni.len) :)
+	return UNISW(NOTHING, UG(unicode) ? HASH_ZSTR_L(xce->name_type, xce->name.uni.val, xce->name.uni.len) :)
 		HASH_STR_L(xce->name.str.val, xce->name.str.len);
 }
 /* }}} */
@@ -892,6 +900,7 @@ static inline xc_hash_value_t xc_php_hash_md5(xc_entry_data_php_t *php TSRMLS_DC
 	return HASH_STR_S(php->md5, sizeof(php->md5));
 }
 /* }}} */
+#ifndef ZEND_COMPILE_DELAYED_BINDING
 static void xc_cache_early_binding_class_cb(zend_op *opline, int oplineno, void *data TSRMLS_DC) /* {{{ */
 {
 	char *class_name;
@@ -919,6 +928,7 @@ static void xc_cache_early_binding_class_cb(zend_op *opline, int oplineno, void 
 	}
 }
 /* }}} */
+#endif
 static zend_op_array *xc_check_initial_compile_file(zend_file_handle *h, int type TSRMLS_DC) /* {{{ */
 {
 	XG(initial_compile_file_called) = 1;
@@ -937,7 +947,6 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	char *filename;
 	char opened_path_buffer[MAXPATHLEN];
 	int old_constinfo_cnt, old_funcinfo_cnt, old_classinfo_cnt;
-	int i;
 
 	if (!xc_initized) {
 		assert(0);
@@ -1179,16 +1188,22 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 #endif
 	}
 	/* }}} */
+#ifndef ZEND_COMPILE_DELAYED_BINDING
 	/* {{{ find inherited classes that should be early-binding */
 	php.have_early_binding = 0;
-	for (i = 0; i < php.classinfo_cnt; i ++) {
-		php.classinfos[i].oplineno = -1;
+	{
+		int i;
+		for (i = 0; i < php.classinfo_cnt; i ++) {
+			php.classinfos[i].oplineno = -1;
+		}
 	}
 
 	xc_undo_pass_two(php.op_array TSRMLS_CC);
 	xc_foreach_early_binding_class(php.op_array, xc_cache_early_binding_class_cb, (void *) &php TSRMLS_CC);
 	xc_redo_pass_two(php.op_array TSRMLS_CC);
 	/* }}} */
+#endif
+
 #ifdef SHOW_DPRINT
 	xc_dprint(&xce, 0 TSRMLS_CC);
 #endif
@@ -1710,11 +1725,13 @@ static int xcache_admin_auth_check(TSRMLS_D) /* {{{ */
 	}
 
 	if (admin_user == NULL || admin_pass == NULL) {
-		php_error_docref(NULL TSRMLS_CC, E_ERROR, "xcache.admin.user and xcache.admin.pass is required");
+		php_error_docref(XCACHE_WIKI_URL "/InstallAdministration" TSRMLS_CC, E_ERROR,
+				"xcache.admin.user and/or xcache.admin.pass settings is not configured."
+				" Make sure you've modified the correct php ini file for your php used in webserver.");
 		zend_bailout();
 	}
 	if (strlen(admin_pass) != 32) {
-		php_error_docref(NULL TSRMLS_CC, E_ERROR, "unexpect %lu bytes of xcache.admin.pass, expected 32 bytes, the password after md5()", (unsigned long) strlen(admin_pass));
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "xcache.admin.pass is %lu chars unexpectedly, it is supposed to be the password after md5() which should be 32 chars", (unsigned long) strlen(admin_pass));
 		zend_bailout();
 	}
 
@@ -1763,7 +1780,22 @@ static int xcache_admin_auth_check(TSRMLS_D) /* {{{ */
 #define STR "WWW-authenticate: Basic Realm=\"XCache Administration\""
 	sapi_add_header_ex(STR, sizeof(STR) - 1, 1, 1 TSRMLS_CC);
 #undef STR
-	ZEND_PUTS("XCache Auth Failed. User and Password is case sense\n");
+#define STR "Content-type: text/html; charset=UTF-8"
+	sapi_add_header_ex(STR, sizeof(STR) - 1, 1, 1 TSRMLS_CC);
+#undef STR
+	ZEND_PUTS("<html>\n");
+	ZEND_PUTS("<head><title>XCache Authentication Failed</title></head>\n");
+	ZEND_PUTS("<body>\n");
+	ZEND_PUTS("<h1>XCache Authentication Failed</h1>\n");
+	ZEND_PUTS("<p>You're not authorized to access this page due to wrong username and/or password you typed.<br />The following check points is suggested:</p>\n");
+	ZEND_PUTS("<ul>\n");
+	ZEND_PUTS("<li>Be aware that `Username' and `Password' is case sense. Check capslock status led on your keyboard, and punch left/right Shift keys once for each</li>\n");
+	ZEND_PUTS("<li>Make sure the md5 password is generated correctly. You may use <a href=\"mkpassword.php\">mkpassword.php</a></li>\n");
+	ZEND_PUTS("<li>Reload browser cache by pressing F5 and/or Ctrl+F5, or simply clear browser cache after you've updated username/password in php ini.</li>\n");
+	ZEND_PUTS("</ul>\n");
+	ZEND_PUTS("Check <a href=\"" XCACHE_WIKI_URL "/InstallAdministration\">XCache wiki page</a> for more information.\n");
+	ZEND_PUTS("</body>\n");
+	ZEND_PUTS("</html>\n");
 
 	zend_bailout();
 	return 0;
@@ -2559,9 +2591,14 @@ static PHP_MINFO_FUNCTION(xcache)
 	php_info_print_table_row(2, "Version", XCACHE_VERSION);
 	php_info_print_table_row(2, "Modules Built", XCACHE_MODULES);
 	php_info_print_table_row(2, "Readonly Protection", xc_readonly_protection ? "enabled" : "N/A");
+#ifdef ZEND_ENGINE_2_1
 	ptr = php_format_date("Y-m-d H:i:s", sizeof("Y-m-d H:i:s") - 1, xc_init_time, 1 TSRMLS_CC);
 	php_info_print_table_row(2, "Cache Init Time", ptr);
 	efree(ptr);
+#else
+	snprintf(buf, sizeof(buf), "%lu", (long unsigned) xc_init_time);
+	php_info_print_table_row(2, "Cache Init Time", buf);
+#endif
 
 #ifdef ZTS
 	snprintf(buf, sizeof(buf), "%lu.%lu", xc_init_instance_id, xc_init_instance_subid);
@@ -2804,7 +2841,11 @@ static PHP_MINIT_FUNCTION(xcache)
 		}
 		xc_initized = 1;
 		xc_init_time = time(NULL);
+#ifdef PHP_WIN32
+		xc_init_instance_id = GetCurrentProcessId();
+#else
 		xc_init_instance_id = getpid();
+#endif
 #ifdef ZTS
 		xc_init_instance_subid = tsrm_thread_id();
 #endif
@@ -2978,7 +3019,7 @@ ZEND_DLEXPORT int xcache_zend_startup(zend_extension *extension) /* {{{ */
 		xc_llist_unlink(&zend_extensions, xc_llist_zend_extension);
 
 		ext = (zend_extension *) zend_llist_get_last_ex(&zend_extensions, &lpos);
-		assert(ext && ext != xc_llist_zend_extension);
+		assert(ext && ext != (zend_extension *) xc_llist_zend_extension->data);
 		xc_last_ext_startup = ext->startup;
 		ext->startup = xc_zend_startup_last;
 	}

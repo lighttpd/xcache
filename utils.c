@@ -499,9 +499,11 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, int op
 					cest, sizeof(xc_cest_t),
 					ZESW(&stored_ce_ptr, NULL)
 					);
+#ifndef ZEND_COMPILE_DELAYED_BINDING
 		if (oplineno != -1) {
 			xc_do_early_binding(CG(active_op_array), CG(class_table), oplineno TSRMLS_CC);
 		}
+#endif
 	}
 	else if (zend_u_hash_quick_add(CG(class_table), type, key, len, h,
 				cest, sizeof(xc_cest_t),
@@ -525,6 +527,52 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, int op
 #define TG(x) (sandbox->tmp_##x)
 #define OG(x) (sandbox->orig_##x)
 /* }}} */
+<<<<<<< .working
+=======
+#ifdef E_STRICT
+static void xc_sandbox_error_cb(int type, const char *error_filename, const uint error_lineno, const char *format, va_list args) /* {{{ */
+{
+	xc_compilererror_t *compilererror;
+	xc_sandbox_t *sandbox;
+	TSRMLS_FETCH();
+
+	sandbox = (xc_sandbox_t *) XG(sandbox);
+	assert(sandbox != NULL);
+	if (type != E_STRICT) {
+		/* give up, and user handler is not supported in this case */
+		zend_uint i;
+		zend_uint orig_lineno = CG(zend_lineno);
+		zend_error_cb = sandbox->orig_zend_error_cb;
+
+		for (i = 0; i < sandbox->compilererror_cnt; i ++) {
+			compilererror = &sandbox->compilererrors[i];
+			CG(zend_lineno) = compilererror->lineno;
+			zend_error(E_STRICT, "%s", compilererror->error);
+		}
+		CG(zend_lineno) = orig_lineno;
+		sandbox->compilererror_cnt = 0;
+
+		sandbox->orig_zend_error_cb(type, error_filename, error_lineno, format, args);
+		return;
+	}
+
+	if (sandbox->compilererror_cnt <= sandbox->compilererror_size) {
+		if (sandbox->compilererror_size) {
+			sandbox->compilererror_size += 16;
+			sandbox->compilererrors = erealloc(sandbox->compilererrors, sandbox->compilererror_size * sizeof(sandbox->compilererrors));
+		}
+		else {
+			sandbox->compilererror_size = 16;
+			sandbox->compilererrors = emalloc(sandbox->compilererror_size * sizeof(sandbox->compilererrors));
+		}
+	}
+	compilererror = &sandbox->compilererrors[sandbox->compilererror_cnt++];
+	compilererror->lineno = error_lineno;
+	compilererror->error_len = vspprintf(&compilererror->error, 0, format, args);
+}
+/* }}} */
+#endif
+>>>>>>> .merge-right.r559
 #ifdef ZEND_ENGINE_2_1
 static zend_bool xc_auto_global_callback(char *name, uint name_len TSRMLS_DC) /* {{{ */
 {
@@ -624,6 +672,14 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 	EG(user_error_handler_error_reporting) &= ~E_STRICT;
 #endif
 
+#ifdef ZEND_COMPILE_IGNORE_INTERNAL_CLASSES
+	sandbox->orig_compiler_options = CG(compiler_options);
+	/* Using ZEND_COMPILE_IGNORE_INTERNAL_CLASSES for ZEND_FETCH_CLASS_RT_NS_CHECK
+	 */
+	CG(compiler_options) |= ZEND_COMPILE_IGNORE_INTERNAL_CLASSES | ZEND_COMPILE_DELAYED_BINDING;
+#endif
+
+	XG(sandbox) = (void *) sandbox;
 	return sandbox;
 }
 /* }}} */
@@ -635,7 +691,7 @@ static void xc_early_binding_cb(zend_op *opline, int oplineno, void *data TSRMLS
 /* }}} */
 static void xc_sandbox_install(xc_sandbox_t *sandbox, xc_install_action_t install TSRMLS_DC) /* {{{ */
 {
-	int i;
+	zend_uint i;
 	Bucket *b;
 
 #ifdef HAVE_XCACHE_CONSTANT
@@ -678,9 +734,13 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox, xc_install_action_t instal
 #endif
 
 	if (install != XC_InstallNoBinding) {
+#ifdef ZEND_COMPILE_DELAYED_BINDING
+		zend_do_delayed_early_binding(CG(active_op_array) TSRMLS_CC);
+#else
 		xc_undo_pass_two(CG(active_op_array) TSRMLS_CC);
 		xc_foreach_early_binding_class(CG(active_op_array), xc_early_binding_cb, (void *) sandbox TSRMLS_CC);
 		xc_redo_pass_two(CG(active_op_array) TSRMLS_CC);
+#endif
 	}
 
 	i = 1;
@@ -732,6 +792,10 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, xc_install_action_t install TSRMLS_D
 
 #ifdef E_STRICT
 	EG(user_error_handler_error_reporting) = sandbox->orig_user_error_handler_error_reporting;
+#endif
+
+#ifdef ZEND_COMPILE_IGNORE_INTERNAL_CLASSES
+	CG(compiler_options) = sandbox->orig_compiler_options;
 #endif
 
 	if (sandbox->alloc) {
