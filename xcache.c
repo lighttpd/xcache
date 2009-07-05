@@ -1281,9 +1281,6 @@ restore:
 	if (xce.data.php->var) { \
 		efree(xce.data.php->var); \
 	}
-#ifdef ZEND_ENGINE_2_1
-	X_FREE(autoglobals)
-#endif
 	X_FREE(classinfos)
 	X_FREE(funcinfos)
 #ifdef HAVE_XCACHE_CONSTANT
