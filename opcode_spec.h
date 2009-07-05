@@ -28,7 +28,7 @@
 	OPSPEC(ASSIGN)
 
 #define OPSPECS_DEF_ENUM(name) OPSPEC_##name,
-typedef enum { OPSPECS(OPSPECS_DEF_ENUM) } xc_op_spec_t;
+typedef enum { OPSPECS(OPSPECS_DEF_ENUM) OPSPEC_DUMMY } xc_op_spec_t;
 
 typedef struct {
 	xc_op_spec_t ext;
