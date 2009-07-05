@@ -69,6 +69,8 @@ const char *xc_get_data_type(zend_uchar data_type)
 #	include "const_string_opcodes_php5.1.h"
 #elif defined(ZEND_ENGINE_2)
 #	include "const_string_opcodes_php5.0.h"
+#else
+#	include "const_string_opcodes_php4.x.h"
 #endif
 
 zend_uchar xc_get_opcode_count()

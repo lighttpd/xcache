@@ -56,9 +56,7 @@ dnl }}}
 dnl {{{ zend_brk_cont_element
 DEF_STRUCT_P_FUNC(`zend_brk_cont_element', , `
 #ifdef ZEND_ENGINE_2_2
-#ifndef IS_UNICODE
 	DISPATCH(int, start)
-#endif
 #endif
 	DISPATCH(int, cont)
 	DISPATCH(int, brk)
@@ -242,7 +240,7 @@ DEF_STRUCT_P_FUNC(`zend_constant', , `dnl {{{
 	DISPATCH(uint, name_len)
 	pushdef(`emalloc', `malloc($1)')
 	pushdef(`ecalloc', `calloc($1, $2)')
-	PROC_ZSTRING_L(, name, name_len)
+	PROC_ZSTRING_N(, name, name_len)
 	popdef(`ecalloc')
 	popdef(`emalloc')
 	DISPATCH(int, module_number)
@@ -282,7 +280,7 @@ DEF_STRUCT_P_FUNC(`zend_property_info', , `
 	PROC_ZSTRING_L(, doc_comment, doc_comment_len)
 #endif
 	dnl isnt in php6 yet
-#if defined(ZEND_ENGINE_2_2) && !defined(IS_UNICODE)
+#if defined(ZEND_ENGINE_2_2)
 	PROC_CLASS_ENTRY_P(ce)
 #endif
 ')
@@ -510,8 +508,10 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		dst->refcount[0] = 1000;
 		/* deep */
 		STRUCT_P(HashTable, static_variables, HashTable_zval_ptr)
+#ifdef ZEND_ENGINE_2
 		STRUCT_ARRAY_I(num_args, zend_arg_info, arg_info)
 		xc_gc_add_op_array(dst TSRMLS_CC);
+#endif
 		define(`SKIPASSERT_ONCE')
 	}
 	else
@@ -645,7 +645,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 				if (src->prototype != NULL
 				 && zend_u_hash_find(&(processor->active_class_entry_dst->parent->function_table),
 						UG(unicode) ? IS_UNICODE : IS_STRING,
-						src->function_name, xc_zstrlen(UG(unicode), src->function_name) + 1,
+						src->function_name, xc_zstrlen(UG(unicode) ? IS_UNICODE : IS_STRING, src->function_name) + 1,
 						(void **) &parent) == SUCCESS) {
 					/* see do_inherit_method_check() */
 					if ((parent->common.fn_flags & ZEND_ACC_ABSTRACT)) {
@@ -669,19 +669,14 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	')
 #endif
 
-	IFRESTORE(`
 #ifdef ZEND_ENGINE_2
+	PROC_CLASS_ENTRY_P(scope)
+	IFCOPY(`
 		if (src->scope) {
-			dst->scope = xc_get_class(processor, (zend_ulong) src->scope);
-			xc_fix_method(processor, dst);
+			xc_fix_method(processor, dst TSRMLS_CC);
 		}
-		DONE(scope)
-#endif
-	', `
-#ifdef ZEND_ENGINE_2
-		PROC_CLASS_ENTRY_P(scope)
-#endif
 	')
+#endif
 
 	IFRESTORE(`
 		if (xc_have_op_array_ctor) {
@@ -700,6 +695,7 @@ DEF_STRUCT_P_FUNC(`xc_constinfo_t', , `dnl {{{
 	IFRESTORE(`COPY(key)', `
 		PROC_ZSTRING_N(type, key, key_size)
 	')
+	DISPATCH(ulong, h)
 	STRUCT(zend_constant, constant)
 ')
 dnl }}}
@@ -712,6 +708,7 @@ DEF_STRUCT_P_FUNC(`xc_funcinfo_t', , `dnl {{{
 	IFRESTORE(`COPY(key)', `
 		PROC_ZSTRING_N(type, key, key_size)
 	')
+	DISPATCH(ulong, h)
 	STRUCT(zend_function, func)
 ')
 dnl }}}
@@ -723,6 +720,7 @@ DEF_STRUCT_P_FUNC(`xc_classinfo_t', , `dnl {{{
 	IFRESTORE(`COPY(key)', `
 		PROC_ZSTRING_N(type, key, key_size)
 	')
+	DISPATCH(ulong, h)
 #ifdef ZEND_ENGINE_2
 	STRUCT_P(zend_class_entry, cest)
 #else
@@ -740,6 +738,7 @@ DEF_STRUCT_P_FUNC(`xc_autoglobal_t', , `dnl {{{
 	IFRESTORE(`COPY(key)', `
 		PROC_ZSTRING_L(type, key, key_len)
 	')
+	DISPATCH(ulong, h)
 ')
 dnl }}}
 #endif
