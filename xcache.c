@@ -1848,14 +1848,6 @@ err:
 	return 0;
 }
 /* }}} */
-static void xc_copy_zend_constant(zend_constant *c) /* {{{ */
-{
-	c->name = zend_strndup(c->name, c->name_len - 1);
-	if (!(c->flags & CONST_PERSISTENT)) {
-		zval_copy_ctor(&c->value);
-	}
-}
-/* }}} */
 static void xc_request_init(TSRMLS_D) /* {{{ */
 {
 	int i;
@@ -2216,7 +2208,7 @@ static int xc_entry_init_key_var(xc_entry_t *xce, zval *name TSRMLS_DC) /* {{{ *
 			break;
 		default:
 #ifdef IS_UNICODE
-			convert_to_text(name);
+			convert_to_unicode(name);
 #else
 			convert_to_string(name);
 #endif

@@ -596,9 +596,13 @@ static int xc_auto_global_arm(zend_auto_global *auto_global TSRMLS_DC) /* {{{ */
 /* }}} */
 #endif
 
-static void xc_copy_zend_constant(zend_constant *c) /* {{{ */
+void xc_copy_zend_constant(zend_constant *c) /* {{{ */
 {
+#ifdef IS_UNICODE
+	c->name.u = zend_ustrndup(c->name.u, c->name_len - 1);
+#else
 	c->name = zend_strndup(c->name, c->name_len - 1);
+#endif
 	if (!(c->flags & CONST_PERSISTENT)) {
 		zval_copy_ctor(&c->value);
 	}
