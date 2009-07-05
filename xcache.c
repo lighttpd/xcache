@@ -225,7 +225,7 @@ static xc_entry_t *xc_entry_find_dmz(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 	xc_entry_t *p;
 	for (p = xce->cache->entries[xce->hvalue]; p; p = p->next) {
 		if (xc_entry_equal_dmz(xce, p)) {
-			if (p->type == XC_TYPE_VAR || /* PHP */ p->data.php->mtime == xce->data.php->mtime && p->data.php->sourcesize == xce->data.php->sourcesize) {
+			if (p->type == XC_TYPE_VAR || /* PHP */ (p->data.php->mtime == xce->data.php->mtime && p->data.php->sourcesize == xce->data.php->sourcesize)) {
 				p->hits ++;
 				p->atime = XG(request_time);
 				return p;
