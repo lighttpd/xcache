@@ -872,7 +872,7 @@ static inline xc_hash_value_t xc_entry_hash_php_basename(xc_entry_t *xce TSRMLS_
 #ifdef IS_UNICODE
 	if (UG(unicode) && xce->name_type == IS_UNICODE) {
 		zstr basename;
-		int basename_len;
+		size_t basename_len;
 		php_u_basename(xce->name.ustr.val, xce->name.ustr.len, NULL, 0, &basename.u, &basename_len TSRMLS_CC);
 		return HASH_ZSTR_L(IS_UNICODE, basename, basename_len);
 	}
@@ -881,7 +881,7 @@ static inline xc_hash_value_t xc_entry_hash_php_basename(xc_entry_t *xce TSRMLS_
 	{
 		char *basename;
 		xc_hash_value_t h;
-		UNISW(size_t, int) basename_len;
+		size_t basename_len;
 #ifdef ZEND_ENGINE_2
 		php_basename(xce->name.str.val, xce->name.str.len, "", 0, &basename, &basename_len TSRMLS_CC);
 #else
