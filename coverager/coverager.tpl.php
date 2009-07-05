@@ -198,7 +198,7 @@ else if ($action == 'file') {
 	$dir_url = urlencode($dir);
 	$dir_html = htmlspecialchars($dir);
 	echo <<<EOS
-	<a href="?">$l_root</a> <a href="?path={$dir_url}">{$dir_html}</a>/<b>{$filename}</b><br />
+	<a href="?">$l_root</a> <a href="?path={$dir_url}">{$dir_html}</a>/<strong>{$filename}</strong><br />
 EOS;
 
 	echo file_head();
