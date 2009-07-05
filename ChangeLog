@@ -7,6 +7,7 @@
 1.2.2 2007-12-29
 == ChangeLog ==
  * added module dependency
+ * added module dependency
  * live with wrong system time: allow caching files with mtime in further
  * bug fix for compatibility with Zend Optimizer and other non-cachable
  * #59: Maximum execution time of 60 seconds exceeded

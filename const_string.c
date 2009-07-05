@@ -47,27 +47,7 @@ static const char *const data_type_names[] = {
 	/* 7 */ "IS_RESOURCE",
 	/* 8 */ "IS_CONSTANT",
 	/* 9 */ "IS_CONSTANT_ARRAY",
-	/* 10 */ "IS_UNICODE",
-#if 0
-	/* 11 */ "",
-	/* 12 */ "",
-	/* 13 */ "",
-	/* 14 */ "",
-	/* 15 */ "", "", "", "", "",
-
-/* IS_CONSTANT_INDEX */
-	/* 20 */ "CIDX IS_NULL",
-	/* 21 */ "CIDX IS_LONG",
-	/* 22 */ "CIDX IS_DOUBLE",
-	/* 23 */ "CIDX IS_BOOL",
-	/* 24 */ "CIDX IS_ARRAY",
-	/* 25 */ "CIDX IS_OBJECT",
-	/* 26 */ "CIDX IS_STRING",
-	/* 27 */ "CIDX IS_RESOURCE",
-	/* 28 */ "CIDX IS_CONSTANT",
-	/* 29 */ "CIDX IS_CONSTANT_ARRAY"
-	/* 20 */ "CIDX IS_UNICODE",
-#endif
+	/* 10 */ "IS_UNICODE"
 };
 
 zend_uchar xc_get_data_type_count()
@@ -77,13 +57,7 @@ zend_uchar xc_get_data_type_count()
 
 const char *xc_get_data_type(zend_uchar data_type)
 {
-#if 0
-	if (data_type & IS_CONSTANT_INDEX) {
-		data_type = (data_type & ~IS_CONSTANT_INDEX) + 20;
-	}
-#endif
-	data_type &= ~IS_CONSTANT_INDEX;
-	return data_type_names[data_type];
+	return data_type_names[(data_type & IS_CONSTANT_TYPE_MASK)];
 }
 /* }}} */
 /* {{{ xc_get_opcode */
