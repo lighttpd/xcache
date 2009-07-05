@@ -391,7 +391,13 @@ static void xc_fillinfo_dmz(int cachetype, xc_cache_t *cache, zval *return_value
 #endif
 	xc_mem_t *mem = cache->mem;
 	const xc_mem_handlers_t *handlers = mem->handlers;
-	zend_ulong interval = (cachetype == XC_TYPE_PHP) ? xc_php_gc_interval : xc_var_gc_interval;
+	zend_ulong interval;
+	if (cachetype == XC_TYPE_PHP) {
+		interval = xc_php_ttl ? xc_php_gc_interval : 0;
+	}
+	else {
+		interval = xc_var_gc_interval;
+	}
 
 	add_assoc_long_ex(return_value, ZEND_STRS("slots"),     cache->hentry->size);
 	add_assoc_long_ex(return_value, ZEND_STRS("compiling"), cache->compiling);
@@ -404,7 +410,8 @@ static void xc_fillinfo_dmz(int cachetype, xc_cache_t *cache, zval *return_value
 	add_assoc_long_ex(return_value, ZEND_STRS("cached"),    cache->entries_count);
 	add_assoc_long_ex(return_value, ZEND_STRS("deleted"),   cache->deletes_count);
 	if (interval) {
-		add_assoc_long_ex(return_value, ZEND_STRS("gc"),    (cache->last_gc_expires + interval) - XG(request_time));
+		time_t gc = (cache->last_gc_expires + interval) - XG(request_time);
+		add_assoc_long_ex(return_value, ZEND_STRS("gc"),    gc > 0 ? gc : 0);
 	}
 	else {
 		add_assoc_null_ex(return_value, ZEND_STRS("gc"));
@@ -1623,7 +1630,7 @@ static int xcache_admin_auth_check(TSRMLS_D) /* {{{ */
 		}
 	}
 
-#define STR "WWW-authenticate: basic realm='XCache Administration'"
+#define STR "WWW-authenticate: Basic Realm=\"XCache Administration\""
 	sapi_add_header_ex(STR, sizeof(STR) - 1, 1, 1 TSRMLS_CC);
 #undef STR
 #define STR "HTTP/1.0 401 Unauthorized"
@@ -2452,14 +2459,14 @@ static PHP_MINFO_FUNCTION(xcache)
 /* {{{ extension startup */
 static void xc_zend_extension_register(zend_extension *new_extension, DL_HANDLE handle)
 {
-    zend_extension extension;
+	zend_extension extension;
 
-    extension = *new_extension;
-    extension.handle = handle;
+	extension = *new_extension;
+	extension.handle = handle;
 
-    zend_extension_dispatch_message(ZEND_EXTMSG_NEW_EXTENSION, &extension);
+	zend_extension_dispatch_message(ZEND_EXTMSG_NEW_EXTENSION, &extension);
 
-    zend_llist_prepend_element(&zend_extensions, &extension);
+	zend_llist_prepend_element(&zend_extensions, &extension);
 	TRACE("%s", "registered");
 }
 
@@ -2512,11 +2519,11 @@ static void xc_llist_unlink(zend_llist *l, zend_llist_element *element)
 
 static int xc_zend_extension_startup(zend_extension *extension)
 {
-    if (extension->startup) {
-        if (extension->startup(extension) != SUCCESS) {
+	if (extension->startup) {
+		if (extension->startup(extension) != SUCCESS) {
 			return FAILURE;
-        }
-    }
+		}
+	}
 	return SUCCESS;
 }
 /* }}} */
