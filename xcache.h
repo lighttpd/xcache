@@ -3,7 +3,7 @@
 #define XCACHE_NAME       "XCache"
 #define XCACHE_VERSION    "1.3.0-dev"
 #define XCACHE_AUTHOR     "mOo"
-#define XCACHE_COPYRIGHT  "Copyright (c) 2005-2007"
+#define XCACHE_COPYRIGHT  "Copyright (c) 2005-2009"
 #define XCACHE_URL        "http://xcache.lighttpd.net"
 
 #include <php.h>
