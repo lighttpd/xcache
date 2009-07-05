@@ -1,4 +1,22 @@
 #include "php.h"
+#include "xcache.h"
+
+#ifdef DEBUG
+#	define IFDEBUG(x) (x)
+#	define TRACE(fmt, ...) \
+	xc_trace("%s:%d: " fmt "\r\n", __FILE__, __LINE__, __VA_ARGS__)
+int xc_trace(const char *fmt, ...) ZEND_ATTRIBUTE_PTR_FORMAT(printf, 1, 2);
+#   undef NDEBUG
+#   undef inline
+#   define inline
+#else
+#	define TRACE(fmt, ...) do { } while (0)
+#	define IFDEBUG(x) do { } while (0)
+#   ifndef NDEBUG
+#       define NDEBUG
+#   endif
+#endif
+#include <assert.h>
 
 typedef struct {
 	int alloc;

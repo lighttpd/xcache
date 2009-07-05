@@ -38,7 +38,7 @@ define(`ALLOC', `
 	')
 	IFSTORE(`
 		IFASSERT(`{
-			if (!xc_stack_size(&processor->allocsizes)) {
+			if (!xc_stack_count(&processor->allocsizes)) {
 				fprintf(stderr, "mismatch `$@' at line %d\n", __LINE__);
 			}
 			else {
