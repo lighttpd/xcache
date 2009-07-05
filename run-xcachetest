@@ -1,8 +1,12 @@
 #!/bin/sh
 
+getAbsolutePath() {
+	which readlink >/dev/null 2>&1 && readlink -f "$@" || echo "$@"
+}
+
 # use symlink first
 if test -x ./php-cli ; then
-	php_cli=./php-cli
+	php_cli=`getAbsolutePath ./php-cli`
 elif test ! -z "$TEST_PHP_EXECUTABLE" && test -x "$TEST_PHP_EXECUTABLE"; then
 	php_cli="$TEST_PHP_EXECUTABLE"
 else
@@ -10,31 +14,23 @@ else
 fi
 
 if test -x ./php-cgi ; then
-	php_cgi=./php-cgi
+	php_cgi=`getAbsolutePath ./php-cgi`
 else
 	php_cgi="`which php-cgi`"
 fi
 
-test -z "$PHP_SRC" && PHP_SRC=./php-src
-if test -z "$TEST_PHP_USER" ; then
-	TEST_PHP_USER="$PHP_SRC/tests"
-	for i in Zend ZendEngine2 ext/standard/tests ext/reflection/tests ext/spl/tests; do
-		if test -d "$PHP_SRC/$i" ; then
-			TEST_PHP_USER="$TEST_PHP_USER,$PHP_SRC/$i"
-		fi
-	done
-fi
+test -z "$PHP_SRC" && PHP_SRC=`getAbsolutePath ./php-src`
 
 TEST_PHP_EXECUTABLE="$php_cli"
 TEST_PHP_CGI_EXECUTABLE="$php_cgi"
+TEST_PHP_SRCDIR="$PHP_SRC"
 
-export TEST_PHP_CGI_EXECUTABLE
 export TEST_PHP_EXECUTABLE
-export TEST_PHP_USER
+export TEST_PHP_CGI_EXECUTABLE
+export TEST_PHP_SRCDIR
 
 echo "XCache test running with:"
 echo "TEST_PHP_CGI_EXECUTABLE: $TEST_PHP_CGI_EXECUTABLE"
 echo "TEST_PHP_EXECUTABLE:     $TEST_PHP_EXECUTABLE"
-echo "TEST_PHP_USER:           $TEST_PHP_USER"
 
 exec "$php_cli" "$@"
