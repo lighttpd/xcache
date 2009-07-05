@@ -58,6 +58,8 @@ $strings = array(
 		=> '設備',
 		'inode'
 		=> 'Inode',
+		'hash'
+		=> 'Hash',
 		'Access'
 		=> '存取',
 		'Create'
