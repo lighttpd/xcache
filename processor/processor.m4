@@ -64,9 +64,6 @@ DEF_STRUCT_P_FUNC(`zend_brk_cont_element', , `
 ')
 dnl }}}
 DEF_HASH_TABLE_FUNC(`HashTable_zval_ptr',           `zval_ptr')
-#ifdef HAVE_XCACHE_CONSTANT
-DEF_HASH_TABLE_FUNC(`HashTable_zend_constant',      `zend_constant')
-#endif
 DEF_HASH_TABLE_FUNC(`HashTable_zend_function',      `zend_function')
 #ifdef ZEND_ENGINE_2
 DEF_HASH_TABLE_FUNC(`HashTable_zend_property_info', `zend_property_info')
