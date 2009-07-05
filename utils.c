@@ -347,6 +347,7 @@ int xc_foreach_early_binding_class(zend_op_array *op_array, void (*callback)(zen
 	return SUCCESS;
 }
 /* }}} */
+#ifndef ZEND_COMPILE_DELAYED_BINDING
 static int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, int oplineno TSRMLS_DC) /* {{{ */
 {
 	zend_op *opline;
@@ -431,6 +432,7 @@ static int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, 
 	return SUCCESS;
 }
 /* }}} */
+#endif
 
 #ifdef HAVE_XCACHE_CONSTANT
 void xc_install_constant(char *filename, zend_constant *constant, zend_uchar type, zstr key, uint len, ulong h TSRMLS_DC) /* {{{ */
@@ -645,16 +647,17 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 	CG(compiler_options) |= ZEND_COMPILE_IGNORE_INTERNAL_CLASSES | ZEND_COMPILE_NO_CONSTANT_SUBSTITUTION | ZEND_COMPILE_DELAYED_BINDING;
 #endif
 
-	XG(sandbox) = (void *) sandbox;
 	return sandbox;
 }
 /* }}} */
+#ifndef ZEND_COMPILE_DELAYED_BINDING
 static void xc_early_binding_cb(zend_op *opline, int oplineno, void *data TSRMLS_DC) /* {{{ */
 {
 	xc_sandbox_t *sandbox = (xc_sandbox_t *) data;
 	xc_do_early_binding(CG(active_op_array), OG(class_table), oplineno TSRMLS_CC);
 }
 /* }}} */
+#endif
 static void xc_sandbox_install(xc_sandbox_t *sandbox, xc_install_action_t install TSRMLS_DC) /* {{{ */
 {
 	zend_uint i;
