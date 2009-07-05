@@ -617,9 +617,13 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 
 	COPY(start_op)
 	DISPATCH(int, backpatch_count)
+#ifdef ZEND_ENGINE_2_3
+	DISPATCH(zend_uint, this_var)
+#endif
 
 	DISPATCH(zend_bool, done_pass_two)
-#ifdef ZEND_ENGINE_2
+	/* 5.0 <= ver < 5.3 */
+#if defined(ZEND_ENGINE_2) && !defined(ZEND_ENGINE_2_3)
 	DISPATCH(zend_bool, uses_this)
 #endif
 

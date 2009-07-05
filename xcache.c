@@ -225,7 +225,7 @@ static xc_entry_t *xc_entry_find_dmz(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 	xc_entry_t *p;
 	for (p = xce->cache->entries[xce->hvalue]; p; p = p->next) {
 		if (xc_entry_equal_dmz(xce, p)) {
-			if (p->type == XC_TYPE_VAR || /* PHP */ p->data.php->mtime == xce->data.php->mtime) {
+			if (p->type == XC_TYPE_VAR || /* PHP */ p->data.php->mtime == xce->data.php->mtime && p->data.php->sourcesize == xce->data.php->sourcesize) {
 				p->hits ++;
 				p->atime = XG(request_time);
 				return p;
@@ -2802,16 +2802,6 @@ static PHP_MINIT_FUNCTION(xcache)
 #endif
 	REGISTER_INI_ENTRIES();
 
-	if (strcmp(sapi_module.name, "cli") == 0) {
-		if ((env = getenv("XCACHE_TEST")) != NULL) {
-			zend_alter_ini_entry("xcache.test", sizeof("xcache.test"), env, strlen(env) + 1, PHP_INI_SYSTEM, PHP_INI_STAGE_STARTUP);
-		}
-		if (!xc_test) {
-			/* disable cache for cli except for test */
-			xc_php_size = xc_var_size = 0;
-		}
-	}
-
 	xc_config_long(&xc_php_size,       "xcache.size",        "0");
 	xc_config_hash(&xc_php_hcache,     "xcache.count",       "1");
 	xc_config_hash(&xc_php_hentry,     "xcache.slots",      "8K");
@@ -2819,6 +2809,16 @@ static PHP_MINIT_FUNCTION(xcache)
 	xc_config_long(&xc_var_size,       "xcache.var_size",    "0");
 	xc_config_hash(&xc_var_hcache,     "xcache.var_count",   "1");
 	xc_config_hash(&xc_var_hentry,     "xcache.var_slots",  "8K");
+
+	if (strcmp(sapi_module.name, "cli") == 0) {
+		if ((env = getenv("XCACHE_TEST")) != NULL) {
+			zend_alter_ini_entry("xcache.test", sizeof("xcache.test"), env, strlen(env) + 1, PHP_INI_SYSTEM, PHP_INI_STAGE_STARTUP);
+		}
+		if (!xc_test) {
+			/* disable cache for cli except for testing */
+			xc_php_size = xc_var_size = 0;
+		}
+	}
 
 	if (xc_php_size <= 0) {
 		xc_php_size = xc_php_hcache.size = 0;
