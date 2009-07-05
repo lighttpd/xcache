@@ -503,12 +503,15 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	dnl shadow copy must NOT meet:
 	dnl readonly_protection=on
 	dnl main op_array && have early binding
+	zend_uint ii;
 	if (!processor->readonly_protection && !(src == processor->xce_src->data.php->op_array && processor->xce_src->data.php->have_early_binding)) {
 		/* really fast shallow copy */
 		memcpy(dst, src, sizeof(src[0]));
 		dst->refcount[0] = 1000;
 		/* deep */
 		STRUCT_P(HashTable, static_variables, HashTable_zval_ptr)
+		STRUCT_ARRAY_I(num_args, zend_arg_info, arg_info)
+		xc_gc_add_op_array(dst TSRMLS_CC);
 		define(`SKIPASSERT_ONCE')
 	}
 	else
