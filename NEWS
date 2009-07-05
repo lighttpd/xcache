@@ -3,6 +3,7 @@
  * PHP 5.3 Supported
  * many cacher/coverager bug fixes
  * improved admin pages
+ * admin page is now magic quote gpc aware
  
 1.2.2 2007-12-29
 ========

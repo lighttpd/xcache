@@ -5,6 +5,7 @@
 #define XCACHE_AUTHOR     "mOo"
 #define XCACHE_COPYRIGHT  "Copyright (c) 2005-2009"
 #define XCACHE_URL        "http://xcache.lighttpd.net"
+#define XCACHE_WIKI_URL   XCACHE_URL "/wiki"
 
 #include <php.h>
 #include <zend_compile.h>
@@ -38,7 +39,10 @@
 #	define ZESW(v1, v2) v2
 #endif
 
-#ifdef ALLOCA_FLAG
+#ifdef do_alloca_with_limit
+#	define my_do_alloca(size, use_heap) do_alloca_with_limit(size, use_heap)
+#	define my_free_alloca(size, use_heap) free_alloca_with_limit(size, use_heap)
+#elif defined(ALLOCA_FLAG)
 #	define my_do_alloca(size, use_heap) do_alloca(size, use_heap)
 #	define my_free_alloca(size, use_heap) free_alloca(size, use_heap)
 #else
@@ -237,7 +241,9 @@ typedef struct {
 	zend_uint key_size;
 	ulong     h;
 	xc_cest_t cest;
+#ifndef ZEND_COMPILE_DELAYED_BINDING
 	int       oplineno;
+#endif
 } xc_classinfo_t;
 /* }}} */
 #ifdef HAVE_XCACHE_CONSTANT
@@ -298,7 +304,9 @@ typedef struct {
 
 	zend_uint classinfo_cnt;
 	xc_classinfo_t *classinfos;
+#ifndef ZEND_COMPILE_DELAYED_BINDING
 	zend_bool have_early_binding;
+#endif
 
 #ifdef ZEND_ENGINE_2_1
 	zend_uint autoglobal_cnt;
