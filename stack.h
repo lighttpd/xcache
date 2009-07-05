@@ -6,12 +6,13 @@ typedef struct {
 } xc_stack_t;
 
 #define S xc_stack_t*
-void xc_stack_init(S stack);
+void xc_stack_init_ex(S stack, int initsize);
+#define xc_stack_init(stack) xc_stack_init_ex(stack, 8)
 void xc_stack_destroy(S stack);
 void xc_stack_push(S stack, void *item);
 void *xc_stack_pop(S stack);
 void *xc_stack_top(S stack);
 void *xc_stack_get(S stack, int n);
-int xc_stack_size(S stack);
+int xc_stack_count(S stack);
 void xc_stack_reverse(S stack);
 #undef S
