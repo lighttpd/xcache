@@ -140,8 +140,14 @@ typedef char *zstr;
 #	define zend_u_hash_add(ht, type, arKey, nKeyLength, pData, nDataSize, pDest) \
  	   zend_hash_add(ht, arKey, nKeyLength, pData, nDataSize, pDest)
 
+#	define zend_u_hash_quick_add(ht, type, arKey, nKeyLength, h, pData, nDataSize, pDest) \
+ 	   zend_hash_quick_add(ht, arKey, nKeyLength, h, pData, nDataSize, pDest)
+
 #	define zend_u_hash_update(ht, type, arKey, nKeyLength, pData, nDataSize, pDest) \
  	   zend_hash_update(ht, arKey, nKeyLength, pData, nDataSize, pDest)
+
+#	define zend_u_hash_quick_update(ht, type, arKey, nKeyLength, h, pData, nDataSize, pDest) \
+ 	   zend_hash_quick_update(ht, arKey, nKeyLength, h, pData, nDataSize, pDest)
 
 #	define zend_u_hash_find(ht, type, arKey, nKeyLength, pData) \
  	   zend_hash_find(ht, arKey, nKeyLength, pData)
@@ -222,6 +228,7 @@ typedef struct {
 #endif
 	zstr      key;
 	zend_uint key_size;
+	ulong     h;
 	xc_cest_t cest;
 	int       oplineno;
 } xc_classinfo_t;
@@ -234,6 +241,7 @@ typedef struct {
 #endif
 	zstr      key;
 	zend_uint key_size;
+	ulong     h;
 	zend_constant constant;
 } xc_constinfo_t;
 /* }}} */
@@ -245,6 +253,7 @@ typedef struct {
 #endif
 	zstr      key;
 	zend_uint key_size;
+	ulong     h;
 	zend_function func;
 } xc_funcinfo_t;
 /* }}} */
@@ -256,6 +265,7 @@ typedef struct {
 #endif
 	zstr       key;
 	zend_uint  key_len;
+	ulong      h;
 } xc_autoglobal_t;
 /* }}} */
 #endif

@@ -424,7 +424,7 @@ static int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, 
 /* }}} */
 
 #ifdef HAVE_XCACHE_CONSTANT
-void xc_install_constant(char *filename, zend_constant *constant, zend_uchar type, zstr key, uint len TSRMLS_DC) /* {{{ */
+void xc_install_constant(char *filename, zend_constant *constant, zend_uchar type, zstr key, uint len, ulong h TSRMLS_DC) /* {{{ */
 {
 	if (zend_u_hash_add(EG(zend_constants), type, key, len,
 				constant, sizeof(zend_constant),
@@ -444,7 +444,7 @@ void xc_install_constant(char *filename, zend_constant *constant, zend_uchar typ
 }
 /* }}} */
 #endif
-void xc_install_function(char *filename, zend_function *func, zend_uchar type, zstr key, uint len TSRMLS_DC) /* {{{ */
+void xc_install_function(char *filename, zend_function *func, zend_uchar type, zstr key, uint len, ulong h TSRMLS_DC) /* {{{ */
 {
 	zend_bool istmpkey;
 
@@ -474,7 +474,7 @@ void xc_install_function(char *filename, zend_function *func, zend_uchar type, z
 	}
 }
 /* }}} */
-ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, int oplineno, zend_uchar type, zstr key, uint len TSRMLS_DC) /* {{{ */
+ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, int oplineno, zend_uchar type, zstr key, uint len, ulong h TSRMLS_DC) /* {{{ */
 {
 	zend_bool istmpkey;
 	zend_class_entry *cep = CestToCePtr(*cest);
@@ -486,7 +486,7 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, int op
 	istmpkey = ZSTR_S(key)[0] == 0;
 #endif
 	if (istmpkey) {
-		zend_u_hash_update(CG(class_table), type, key, len,
+		zend_u_hash_quick_update(CG(class_table), type, key, len, h,
 					cest, sizeof(xc_cest_t),
 					ZESW(&stored_ce_ptr, NULL)
 					);
@@ -494,7 +494,7 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, int op
 			xc_do_early_binding(CG(active_op_array), CG(class_table), oplineno TSRMLS_CC);
 		}
 	}
-	else if (zend_u_hash_add(CG(class_table), type, key, len,
+	else if (zend_u_hash_quick_add(CG(class_table), type, key, len, h,
 				cest, sizeof(xc_cest_t),
 				ZESW(&stored_ce_ptr, NULL)
 				) == FAILURE) {
@@ -540,15 +540,6 @@ static int xc_auto_global_arm(zend_auto_global *auto_global TSRMLS_DC) /* {{{ */
 /* }}} */
 #endif
 
-void xc_zend_class_add_ref(zend_class_entry ZESW(*ce, **ce))
-{
-#ifdef ZEND_ENGINE_2
-	(*ce)->refcount++;
-#else
-	(*ce->refcount)++;
-#endif
-}
-
 xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /* {{{ */
 {
 	HashTable *h;
@@ -591,7 +582,7 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 	zend_hash_init_ex(&TG(function_table), 128, NULL, h->pDestructor, h->persistent, h->bApplyProtection);
 	{
 		zend_function tmp_func;
-		zend_hash_copy(&TG(function_table), &XG(internal_function_table), (copy_ctor_func_t) function_add_ref, (void *) &tmp_func, sizeof(tmp_func));
+		zend_hash_copy(&TG(function_table), &XG(internal_function_table), NULL, (void *) &tmp_func, sizeof(tmp_func));
 	}
 	TG(internal_function_tail) = TG(function_table).pListTail;
 
@@ -600,7 +591,7 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 #if 0 && TODO
 	{
 		xc_cest_t tmp_cest;
-		zend_hash_copy(&TG(class_table), &XG(internal_class_table), (copy_ctor_func_t) xc_zend_class_add_ref, (void *) &tmp_cest, sizeof(tmp_cest));
+		zend_hash_copy(&TG(class_table), &XG(internal_class_table), NULL, (void *) &tmp_cest, sizeof(tmp_cest));
 	}
 #endif
 	TG(internal_class_tail) = TG(class_table).pListTail;
@@ -644,7 +635,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox, xc_install_action_t instal
 	while (b != NULL) {
 		zend_constant *c = (zend_constant*) b->pData;
 		xc_install_constant(sandbox->filename, c,
-				BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY_S(b)), b->nKeyLength TSRMLS_CC);
+				BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY_S(b)), b->nKeyLength, b->h TSRMLS_CC);
 		b = b->pListNext;
 	}
 #endif
@@ -654,7 +645,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox, xc_install_action_t instal
 	while (b != NULL) {
 		zend_function *func = (zend_function*) b->pData;
 		xc_install_function(sandbox->filename, func,
-				BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY_S(b)), b->nKeyLength TSRMLS_CC);
+				BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY_S(b)), b->nKeyLength, b->h TSRMLS_CC);
 		b = b->pListNext;
 	}
 
@@ -662,7 +653,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox, xc_install_action_t instal
 	/* install class */
 	while (b != NULL) {
 		xc_install_class(sandbox->filename, (xc_cest_t*) b->pData, -1,
-				BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY_S(b)), b->nKeyLength TSRMLS_CC);
+				BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY_S(b)), b->nKeyLength, b->h TSRMLS_CC);
 		b = b->pListNext;
 	}
 

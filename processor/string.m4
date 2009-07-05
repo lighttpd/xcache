@@ -38,7 +38,7 @@ define(`PROC_STRING_N_EX', `
 				int usecopy;
 
 				INIT_ZVAL(zv);
-				ZVAL_UNICODEL(&zv, (UChar *) ($2), $3 - 1, 1);
+				ZVAL_UNICODEL(&zv, ZSTR_U($2), $3 - 1, 1);
 				zend_make_printable_zval(&zv, &reszv, &usecopy);
 				fprintf(stderr, "string:%s:\t\"", "$1");
 				xc_dprint_str_len(Z_STRVAL(reszv), Z_STRLEN(reszv));
@@ -63,11 +63,16 @@ define(`PROC_STRING_N_EX', `
 		')
 		FIXPOINTER_EX(`PTRTYPE', DSTPTR)
 		IFDASM(`
-				ifelse(STRTYPE,zstr_uchar, `
-					add_assoc_unicodel_ex(dst, ZEND_STRS("$4"), $2, $3-1, 1);
-					', ` dnl else
-					add_assoc_stringl_ex(dst, ZEND_STRS("$4"), $2, $3-1, 1);')
+			ifelse(STRTYPE,zstr_uchar, `
+				add_assoc_unicodel_ex(dst, ZEND_STRS("$4"), ZSTR_U($2), $3-1, 1);
+				', ` dnl else
+				ifelse(STRTYPE,zstr_char, `
+					add_assoc_stringl_ex(dst, ZEND_STRS("$4"), ZSTR_S($2), $3-1, 1);
+					', `
+					add_assoc_stringl_ex(dst, ZEND_STRS("$4"), $2, $3-1, 1);
 				')
+			')
+		')
 	}
 	popdef(`DSTPTR')
 	popdef(`SRCPTR')

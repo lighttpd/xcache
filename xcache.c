@@ -555,7 +555,7 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 	for (i = 0; i < p->constinfo_cnt; i ++) {
 		xc_constinfo_t *ci = &p->constinfos[i];
 		xc_install_constant(xce->name.str.val, &ci->constant,
-				UNISW(0, ci->type), ci->key, ci->key_size TSRMLS_CC);
+				UNISW(0, ci->type), ci->key, ci->key_size, ci->h TSRMLS_CC);
 	}
 #endif
 
@@ -563,7 +563,7 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 	for (i = 0; i < p->funcinfo_cnt; i ++) {
 		xc_funcinfo_t  *fi = &p->funcinfos[i];
 		xc_install_function(xce->name.str.val, &fi->func,
-				UNISW(0, fi->type), fi->key, fi->key_size TSRMLS_CC);
+				UNISW(0, fi->type), fi->key, fi->key_size, fi->h TSRMLS_CC);
 	}
 
 	/* install class */
@@ -580,7 +580,7 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 		new_cest_ptrs[i] =
 #endif
 		xc_install_class(xce->name.str.val, &ci->cest, ci->oplineno,
-				UNISW(0, ci->type), ci->key, ci->key_size TSRMLS_CC);
+				UNISW(0, ci->type), ci->key, ci->key_size, ci->h TSRMLS_CC);
 	}
 
 #ifdef ZEND_ENGINE_2_1
@@ -589,7 +589,7 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 		xc_autoglobal_t *aginfo = &p->autoglobals[i];
 		/*
 		zend_auto_global *auto_global;
-		if (zend_u_hash_find(CG(auto_globals), aginfo->type, aginfo->key, aginfo->key_len+1, (void **) &auto_global)==SUCCESS) {
+		if (zend_u_hash_quick_find(CG(auto_globals), aginfo->type, aginfo->key, aginfo->key_len+1, aginfo->h, (void **) &auto_global)==SUCCESS) {
 			if (auto_global->armed) {
 				auto_global->armed = auto_global->auto_global_callback(auto_global->name, auto_global->name_len TSRMLS_CC);
 			}
@@ -1063,6 +1063,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 			ZSTR_U(data->key)      = BUCKET_KEY_U(b);         \
 		}                                                     \
 		data->key_size   = b->nKeyLength;                     \
+		data->h          = b->h;                              \
 	}                                                         \
 } while(0)
 
@@ -1095,6 +1096,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 					ZSTR_U(data->key)     = BUCKET_KEY_U(b);
 				}
 				data->key_len = b->nKeyLength - 1;
+				data->h       = b->h;
 			}
 		}
 #endif
@@ -1265,6 +1267,7 @@ int xc_is_shm(const void *p) /* {{{ */
 }
 /* }}} */
 
+#ifdef ZEND_ENGINE_2
 /* {{{ xc_gc_op_array_t */
 typedef struct {
 	zend_uint num_args;
@@ -1276,7 +1279,9 @@ void xc_gc_add_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	xc_gc_op_array_t gc_op_array;
 	gc_op_array.num_args = op_array->num_args;
 	gc_op_array.arg_info = op_array->arg_info;
+#ifdef ZEND_ENGINE_2
 	zend_hash_next_index_insert(&XG(gc_op_arrays), (void *) &gc_op_array, sizeof(gc_op_array), NULL);
+#endif
 }
 /* }}} */
 static void xc_gc_op_array(void *pDest) /* {{{ */
@@ -1294,6 +1299,7 @@ static void xc_gc_op_array(void *pDest) /* {{{ */
 	}
 }
 /* }}} */
+#endif
 
 /* module helper function */
 static int xc_init_constant(int module_number TSRMLS_DC) /* {{{ */
@@ -1500,11 +1506,11 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 		zend_hash_destroy(&XG(internal_function_table));
 		zend_hash_destroy(&XG(internal_class_table));
 
-		zend_hash_init_ex(&XG(internal_function_table), 100, NULL, CG(function_table)->pDestructor, 1, 0);
-		zend_hash_init_ex(&XG(internal_class_table),    10,  NULL, CG(class_table)->pDestructor,    1, 0);
+		zend_hash_init_ex(&XG(internal_function_table), 100, NULL, NULL, 1, 0);
+		zend_hash_init_ex(&XG(internal_class_table),    10,  NULL, NULL, 1, 0);
 
-		zend_hash_copy(&XG(internal_function_table), CG(function_table), (copy_ctor_func_t) function_add_ref, &tmp_func, sizeof(tmp_func));
-		zend_hash_copy(&XG(internal_class_table), CG(class_table), (copy_ctor_func_t) xc_zend_class_add_ref, &tmp_cest, sizeof(tmp_cest));
+		zend_hash_copy(&XG(internal_function_table), CG(function_table), NULL, &tmp_func, sizeof(tmp_func));
+		zend_hash_copy(&XG(internal_class_table), CG(class_table), NULL, &tmp_cest, sizeof(tmp_cest));
 
 		XG(internal_table_copied) = 1;
 	}
@@ -1522,7 +1528,9 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 		}
 	}
 
+#ifdef ZEND_ENGINE_2
 	zend_hash_init(&XG(gc_op_arrays), 32, NULL, xc_gc_op_array, 0);
+#endif
 
 #if PHP_API_VERSION <= 20041225
 	XG(request_time) = time(NULL);
@@ -1538,7 +1546,9 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 static void xc_request_shutdown(TSRMLS_D) /* {{{ */
 {
 	xc_entry_unholds(TSRMLS_C);
+#ifdef ZEND_ENGINE_2
 	zend_hash_destroy(&XG(gc_op_arrays));
+#endif
 	xc_gc_expires_php(TSRMLS_C);
 	xc_gc_expires_var(TSRMLS_C);
 	xc_gc_deletes(TSRMLS_C);

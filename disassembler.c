@@ -65,7 +65,7 @@ static void xc_dasm(zval *dst, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 				keysize ++;
 			}
 		}
-		add_u_assoc_zval_ex(list, BUCKET_KEY_TYPE(b), buf, b->nKeyLength, zv);
+		add_u_assoc_zval_ex(list, BUCKET_KEY_TYPE(b), ZSTR(buf), b->nKeyLength, zv);
 	}
 	efree(buf);
 	add_assoc_zval_ex(dst, ZEND_STRS("class_table"), list);

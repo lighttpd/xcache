@@ -17,7 +17,9 @@ ZEND_BEGIN_MODULE_GLOBALS(xcache)
 	long   var_ttl;
 	zend_bool auth_enabled;
 
+#ifdef ZEND_ENGINE_2
 	HashTable gc_op_arrays;
+#endif
 
 	HashTable internal_function_table;
 	HashTable internal_class_table;
