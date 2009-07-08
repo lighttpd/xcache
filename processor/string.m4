@@ -20,6 +20,9 @@ define(`PROC_STRING_N_EX', `
 			STRTYPE, `zstr_uchar', `ZSTR_U($1)',
 			STRTYPE, `zstr_char',  `ZSTR_S($1)',
 			`',      `',           `$1'))
+	pushdef(`U', ifelse(
+			PTRTYPE, `char',  `',
+			PTRTYPE, `UChar', `u'))
 	if (SRCPTR == NULL) {
 		IFNOTMEMCPY(`IFCOPY(`
 			DSTPTR = NULL;
@@ -55,11 +58,10 @@ define(`PROC_STRING_N_EX', `
 			fprintf(stderr, "\" len=%d\n", $3 - 1);
 			')
 		')
-		IFCALC(`xc_calc_string_n(processor, ISTYPE, SRCSTR, $3 IFASSERT(`, __LINE__'));')
-		IFSTORE(`DSTPTR = ifelse(PTRTYPE,`char',`ZSTR_S',`ZSTR_U')(xc_store_string_n(processor, ISTYPE, SRCSTR, $3 IFASSERT(`, __LINE__')));')
+		IFCALC(`xc_calc_string_n(processor, ISTYPE, ZSTR(SRCSTR), $3 IFASSERT(`, __LINE__'));')
+		IFSTORE(`DSTPTR = ifelse(PTRTYPE,`char',`ZSTR_S',`ZSTR_U')(xc_store_string_n(processor, ISTYPE, ZSTR(SRCSTR), $3 IFASSERT(`, __LINE__')));')
 		IFRESTORE(`
-			ALLOC(DSTPTR, `STRTYPE', `($3)')
-			memcpy(DSTPTR, SRCPTR, sizeof(STRTYPE) * ($3));
+			DSTPTR = e`'U`'strndup(SRCPTR, ($3) - 1);
 		')
 		FIXPOINTER_EX(`PTRTYPE', DSTPTR)
 		IFDASM(`
@@ -74,6 +76,7 @@ define(`PROC_STRING_N_EX', `
 			')
 		')
 	}
+	popdef(`U')
 	popdef(`DSTPTR')
 	popdef(`SRCPTR')
 	popdef(`SRCSTR')
