@@ -219,9 +219,9 @@ dnl {{{ zend_arg_info
 #ifdef ZEND_ENGINE_2
 DEF_STRUCT_P_FUNC(`zend_arg_info', , `
 	DISPATCH(zend_uint, name_len)
-	COPY(name)
+	PROC_ZSTRING_L(, name, name_len)
 	DISPATCH(zend_uint, class_name_len)
-	COPY(class_name)
+	PROC_ZSTRING_L(, class_name, class_name_len)
 	DISPATCH(zend_bool, array_type_hint)
 	DISPATCH(zend_bool, allow_null)
 	DISPATCH(zend_bool, pass_by_reference)
