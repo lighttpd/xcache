@@ -60,7 +60,7 @@
 #	define Z_SET_REFCOUNT(z, rc) (z).refcount = rc
 #endif
 #ifndef IS_CONSTANT_TYPE_MASK
-#	define IS_CONSTANT_TYPE_MASK 0xf
+#	define IS_CONSTANT_TYPE_MASK (~IS_CONSTANT_INDEX)
 #endif
 
 /* {{{ dirty fix for PHP 6 */
