@@ -758,6 +758,7 @@ dnl }}}
 #endif
 #ifdef E_STRICT
 DEF_STRUCT_P_FUNC(`xc_compilererror_t', , `dnl {{{
+	DISPATCH(int, type)
 	DISPATCH(uint, lineno)
 	DISPATCH(int, error_len)
 	PROC_STRING_L(error, error_len)

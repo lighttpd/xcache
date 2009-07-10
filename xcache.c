@@ -752,7 +752,7 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 	for (i = 0; i < p->compilererror_cnt; i ++) {
 		xc_compilererror_t *error = &p->compilererrors[i];
 		CG(zend_lineno) = error->lineno;
-		zend_error(E_STRICT, "%s", error->error);
+		zend_error(error->type, "%s", error->error);
 	}
 	CG(zend_lineno) = 0;
 #endif
