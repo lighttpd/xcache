@@ -290,6 +290,7 @@ typedef enum { XC_TYPE_PHP, XC_TYPE_VAR } xc_entry_type_t;
 typedef char xc_md5sum_t[16];
 /* {{{ xc_compilererror_t */
 typedef struct {
+	int type;
 	uint lineno;
 	int error_len;
 	char *error;
