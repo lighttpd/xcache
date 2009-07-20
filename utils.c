@@ -703,6 +703,7 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 		zend_constant tmp_const;
 		zend_hash_copy(&TG(zend_constants), &XG(internal_constant_table), (copy_ctor_func_t) xc_zend_constant_ctor, (void *) &tmp_const, sizeof(tmp_const));
 	}
+	TG(internal_constant_tail) = TG(zend_constants).pListTail;
 #endif
 	h = OG(function_table);
 	zend_hash_init_ex(&TG(function_table), 128, NULL, h->pDestructor, h->persistent, h->bApplyProtection);
@@ -771,7 +772,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox, xc_install_action_t instal
 	Bucket *b;
 
 #ifdef HAVE_XCACHE_CONSTANT
-	b = /*TG(internal_constant_tail) ? TG(internal_constant_tail)->pListNext :*/ TG(zend_constants).pListHead;
+	b = TG(internal_constant_tail) ? TG(internal_constant_tail)->pListNext : TG(zend_constants).pListHead;
 	/* install constants */
 	while (b != NULL) {
 		zend_constant *c = (zend_constant*) b->pData;
