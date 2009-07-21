@@ -2849,7 +2849,9 @@ static PHP_MINFO_FUNCTION(xcache)
 	char *ptr;
 	int left, len;
 	xc_shm_scheme_t *scheme;
+#ifdef HAVE_XCACHE_COVERAGER
 	char *covdumpdir;
+#endif
 
 	php_info_print_table_start();
 	php_info_print_table_header(2, "XCache Support", "enabled");
