@@ -35,7 +35,9 @@ typedef struct _bb_t {
 	int        size;
 
 	bbid_t     fall;
+#ifdef ZEND_ENGINE_2
 	bbid_t     catch;
+#endif
 
 	int        opnum; /* opnum after joining basic block */
 } bb_t;
@@ -132,7 +134,9 @@ static int op_get_flowinfo(op_flowinfo_t *fi, zend_op *opline) /* {{{ */
 
 	/* break=will fall */
 	switch (opline->opcode) {
+#ifdef ZEND_HANDLE_EXCEPTION
 	case ZEND_HANDLE_EXCEPTION:
+#endif
 	case ZEND_RETURN:
 	case ZEND_EXIT:
 		return SUCCESS; /* no fall */
@@ -252,7 +256,9 @@ static bb_t *bb_new_ex(zend_op *opcodes, int count) /* {{{ */
 	bb_t *bb = (bb_t *) ecalloc(sizeof(bb_t), 1);
 
 	bb->fall       = BBID_INVALID;
+#ifdef ZEND_ENGINE_2
 	bb->catch      = BBID_INVALID;
+#endif
 
 	if (opcodes) {
 		bb->alloc   = 0;
@@ -283,6 +289,12 @@ static void bb_print(bb_t *bb, zend_op *opcodes) /* {{{ */
 	int line = bb->opcodes - opcodes;
 	op_flowinfo_t fi;
 	zend_op *last = bb->opcodes + bb->count - 1;
+	bbid_t catchbbid;
+#ifdef ZEND_ENGINE_2
+	catchbbid = BBID_INVALID;
+#else
+	catchbbid = bb->catch;
+#endif
 
 	op_get_flowinfo(&fi, last);
 
@@ -292,7 +304,7 @@ static void bb_print(bb_t *bb, zend_op *opcodes) /* {{{ */
 			" op1:%-3d op2:%-3d ext:%-3d fal:%-3d cat:%-3d %s ====\r\n"
 			, bb->id, bb->count, bb->alloc ? -1 : line
 			, bb->used ? 'U' : ' ', bb->alloc ? 'A' : ' '
-			, fi.jmpout_op1, fi.jmpout_op2, fi.jmpout_ext, bb->fall, bb->catch, xc_get_opcode(last->opcode)
+			, fi.jmpout_op1, fi.jmpout_op2, fi.jmpout_ext, bb->fall, catchbbid, xc_get_opcode(last->opcode)
 			);
 	op_print(line, bb->opcodes, last + 1);
 }
@@ -353,7 +365,9 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 	ALLOCA_FLAG(use_heap_catchbbids)
 	ALLOCA_FLAG(use_heap_markbbhead)
 	bbid_t *bbids          = my_do_alloca(count * sizeof(bbid_t),    use_heap_bbids);
+#ifdef ZEND_ENGINE_2
 	bbid_t *catchbbids     = my_do_alloca(count * sizeof(bbid_t),    use_heap_catchbbids);
+#endif
 	zend_bool *markbbhead  = my_do_alloca(count * sizeof(zend_bool), use_heap_markbbhead);
 
 	/* {{{ mark jmpin/jumpout */
@@ -376,10 +390,12 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 			}
 		}
 	}
+#ifdef ZEND_ENGINE_2
 	/* mark try start */
 	for (i = 0; i < op_array->last_try_catch; i ++) {
 		markbbhead[op_array->try_catch_array[i].try_op] = 1;
 	}
+#endif
 	/* }}} */
 	/* {{{ fill op lines with newly allocated id */
 	for (i = 0; i < count; i ++) {
@@ -395,6 +411,7 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 		TRACE("bbids[%d] = %d", i, id);
 	}
 	/* }}} */
+#ifdef ZEND_ENGINE_2
 	/* {{{ fill op lines with catch id */
 	for (i = 0; i < count; i ++) {
 		catchbbids[i] = BBID_INVALID;
@@ -413,6 +430,7 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 	}
 #endif
 	/* }}} */
+#endif
 	/* {{{ create basic blocks */
 	start = 0;
 	id = 0;
@@ -424,7 +442,9 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 
 		opline = op_array->opcodes + start;
 		pbb = bbs_new_bb_ex(bbs, opline, i - start);
+#ifdef ZEND_ENGINE_2
 		pbb->catch = catchbbids[start];
+#endif
 
 		/* last */
 		opline = pbb->opcodes + pbb->count - 1;
@@ -456,7 +476,9 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 	/* }}} */
 
 	my_free_alloca(markbbhead, use_heap_markbbhead);
+#ifdef ZEND_ENGINE_2
 	my_free_alloca(catchbbids, use_heap_catchbbids);
+#endif
 	my_free_alloca(bbids,      use_heap_bbids);
 	return SUCCESS;
 }
@@ -464,8 +486,10 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 static void bbs_restore_opnum(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
 {
 	int i;
+#ifdef ZEND_ENGINE_2
 	bbid_t lasttrybbid;
 	bbid_t lastcatchbbid;
+#endif
 
 	for (i = 0; i < bbs_count(bbs); i ++) {
 		op_flowinfo_t fi;
@@ -488,6 +512,7 @@ static void bbs_restore_opnum(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
 		}
 	}
 
+#ifdef ZEND_ENGINE_2
 	lasttrybbid   = BBID_INVALID;
 	lastcatchbbid = BBID_INVALID;
 	op_array->last_try_catch = 0;
@@ -507,6 +532,7 @@ static void bbs_restore_opnum(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
 		}
 	}
 	/* it is impossible to have last bb catched */
+#endif
 }
 /* }}} */
 
