@@ -1628,7 +1628,7 @@ void xc_gc_add_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	gc_op_array.num_args = op_array->num_args;
 	gc_op_array.arg_info = op_array->arg_info;
 #ifdef ZEND_ENGINE_2
-	zend_hash_next_index_insert(&XG(gc_op_arrays), (void *) &gc_op_array, sizeof(gc_op_array), NULL);
+	zend_llist_add_element(&XG(gc_op_arrays), (void *) &gc_op_array);
 #endif
 }
 /* }}} */
@@ -1891,7 +1891,7 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 	}
 
 #ifdef ZEND_ENGINE_2
-	zend_hash_init(&XG(gc_op_arrays), 32, NULL, xc_gc_op_array, 0);
+	zend_llist_init(&XG(gc_op_arrays), sizeof(xc_gc_op_array_t), xc_gc_op_array, 0);
 #endif
 
 #if PHP_API_VERSION <= 20041225
@@ -1909,7 +1909,7 @@ static void xc_request_shutdown(TSRMLS_D) /* {{{ */
 {
 	xc_entry_unholds(TSRMLS_C);
 #ifdef ZEND_ENGINE_2
-	zend_hash_destroy(&XG(gc_op_arrays));
+	zend_llist_destroy(&XG(gc_op_arrays));
 #endif
 	xc_gc_expires_php(TSRMLS_C);
 	xc_gc_expires_var(TSRMLS_C);

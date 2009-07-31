@@ -18,7 +18,7 @@ ZEND_BEGIN_MODULE_GLOBALS(xcache)
 	long   var_ttl;
 
 #ifdef ZEND_ENGINE_2
-	HashTable gc_op_arrays;
+	zend_llist gc_op_arrays;
 #endif
 
 #ifdef HAVE_XCACHE_CONSTANT
