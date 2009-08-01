@@ -58,8 +58,8 @@ define(`PROC_STRING_N_EX', `
 			fprintf(stderr, "\" len=%d\n", $3 - 1);
 			')
 		')
-		IFCALC(`xc_calc_string_n(processor, ISTYPE, ZSTR(SRCSTR), $3 IFASSERT(`, __LINE__'));')
-		IFSTORE(`DSTPTR = ifelse(PTRTYPE,`char',`ZSTR_S',`ZSTR_U')(xc_store_string_n(processor, ISTYPE, ZSTR(SRCSTR), $3 IFASSERT(`, __LINE__')));')
+		IFCALC(`xc_calc_string_n(processor, ISTYPE, SRCSTR, $3 IFASSERT(`, __LINE__'));')
+		IFSTORE(`DSTPTR = ifelse(PTRTYPE,`char',`ZSTR_S',`ZSTR_U')(xc_store_string_n(processor, ISTYPE, SRCSTR, $3 IFASSERT(`, __LINE__')));')
 		IFRESTORE(`
 			DSTPTR = e`'U`'strndup(SRCPTR, ($3) - 1);
 		')
