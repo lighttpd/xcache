@@ -103,8 +103,9 @@ static inline void my_add_assoc_null_ex(zval *arg, char *key, uint key_len)
 				? UBYTES(b->nKeyLength) \
 				: b->nKeyLength \
 				))
-#define BUCKET_KEY_S(b)    (UNISW((b)->arKey, (b)->key.arKey.s))
-#define BUCKET_KEY_U(b)    (UNISW((b)->arKey, (b)->key.arKey.u))
+#define BUCKET_KEY(b)      (UNISW((b)->arKey, (b)->key.arKey))
+#define BUCKET_KEY_S(b)    ZSTR_S(BUCKET_KEY(b))
+#define BUCKET_KEY_U(b)    ZSTR_U(BUCKET_KEY(b))
 #define BUCKET_KEY_TYPE(b) (UNISW(IS_STRING,  (b)->key.type))
 #ifdef IS_UNICODE
 #	define BUCKET_HEAD_SIZE(b) XtOffsetOf(Bucket, key.arKey)
