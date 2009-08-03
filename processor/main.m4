@@ -149,11 +149,25 @@ dnl }}}
 dnl {{{ COPY
 define(`COPY', `IFNOTMEMCPY(`IFCOPY(`dst->$1 = src->$1;')')DONE(`$1')')
 dnl }}}
+dnl {{{ COPY_N_EX
+define(`COPY_N_EX', `
+	ALLOC(`dst->$3', `$2', `src->$1')
+	IFCOPY(`
+		memcpy(dst->$3, src->$3, sizeof(dst->$3[0]) * src->$1);
+		')
+')
+dnl }}}
+dnl {{{ COPY_N
+define(`COPY_N', `COPY_N_EX(`$1',`$2')DONE(`$1')')
+dnl }}}
 dnl {{{ COPYPOINTER
 define(`COPYPOINTER', `COPY(`$1')')
 dnl }}}
+dnl {{{ COPYARRAY_EX
+define(`COPYARRAY_EX', `IFNOTMEMCPY(`IFCOPY(`memcpy(dst->$1, src->$1, sizeof(dst->$1));')')')
+dnl }}}
 dnl {{{ COPYARRAY
-define(`COPYARRAY', `IFNOTMEMCPY(`IFCOPY(`memcpy(dst->$1, src->$1, sizeof(dst->$1));')')DONE(`$1')')
+define(`COPYARRAY', `COPYARRAY_EX(`$1',`$2')DONE(`$1')')
 dnl }}}
 dnl {{{ SETNULL_EX
 define(`SETNULL_EX', `IFCOPY(`$1 = NULL;')')
@@ -243,8 +257,12 @@ include(srcdir`/processor/head.m4')
 
 define(`IFNOTMEMCPY', `ifdef(`USEMEMCPY', `', `$1')')
 REDEF(`KIND', `calc') include(srcdir`/processor/processor.m4')
+pushdef(`xc_get_class_num', ``xc_get_class_num'($@)')
 REDEF(`KIND', `store') include(srcdir`/processor/processor.m4')
+popdef(`xc_get_class_num')
+pushdef(`xc_get_class', ``xc_get_class'($@)')
 REDEF(`KIND', `restore') include(srcdir`/processor/processor.m4')
+popdef(`xc_get_class')
 
 REDEF(`IFNOTMEMCPY', `$1')
 #ifdef HAVE_XCACHE_DPRINT

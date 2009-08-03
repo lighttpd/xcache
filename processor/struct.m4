@@ -164,42 +164,38 @@ define(`STRUCT', `
 	DONE(`$2')
 ')
 dnl }}}
-dnl {{{ STRUCT_ARRAY_I(1:count, 2:type, 3:elm, 4:name=type)
-define(`STRUCT_ARRAY_I', `
-pushdef(`i', `ii')
-STRUCT_ARRAY(`$1', `$2', `$3', `$4')
-popdef(`i')
-')
-dnl }}}
-dnl {{{ STRUCT_ARRAY(1:count, 2:type, 3:elm, 4:name=type)
+dnl {{{ STRUCT_ARRAY(1:count, 2:type, 3:elm, 4:name=type, 5:loopcounter)
 define(`STRUCT_ARRAY', `
 	if (src->$3) {
+		ifelse(
+			`$5', `', `int i; pushdef(`LOOPCOUNTER', `i')',
+			`', `', `pushdef(`LOOPCOUNTER', `$5')')
 		pushdefFUNC_NAME(`$2', `$4')
 		IFDASM(`
 			zval *arr;
 			ALLOC_INIT_ZVAL(arr);
 			array_init(arr);
-			for (i = 0; i < src->$1; i ++) {
+			for (LOOPCOUNTER = 0; LOOPCOUNTER < src->$1; LOOPCOUNTER ++) {
 				zval *zv;
 
 				ALLOC_INIT_ZVAL(zv);
 				array_init(zv);
-				FUNC_NAME (zv, &(src->$3[i]) TSRMLS_CC);
+				FUNC_NAME (zv, &(src->$3[LOOPCOUNTER]) TSRMLS_CC);
 				add_next_index_zval(arr, zv);
 			}
 			add_assoc_zval_ex(dst, ZEND_STRS("$3"), arr);
 		', `
 			ALLOC(`dst->$3', `$2', `src->$1')
 			ifdef(`AFTER_ALLOC', AFTER_ALLOC)
-			for (i = 0; i < src->$1; i ++) {
+			for (LOOPCOUNTER = 0; LOOPCOUNTER < src->$1; LOOPCOUNTER ++) {
 				DISABLECHECK(`
-					ifdef(`BEFORE_LOOP', `BEFORE_LOOP')
-					STRUCT(`$2', `$3[i]', `$4')
+					STRUCT(`$2', `$3[LOOPCOUNTER]', `$4')
 				')
 			}
 		')dnl IFDASM
 		DONE(`$3')
 		popdef(`FUNC_NAME')
+		popdef(`LOOPCOUNTER')
 	}
 	else {
 		COPYNULL(`$3')

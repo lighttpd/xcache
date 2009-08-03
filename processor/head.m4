@@ -68,13 +68,15 @@ struct _xc_processor_t {
 	const xc_entry_data_php_t *php_dst;
 	const xc_cache_t          *cache;
 	const zend_class_entry *cache_ce;
-	zend_uint cache_class_num;
+	zend_uint cache_class_index;
 
 	const zend_op          *active_opcodes_src;
 	zend_op                *active_opcodes_dst;
 	const zend_class_entry *active_class_entry_src;
 	zend_class_entry       *active_class_entry_dst;
-	zend_uint               active_class_num;
+	zend_uint                 active_class_index;
+	zend_uint                 active_op_array_index;
+	const xc_op_array_info_t *active_op_array_infos_src;
 
 	zend_bool readonly_protection; /* wheather it's present */
 IFASSERT(xc_stack_t allocsizes;)
@@ -185,28 +187,30 @@ static zend_ulong xc_get_class_num(xc_processor_t *processor, zend_class_entry *
 	zend_class_entry *ceptr;
 
 	if (processor->cache_ce == ce) {
-		return processor->cache_class_num;
+		return processor->cache_class_index + 1;
 	}
 	for (i = 0; i < php->classinfo_cnt; i ++) {
 		ceptr = CestToCePtr(php->classinfos[i].cest);
 		if (ZCEP_REFCOUNT_PTR(ceptr) == ZCEP_REFCOUNT_PTR(ce)) {
 			processor->cache_ce = ceptr;
-			processor->cache_class_num = i + 1;
+			processor->cache_class_index = i + 1;
 			return i + 1;
 		}
 	}
 	assert(0);
 	return (zend_ulong) -1;
 }
+define(`xc_get_class_num', `xc_get_class_numNOTDEFINED')
 /* }}} */
 /* {{{ xc_get_class */
 #ifdef ZEND_ENGINE_2
 static zend_class_entry *xc_get_class(xc_processor_t *processor, zend_ulong class_num) {
 	/* must be parent or currrent class */
-	assert(class_num <= processor->active_class_num);
+	assert(class_num <= processor->active_class_index + 1);
 	return CestToCePtr(processor->php_dst->classinfos[class_num - 1].cest);
 }
 #endif
+define(`xc_get_class', `xc_get_classNOTDEFINED')
 /* }}} */
 #ifdef ZEND_ENGINE_2
 /* fix method on store */
