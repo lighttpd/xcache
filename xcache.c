@@ -813,24 +813,46 @@ static int xc_stat(const char *filename, const char *include_path, struct stat *
 	char *tokbuf;
 	int size = strlen(include_path) + 1;
 	char tokens[] = { DEFAULT_DIR_SEPARATOR, '\0' };
+	int ret;
 	ALLOCA_FLAG(use_heap)
 
 	paths = (char *)my_do_alloca(size, use_heap);
 	memcpy(paths, include_path, size);
 
 	for (path = php_strtok_r(paths, tokens, &tokbuf); path; path = php_strtok_r(NULL, tokens, &tokbuf)) {
-		if (snprintf(filepath, sizeof(filepath), "%s/%s", path, filename) >= MAXPATHLEN - 1) {
-			continue;
-		}
-		if (VCWD_STAT(filepath, pbuf) == 0) {
-			my_free_alloca(paths, use_heap);
-			return SUCCESS;
+		if (snprintf(filepath, sizeof(filepath), "%s/%s", path, filename) < MAXPATHLEN - 1) {
+			if (VCWD_STAT(filepath, pbuf) == 0) {
+				ret = SUCCESS;
+				goto finish;
+			}
 		}
 	}
 
+	/* fall back to current directory */
+	if (zend_is_executing(TSRMLS_C)) {
+		char *path = zend_get_executed_filename(TSRMLS_C);
+		if (path && path[0] != '[') {
+			int len = strlen(path);
+			while ((--len >= 0) && !IS_SLASH(path[len])) {
+				/* skipped */
+			}
+			if (len > 0 && len + strlen(filename) + 1 < MAXPATHLEN - 1) {
+				strcpy(filepath, path);
+				strcpy(filepath + len + 1, filename);
+				if (VCWD_STAT(filepath, pbuf) == 0) {
+					ret = SUCCESS;
+					goto finish;
+				}
+			}
+		}
+	}
+
+	ret = FAILURE;
+
+finish:
 	my_free_alloca(paths, use_heap);
 
-	return FAILURE;
+	return ret;
 }
 /* }}} */
 
