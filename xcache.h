@@ -63,6 +63,10 @@
 #	define IS_CONSTANT_TYPE_MASK (~IS_CONSTANT_INDEX)
 #endif
 
+#ifndef ZEND_ENGINE_2_3
+#define zend_dirname(path, len) xc_dirname(path, len)
+#endif
+
 /* {{{ dirty fix for PHP 6 */
 #ifdef add_assoc_long_ex
 static inline void my_add_assoc_long_ex(zval *arg, char *key, uint key_len, long value)
@@ -237,6 +241,12 @@ typedef struct {
 	zend_ulong hits_by_second[5];
 } xc_cache_t;
 /* }}} */
+/* {{{ xc_op_array_info_t */
+typedef struct {
+	zend_uint oplineinfo_cnt;
+	int *oplineinfos;
+} xc_op_array_info_t;
+/* }}} */
 /* {{{ xc_classinfo_t */
 typedef struct {
 #ifdef IS_UNICODE
@@ -245,6 +255,8 @@ typedef struct {
 	zstr      key;
 	zend_uint key_size;
 	ulong     h;
+	zend_uint methodinfo_cnt;
+	xc_op_array_info_t *methodinfos;
 	xc_cest_t cest;
 #ifndef ZEND_COMPILE_DELAYED_BINDING
 	int       oplineno;
@@ -272,6 +284,7 @@ typedef struct {
 	zstr      key;
 	zend_uint key_size;
 	ulong     h;
+	xc_op_array_info_t op_array_info;
 	zend_function func;
 } xc_funcinfo_t;
 /* }}} */
@@ -310,6 +323,18 @@ struct _xc_entry_data_php_t {
 	zend_ulong hits;        /* hits of this php */
 	size_t     size;
 
+	int    filepath_len;
+	char  *filepath;
+	int    dirpath_len;
+	char  *dirpath;
+#ifdef IS_UNICODE
+	UChar *ufilepath;
+	int    ufilepath_len;
+	UChar *udirpath;
+	int    udirpath_len;
+#endif
+
+	xc_op_array_info_t op_array_info;
 	zend_op_array *op_array;
 
 #ifdef HAVE_XCACHE_CONSTANT
@@ -386,6 +411,17 @@ extern zend_module_entry xcache_module_entry;
 int xc_is_rw(const void *p);
 int xc_is_ro(const void *p);
 int xc_is_shm(const void *p);
-void xc_gc_add_op_array(zend_op_array *op_array TSRMLS_DC);
+/* {{{ xc_gc_op_array_t */
+typedef struct {
+#ifdef ZEND_ENGINE_2
+	zend_uint num_args;
+	zend_arg_info *arg_info;
+#endif
+	zend_uint last;
+	zend_op *opcodes;
+} xc_gc_op_array_t;
+/* }}} */
+void xc_gc_add_op_array(xc_gc_op_array_t *gc_op_array TSRMLS_DC);
+void xc_fix_op_array_info(const xc_entry_data_php_t *php, zend_op_array *op_array, int shallow_copied, const xc_op_array_info_t *op_array_info TSRMLS_DC);
 
 #endif /* __XCACHE_H */

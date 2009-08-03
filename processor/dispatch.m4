@@ -27,3 +27,32 @@ define(`DISPATCH', `
 	, `', `', `m4_errprint(`Unknown type "$1"')'
 	)
 ')
+dnl {{{ DISPATCH_ARRAY(1:count, 2:type, 3:elm)
+define(`DISPATCH_ARRAY', `
+	if (src->$3) {
+		int i;
+		IFDASM(`
+			zval *arr;
+			ALLOC_INIT_ZVAL(arr);
+			array_init(arr);
+			for (i = 0; i < src->$1; i ++) {
+				ifelse(
+					`$2', `zend_bool', `add_assoc_bool_ex(arr, ZEND_STRS("$3"), src->$3[i] ? 1 : 0);'
+				, `', `', `add_assoc_long_ex(arr, ZEND_STRS("$3"), src->$3[i]);')
+			}
+			add_assoc_zval_ex(dst, ZEND_STRS("$3"), arr);
+		', `
+			COPY_N_EX($@)
+			for (i = 0; i < src->$1; i ++) {
+				DISABLECHECK(`
+					DISPATCH(`$2', `$3[i]', `$4')
+				')
+			}
+		')dnl IFDASM
+		DONE(`$3')
+	}
+	else {
+		COPYNULL(`$3')
+	}
+')
+dnl }}}

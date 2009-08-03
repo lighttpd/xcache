@@ -6,12 +6,12 @@ define(`PROC_STRING_N_EX', `
 			STRTYPE, `char',      `char',
 			STRTYPE, `zstr_char', `char',
 			`',      `',          `UChar'))
-	pushdef(`ISTYPE', ifelse(STRTYPE,`zstr_uchar',IS_UNICODE,IS_STRING))
+	pushdef(`ISTYPE', ifelse(PTRTYPE,`UChar',IS_UNICODE,IS_STRING))
 	pushdef(`UNI_STRLEN', ifelse(
 			STRTYPE, `zstr_uchar', `xc_zstrlen_uchar',
 			STRTYPE, `zstr_char',  `xc_zstrlen_char',
 			`',      `',           `strlen'))
-	pushdef(`SRCSTR', ifelse(STRTYPE,`char',`ZSTR($2)',`$2'))
+	pushdef(`SRCSTR', ifelse(STRTYPE,`char',`ZSTR($2)',STRTYPE,`UChar',`ZSTR($2)',`$2'))
 	pushdef(`SRCPTR', ifelse(
 			STRTYPE, `zstr_uchar', `ZSTR_U($2)',
 			STRTYPE, `zstr_char',  `ZSTR_S($2)',
@@ -87,9 +87,12 @@ define(`PROC_STRING_N_EX', `
 dnl }}}
 dnl PROC_STRING_N(1:name, 2:size, 3:type)
 define(`PROC_STRING_N', `DBG(`$0($*)') DONE(`$1')`'PROC_STRING_N_EX(`dst->$1', `src->$1', `src->$2', `$1', `char')')
+define(`PROC_USTRING_N', `DBG(`$0($*)') DONE(`$1')`'PROC_STRING_N_EX(`dst->$1', `src->$1', `src->$2', `$1', `UChar')')
 
 define(`PROC_STRING_L', `DBG(`$0($*)') PROC_STRING_N(`$1', `$2 + 1')')
+define(`PROC_USTRING_L', `DBG(`$0($*)') PROC_USTRING_N(`$1', `$2 + 1')')
 define(`PROC_STRING',   `DBG(`$0($*)') DONE(`$1')`'PROC_STRING_N_EX(`dst->$1', `src->$1', `strlen(src->$1) + 1', `$1', `char')')
+define(`PROC_USTRING',  `DBG(`$0($*)') DONE(`$1')`'PROC_STRING_N_EX(`dst->$1', `src->$1', `strlen(src->$1) + 1', `$1', `UChar')')
 
 dnl {{{ PROC_ZSTRING_N(1:type, 2:name, 3:size, 4:size_type)
 define(`PROC_ZSTRING_N', `
