@@ -746,7 +746,7 @@ DEF_STRUCT_P_FUNC(`xc_funcinfo_t', , `dnl {{{
 		STRUCT(xc_op_array_info_t, op_array_info)
 	')
 	IFRESTORE(`
-		processor->active_op_array_infos_src = &dst->op_array_info;
+		processor->active_op_array_infos_src = &src->op_array_info;
 		processor->active_op_array_index = 0;
 	')
 	STRUCT(zend_function, func)
@@ -766,7 +766,7 @@ DEF_STRUCT_P_FUNC(`xc_classinfo_t', , `dnl {{{
 		STRUCT_ARRAY(methodinfo_cnt, xc_op_array_info_t, methodinfos)
 	')
 	IFRESTORE(`
-		processor->active_op_array_infos_src = dst->methodinfos;
+		processor->active_op_array_infos_src = src->methodinfos;
 		processor->active_op_array_index = 0;
 	')
 #ifdef ZEND_ENGINE_2
