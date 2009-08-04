@@ -193,7 +193,7 @@ static zend_ulong xc_get_class_num(xc_processor_t *processor, zend_class_entry *
 		ceptr = CestToCePtr(php->classinfos[i].cest);
 		if (ZCEP_REFCOUNT_PTR(ceptr) == ZCEP_REFCOUNT_PTR(ce)) {
 			processor->cache_ce = ceptr;
-			processor->cache_class_index = i + 1;
+			processor->cache_class_index = i;
 			return i + 1;
 		}
 	}
