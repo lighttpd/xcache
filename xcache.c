@@ -755,7 +755,7 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 		zend_u_is_auto_global(aginfo->type, aginfo->key, aginfo->key_len TSRMLS_CC);
 	}
 #endif
-#ifdef E_STRICT
+#ifdef XCACHE_ERROR_CACHING
 	/* restore trigger errors */
 	for (i = 0; i < p->compilererror_cnt; i ++) {
 		xc_compilererror_t *error = &p->compilererrors[i];
@@ -1535,7 +1535,7 @@ static zend_op_array *xc_compile_php(xc_entry_data_php_t *php, zend_file_handle 
 #endif
 #undef X_FREE_UNUSED
 	/* }}} */
-#ifdef E_STRICT
+#ifdef XCACHE_ERROR_CACHING
 	php->compilererrors = ((xc_sandbox_t *) XG(sandbox))->compilererrors;
 	php->compilererror_cnt = ((xc_sandbox_t *) XG(sandbox))->compilererror_cnt;
 #endif

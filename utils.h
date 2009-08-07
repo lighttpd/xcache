@@ -73,6 +73,10 @@ void xc_install_constant(char *filename, zend_constant *constant, zend_uchar typ
 void xc_install_function(char *filename, zend_function *func, zend_uchar type, zstr key, uint len, ulong h TSRMLS_DC);
 ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, int oplineno, zend_uchar type, zstr key, uint len, ulong h TSRMLS_DC);
 
+#if defined(E_STRICT) || defined(E_DEPRECATED)
+#define XCACHE_ERROR_CACHING
+#endif
+
 /* sandbox */
 typedef struct {
 	int alloc;
@@ -97,7 +101,7 @@ typedef struct {
 	Bucket    *tmp_internal_function_tail;
 	Bucket    *tmp_internal_class_tail;
 
-#if defined(E_STRICT) || defined(E_DEPRECATED)
+#ifdef XCACHE_ERROR_CACHING
 	int orig_user_error_handler_error_reporting;
 	void (*orig_zend_error_cb)(int type, const char *error_filename, const uint error_lineno, const char *format, va_list args);
 	zend_uint compilererror_cnt;
