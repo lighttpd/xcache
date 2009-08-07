@@ -529,7 +529,7 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, int op
 #define TG(x) (sandbox->tmp_##x)
 #define OG(x) (sandbox->orig_##x)
 /* }}} */
-#if defined(E_STRICT) || defined(E_DEPRECATED)
+#ifdef XCACHE_ERROR_CACHING
 static void xc_sandbox_error_cb(int type, const char *error_filename, const uint error_lineno, const char *format, va_list args) /* {{{ */
 {
 	xc_compilererror_t *compilererror;
@@ -539,7 +539,7 @@ static void xc_sandbox_error_cb(int type, const char *error_filename, const uint
 	sandbox = (xc_sandbox_t *) XG(sandbox);
 	assert(sandbox != NULL);
 	switch (type) {
-#ifdef E_STRICT:
+#ifdef E_STRICT
 	case E_STRICT:
 #endif
 #ifdef E_DEPRECATED
@@ -739,7 +739,7 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 
 	sandbox->filename = filename;
 
-#ifdef E_STRICT
+#ifdef XCACHE_ERROR_CACHING
 	sandbox->orig_user_error_handler_error_reporting = EG(user_error_handler_error_reporting);
 	EG(user_error_handler_error_reporting) = 0;
 
@@ -822,7 +822,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox, xc_install_action_t instal
 #endif
 	}
 
-#ifdef E_STRICT
+#ifdef XCACHE_ERROR_CACHING
 	/* restore trigger errors */
 	for (i = 0; i < sandbox->compilererror_cnt; i ++) {
 		xc_compilererror_t *error = &sandbox->compilererrors[i];
@@ -839,7 +839,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox, xc_install_action_t instal
 void xc_sandbox_free(xc_sandbox_t *sandbox, xc_install_action_t install TSRMLS_DC) /* {{{ */
 {
 	XG(sandbox) = NULL;
-#ifdef E_STRICT
+#ifdef XCACHE_ERROR_CACHING
 	EG(user_error_handler_error_reporting) = sandbox->orig_user_error_handler_error_reporting;
 	zend_error_cb = sandbox->orig_zend_error_cb;
 #endif
@@ -885,7 +885,7 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, xc_install_action_t install TSRMLS_D
 	/* restore orig here, as EG/CG holded tmp before */
 	memcpy(&EG(included_files), &OG(included_files), sizeof(EG(included_files)));
 
-#ifdef E_STRICT
+#ifdef XCACHE_ERROR_CACHING
 	if (sandbox->compilererrors) {
 		zend_uint i;
 		for (i = 0; i < sandbox->compilererror_cnt; i ++) {
