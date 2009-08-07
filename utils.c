@@ -529,7 +529,7 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, int op
 #define TG(x) (sandbox->tmp_##x)
 #define OG(x) (sandbox->orig_##x)
 /* }}} */
-#ifdef E_STRICT
+#if defined(E_STRICT) || defined(E_DEPRECATED)
 static void xc_sandbox_error_cb(int type, const char *error_filename, const uint error_lineno, const char *format, va_list args) /* {{{ */
 {
 	xc_compilererror_t *compilererror;
@@ -539,7 +539,9 @@ static void xc_sandbox_error_cb(int type, const char *error_filename, const uint
 	sandbox = (xc_sandbox_t *) XG(sandbox);
 	assert(sandbox != NULL);
 	switch (type) {
+#ifdef E_STRICT:
 	case E_STRICT:
+#endif
 #ifdef E_DEPRECATED
 	case E_DEPRECATED:
 #endif

@@ -97,7 +97,7 @@ typedef struct {
 	Bucket    *tmp_internal_function_tail;
 	Bucket    *tmp_internal_class_tail;
 
-#ifdef E_STRICT
+#if defined(E_STRICT) || defined(E_DEPRECATED)
 	int orig_user_error_handler_error_reporting;
 	void (*orig_zend_error_cb)(int type, const char *error_filename, const uint error_lineno, const char *format, va_list args);
 	zend_uint compilererror_cnt;
