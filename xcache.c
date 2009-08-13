@@ -38,7 +38,7 @@
 #include "utils.h"
 
 #ifndef ZEND_ENGINE_2_3
-ZEND_API size_t zend_dirname(char *path, size_t len)
+ZEND_DLEXPORT size_t zend_dirname(char *path, size_t len)
 {
 	php_dirname(path, len);
 	return strlen(path);
