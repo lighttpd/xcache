@@ -63,10 +63,6 @@
 #	define IS_CONSTANT_TYPE_MASK (~IS_CONSTANT_INDEX)
 #endif
 
-#ifndef ZEND_ENGINE_2_3
-#define zend_dirname(path, len) xc_dirname(path, len)
-#endif
-
 /* {{{ dirty fix for PHP 6 */
 #ifdef add_assoc_long_ex
 static inline void my_add_assoc_long_ex(zval *arg, char *key, uint key_len, long value)
