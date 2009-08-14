@@ -133,6 +133,11 @@ void xc_zend_constant_dtor(zend_constant *c);
 void xc_copy_internal_zend_constants(HashTable *target, HashTable *source);
 #endif
 
+#ifndef ZEND_ENGINE_2_3
+size_t zend_dirname(char *path, size_t len);
+long zend_atol(const char *str, int len);
+#endif
+
 typedef struct {
 	zend_uint size;
 	zend_uint cnt;

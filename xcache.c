@@ -37,14 +37,6 @@
 #include "opcode_spec.h"
 #include "utils.h"
 
-#ifndef ZEND_ENGINE_2_3
-ZEND_DLEXPORT size_t zend_dirname(char *path, size_t len)
-{
-	php_dirname(path, len);
-	return strlen(path);
-}
-#endif
-
 #define VAR_ENTRY_EXPIRED(pentry) ((pentry)->ttl && XG(request_time) > pentry->ctime + (pentry)->ttl)
 #define CHECK(x, e) do { if ((x) == NULL) { zend_error(E_ERROR, "XCache: " e); goto err; } } while (0)
 #define LOCK(x) xc_lock(x->lck)
