@@ -3303,7 +3303,7 @@ static int xc_config_long(zend_ulong *p, char *name, char *default_value) /* {{{
 		value = default_value;
 	}
 
-	*p = zend_atoi(value, strlen(value));
+	*p = zend_atol(value, strlen(value));
 	return SUCCESS;
 }
 /* }}} */
