@@ -1,3 +1,5 @@
+#include "xc_shm.h"
+
 typedef struct _xc_mem_handlers_t xc_mem_handlers_t;
 
 #ifndef XC_MEM_IMPL
@@ -13,7 +15,7 @@ struct _xc_mem_t {
 #endif
 typedef struct XC_MEM_IMPL xc_mem_t;
 typedef struct XC_MEMBLOCK_IMPL xc_block_t;
-typedef unsigned int xc_memsize_t;
+typedef xc_shmsize_t xc_memsize_t;
 
 /* shm::mem */
 #define XC_MEM_MALLOC(func)          void *func(xc_mem_t *mem, xc_memsize_t size)
