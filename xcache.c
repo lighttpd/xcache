@@ -209,12 +209,48 @@ static inline int xc_entry_equal_dmz(xc_entry_t *a, xc_entry_t *b) /* {{{ */
 					}
 					return memcmp(a->name.ustr.val, b->name.ustr.val, (a->name.ustr.len + 1) * sizeof(UChar)) == 0;
 				}
-				else {
-					return memcmp(a->name.str.val, b->name.str.val, a->name.str.len + 1) == 0;
-				}
-#else
-				return memcmp(a->name.str.val, b->name.str.val, a->name.str.len + 1) == 0;
 #endif
+				if (a->name.str.len != b->name.str.len) {
+					return 0;
+				}
+				return memcmp(a->name.str.val, b->name.str.val, a->name.str.len + 1) == 0;
+
+			} while(0);
+		default:
+			assert(0);
+	}
+	return 0;
+}
+/* }}} */
+static inline int xc_entry_has_prefix_dmz(xc_entry_t *entry, zval *prefix) /* {{{ */
+{
+	/* this function isn't required but can be in dmz */
+
+	switch (entry->type) {
+		case XC_TYPE_PHP:
+		case XC_TYPE_VAR:
+			do {
+#ifdef IS_UNICODE
+				if (entry->name_type != prefix->type) {
+					return 0;
+				}
+
+				if (entry->name_type == IS_UNICODE) {
+					if (entry->name.ustr.len < Z_USTRLEN_P(prefix)) {
+						return 0;
+					}
+					return memcmp(entry->name.ustr.val, Z_USTRVAL_P(prefix), Z_USTRLEN_P(prefix) * sizeof(UChar)) == 0;
+				}
+#endif
+				if (prefix->type != IS_STRING) {
+					return 0;
+				}
+
+				if (entry->name.str.len < Z_STRLEN_P(prefix)) {
+					return 0;
+				}
+
+				return memcmp(entry->name.str.val, Z_STRVAL_P(prefix), Z_STRLEN_P(prefix)) == 0;
 
 			} while(0);
 		default:
@@ -2655,6 +2691,39 @@ PHP_FUNCTION(xcache_unset)
 	} LEAVE_LOCK(xce.cache);
 }
 /* }}} */
+/* {{{ proto bool  xcache_unset_by_prefix(string prefix)
+   Unset existing data in cache by specified prefix */
+PHP_FUNCTION(xcache_unset_by_prefix)
+{
+	zval *prefix;
+	int i, iend;
+
+	if (!xc_var_caches) {
+		VAR_DISABLED_WARNING();
+		RETURN_FALSE;
+	}
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &prefix) == FAILURE) {
+		return;
+	}
+
+	for (i = 0, iend = xc_var_hcache.size; i < iend; i ++) {
+		xc_cache_t *cache = xc_var_caches[i];
+		ENTER_LOCK(cache) {
+			int j, jend;
+			for (j = 0, jend = cache->hentry->size; j < jend; j ++) {
+				xc_entry_t *entry, *next;
+				for (entry = cache->entries[j]; entry; entry = next) {
+					next = entry->next;
+					if (xc_entry_has_prefix_dmz(entry, prefix)) {
+						xc_entry_remove_dmz(entry TSRMLS_CC);
+					}
+				}
+			}
+		} LEAVE_LOCK(cache);
+	}
+}
+/* }}} */
 static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ */
 {
 	xc_entry_t xce, *stored_xce;
@@ -2989,6 +3058,7 @@ static function_entry xcache_functions[] = /* {{{ */
 	PHP_FE(xcache_set,               NULL)
 	PHP_FE(xcache_isset,             NULL)
 	PHP_FE(xcache_unset,             NULL)
+	PHP_FE(xcache_unset_by_prefix,   NULL)
 #ifdef HAVE_XCACHE_DPRINT
 	PHP_FE(xcache_dprint,            NULL)
 #endif
