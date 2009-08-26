@@ -90,7 +90,7 @@ static XC_MEM_MALLOC(xc_mem_malloc) /* {{{ */
 	/* realsize is ALIGNed so next block start at ALIGNed address */
 	realsize = ALIGN(realsize);
 
-	TRACE("avail: %d (%dKB). Allocate size: %d realsize: %d (%dKB)"
+	TRACE("avail: %lu (%luKB). Allocate size: %lu realsize: %lu (%luKB)"
 			, mem->avail, mem->avail / 1024
 			, size
 			, realsize, realsize / 1024
@@ -103,7 +103,7 @@ static XC_MEM_MALLOC(xc_mem_malloc) /* {{{ */
 		}
 
 		b = NULL;
-		minsize = INT_MAX;
+		minsize = ULONG_MAX;
 
 		/* prev|cur */
 
@@ -160,7 +160,7 @@ static XC_MEM_MALLOC(xc_mem_malloc) /* {{{ */
 		 *            `--^
 		 */
 
-		TRACE(" -> avail: %d (%dKB). new next: %p offset: %d %dKB. Got: %p"
+		TRACE(" -> avail: %lu (%luKB). new next: %p offset: %lu %luKB. Got: %p"
 				, mem->avail, mem->avail / 1024
 				, newb
 				, PSUB(newb, mem), PSUB(newb, mem) / 1024
@@ -182,7 +182,7 @@ static XC_MEM_FREE(xc_mem_free) /* {{{ return block size freed */
 	int size;
 
 	cur = (xc_block_t *) (CHAR_PTR(p) - BLOCK_HEADER_SIZE());
-	TRACE("freeing: %p, size=%d", p, cur->size);
+	TRACE("freeing: %p, size=%lu", p, cur->size);
 	xc_block_check(cur);
 	assert((char*)mem < (char*)cur && (char*)cur < (char*)mem + mem->size);
 
@@ -197,7 +197,7 @@ static XC_MEM_FREE(xc_mem_free) /* {{{ return block size freed */
 	b->next = cur;
 	size = cur->size;
 
-	TRACE(" avail %d (%dKB)", mem->avail, mem->avail / 1024);
+	TRACE(" avail %lu (%luKB)", mem->avail, mem->avail / 1024);
 	mem->avail += size;
 
 	/* combine prev|cur */
@@ -215,7 +215,7 @@ static XC_MEM_FREE(xc_mem_free) /* {{{ return block size freed */
 		cur->next = b->next;
 		TRACE("%s", " combine next");
 	}
-	TRACE(" -> avail %d (%dKB)", mem->avail, mem->avail / 1024);
+	TRACE(" -> avail %lu (%luKB)", mem->avail, mem->avail / 1024);
 	return size;
 }
 /* }}} */
@@ -296,6 +296,7 @@ static XC_MEM_INIT(xc_mem_init) /* {{{ */
 		fprintf(stderr, "xc_mem_init requires %lu bytes at least\n", (unsigned long) MINSIZE);
 		return NULL;
 	}
+	TRACE("size=%lu", size);
 	mem->shm = shm;
 	mem->size = size;
 	mem->avail = size - MINSIZE;
