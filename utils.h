@@ -181,4 +181,3 @@ static inline void xc_vector_free_impl(xc_vector_t *vector TSRMLS_DC)
 
 #define xc_vector_free(type, vector) xc_vector_free_impl(vector TSRMLS_CC)
 
->>>>>>> .merge-right.r671
