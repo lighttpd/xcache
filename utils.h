@@ -127,3 +127,58 @@ void xc_zend_constant_ctor(zend_constant *c);
 void xc_zend_constant_dtor(zend_constant *c);
 void xc_copy_internal_zend_constants(HashTable *target, HashTable *source);
 #endif
+
+#ifndef ZEND_ENGINE_2_3
+size_t zend_dirname(char *path, size_t len);
+long zend_atol(const char *str, int len);
+#endif
+
+typedef struct {
+	zend_uint size;
+	zend_uint cnt;
+	void *data;
+} xc_vector_t;
+
+#define xc_vector_init(type, vector) do { \
+	(vector)->cnt = 0;     \
+	(vector)->size = 0;    \
+	(vector)->data = NULL; \
+} while (0)
+
+#define xc_vector_add(type, vector, value) do { \
+	if ((vector)->cnt == (vector)->size) { \
+		if ((vector)->size) { \
+			(vector)->size <<= 1; \
+			(vector)->data = erealloc((vector)->data, sizeof(type) * (vector)->size); \
+		} \
+		else { \
+			(vector)->size = 8; \
+			(vector)->data = emalloc(sizeof(type) * (vector)->size); \
+		} \
+	} \
+	((type *) (vector)->data)[(vector)->cnt++] = value; \
+} while (0)
+
+static inline void *xc_vector_detach_impl(xc_vector_t *vector)
+{
+	void *data = vector->data;
+	vector->data = NULL;
+	vector->size = 0;
+	vector->cnt = 0;
+	return data;
+}
+
+#define xc_vector_detach(type, vector) ((type *) xc_vector_detach_impl(vector))
+
+static inline void xc_vector_free_impl(xc_vector_t *vector TSRMLS_DC)
+{
+	if (vector->data) {
+		efree(vector->data);
+	}
+	vector->size = 0;
+	vector->cnt = 0;
+}
+
+#define xc_vector_free(type, vector) xc_vector_free_impl(vector TSRMLS_CC)
+
+>>>>>>> .merge-right.r671
