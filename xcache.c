@@ -772,14 +772,6 @@ static zend_op_array *xc_entry_install(xc_entry_t *xce, zend_file_handle *h TSRM
 	/* trigger auto_globals jit */
 	for (i = 0; i < p->autoglobal_cnt; i ++) {
 		xc_autoglobal_t *aginfo = &p->autoglobals[i];
-		/*
-		zend_auto_global *auto_global;
-		if (zend_u_hash_quick_find(CG(auto_globals), aginfo->type, aginfo->key, aginfo->key_len+1, aginfo->h, (void **) &auto_global)==SUCCESS) {
-			if (auto_global->armed) {
-				auto_global->armed = auto_global->auto_global_callback(auto_global->name, auto_global->name_len TSRMLS_CC);
-			}
-		}
-		*/
 		zend_u_is_auto_global(aginfo->type, aginfo->key, aginfo->key_len TSRMLS_CC);
 	}
 #endif
