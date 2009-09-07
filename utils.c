@@ -585,10 +585,6 @@ static void xc_sandbox_error_cb(int type, const char *error_filename, const uint
 #ifdef ZEND_ENGINE_2_1
 static zend_bool xc_auto_global_callback(char *name, uint name_len TSRMLS_DC) /* {{{ */
 {
-	zend_auto_global *auto_global;
-	if (zend_u_hash_find(CG(auto_globals), UG(unicode) ? IS_UNICODE : IS_STRING, ZSTR(name), name_len + 1, (void **) &auto_global) == FAILURE) {
-		return 1;
-	}
 	return 0;
 }
 /* }}} */
