@@ -640,16 +640,20 @@ static zend_bool xc_is_internal_zend_constant(zend_constant *c) /* {{{ */
 void xc_zend_constant_ctor(zend_constant *c) /* {{{ */
 {
 	assert((c->flags & CONST_PERSISTENT));
-#ifdef IS_UNICODE
-	c->name.u = zend_ustrndup(c->name.u, c->name_len - 1);
-#else
-	c->name = zend_strndup(c->name, c->name_len - 1);
-#endif
+	ZSTR_U(c->name) = UNISW(zend_strndup, zend_ustrndup)(ZSTR_U(c->name), c->name_len - 1);
 }
 /* }}} */
 void xc_zend_constant_dtor(zend_constant *c) /* {{{ */
 {
-	free(ZSTR_U(c->name));
+	free(ZSTR_V(c->name));
+}
+/* }}} */
+void xc_free_zend_constant(zend_constant *c) /* {{{ */
+{
+	if (!(c->flags & CONST_PERSISTENT)) {
+		zval_dtor(&c->value);
+	}
+	free(ZSTR_V(c->name));
 }
 /* }}} */
 void xc_copy_internal_zend_constants(HashTable *target, HashTable *source) /* {{{ */
@@ -695,7 +699,7 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 	zend_hash_init_ex(TG(included_files), 5, NULL, NULL, 0, 1);
 #ifdef HAVE_XCACHE_CONSTANT
 	h = OG(zend_constants);
-	zend_hash_init_ex(&TG(zend_constants),  20, NULL, h->pDestructor, h->persistent, h->bApplyProtection);
+	zend_hash_init_ex(&TG(zend_constants),  20, NULL, (dtor_func_t) xc_free_zend_constant, h->persistent, h->bApplyProtection);
 	xc_copy_internal_zend_constants(&TG(zend_constants), &XG(internal_constant_table));
 	{
 		zend_constant tmp_const;
