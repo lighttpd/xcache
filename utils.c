@@ -708,7 +708,7 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 	TG(internal_constant_tail) = TG(zend_constants).pListTail;
 #endif
 	h = OG(function_table);
-	zend_hash_init_ex(&TG(function_table), 128, NULL, h->pDestructor, h->persistent, h->bApplyProtection);
+	zend_hash_init_ex(&TG(function_table), 128, NULL, ZEND_FUNCTION_DTOR, h->persistent, h->bApplyProtection);
 	{
 		zend_function tmp_func;
 		zend_hash_copy(&TG(function_table), &XG(internal_function_table), NULL, (void *) &tmp_func, sizeof(tmp_func));
@@ -716,7 +716,7 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 	TG(internal_function_tail) = TG(function_table).pListTail;
 
 	h = OG(class_table);
-	zend_hash_init_ex(&TG(class_table),     16, NULL, h->pDestructor, h->persistent, h->bApplyProtection);
+	zend_hash_init_ex(&TG(class_table),     16, NULL, ZEND_CLASS_DTOR, h->persistent, h->bApplyProtection);
 #if 0 && TODO
 	{
 		xc_cest_t tmp_cest;
