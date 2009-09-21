@@ -1751,6 +1751,13 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 #ifdef ZEND_ENGINE_2_1
 		php.autoglobals = NULL;
 #endif
+
+#ifdef IS_UNICODE
+		php.udirpath = NULL;
+		php.ufilepath = NULL;
+#endif
+		php.dirpath = NULL;
+
 		memset(&php.op_array_info, 0, sizeof(php.op_array_info));
 
 		zend_try {
