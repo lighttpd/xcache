@@ -1074,6 +1074,14 @@ stat_done:
 	xce->hvalue = xc_hash_fold(hv, &xc_php_hentry);
 
 	xce->type = XC_TYPE_PHP;
+
+	xce->filepath  = NULL;
+	xce->dirpath   = NULL;
+#ifdef IS_UNICODE
+	xce->ufilepath = NULL;
+	xce->udirpath  = NULL;
+#endif
+
 	return SUCCESS;
 }
 /* }}} */
