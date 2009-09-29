@@ -64,6 +64,8 @@ struct _xc_processor_t {
 	HashTable zvalptrs;
 	zend_bool reference; /* enable if to deal with reference */
 	zend_bool have_references;
+	const xc_entry_t *entry_src;
+	const xc_entry_t *entry_dst;
 	const xc_entry_data_php_t *php_src;
 	const xc_entry_data_php_t *php_dst;
 	const xc_cache_t          *cache;
@@ -390,8 +392,8 @@ xc_entry_t *xc_processor_restore_xc_entry_t(xc_entry_t *dst, const xc_entry_t *s
 	return dst;
 }
 /* }}} */
-/* export: xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(xc_entry_data_php_t *dst, const xc_entry_data_php_t *src, zend_bool readonly_protection TSRMLS_DC); :export {{{ */
-xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(xc_entry_data_php_t *dst, const xc_entry_data_php_t *src, zend_bool readonly_protection TSRMLS_DC) {
+/* export: xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_t *xce, xc_entry_data_php_t *dst, const xc_entry_data_php_t *src, zend_bool readonly_protection TSRMLS_DC); :export {{{ */
+xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_t *xce, xc_entry_data_php_t *dst, const xc_entry_data_php_t *src, zend_bool readonly_protection TSRMLS_DC) {
 	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
@@ -400,6 +402,7 @@ xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(xc_entry_data_php_
 	if (src->have_references) {
 		processor.reference = 1;
 	}
+	processor.entry_src = xce;
 
 	if (processor.reference) {
 		zend_hash_init(&processor.zvalptrs, 0, NULL, NULL, 0);
