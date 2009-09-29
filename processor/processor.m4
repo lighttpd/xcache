@@ -362,7 +362,7 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	')
 	DISPATCH(zend_uint, num_interfaces)
 
-	IFRESTORE(`COPY(filename)', `PROC_STRING(filename)')
+	IFRESTORE(`dst->filename = processor->entry_src->filepath;DONE(filename)', `PROC_STRING(filename)')
 	DISPATCH(zend_uint, line_start)
 	DISPATCH(zend_uint, line_end)
 #ifdef ZEND_ENGINE_2_1
@@ -521,6 +521,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		STRUCT_ARRAY(num_args, zend_arg_info, arg_info)
 		gc_arg_info = 1;
 #endif
+		IFRESTORE(`dst->filename = processor->entry_src->filepath;')
 		if (op_array_info->oplineinfo_cnt) {
 			gc_opcodes = 1;
 			COPY_N_EX(last, zend_op, opcodes)
@@ -639,7 +640,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	DISPATCH(zend_bool, uses_this)
 #endif
 
-	IFRESTORE(`COPY(filename)', `PROC_STRING(filename)')
+	IFRESTORE(`dst->filename = processor->entry_src->filepath;DONE(filename)', `PROC_STRING(filename)')
 #ifdef IS_UNICODE
 	IFRESTORE(`
 		COPY(script_encoding)
