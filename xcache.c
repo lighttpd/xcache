@@ -1577,10 +1577,7 @@ static zend_op_array *xc_compile_php(xc_entry_t *xce, xc_entry_data_php_t *php, 
 			xce->var##path = NULL; \
 			xce->var##path_len = 0; \
 		}
-		if (!const_usage.filepath_used) {
-			xce->filepath = NULL;
-			xce->filepath_len = 0;
-		}
+		/* filepath is required to restore op_array->filename, so no free filepath here */
 		X_FREE_UNUSED(dir)
 #ifdef IS_UNICODE
 		X_FREE_UNUSED(ufile)
