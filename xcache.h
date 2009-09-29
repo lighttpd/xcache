@@ -319,17 +319,6 @@ struct _xc_entry_data_php_t {
 	zend_ulong hits;        /* hits of this php */
 	size_t     size;
 
-	int    filepath_len;
-	char  *filepath;
-	int    dirpath_len;
-	char  *dirpath;
-#ifdef IS_UNICODE
-	UChar *ufilepath;
-	int    ufilepath_len;
-	UChar *udirpath;
-	int    udirpath_len;
-#endif
-
 	xc_op_array_info_t op_array_info;
 	zend_op_array *op_array;
 
@@ -398,6 +387,19 @@ struct _xc_entry_t {
 	int device;             /* the filesystem device */
 	int inode;              /* the filesystem inode */
 #endif
+
+	/* php only */
+	int    filepath_len;
+	char  *filepath;
+	int    dirpath_len;
+	char  *dirpath;
+#ifdef IS_UNICODE
+	UChar *ufilepath;
+	int    ufilepath_len;
+	UChar *udirpath;
+	int    udirpath_len;
+#endif
+
 };
 /* }}} */
 
@@ -418,6 +420,6 @@ typedef struct {
 } xc_gc_op_array_t;
 /* }}} */
 void xc_gc_add_op_array(xc_gc_op_array_t *gc_op_array TSRMLS_DC);
-void xc_fix_op_array_info(const xc_entry_data_php_t *php, zend_op_array *op_array, int shallow_copied, const xc_op_array_info_t *op_array_info TSRMLS_DC);
+void xc_fix_op_array_info(const xc_entry_t *xce, const xc_entry_data_php_t *php, zend_op_array *op_array, int shallow_copied, const xc_op_array_info_t *op_array_info TSRMLS_DC);
 
 #endif /* __XCACHE_H */

@@ -663,7 +663,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	DISPATCH(zend_bool, created_by_eval)
 #endif
 	} while (0);
-	IFRESTORE(`xc_fix_op_array_info(processor->php_src, dst, !shallow_copy, op_array_info TSRMLS_CC);')
+	IFRESTORE(`xc_fix_op_array_info(processor->entry_src, processor->php_src, dst, !shallow_copy, op_array_info TSRMLS_CC);')
 
 #ifdef ZEND_ENGINE_2
 	dnl mark it as -1 on store, and lookup parent on restore
@@ -818,17 +818,6 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 	DISPATCH(zend_ulong, hits)
 	DISPATCH(size_t, size)
 
-	DISPATCH(int, filepath_len)
-	IFRESTORE(`COPY(filepath)', `PROC_STRING_L(filepath, filepath_len)')
-	DISPATCH(int, dirpath_len)
-	IFRESTORE(`COPY(dirpath)', `PROC_STRING_L(dirpath, dirpath_len)')
-#ifdef IS_UNICODE
-	DISPATCH(int, ufilepath_len)
-	IFRESTORE(`COPY(ufilepath)', `PROC_USTRING_L(ufilepath, ufilepath_len)')
-	DISPATCH(int, udirpath_len)
-	IFRESTORE(`COPY(udirpath)', `PROC_USTRING_L(udirpath, udirpath_len)')
-#endif
-
 	IFRESTORE(`COPY(op_array_info)', `
 		STRUCT(xc_op_array_info_t, op_array_info)
 	')
@@ -942,6 +931,18 @@ DEF_STRUCT_P_FUNC(`xc_entry_t', , `
 	DISPATCH(int, device)
 	DISPATCH(int, inode)
 #endif
+
+	DISPATCH(int, filepath_len)
+	IFRESTORE(`COPY(filepath)', `PROC_STRING_L(filepath, filepath_len)')
+	DISPATCH(int, dirpath_len)
+	IFRESTORE(`COPY(dirpath)', `PROC_STRING_L(dirpath, dirpath_len)')
+#ifdef IS_UNICODE
+	DISPATCH(int, ufilepath_len)
+	IFRESTORE(`COPY(ufilepath)', `PROC_USTRING_L(ufilepath, ufilepath_len)')
+	DISPATCH(int, udirpath_len)
+	IFRESTORE(`COPY(udirpath)', `PROC_USTRING_L(udirpath, udirpath_len)')
+#endif
+
 ')
 dnl }}}
 dnl ====================================================
