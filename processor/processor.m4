@@ -933,17 +933,30 @@ DEF_STRUCT_P_FUNC(`xc_entry_t', , `
 	DISPATCH(int, inode)
 #endif
 
-	DISPATCH(int, filepath_len)
-	IFRESTORE(`COPY(filepath)', `PROC_STRING_L(filepath, filepath_len)')
-	DISPATCH(int, dirpath_len)
-	IFRESTORE(`COPY(dirpath)', `PROC_STRING_L(dirpath, dirpath_len)')
+	if (src->type == XC_TYPE_PHP) {
+		DISPATCH(int, filepath_len)
+		IFRESTORE(`COPY(filepath)', `PROC_STRING_L(filepath, filepath_len)')
+		DISPATCH(int, dirpath_len)
+		IFRESTORE(`COPY(dirpath)', `PROC_STRING_L(dirpath, dirpath_len)')
 #ifdef IS_UNICODE
-	DISPATCH(int, ufilepath_len)
-	IFRESTORE(`COPY(ufilepath)', `PROC_USTRING_L(ufilepath, ufilepath_len)')
-	DISPATCH(int, udirpath_len)
-	IFRESTORE(`COPY(udirpath)', `PROC_USTRING_L(udirpath, udirpath_len)')
+		DISPATCH(int, ufilepath_len)
+		IFRESTORE(`COPY(ufilepath)', `PROC_USTRING_L(ufilepath, ufilepath_len)')
+		DISPATCH(int, udirpath_len)
+		IFRESTORE(`COPY(udirpath)', `PROC_USTRING_L(udirpath, udirpath_len)')
 #endif
-
+	}
+	else {
+		DONE(filepath_len)
+		DONE(filepath)
+		DONE(dirpath_len)
+		DONE(dirpath)
+#ifdef IS_UNICODE
+		DONE(ufilepath_len)
+		DONE(ufilepath)
+		DONE(udirpath_len)
+		DONE(udirpath)
+#endif
+	}
 ')
 dnl }}}
 dnl ====================================================
