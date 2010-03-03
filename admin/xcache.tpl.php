@@ -273,7 +273,9 @@ ENTRY;
 		?>
 
 	</table>
+	<?php if (!$isphp) { ?>
 	<input type="submit" value="<?php echo _T("Remove Selected"); ?>">
+	<?php } ?>
 	</form>
 <?php
 	}
