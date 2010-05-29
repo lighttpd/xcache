@@ -134,6 +134,12 @@ static inline int xc_zstrlen(int type, zstr s)
 #endif
 /* {{{ xc_calc_string_n */
 REDEF(`KIND', `calc')
+#undef C_RELAYLINE
+#define C_RELAYLINE
+IFASSERT(`
+#undef C_RELAYLINE
+#define C_RELAYLINE , __LINE__
+')
 static inline void xc_calc_string_n(xc_processor_t *processor, zend_uchar type, const zstr str, long size IFASSERT(`, int relayline')) {
 	pushdef(`__LINE__', `relayline')
 	int realsize = UNISW(size, (type == IS_UNICODE) ? UBYTES(size) : size);
