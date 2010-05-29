@@ -121,8 +121,11 @@ define(`PROC_CLASS_ENTRY_P_EX', `
 	}
 ')
 dnl }}}
+dnl {{{ IFASSERTEX
+define(`IFASSERTEX', `ifdef(`XCACHE_ENABLE_TEST', `$1', `$2')')
+dnl }}}
 dnl {{{ IFASSERT
-define(`IFASSERT', `ifdef(`XCACHE_ENABLE_TEST', `
+define(`IFASSERT', `IFASSERTEX(`
 #ifndef NDEBUG
 		$1
 #endif
