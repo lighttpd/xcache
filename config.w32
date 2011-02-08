@@ -55,6 +55,7 @@ if (PHP_XCACHE != "no") {
 			ERROR(apps[i] + " is currently required to build XCache");
 		}
 	}
+	DEFINE("XCACHE_BACKTICK", "`")
 	PATH_PROG("gawk", null, "XCACHE_AWK") || PATH_PROG("awk", null, "XCACHE_AWK");
 
 	// the cygwin indent is known broken on our output
