@@ -84,6 +84,8 @@ if test "$PHP_XCACHE" != "no"; then
     M4="$M4 -B 102400"
   fi
   PHP_SUBST([M4])
+  XCACHE_BACKTICK="'"'`'"'"
+  PHP_SUBST([XCACHE_BACKTICK])
   AC_PATH_PROGS([GREP], [grep])
   PHP_SUBST([GREP])
   AC_PATH_PROGS([SED], [sed])
