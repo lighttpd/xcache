@@ -3541,10 +3541,12 @@ static PHP_MSHUTDOWN_FUNCTION(xcache)
 
 	if (xc_zend_extension_faked) {
 		zend_extension *ext = zend_get_extension(XCACHE_NAME);
-		if (ext->shutdown) {
-			ext->shutdown(ext);
+		if (ext) {
+			if (ext->shutdown) {
+				ext->shutdown(ext);
+			}
+			xc_zend_remove_extension(ext);
 		}
-		xc_zend_remove_extension(ext);
 	}
 	UNREGISTER_INI_ENTRIES();
 
