@@ -287,7 +287,7 @@ for ($i = 0; $i < $vcnt; $i ++) {
 	$data['cache_name'] = "var#$i";
 	$data['cacheid'] = $i;
 	$cacheinfos[] = $data;
-	if ($pcnt >= 2) {
+	if ($vcnt >= 2) {
 		calc_total($total, $data);
 	}
 }
