@@ -599,6 +599,14 @@ void xc_zend_constant_dtor(zend_constant *c) /* {{{ */
 	free(ZSTR_U(c->name));
 }
 /* }}} */
+static void xc_free_zend_constant(zend_constant *c) /* {{{ */
+{
+	if (!(c->flags & CONST_PERSISTENT)) {
+		zval_dtor(&c->value);
+	}
+	free(ZSTR_V(c->name));
+}
+/* }}} */
 void xc_copy_internal_zend_constants(HashTable *target, HashTable *source) /* {{{ */
 {
 	zend_constant tmp_const;
@@ -642,12 +650,8 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /
 	zend_hash_init_ex(TG(included_files), 5, NULL, NULL, 0, 1);
 #ifdef HAVE_XCACHE_CONSTANT
 	h = OG(zend_constants);
-	zend_hash_init_ex(&TG(zend_constants),  20, NULL, h->pDestructor, h->persistent, h->bApplyProtection);
+	zend_hash_init_ex(&TG(zend_constants),  20, NULL, (dtor_func_t) xc_free_zend_constant, h->persistent, h->bApplyProtection);
 	xc_copy_internal_zend_constants(&TG(zend_constants), &XG(internal_constant_table));
-	{
-		zend_constant tmp_const;
-		zend_hash_copy(&TG(zend_constants), &XG(internal_constant_table), (copy_ctor_func_t) xc_zend_constant_ctor, (void *) &tmp_const, sizeof(tmp_const));
-	}
 	TG(internal_constant_tail) = TG(zend_constants).pListTail;
 #endif
 	h = OG(function_table);
@@ -711,6 +715,11 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox, xc_install_action_t instal
 	Bucket *b;
 
 #ifdef HAVE_XCACHE_CONSTANT
+	for (b = TG(zend_constants).pListHead; b != NULL && b != TG(internal_constant_tail); b = b->pListNext) {
+		zend_constant *c = (zend_constant*) b->pData;
+		xc_free_zend_constant(c);
+	}
+
 	b = TG(internal_constant_tail) ? TG(internal_constant_tail)->pListNext : TG(zend_constants).pListHead;
 	/* install constants */
 	while (b != NULL) {
