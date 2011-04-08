@@ -11,6 +11,7 @@ ChangeLog
 
 1.3.2 2011-??-??
 ========
+ * disassembler: don't dump builtin functions
  * fix win32 build against win32 native gnu tools
  * compatibility fix: fix segv on shutdown when ionCube Loader is loaded
  * fixed undefined index for xcache.count=1 and xcache.var_size>1
