@@ -28,7 +28,7 @@ function str($src, $indent = '') // {{{
 
 	if (is_array($src)) {
 		die_error('array str');
-		$src = new Decompiler_Array($src, false, $indent);
+		$src = new Decompiler_Array($src, $indent);
 		return $src->__toString();
 	}
 
@@ -37,7 +37,7 @@ function str($src, $indent = '') // {{{
 			var_dump($src);
 			die_error('no __toString');
 		}
-		return $src->__toString($indent);
+		return $src->__toString();
 	}
 
 	return $src;
@@ -55,10 +55,10 @@ function value($value) // {{{
 	}
 
 	if (is_array($value)) {
-		$value = new Decompiler_Array($value, true);
+		$value = new Decompiler_Array($value);
 	}
 	else {
-		$value = new Decompiler_Value($value, true);
+		$value = new Decompiler_Value($value);
 	}
 	return $value;
 }
@@ -256,13 +256,11 @@ class Decompiler_ListBox extends Decompiler_Box // {{{
 // }}}
 class Decompiler_Array extends Decompiler_Value // {{{
 {
-	var $needExport = false;
 	var $indent = '';
 
-	function Decompiler_Array($value = array(), $needexport = false, $indent = '')
+	function Decompiler_Array($value = array(), $indent = '')
 	{
 		$this->value = $value;
-		$this->needExport = $needexport;
 		$this->indent = $indent;
 	}
 
@@ -285,7 +283,7 @@ class Decompiler_Array extends Decompiler_Value // {{{
 			}
 			++ $i;
 		}
-		if ($assoclen && $this->needExport) {
+		if ($assoclen) {
 			$assoclen += 2;
 		}
 
@@ -305,9 +303,7 @@ class Decompiler_Array extends Decompiler_Value // {{{
 				}
 			}
 
-			if ($this->needExport) {
-				$k = var_export($k, true);
-			}
+			$k = var_export($k, true);
 			if ($multiline) {
 				$exp .= sprintf("%{$assoclen}s => ", $k);
 			}
@@ -315,10 +311,7 @@ class Decompiler_Array extends Decompiler_Value // {{{
 				$exp .= $k . ' => ';
 			}
 
-			if (is_array($v)) {
-				$v = new Decompiler_Array($v, $this->needExport);
-			}
-			$exp .= str($v, $subindent);
+			$exp .= str(value($v), $subindent);
 
 			$i ++;
 		}
@@ -1607,8 +1600,8 @@ class Decompiler
 		// {{{ properties
 		if (!empty($class['default_properties'])) {
 			echo "\n";
-			$infos = empty($class['properties_info']) ? null : $class['properties_info'];
-			foreach ($class['default_properties'] as $name => $v) {
+			$infos = !empty($class['properties_info']) ? $class['properties_info'] : null;
+			foreach (!empty($class['properties_info']) ? $class['properties_info'] : ($class['default_static_members'] + $class['default_properties']) as $name => $dummy) {
 				$info = (isset($infos) && isset($infos[$name])) ? $infos[$name] : null;
 				if (isset($info)) {
 					if (!empty($info['doc_comment'])) {
@@ -1619,6 +1612,21 @@ class Decompiler
 				}
 
 				echo $newindent;
+				$static = false;
+				if (isset($info)) {
+					if ($info['flags'] & ZEND_ACC_STATIC) {
+						$static = true;
+					}
+				}
+				else if (isset($class['default_static_members'][$name])) {
+					$static = true;
+				}
+
+				if ($static) {
+					echo "static ";
+				}
+
+				$mangled = false;
 				if (PHP_VERSION < 5) {
 					echo 'var ';
 				}
@@ -1635,20 +1643,23 @@ class Decompiler
 						break;
 					case ZEND_ACC_PRIVATE:
 						echo "private ";
+						$mangled = true;
 						break;
 					case ZEND_ACC_PROTECTED:
 						echo "protected ";
+						$mangled = true;
 						break;
-					}
-					if ($info['flags'] & ZEND_ACC_STATIC) {
-						echo "static ";
 					}
 				}
 
 				echo '$', $name;
-				if (isset($v)) {
+
+				$key = isset($info) ? $info['name'] . ($mangled ? "\000" : "") : $name;
+
+				$value = $class[$static ? 'default_static_members' : 'default_properties'][$key];
+				if (isset($value)) {
 					echo ' = ';
-					echo str(value($v));
+					echo str(value($value));
 				}
 				echo ";\n";
 			}
