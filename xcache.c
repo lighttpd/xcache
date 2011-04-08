@@ -3012,21 +3012,22 @@ PHP_FUNCTION(xcache_get_special_value)
 		return;
 	}
 
-	if (value->type == IS_CONSTANT) {
+	switch ((Z_TYPE_P(value) & IS_CONSTANT_TYPE_MASK)) {
+	case IS_CONSTANT:
 		*return_value = *value;
 		zval_copy_ctor(return_value);
 		return_value->type = UNISW(IS_STRING, UG(unicode) ? IS_UNICODE : IS_STRING);
-		return;
-	}
+		break;
 
-	if (value->type == IS_CONSTANT_ARRAY) {
+	case IS_CONSTANT_ARRAY:
 		*return_value = *value;
 		zval_copy_ctor(return_value);
 		return_value->type = IS_ARRAY;
-		return;
-	}
+		break;
 
-	RETURN_NULL();
+	default:
+		RETURN_NULL();
+	}
 }
 /* }}} */
 /* {{{ proto string xcache_coredump(int op_type) */

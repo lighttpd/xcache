@@ -74,14 +74,6 @@ DEF_STRUCT_P_FUNC(`zval', , `dnl {{{
 		*dst = *src;
 		zval_copy_ctor(dst);
 		Z_SET_REFCOUNT(*dst, 1);
-		switch ((Z_TYPE_P(src) & IS_CONSTANT_TYPE_MASK)) {
-		case IS_CONSTANT:
-			dst->type = UNISW(IS_STRING, UG(unicode) ? IS_UNICODE : IS_STRING);
-			break;
-		case IS_CONSTANT_ARRAY:
-			dst->type = IS_ARRAY;
-			break;
-		}
 		DONE(value)
 		DONE(type)
 #ifdef ZEND_ENGINE_2_3
