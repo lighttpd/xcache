@@ -31,6 +31,9 @@ processor.lo: $(XCACHE_PROC_C) $(XCACHE_PROC_H) $(srcdir)/processor.c
 $(builddir)/disassembler.lo: $(XCACHE_PROC_H) $(srcdir)/processor.c
 disassembler.lo: $(XCACHE_PROC_H) $(srcdir)/processor.c
 
+$(builddir)/opcode_spec.lo: $(srcdir)/xcache.h $(srcdir)/opcode_spec.c $(srcdir)/opcode_spec_def.h $(srcdir)/const_string.h
+opcode_spec.lo: $(srcdir)/xcache.h $(srcdir)/opcode_spec.c $(srcdir)/opcode_spec_def.h $(srcdir)/const_string.h
+
 $(builddir)/xcache.lo: $(XCACHE_PROC_H) $(srcdir)/xc_shm.h $(srcdir)/stack.h $(srcdir)/xcache_globals.h $(srcdir)/xcache.c $(srcdir)/foreachcoresig.h $(srcdir)/utils.h
 xcache.lo: $(XCACHE_PROC_H) $(srcdir)/xc_shm.h $(srcdir)/stack.h $(srcdir)/xcache_globals.h $(srcdir)/xcache.c $(srcdir)/foreachcoresig.h $(srcdir)/utils.h
 
