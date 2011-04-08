@@ -5,10 +5,17 @@
 
 #define return_value dst
 
+/* sandbox {{{ */
+#undef TG
+#undef OG
+#define TG(x) (sandbox->tmp_##x)
+#define OG(x) (sandbox->orig_##x)
+/* }}} */
+
 #ifndef HAVE_XCACHE_OPCODE_SPEC_DEF
 #error disassembler cannot be built without xcache/opcode_spec_def.h
 #endif
-static void xc_dasm(zval *dst, zend_op_array *op_array TSRMLS_DC) /* {{{ */
+static void xc_dasm(xc_sandbox_t *sandbox, zval *dst, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
 	Bucket *b;
 	zval *zv, *list;
@@ -32,13 +39,21 @@ static void xc_dasm(zval *dst, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 
 	ALLOC_INIT_ZVAL(list);
 	array_init(list);
-	xc_dasm_HashTable_zend_function(list, CG(function_table) TSRMLS_CC);
+	b = TG(internal_function_tail) ? TG(internal_function_tail)->pListNext : TG(function_table).pListHead;
+	for (; b; b = b->pListNext) {
+		ALLOC_INIT_ZVAL(zv);
+		array_init(zv);
+		xc_dasm_zend_function(zv, b->pData TSRMLS_CC);
+
+		add_u_assoc_zval_ex(list, BUCKET_KEY_TYPE(b), b->arKey, b->nKeyLength, zv);
+	}
 	add_assoc_zval_ex(dst, ZEND_STRS("function_table"), list);
 	
 	buf = emalloc(bufsize);
 	ALLOC_INIT_ZVAL(list);
 	array_init(list);
-	for (b = CG(class_table)->pListHead; b; b = b->pListNext) {
+	b = TG(internal_class_tail) ? TG(internal_class_tail)->pListNext : TG(class_table).pListHead;
+	for (; b; b = b->pListNext) {
 		ALLOC_INIT_ZVAL(zv);
 		array_init(zv);
 		xc_dasm_zend_class_entry(zv, CestToCePtr(*(xc_cest_t *)b->pData) TSRMLS_CC);
@@ -96,7 +111,7 @@ void xc_dasm_string(zval *dst, zval *source TSRMLS_DC) /* {{{ */
 		goto err_compile;
 	}
 
-	xc_dasm(dst, op_array TSRMLS_CC);
+	xc_dasm(&sandbox, dst, op_array TSRMLS_CC);
 
 	/* free */
 	efree(eval_name);
@@ -141,7 +156,7 @@ void xc_dasm_file(zval *dst, const char *filename TSRMLS_DC) /* {{{ */
 		goto err_compile;
 	}
 
-	xc_dasm(dst, op_array TSRMLS_CC);
+	xc_dasm(&sandbox, dst, op_array TSRMLS_CC);
 
 	/* free */
 #ifdef ZEND_ENGINE_2
