@@ -572,6 +572,7 @@ class Decompiler
 		$EX['opcodes'] = &$opcodes;
 		// func call
 		$EX['object'] = null;
+		$EX['called_scope'] = null;
 		$EX['fbc'] = null;
 		$EX['argstack'] = array();
 		$EX['arg_types_stack'] = array();
@@ -782,8 +783,9 @@ class Decompiler
 			else {
 				switch ($opc) {
 				case XC_NEW: // {{{
-					array_push($EX['arg_types_stack'], array($EX['object'], $EX['fbc']));
+					array_push($EX['arg_types_stack'], array($EX['fbc'], $EX['object'], $EX['called_scope']));
 					$EX['object'] = (int) $res['var'];
+					$EX['called_scope'] = null;
 					$EX['fbc'] = 'new ' . $this->unquoteName($this->getOpVal($op1, $EX));
 					if (PHP_VERSION < 5) {
 						$resvar = '$new object$';
@@ -1052,25 +1054,39 @@ class Decompiler
 					$EX['argstack'][] = $ref . $this->getOpVal($op1, $EX);
 					break;
 					// }}}
+				case XC_INIT_STATIC_METHOD_CALL:
 				case XC_INIT_METHOD_CALL:
 				case XC_INIT_FCALL_BY_FUNC:
 				case XC_INIT_FCALL_BY_NAME: // {{{
 					if (($ext & ZEND_CTOR_CALL)) {
 						break;
 					}
-					array_push($EX['arg_types_stack'], array($EX['object'], $EX['fbc']));
-					if ($opc == XC_INIT_METHOD_CALL || $op1['op_type'] != XC_IS_UNUSED) {
+					array_push($EX['arg_types_stack'], array($EX['fbc'], $EX['object'], $EX['called_scope']));
+					if ($opc == XC_INIT_STATIC_METHOD_CALL) {
+						$EX['object'] = null;
+						$EX['called_scope'] = $op1['var'];
+					}
+					else if ($opc == XC_INIT_METHOD_CALL || $op1['op_type'] != XC_IS_UNUSED) {
 						$obj = $this->getOpVal($op1, $EX);
 						if (!isset($obj)) {
 							$obj = '$this';
 						}
-						$EX['object'] = $obj;
+						// looks like PHP4 only
+						if (isset($op1['constant'])) {
+							$EX['object'] = null;
+							$EX['called_scope'] = $this->unquoteName($obj);
+						}
+						else {
+							$EX['object'] = $obj;
+							$EX['called_scope'] = null;
+						}
 						if ($res['op_type'] != XC_IS_UNUSED) {
 							$resvar = '$obj call$';
 						}
 					}
 					else {
 						$EX['object'] = null;
+						$EX['called_scope'] = null;
 					}
 
 					if ($opc == XC_INIT_FCALL_BY_FUNC) {
@@ -1105,6 +1121,7 @@ class Decompiler
 
 					$resvar =
 						(isset($object) ? $object . '->' : '' )
+						. (isset($EX['called_scope']) ? $EX['called_scope'] . '::' : '' )
 						. $fname . "($args)";
 					unset($args);
 
@@ -1112,7 +1129,7 @@ class Decompiler
 						$T[$EX['object']] = $resvar;
 						$resvar = null;
 					}
-					list($EX['object'], $EX['fbc']) = array_pop($EX['arg_types_stack']);
+					list($EX['fbc'], $EX['object'], $EX['called_scope']) = array_pop($EX['arg_types_stack']);
 					break;
 					// }}}
 				case XC_VERIFY_ABSTRACT_CLASS: // {{{
@@ -1912,6 +1929,7 @@ foreach (array (
 	'XC_ISSET_ISEMPTY_DIM_OBJ' => -1,
 	'XC_ISSET_ISEMPTY_PROP_OBJ' => -1,
 	'XC_ISSET_ISEMPTY_VAR' => -1,
+	'XC_INIT_STATIC_METHOD_CALL' => -1,
 	'XC_INIT_METHOD_CALL' => -1,
 	'XC_VERIFY_ABSTRACT_CLASS' => -1,
 	'XC_DECLARE_CLASS' => -1,
