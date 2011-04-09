@@ -54,7 +54,10 @@ function value($value) // {{{
 		}
 	}
 
-	if (is_array($value)) {
+	if ($value instanceof Decompiler_Object) {
+		// use as is
+	}
+	else if (is_array($value)) {
 		$value = new Decompiler_Array($value);
 	}
 	else {
@@ -1319,6 +1322,7 @@ class Decompiler
 						unset($op['cond_true']);
 					}
 					if (isset($op['cond_false'])) {
+						echo "TODO(cond_false):\n";
 						var_dump($op);// exit;
 					}
 					if ($opc == XC_JMPZ_EX || $opc == XC_JMPNZ_EX || $opc == XC_JMPZ) {
