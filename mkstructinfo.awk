@@ -49,10 +49,10 @@ incomment {
 			sizeinfo = sizeinfo "sizeof(((" instruct "*)NULL)->" buffer[i] ")";
 
 			if (i == 0) {
-				elms = buffer[i];
+				elms = "\"" buffer[i] "\"";
 			}
 			else {
-				elms = elms "," buffer[i];
+				elms = elms "," "\"" buffer[i] "\"";
 			}
 		}
 		printf "define(`ELEMENTSOF_%s', `%s')\n", instruct, elms;

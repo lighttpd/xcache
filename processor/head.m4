@@ -305,6 +305,49 @@ static void xc_zend_extension_op_array_ctor_handler(zend_extension *extension, z
 	}
 }
 /* }}} */
+/* {{{ field name checker */
+IFASSERT(`dnl
+int xc_check_names(const char *file, int line, const char *functionName, const char **assert_names, int assert_names_count, HashTable *done_names)
+{
+	int errors = 0;
+	if (assert_names_count) {
+		int i;
+		Bucket *b;
+
+		for (i = 0; i < assert_names_count; ++i) {
+			if (!zend_hash_exists(done_names, assert_names[i], strlen(assert_names[i]) + 1)) {
+				fprintf(stderr
+					, "missing field at %s `#'%d %s`' : %s\n"
+					, file, line, functionName
+					, assert_names[i]
+					);
+				++errors;
+			}
+		}
+
+		for (b = done_names->pListHead; b != NULL; b = b->pListNext) {
+			int known = 0;
+			int i;
+			for (i = 0; i < assert_names_count; ++i) {
+				if (strcmp(assert_names[i], BUCKET_KEY_S(b)) == 0) {
+					known = 1;
+					break;
+				}
+			}
+			if (!known) {
+				fprintf(stderr
+					, "unknown field at %s `#'%d %s`' : %s\n"
+					, file, line, functionName
+					, BUCKET_KEY_S(b)
+					);
+				++errors;
+			}
+		}
+	}
+	return errors;
+}
+')
+/* }}} */
 dnl ================ export API
 define(`DEFINE_STORE_API', `
 /* export: $1 *xc_processor_store_$1($1 *src TSRMLS_DC); :export {{{ */
