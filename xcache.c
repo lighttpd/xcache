@@ -1153,8 +1153,8 @@ static void xc_cache_early_binding_class_cb(zend_op *opline, int oplineno, void 
 	xc_cest_t cest;
 	xc_entry_data_php_t *php = (xc_entry_data_php_t *) data;
 
-	class_name = opline->op1.u.constant.value.str.val;
-	class_len  = opline->op1.u.constant.value.str.len;
+	class_name = Z_OP_CONSTANT(opline->op1).value.str.val;
+	class_len  = Z_OP_CONSTANT(opline->op1).value.str.len;
 	if (zend_hash_find(CG(class_table), class_name, class_len, (void **) &cest) == FAILURE) {
 		assert(0);
 	}
@@ -1195,13 +1195,13 @@ static void xc_collect_op_array_info(xc_entry_t *xce, xc_entry_data_php_t *php, 
 	xc_vector_init(int, &vector_int);
 
 #define XCACHE_CHECK_OP(type, op) \
-	if (zend_binary_strcmp(Z_STRVAL(opline->op.u.constant), Z_STRLEN(opline->op.u.constant), xce->type##path, xce->type##path_len) == 0) { \
+	if (zend_binary_strcmp(Z_STRVAL(Z_OP_CONSTANT(opline->op)), Z_STRLEN(Z_OP_CONSTANT(opline->op)), xce->type##path, xce->type##path_len) == 0) { \
 		usage->type##path_used = 1; \
 		oplineinfo |= xcache_##op##_is_##type; \
 	}
 
 #define XCACHE_U_CHECK_OP(type, op) \
-	if (zend_u_##binary_strcmp(Z_USTRVAL(opline->op.u.constant), Z_USTRLEN(opline->op.u.constant), xce->u##type##path, xce->u##type##path_len) == 0) { \
+	if (zend_u_##binary_strcmp(Z_USTRVAL(Z_OP_CONSTANT(opline->op)), Z_USTRLEN(Z_OP_CONSTANT(opline->op)), xce->u##type##path, xce->u##type##path_len) == 0) { \
 		usage->u##type##path_used = 1; \
 		oplineinfo |= xcache_##op##_is_##type; \
 	}
@@ -1209,27 +1209,27 @@ static void xc_collect_op_array_info(xc_entry_t *xce, xc_entry_data_php_t *php, 
 	for (oplineno = 0; oplineno < op_array->last; oplineno++) {
 		zend_op *opline = &op_array->opcodes[oplineno];
 		int oplineinfo = 0;
-		if (opline->op1.op_type == IS_CONST) {
-			if (Z_TYPE(opline->op1.u.constant) == IS_STRING) {
+		if (Z_OP_TYPE(opline->op1) == IS_CONST) {
+			if (Z_TYPE(Z_OP_CONSTANT(opline->op1)) == IS_STRING) {
 				XCACHE_CHECK_OP(file, op1)
 				else XCACHE_CHECK_OP(dir, op1)
 			}
 
 #ifdef IS_UNICODE
-			else if (Z_TYPE(opline->op1.u.constant) == IS_UNICODE) {
+			else if (Z_TYPE(Z_OP_CONSTANT(opline->op1)) == IS_UNICODE) {
 				XCACHE_U_CHECK_OP(file, op1)
 				else XCACHE_U_CHECK_OP(dir, op1)
 			}
 #endif
 		}
-		if (opline->op2.op_type == IS_CONST) {
-			if (Z_TYPE(opline->op2.u.constant) == IS_STRING) {
+		if (Z_OP_TYPE(opline->op2) == IS_CONST) {
+			if (Z_TYPE(Z_OP_CONSTANT(opline->op2)) == IS_STRING) {
 				XCACHE_CHECK_OP(file, op2)
 				else XCACHE_CHECK_OP(dir, op2)
 			}
 
 #ifdef IS_UNICODE
-			else if (Z_TYPE(opline->op2.u.constant) == IS_UNICODE) {
+			else if (Z_TYPE(Z_OP_CONSTANT(opline->op2)) == IS_UNICODE) {
 				XCACHE_U_CHECK_OP(file, op2)
 				else XCACHE_U_CHECK_OP(dir, op2)
 			}
@@ -1258,19 +1258,19 @@ void xc_fix_op_array_info(const xc_entry_t *xce, const xc_entry_data_php_t *php,
 		int oplineinfo = op_array_info->oplineinfos[i + 1];
 		zend_op *opline = &op_array->opcodes[oplineno];
 		if ((oplineinfo & xcache_op1_is_file)) {
-			assert(opline->op1.op_type == IS_CONST);
+			assert(Z_OP_TYPE(opline->op1) == IS_CONST);
 			if (copy) {
-				efree(Z_STRVAL(opline->op1.u.constant));
+				efree(Z_STRVAL(Z_OP_CONSTANT(opline->op1)));
 			}
-			if (Z_TYPE(opline->op1.u.constant) == IS_STRING) {
+			if (Z_TYPE(Z_OP_CONSTANT(opline->op1)) == IS_STRING) {
 				assert(xce->filepath);
-				ZVAL_STRINGL(&opline->op1.u.constant, xce->filepath, xce->filepath_len, copy);
+				ZVAL_STRINGL(&Z_OP_CONSTANT(opline->op1), xce->filepath, xce->filepath_len, copy);
 				TRACE("fixing op1 to %s", xce->filepath);
 			}
 #ifdef IS_UNICODE
-			else if (Z_TYPE(opline->op1.u.constant) == IS_UNICODE) {
+			else if (Z_TYPE(Z_OP_CONSTANT(opline->op1)) == IS_UNICODE) {
 				assert(xce->ufilepath);
-				ZVAL_UNICODEL(&opline->op1.u.constant, xce->ufilepath, xce->ufilepath_len, copy);
+				ZVAL_UNICODEL(&Z_OP_CONSTANT(opline->op1), xce->ufilepath, xce->ufilepath_len, copy);
 			}
 #endif
 			else {
@@ -1278,19 +1278,19 @@ void xc_fix_op_array_info(const xc_entry_t *xce, const xc_entry_data_php_t *php,
 			}
 		}
 		else if ((oplineinfo & xcache_op1_is_dir)) {
-			assert(opline->op1.op_type == IS_CONST);
+			assert(Z_OP_TYPE(opline->op1) == IS_CONST);
 			if (copy) {
-				efree(Z_STRVAL(opline->op1.u.constant));
+				efree(Z_STRVAL(Z_OP_CONSTANT(opline->op1)));
 			}
-			if (Z_TYPE(opline->op1.u.constant) == IS_STRING) {
+			if (Z_TYPE(Z_OP_CONSTANT(opline->op1)) == IS_STRING) {
 				assert(xce->dirpath);
 				TRACE("fixing op1 to %s", xce->dirpath);
-				ZVAL_STRINGL(&opline->op1.u.constant, xce->dirpath, xce->dirpath_len, copy);
+				ZVAL_STRINGL(&Z_OP_CONSTANT(opline->op1), xce->dirpath, xce->dirpath_len, copy);
 			}
 #ifdef IS_UNICODE
-			else if (Z_TYPE(opline->op1.u.constant) == IS_UNICODE) {
+			else if (Z_TYPE(Z_OP_CONSTANT(opline->op1)) == IS_UNICODE) {
 				assert(!xce->udirpath);
-				ZVAL_UNICODEL(&opline->op1.u.constant, xce->udirpath, xce->udirpath_len, copy);
+				ZVAL_UNICODEL(&Z_OP_CONSTANT(opline->op1), xce->udirpath, xce->udirpath_len, copy);
 			}
 #endif
 			else {
@@ -1299,19 +1299,19 @@ void xc_fix_op_array_info(const xc_entry_t *xce, const xc_entry_data_php_t *php,
 		}
 
 		if ((oplineinfo & xcache_op2_is_file)) {
-			assert(opline->op2.op_type == IS_CONST);
+			assert(Z_OP_TYPE(opline->op2) == IS_CONST);
 			if (copy) {
-				efree(Z_STRVAL(opline->op2.u.constant));
+				efree(Z_STRVAL(Z_OP_CONSTANT(opline->op2)));
 			}
-			if (Z_TYPE(opline->op2.u.constant) == IS_STRING) {
+			if (Z_TYPE(Z_OP_CONSTANT(opline->op2)) == IS_STRING) {
 				assert(xce->filepath);
 				TRACE("fixing op2 to %s", xce->filepath);
-				ZVAL_STRINGL(&opline->op2.u.constant, xce->filepath, xce->filepath_len, copy);
+				ZVAL_STRINGL(&Z_OP_CONSTANT(opline->op2), xce->filepath, xce->filepath_len, copy);
 			}
 #ifdef IS_UNICODE
-			else if (Z_TYPE(opline->op2.u.constant) == IS_UNICODE) {
+			else if (Z_TYPE(Z_OP_CONSTANT(opline->op2)) == IS_UNICODE) {
 				assert(xce->ufilepath);
-				ZVAL_UNICODEL(&opline->op2.u.constant, xce->ufilepath, xce->ufilepath_len, copy);
+				ZVAL_UNICODEL(&Z_OP_CONSTANT(opline->op2), xce->ufilepath, xce->ufilepath_len, copy);
 			}
 #endif
 			else {
@@ -1319,19 +1319,19 @@ void xc_fix_op_array_info(const xc_entry_t *xce, const xc_entry_data_php_t *php,
 			}
 		}
 		else if ((oplineinfo & xcache_op2_is_dir)) {
-			assert(opline->op2.op_type == IS_CONST);
+			assert(Z_OP_TYPE(opline->op2) == IS_CONST);
 			if (copy) {
-				efree(Z_STRVAL(opline->op2.u.constant));
+				efree(Z_STRVAL(Z_OP_CONSTANT(opline->op2)));
 			}
-			if (Z_TYPE(opline->op2.u.constant) == IS_STRING) {
+			if (Z_TYPE(Z_OP_CONSTANT(opline->op2)) == IS_STRING) {
 				assert(!xce->dirpath);
 				TRACE("fixing op2 to %s", xce->dirpath);
-				ZVAL_STRINGL(&opline->op2.u.constant, xce->dirpath, xce->dirpath_len, copy);
+				ZVAL_STRINGL(&Z_OP_CONSTANT(opline->op2), xce->dirpath, xce->dirpath_len, copy);
 			}
 #ifdef IS_UNICODE
-			else if (Z_TYPE(opline->op2.u.constant) == IS_UNICODE) {
+			else if (Z_TYPE(Z_OP_CONSTANT(opline->op2)) == IS_UNICODE) {
 				assert(!xce->udirpath);
-				ZVAL_UNICODEL(&opline->op2.u.constant, xce->udirpath, xce->udirpath_len, copy);
+				ZVAL_UNICODEL(&Z_OP_CONSTANT(opline->op2), xce->udirpath, xce->udirpath_len, copy);
 			}
 #endif
 			else {
@@ -3054,7 +3054,7 @@ PHP_FUNCTION(xcache_is_autoglobal)
 	RETURN_BOOL(zend_hash_exists(CG(auto_globals), name, name_len + 1));
 }
 /* }}} */
-static function_entry xcache_functions[] = /* {{{ */
+static zend_function_entry xcache_functions[] = /* {{{ */
 {
 	PHP_FE(xcache_count,             NULL)
 	PHP_FE(xcache_info,              NULL)

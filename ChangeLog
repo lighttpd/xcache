@@ -11,6 +11,7 @@ ChangeLog
 
 1.3.2 2011-??-??
 ========
+ * PHP_6: initial catch up with php 6 literals and trait
  * disassembler: DECLARE_INHERITED_CLASS/DELAYED class not found
  * disassembler: don't dump builtin functions
  * fix win32 build against win32 native gnu tools
