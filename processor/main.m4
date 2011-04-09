@@ -183,15 +183,6 @@ define(`COPYNULL_EX', `
 ')
 dnl }}}
 dnl {{{ COPYNULL(1:elm)
-# foreach(VAR, (LIST), STMT)
-m4_define([foreach],
-       [m4_pushdef([$1])_foreach([$1], [$2], [$3])m4_popdef([$1])])
-m4_define([_arg1], [$1])
-m4_define([_foreach],
-       [ifelse([$2], [()], ,
-       [m4_define([$1], _arg1$2)$3[]_foreach([$1],
-                                                       (shift$2),
-                                                       [$3])])])
 define(`COPYNULL', `
 	COPYNULL_EX(`dst->$1', `$2')DONE(`$1')
 ')
