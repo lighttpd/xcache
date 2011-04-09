@@ -232,5 +232,12 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 152 UNDEF                          */
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 153 UNDEF                          */
 # endif
+#else
+	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 107 UNDEF                          */
+	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 108 UNDEF                          */
+	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 109 UNDEF                          */
+	OPSPEC(     FCALL,        STD,     OPLINE,        VAR) /* 61 DO_FCALL_BY_FUNC                */
+	OPSPEC(INIT_FCALL,        STD,        STD,     UNUSED) /* 111 INIT_FCALL_BY_FUNC             */
+	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 112 UNDEF                          */
 #endif
 };
