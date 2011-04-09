@@ -1176,10 +1176,13 @@ static void xc_cache_early_binding_class_cb(zend_op *opline, int oplineno, void 
 #endif
 
 /* {{{ Constant Usage */
-#define xcache_op1_is_file 1
-#define xcache_op1_is_dir  2
-#define xcache_op2_is_file 4
-#define xcache_op2_is_dir  8
+#ifdef ZEND_ENGINE_2_4
+#else
+#	define xcache_op1_is_file 1
+#	define xcache_op1_is_dir  2
+#	define xcache_op2_is_file 4
+#	define xcache_op2_is_dir  8
+#endif
 typedef struct {
 	zend_bool filepath_used;
 	zend_bool dirpath_used;
@@ -1189,11 +1192,17 @@ typedef struct {
 /* }}} */
 static void xc_collect_op_array_info(xc_entry_t *xce, xc_entry_data_php_t *php, xc_const_usage_t *usage, xc_op_array_info_t *op_array_info, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
+#ifdef ZEND_ENGINE_2_4
 	int oplineno;
+#else
+	int oplineno;
+#endif
 	xc_vector_t vector_int;
 
 	xc_vector_init(int, &vector_int);
 
+#ifdef ZEND_ENGINE_2_4
+#else
 #define XCACHE_CHECK_OP(type, op) \
 	if (zend_binary_strcmp(Z_STRVAL(Z_OP_CONSTANT(opline->op)), Z_STRLEN(Z_OP_CONSTANT(opline->op)), xce->type##path, xce->type##path_len) == 0) { \
 		usage->type##path_used = 1; \
@@ -1243,16 +1252,19 @@ static void xc_collect_op_array_info(xc_entry_t *xce, xc_entry_data_php_t *php, 
 
 	op_array_info->oplineinfo_cnt = vector_int.cnt;
 	op_array_info->oplineinfos    = xc_vector_detach(int, &vector_int);
+#endif
 	xc_vector_free(int, &vector_int);
 }
 /* }}} */
 void xc_fix_op_array_info(const xc_entry_t *xce, const xc_entry_data_php_t *php, zend_op_array *op_array, int copy, const xc_op_array_info_t *op_array_info TSRMLS_DC) /* {{{ */
 {
+#ifdef ZEND_ENGINE_2_4
+#else
 	int i;
-	if (!op_array_info->oplineinfo_cnt) {
-		return;
-	}
+#endif
 
+#ifdef ZEND_ENGINE_2_4
+#else
 	for (i = 0; i < op_array_info->oplineinfo_cnt; i += 2) {
 		int oplineno = op_array_info->oplineinfos[i];
 		int oplineinfo = op_array_info->oplineinfos[i + 1];
@@ -1339,13 +1351,20 @@ void xc_fix_op_array_info(const xc_entry_t *xce, const xc_entry_data_php_t *php,
 			}
 		}
 	}
+#endif
 }
 /* }}} */
 static void xc_free_op_array_info(xc_op_array_info_t *op_array_info TSRMLS_DC) /* {{{ */
 {
+#ifdef ZEND_ENGINE_2_4
+	if (op_array_info->literalinfos) {
+		efree(op_array_info->literalinfos);
+	}
+#else
 	if (op_array_info->oplineinfos) {
 		efree(op_array_info->oplineinfos);
 	}
+#endif
 }
 /* }}} */
 static void xc_free_php(xc_entry_data_php_t *php TSRMLS_DC) /* {{{ */

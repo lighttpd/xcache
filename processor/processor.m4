@@ -84,7 +84,6 @@ DEF_STRUCT_P_FUNC(`zval', , `dnl {{{
 		DONE(refcount)
 #endif
 	} while(0);
-	return;
 	', `
 		dnl IFDASM else
 		/* Variable information */
@@ -322,6 +321,10 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	DISPATCH(zend_uint, ce_flags)
 #endif
 
+#ifdef ZEND_ENGINE_2
+	STRUCT(HashTable, properties_info, HashTable_zend_property_info)
+#endif
+
 #ifdef ZEND_ENGINE_2_4
 	DISPATCH(int, default_properties_count)
 	STRUCT_ARRAY(default_properties_count, zval, default_properties_table)
@@ -333,15 +336,12 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	IFCOPY(`dst->builtin_functions = src->builtin_functions;')
 	DONE(builtin_functions)
 	STRUCT(HashTable, default_properties, HashTable_zval_ptr)
-#	ifdef ZEND_ENGINE_2
-	STRUCT(HashTable, properties_info, HashTable_zend_property_info)
-#		ifdef ZEND_ENGINE_2_1
+#	ifdef ZEND_ENGINE_2_1
 	STRUCT(HashTable, default_static_members, HashTable_zval_ptr)
 	IFCOPY(`dst->static_members = &dst->default_static_members;')
 	DONE(static_members)
-#		else
+#	elif defined(ZEND_ENGINE_2)
 	STRUCT_P(HashTable, static_members, HashTable_zval_ptr)
-#		endif
 #	endif
 #endif /* ZEND_ENGINE_2_4 */
 
@@ -485,14 +485,21 @@ dnl }}}
 #ifdef ZEND_ENGINE_2_4
 undefine(`UNION_znode_op')
 define(`UNION_znode_op', `dnl {{{
-	assert(src->$1_type == IS_CONST ||
-		src->$1_type == IS_VAR ||
-		src->$1_type == IS_CV ||
-		src->$1_type == IS_TMP_VAR ||
-		src->$1_type == IS_UNUSED);
+	switch ((src->$1_type & ~EXT_TYPE_UNUSED)) {
+	case IS_CONST:
+	case IS_VAR:
+	case IS_CV:
+	case IS_TMP_VAR:
+	case IS_UNUSED:
+		break;
+
+	default:
+		assert(0);
+	}
+
 	dnl dirty dispatch
 	DISABLECHECK(`
-	switch (src->$1_type) {
+	switch ((src->$1_type & ~EXT_TYPE_UNUSED)) {
 		case IS_CONST:
 			dnl TODO: fix me, use literals
 			IFDASM(`{
@@ -658,10 +665,12 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		gc_arg_info = 1;
 #endif
 		IFRESTORE(`dst->filename = processor->entry_src->filepath;')
+#ifndef ZEND_ENGINE_2_4
 		if (op_array_info->oplineinfo_cnt) {
 			gc_opcodes = 1;
 			COPY_N_EX(last, zend_op, opcodes)
 		}
+#endif
 		if (gc_arg_info || gc_opcodes) {
 			xc_gc_op_array_t gc_op_array;
 #ifdef ZEND_ENGINE_2
@@ -888,8 +897,13 @@ DEF_STRUCT_P_FUNC(`xc_constinfo_t', , `dnl {{{
 dnl }}}
 #endif
 DEF_STRUCT_P_FUNC(`xc_op_array_info_t', , `dnl {{{
+#ifdef ZEND_ENGINE_2_4
+	DISPATCH(zend_uint, literalinfo_cnt)
+	DISPATCH_ARRAY(literalinfo_cnt, int, literalinfos)
+#else
 	DISPATCH(zend_uint, oplineinfo_cnt)
 	DISPATCH_ARRAY(oplineinfo_cnt, int, oplineinfos)
+#endif
 ')
 dnl }}}
 DEF_STRUCT_P_FUNC(`xc_funcinfo_t', , `dnl {{{

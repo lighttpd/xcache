@@ -258,8 +258,13 @@ typedef struct {
 /* }}} */
 /* {{{ xc_op_array_info_t */
 typedef struct {
+#ifdef ZEND_ENGINE_2_4
+	zend_uint literalinfo_cnt;
+	int *literalinfos;
+#else
 	zend_uint oplineinfo_cnt;
 	int *oplineinfos;
+#endif
 } xc_op_array_info_t;
 /* }}} */
 /* {{{ xc_classinfo_t */
