@@ -63,15 +63,15 @@ static int op_array_convert_switch(zend_op_array *op_array) /* {{{ */
 		if (opline->opcode != ZEND_BRK && opline->opcode != ZEND_CONT) {
 			continue;
 		}
-		if (opline->op2.op_type != IS_CONST
-		 || opline->op2.u.constant.type != IS_LONG) {
+		if (Z_OP_TYPE(opline->op2) != IS_CONST
+		 || Z_OP_CONSTANT(opline->op2).type != IS_LONG) {
 			return FAILURE;
 		}
 
-		nest_levels = opline->op2.u.constant.value.lval;
+		nest_levels = Z_OP_CONSTANT(opline->op2).value.lval;
 		original_nest_levels = nest_levels;
 
-		array_offset = opline->op1.u.opline_num;
+		array_offset = Z_OP(opline->op1).opline_num;
 		do {
 			if (array_offset == -1) {
 				/* this is a runtime error in ZE
@@ -95,12 +95,12 @@ static int op_array_convert_switch(zend_op_array *op_array) /* {{{ */
 
 		/* rewrite to jmp */
 		if (opline->opcode == ZEND_BRK) {
-			opline->op1.u.opline_num = jmp_to->brk;
+			Z_OP(opline->op1).opline_num = jmp_to->brk;
 		}
 		else {
-			opline->op1.u.opline_num = jmp_to->cont;
+			Z_OP(opline->op1).opline_num = jmp_to->cont;
 		}
-		opline->op2.op_type = IS_UNUSED;
+		Z_OP_TYPE(opline->op2) = IS_UNUSED;
 		opline->opcode = ZEND_JMP;
 	}
 
@@ -142,11 +142,11 @@ static int op_get_flowinfo(op_flowinfo_t *fi, zend_op *opline) /* {{{ */
 		return SUCCESS; /* no fall */
 
 	case ZEND_JMP:
-		fi->jmpout_op1 = opline->op1.u.opline_num;
+		fi->jmpout_op1 = Z_OP(opline->op1).opline_num;
 		return SUCCESS; /* no fall */
 
 	case ZEND_JMPZNZ:
-		fi->jmpout_op2 = opline->op2.u.opline_num;
+		fi->jmpout_op2 = Z_OP(opline->op2).opline_num;
 		fi->jmpout_ext = (int) opline->extended_value;
 		return SUCCESS; /* no fall */
 
@@ -167,7 +167,7 @@ static int op_get_flowinfo(op_flowinfo_t *fi, zend_op *opline) /* {{{ */
 	case ZEND_FE_RESET:
 #endif      
 	case ZEND_FE_FETCH:
-		fi->jmpout_op2 = opline->op2.u.opline_num;
+		fi->jmpout_op2 = Z_OP(opline->op2).opline_num;
 		break;
 
 #ifdef ZEND_CATCH
@@ -185,15 +185,16 @@ static int op_get_flowinfo(op_flowinfo_t *fi, zend_op *opline) /* {{{ */
 }
 /* }}} */
 #ifdef XCACHE_DEBUG
-static void op_snprint(char *buf, int size, znode *op) /* {{{ */
+static void op_snprint(char *buf, int size, zend_uchar op_type, znode_op *op) /* {{{ */
 {
-	switch (op->op_type) {
+	switch (op_type) {
 	case IS_CONST:
 		{
 			zval result;
-			zval *zv = &op->u.constant;
+			zval *zv = &Z_OP_CONSTANT(*op);
 			TSRMLS_FETCH();
 
+			/* TODO: update for PHP 6 */
 			php_start_ob_buffer(NULL, 0, 1 TSRMLS_CC);
 			php_var_export(&zv, 1 TSRMLS_CC);
 
@@ -205,17 +206,17 @@ static void op_snprint(char *buf, int size, znode *op) /* {{{ */
 		break;
 
 	case IS_TMP_VAR:
-		snprintf(buf, size, "t@%d", op->u.var);
+		snprintf(buf, size, "t@%d", Z_OP(*op).var);
 		break;
 
 	case XCACHE_IS_CV:
 	case IS_VAR:
-		snprintf(buf, size, "v@%d", op->u.var);
+		snprintf(buf, size, "v@%d", Z_OP(*op).var);
 		break;
 
 	case IS_UNUSED:
-		if (op->u.opline_num) {
-			snprintf(buf, size, "u#%d", op->u.opline_num);
+		if (Z_OP(*op).opline_num) {
+			snprintf(buf, size, "u#%d", Z_OP(op).opline_num);
 		}
 		else {
 			snprintf(buf, size, "-");
@@ -223,7 +224,7 @@ static void op_snprint(char *buf, int size, znode *op) /* {{{ */
 		break;
 
 	default:
-		snprintf(buf, size, "%d %d", op->op_type, op->u.var);
+		snprintf(buf, size, "%d %d", op->op_type, Z_OP(op).var);
 	}
 }
 /* }}} */
@@ -234,9 +235,9 @@ static void op_print(int line, zend_op *first, zend_op *end) /* {{{ */
 		char buf_r[20];
 		char buf_1[20];
 		char buf_2[20];
-		op_snprint(buf_r, sizeof(buf_r), &opline->result);
-		op_snprint(buf_1, sizeof(buf_1), &opline->op1);
-		op_snprint(buf_2, sizeof(buf_2), &opline->op2);
+		op_snprint(buf_r, sizeof(buf_r), Z_OP_TYPE(opline->result), &opline->result);
+		op_snprint(buf_1, sizeof(buf_1), Z_OP_TYPE(opline->op1),    &opline->op1);
+		op_snprint(buf_2, sizeof(buf_2), Z_OP_TYPE(opline->op2),    &opline->op2);
 		fprintf(stderr,
 				"%3d %3d"
 				" %-25s%-5s%-20s%-20s%5lu\r\n"
@@ -450,12 +451,12 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 		opline = pbb->opcodes + pbb->count - 1;
 		if (op_get_flowinfo(&fi, opline) == SUCCESS) {
 			if (fi.jmpout_op1 != XC_OPNUM_INVALID) {
-				opline->op1.u.opline_num = bbids[fi.jmpout_op1];
-				assert(opline->op1.u.opline_num != BBID_INVALID);
+				Z_OP(opline->op1).opline_num = bbids[fi.jmpout_op1];
+				assert(Z_OP(opline->op1).opline_num != BBID_INVALID);
 			}
 			if (fi.jmpout_op2 != XC_OPNUM_INVALID) {
-				opline->op2.u.opline_num = bbids[fi.jmpout_op2];
-				assert(opline->op2.u.opline_num != BBID_INVALID);
+				Z_OP(opline->op2).opline_num = bbids[fi.jmpout_op2];
+				assert(Z_OP(opline->op2).opline_num != BBID_INVALID);
 			}
 			if (fi.jmpout_ext != XC_OPNUM_INVALID) {
 				opline->extended_value = bbids[fi.jmpout_ext];
@@ -498,12 +499,12 @@ static void bbs_restore_opnum(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
 
 		if (op_get_flowinfo(&fi, last) == SUCCESS) {
 			if (fi.jmpout_op1 != XC_OPNUM_INVALID) {
-				last->op1.u.opline_num = bbs_get(bbs, fi.jmpout_op1)->opnum;
-				assert(last->op1.u.opline_num != BBID_INVALID);
+				Z_OP(last->op1).opline_num = bbs_get(bbs, fi.jmpout_op1)->opnum;
+				assert(Z_OP(last->op1).opline_num != BBID_INVALID);
 			}
 			if (fi.jmpout_op2 != XC_OPNUM_INVALID) {
-				last->op2.u.opline_num = bbs_get(bbs, fi.jmpout_op2)->opnum;
-				assert(last->op2.u.opline_num != BBID_INVALID);
+				Z_OP(last->op2).opline_num = bbs_get(bbs, fi.jmpout_op2)->opnum;
+				assert(Z_OP(last->op2).opline_num != BBID_INVALID);
 			}
 			if (fi.jmpout_ext != XC_OPNUM_INVALID) {
 				last->extended_value = bbs_get(bbs, fi.jmpout_ext)->opnum;

@@ -19,8 +19,8 @@
 #endif
 
 #define OP_ZVAL_DTOR(op) do { \
-	Z_UNSET_ISREF((op).u.constant); \
-	zval_dtor(&(op).u.constant); \
+	Z_UNSET_ISREF(Z_OP_CONSTANT(op)); \
+	zval_dtor(&Z_OP_CONSTANT(op)); \
 } while(0)
 xc_compile_result_t *xc_compile_result_init(xc_compile_result_t *cr, /* {{{ */
 		zend_op_array *op_array,
@@ -134,9 +134,11 @@ int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
 	zend_op *opline, *end;
 
+#ifndef ZEND_ENGINE_2_4
 	if (!op_array->done_pass_two) {
 		return 0;
 	}
+#endif
 
 	opline = op_array->opcodes;
 	end = opline + op_array->last;
@@ -147,8 +149,8 @@ int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 			case ZEND_GOTO:
 #endif
 			case ZEND_JMP:
-				opline->op1.u.opline_num = opline->op1.u.jmp_addr - op_array->opcodes;
-				assert(opline->op1.u.opline_num < op_array->last);
+				Z_OP(opline->op1).opline_num = Z_OP(opline->op1).jmp_addr - op_array->opcodes;
+				assert(Z_OP(opline->op1).opline_num < op_array->last);
 				break;
 			case ZEND_JMPZ:
 			case ZEND_JMPNZ:
@@ -157,14 +159,16 @@ int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 #ifdef ZEND_JMP_SET
 			case ZEND_JMP_SET:
 #endif
-				opline->op2.u.opline_num = opline->op2.u.jmp_addr - op_array->opcodes;
-				assert(opline->op2.u.opline_num < op_array->last);
+				Z_OP(opline->op2).opline_num = Z_OP(opline->op2).jmp_addr - op_array->opcodes;
+				assert(Z_OP(opline->op2).opline_num < op_array->last);
 				break;
 		}
 #endif
 		opline++;
 	}
+#ifndef ZEND_ENGINE_2_4
 	op_array->done_pass_two = 0;
+#endif
 
 	return 0;
 }
@@ -173,9 +177,11 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
 	zend_op *opline, *end;
 
+#ifndef ZEND_ENGINE_2_4
 	if (op_array->done_pass_two) {
 		return 0;
 	}
+#endif
 
 	/*
 	op_array->opcodes = (zend_op *) erealloc(op_array->opcodes, sizeof(zend_op)*op_array->last);
@@ -185,14 +191,14 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	opline = op_array->opcodes;
 	end = opline + op_array->last;
 	while (opline < end) {
-		if (opline->op1.op_type == IS_CONST) {
-			Z_SET_ISREF(opline->op1.u.constant);
-			Z_SET_REFCOUNT(opline->op1.u.constant, 2); /* Make sure is_ref won't be reset */
+		if (Z_OP_TYPE(opline->op1) == IS_CONST) {
+			Z_SET_ISREF(Z_OP_CONSTANT(opline->op1));
+			Z_SET_REFCOUNT(Z_OP_CONSTANT(opline->op1), 2); /* Make sure is_ref won't be reset */
 
 		}
-		if (opline->op2.op_type == IS_CONST) {
-			Z_SET_ISREF(opline->op2.u.constant);
-			Z_SET_REFCOUNT(opline->op2.u.constant, 2);
+		if (Z_OP_TYPE(opline->op2) == IS_CONST) {
+			Z_SET_ISREF(Z_OP_CONSTANT(opline->op2));
+			Z_SET_REFCOUNT(Z_OP_CONSTANT(opline->op2), 2);
 		}
 #ifdef ZEND_ENGINE_2_1
 		switch (opline->opcode) {
@@ -200,8 +206,8 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 			case ZEND_GOTO:
 #endif
 			case ZEND_JMP:
-				assert(opline->op1.u.opline_num < op_array->last);
-				opline->op1.u.jmp_addr = op_array->opcodes + opline->op1.u.opline_num;
+				assert(Z_OP(opline->op1).opline_num < op_array->last);
+				Z_OP(opline->op1).jmp_addr = op_array->opcodes + Z_OP(opline->op1).opline_num;
 				break;
 			case ZEND_JMPZ:
 			case ZEND_JMPNZ:
@@ -210,8 +216,8 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 #ifdef ZEND_JMP_SET
 			case ZEND_JMP_SET:
 #endif
-				assert(opline->op2.u.opline_num < op_array->last);
-				opline->op2.u.jmp_addr = op_array->opcodes + opline->op2.u.opline_num;
+				assert(Z_OP(opline->op2).opline_num < op_array->last);
+				Z_OP(opline->op2).jmp_addr = op_array->opcodes + Z_OP(opline->op2).opline_num;
 				break;
 		}
 		ZEND_VM_SET_OPCODE_HANDLER(opline);
@@ -219,38 +225,40 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 		opline++;
 	}
 
+#ifndef ZEND_ENGINE_2_4
 	op_array->done_pass_two = 1;
+#endif
 	return 0;
 }
 /* }}} */
 
 #ifdef HAVE_XCACHE_OPCODE_SPEC_DEF
-static void xc_fix_opcode_ex_znode(int tofix, xc_op_spec_t spec, znode *znode, int type TSRMLS_DC) /* {{{ */
+static void xc_fix_opcode_ex_znode(int tofix, xc_op_spec_t spec, zend_uchar *op_type, znode_op *op, int type TSRMLS_DC) /* {{{ */
 {
 #ifdef ZEND_ENGINE_2
-	if ((znode->op_type != IS_UNUSED && (spec == OPSPEC_UCLASS || spec == OPSPEC_CLASS)) ||
+	if ((*op_type != IS_UNUSED && (spec == OPSPEC_UCLASS || spec == OPSPEC_CLASS)) ||
 			spec == OPSPEC_FETCH) {
 		if (tofix) {
-			switch (znode->op_type) {
+			switch (*op_type) {
 			case IS_VAR:
 			case IS_TMP_VAR:
 				break;
 
 			default:
 				/* TODO: data lost, find a way to keep it */
-				/* assert(znode->op_type == IS_CONST); */
-				znode->op_type = IS_TMP_VAR;
+				/* assert(*op_type == IS_CONST); */
+				*op_type = IS_TMP_VAR;
 			}
 		}
 	}
-	switch (znode->op_type) {
+	switch (*op_type) {
 	case IS_TMP_VAR:
 	case IS_VAR:
 		if (tofix) {
-			znode->u.var /= sizeof(temp_variable);
+			Z_OP(*op).var /= sizeof(temp_variable);
 		}
 		else {
-			znode->u.var *= sizeof(temp_variable);
+			Z_OP(*op).var *= sizeof(temp_variable);
 		}
 	}
 #endif
@@ -269,9 +277,9 @@ static void xc_fix_opcode_ex(zend_op_array *op_array, int tofix TSRMLS_DC) /* {{
 			const xc_opcode_spec_t *spec;
 			spec = xc_get_opcode_spec(opline->opcode);
 
-			xc_fix_opcode_ex_znode(tofix, spec->op1, &opline->op1, 0 TSRMLS_CC);
-			xc_fix_opcode_ex_znode(tofix, spec->op2, &opline->op2, 1 TSRMLS_CC);
-			xc_fix_opcode_ex_znode(tofix, spec->res, &opline->result, 2 TSRMLS_CC);
+			xc_fix_opcode_ex_znode(tofix, spec->op1, &Z_OP_TYPE(opline->op1),    &opline->op1, 0 TSRMLS_CC);
+			xc_fix_opcode_ex_znode(tofix, spec->op2, &Z_OP_TYPE(opline->op2),    &opline->op2, 1 TSRMLS_CC);
+			xc_fix_opcode_ex_znode(tofix, spec->res, &Z_OP_TYPE(opline->result), &opline->result, 2 TSRMLS_CC);
 		}
 	}
 }
@@ -303,11 +311,11 @@ int xc_foreach_early_binding_class(zend_op_array *op_array, void (*callback)(zen
 			case ZEND_GOTO:
 #endif
 			case ZEND_JMP:
-				next = begin + opline->op1.u.opline_num;
+				next = begin + Z_OP(opline->op1).opline_num;
 				break;
 
 			case ZEND_JMPZNZ:
-				next = begin + max(opline->op2.u.opline_num, opline->extended_value);
+				next = begin + max(Z_OP(opline->op2).opline_num, opline->extended_value);
 				break;
 
 			case ZEND_JMPZ:
@@ -317,7 +325,7 @@ int xc_foreach_early_binding_class(zend_op_array *op_array, void (*callback)(zen
 #ifdef ZEND_JMP_SET
 			case ZEND_JMP_SET:
 #endif
-				next = begin + opline->op2.u.opline_num;
+				next = begin + Z_OP(opline->op2).opline_num;
 				break;
 
 			case ZEND_RETURN:
@@ -370,7 +378,7 @@ static int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, 
 				return FAILURE;
 			}
 
-			parent_name = &(opline - 1)->op2.u.constant;
+			parent_name = &(Z_OP_CONSTANT((opline - 1)->op2));
 			TRACE("binding with parent %s", Z_STRVAL_P(parent_name));
 			if (zend_lookup_class(Z_STRVAL_P(parent_name), Z_STRLEN_P(parent_name), &pce TSRMLS_CC) == FAILURE) {
 				return FAILURE;
@@ -386,7 +394,7 @@ static int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, 
 		 && (opline - 1)->opcode == ZEND_FETCH_CLASS) {
 			zend_op *fetch_class_opline = opline - 1;
 
-			TRACE("%s %p", Z_STRVAL(fetch_class_opline->op2.u.constant), Z_STRVAL(fetch_class_opline->op2.u.constant));
+			TRACE("%s %p", Z_STRVAL(Z_OP_CONSTANT(fetch_class_opline->op2)), Z_STRVAL(Z_OP_CONSTANT(fetch_class_opline->op2)));
 			OP_ZVAL_DTOR(fetch_class_opline->op2);
 			fetch_class_opline->opcode = ZEND_NOP;
 			ZEND_VM_SET_OPCODE_HANDLER(fetch_class_opline);
@@ -420,7 +428,7 @@ static int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, 
 		return FAILURE;
 	}
 
-	zend_hash_del(class_table, opline->op1.u.constant.value.str.val, opline->op1.u.constant.value.str.len);
+	zend_hash_del(class_table, Z_OP_CONSTANT(opline->op1).value.str.val, Z_OP_CONSTANT(opline->op1).value.str.len);
 	OP_ZVAL_DTOR(opline->op1);
 	OP_ZVAL_DTOR(opline->op2);
 	opline->opcode = ZEND_NOP;
@@ -511,7 +519,7 @@ ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, int op
 				cest, sizeof(xc_cest_t),
 				ZESW(&stored_ce_ptr, NULL)
 				) == FAILURE) {
-		CG(zend_lineno) = ZESW(0, cep->line_start);
+		CG(zend_lineno) = ZESW(0, Z_CLASS_INFO(*cep).line_start);
 #ifdef IS_UNICODE
 		zend_error(E_ERROR, "Cannot redeclare class %R", type, cep->name);
 #else

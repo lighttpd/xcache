@@ -222,11 +222,17 @@ DEF_STRUCT_P_FUNC(`zend_arg_info', , `
 	PROC_ZSTRING_L(, name, name_len)
 	DISPATCH(zend_uint, class_name_len)
 	PROC_ZSTRING_L(, class_name, class_name_len)
+#ifdef ZEND_ENGINE_2_4
+	DISPATCH(zend_uchar, type_hint)
+#else
 	DISPATCH(zend_bool, array_type_hint)
+#endif
 	DISPATCH(zend_bool, allow_null)
 	DISPATCH(zend_bool, pass_by_reference)
+#ifndef ZEND_ENGINE_2_4
 	DISPATCH(zend_bool, return_reference)
 	DISPATCH(int, required_num_args)
+#endif
 ')
 #endif
 dnl }}}
@@ -272,6 +278,9 @@ DEF_STRUCT_P_FUNC(`zend_property_info', , `
 	DISPATCH(int, name_length)
 	PROC_ZSTRING_L(, name, name_length)
 	DISPATCH(ulong, h)
+#ifdef ZEND_ENGINE_2_4
+	DISPATCH(int, offset)
+#endif
 #ifdef ZEND_ENGINE_2_1
 	DISPATCH(int, doc_comment_len)
 	PROC_ZSTRING_L(, doc_comment, doc_comment_len)
@@ -306,33 +315,59 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 #else
 	STRUCT_P(int, refcount)
 #endif
+#ifndef ZEND_ENGINE_2_4
 	DISPATCH(zend_bool, constants_updated)
+#endif
 #ifdef ZEND_ENGINE_2
 	DISPATCH(zend_uint, ce_flags)
 #endif
 
-	STRUCT(HashTable, default_properties, HashTable_zval_ptr)
+#ifdef ZEND_ENGINE_2_4
+	DISPATCH(int, default_properties_count)
+	STRUCT_ARRAY(default_properties_count, zval, default_properties_table)
+	DISPATCH(int, default_static_members_count)
+	STRUCT_ARRAY(default_static_members_count, zval, default_static_members_table)
+	IFCOPY(`dst->static_members_table = &dst->default_static_members_table;')
+	DONE(static_members_table)
+#else
 	IFCOPY(`dst->builtin_functions = src->builtin_functions;')
 	DONE(builtin_functions)
-#ifdef ZEND_ENGINE_2
+	STRUCT(HashTable, default_properties, HashTable_zval_ptr)
+#	ifdef ZEND_ENGINE_2
 	STRUCT(HashTable, properties_info, HashTable_zend_property_info)
-#	ifdef ZEND_ENGINE_2_1
+#		ifdef ZEND_ENGINE_2_1
 	STRUCT(HashTable, default_static_members, HashTable_zval_ptr)
 	IFCOPY(`dst->static_members = &dst->default_static_members;')
 	DONE(static_members)
-#	else
+#		else
 	STRUCT_P(HashTable, static_members, HashTable_zval_ptr)
+#		endif
 #	endif
+#endif /* ZEND_ENGINE_2_4 */
+
+#ifdef ZEND_ENGINE_2
 	STRUCT(HashTable, constants_table, HashTable_zval_ptr)
 
 	dnl runtime binding: ADD_INTERFACE will deal with it
+	dnl runtime binding: ADD_TRAIT will deal with it
 	IFRESTORE(`
 		if (src->num_interfaces) {
 			CALLOC(dst->interfaces, zend_class_entry*, src->num_interfaces)
 			DONE(`interfaces')
+#	ifdef ZEND_ENGINE_2_4
+			CALLOC(dst->traits, zend_class_entry*, src->num_traits)
+			DONE(`traits')
+			DONE(`trait_aliases')
+			DONE(`trait_precedences')
+#	endif
 		}
 		else {
-			COPYNULL(interfaces)
+			COPYNULL(`interfaces')
+#	ifdef ZEND_ENGINE_2_4
+			COPYNULL(`traits')
+			COPYNULL(`trait_aliases')
+			COPYNULL(`trait_precedences')
+#	endif
 		}
 	')
 	IFDASM(`
@@ -350,25 +385,55 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 			add_assoc_zval_ex(dst, ZEND_STRS("interfaces"), arr);
 			*/
 			DONE(`interfaces')
+#	ifdef ZEND_ENGINE_2_4
+			DONE(`traits')
+			DONE(`trait_aliases')
+			DONE(`trait_precedences')
+#	endif
 		}
 		else {
-			COPYNULL(interfaces)
+			COPYNULL(`interfaces')
+#	ifdef ZEND_ENGINE_2_4
+			COPYNULL(`traits')
+			COPYNULL(`trait_aliases')
+			COPYNULL(`trait_precedences')
+#	endif
 		}
 	')
 	IFRESTORE(`', `
 		IFDASM(`', `
 			DONE(`interfaces')
+#	ifdef ZEND_ENGINE_2_4
+			DONE(`traits')
+			DONE(`trait_aliases')
+			DONE(`trait_precedences')
+#	endif
 		')
 	')
 	DISPATCH(zend_uint, num_interfaces)
+#	ifdef ZEND_ENGINE_2_4
+	DISPATCH(zend_uint, num_traits)
+#	endif
 
+#	ifdef ZEND_ENGINE_2_4
+	DISABLECHECK(`
+	IFRESTORE(`dst->info.user.filename = processor->entry_src->filepath;', `PROC_STRING(info.user.filename)')
+	DISPATCH(zend_uint, info.user.line_start)
+	DISPATCH(zend_uint, info.user.line_end)
+	DISPATCH(zend_uint, info.user.doc_comment_len)
+	PROC_ZSTRING_L(, info.user.doc_comment, info.user.doc_comment_len)
+	')
+	DONE(info)
+#	else
 	IFRESTORE(`dst->filename = processor->entry_src->filepath;DONE(filename)', `PROC_STRING(filename)')
 	DISPATCH(zend_uint, line_start)
 	DISPATCH(zend_uint, line_end)
-#ifdef ZEND_ENGINE_2_1
+#		ifdef ZEND_ENGINE_2_1
 	DISPATCH(zend_uint, doc_comment_len)
 	PROC_ZSTRING_L(, doc_comment, doc_comment_len)
-#endif
+#		endif
+#	endif
+
 	/* # NOT DONE */
 	COPY(serialize_func)
 	COPY(unserialize_func)
@@ -376,9 +441,9 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	COPY(create_object)
 	COPY(get_iterator)
 	COPY(interface_gets_implemented)
-#ifdef ZEND_ENGINE_2_3
+#	ifdef ZEND_ENGINE_2_3
 	COPY(get_static_method)
-#endif
+#	endif
 	COPY(serialize)
 	COPY(unserialize)
 	/* deal with it inside xc_fix_method */
@@ -388,20 +453,22 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	COPY(__get)
 	COPY(__set)
 /* should be >5.1 */
-#ifdef ZEND_ENGINE_2_1
+#	ifdef ZEND_ENGINE_2_1
 	COPY(__unset)
 	COPY(__isset)
-# if defined(ZEND_ENGINE_2_2) || PHP_MAJOR_VERSION >= 6
+#	 if defined(ZEND_ENGINE_2_2) || PHP_MAJOR_VERSION >= 6
 	COPY(__tostring)
-# endif
-#endif
+#	 endif
+#	endif
 	COPY(__call)
-#ifdef ZEND_CALLSTATIC_FUNC_NAME
+#	ifdef ZEND_CALLSTATIC_FUNC_NAME
 	COPY(__callstatic)
-#endif
+#	endif
+#	ifndef ZEND_ENGINE_2_4
 	/* # NOT DONE */
 	COPY(module)
-#else
+#	endif
+#else /* ZEND_ENGINE_2 */
 	COPY(handle_function_call)
 	COPY(handle_property_get)
 	COPY(handle_property_set)
@@ -415,6 +482,52 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	')
 ')
 dnl }}}
+#ifdef ZEND_ENGINE_2_4
+undefine(`UNION_znode_op')
+define(`UNION_znode_op', `dnl {{{
+	assert(src->$1_type == IS_CONST ||
+		src->$1_type == IS_VAR ||
+		src->$1_type == IS_CV ||
+		src->$1_type == IS_TMP_VAR ||
+		src->$1_type == IS_UNUSED);
+	dnl dirty dispatch
+	DISABLECHECK(`
+	switch (src->$1_type) {
+		case IS_CONST:
+			dnl TODO: fix me, use literals
+			IFDASM(`{
+				zval *zv;
+				ALLOC_INIT_ZVAL(zv);
+				*zv = ((zend_literal *) src->$1.ptr)->constant;
+				zval_copy_ctor(zv);
+				add_assoc_zval_ex(dst, ZEND_STRS("$1.constant"), zv);
+				}
+			', `
+				DISPATCH(zend_uint, $1.constant)
+			')
+			break;
+		IFCOPY(`
+			IFNOTMEMCPY(`
+				default:
+					*dst = *src;
+			')
+		', `
+		case IS_VAR:
+		case IS_TMP_VAR:
+		case IS_CV:
+			DISPATCH(zend_uint, $1.var)
+			break;
+		case IS_UNUSED:
+			IFDASM(`DISPATCH(zend_uint, $1.var)')
+			DISPATCH(zend_uint, $1.opline_num)
+			break;
+		')
+	}
+	')
+	DONE($1)
+')
+dnl }}}
+#else
 DEF_STRUCT_P_FUNC(`znode', , `dnl {{{
 	DISPATCH(int, op_type)
 
@@ -459,24 +572,39 @@ DEF_STRUCT_P_FUNC(`znode', , `dnl {{{
 	}
 	')
 	DONE(u)
+#if 0
+	DONE(EA)
+#endif
 #undef XCACHE_IS_CV
 ')
 dnl }}}
+#endif
 DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 	DISPATCH(zend_uchar, opcode)
+#ifdef ZEND_ENGINE_2_4
+	UNION_znode_op(result)
+	UNION_znode_op(op1)
+	UNION_znode_op(op2)
+#else
 	STRUCT(znode, result)
 	STRUCT(znode, op1)
 	STRUCT(znode, op2)
+#endif
 	DISPATCH(ulong, extended_value)
 	DISPATCH(uint, lineno)
 #ifdef ZEND_ENGINE_2_1
+#ifdef ZEND_ENGINE_2_4
+	DISPATCH(zend_uchar, op1_type)
+	DISPATCH(zend_uchar, op2_type)
+	DISPATCH(zend_uchar, result_type)
+#endif
 	IFCOPY(`
 		switch (src->opcode) {
 #ifdef ZEND_GOTO
 			case ZEND_GOTO:
 #endif
 			case ZEND_JMP:
-				dst->op1.u.jmp_addr = processor->active_opcodes_dst + (src->op1.u.jmp_addr - processor->active_opcodes_src);
+				Z_OP(dst->op1).jmp_addr = processor->active_opcodes_dst + (Z_OP(src->op1).jmp_addr - processor->active_opcodes_src);
 				break;
 
 			case ZEND_JMPZ:
@@ -486,7 +614,7 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 #ifdef ZEND_JMP_SET
 			case ZEND_JMP_SET:
 #endif
-				dst->op2.u.jmp_addr = processor->active_opcodes_dst + (src->op2.u.jmp_addr - processor->active_opcodes_src);
+				Z_OP(dst->op2).jmp_addr = processor->active_opcodes_dst + (Z_OP(src->op2).jmp_addr - processor->active_opcodes_src);
 				break;
 
 			default:
@@ -497,6 +625,14 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 #endif
 ')
 dnl }}}
+#ifdef ZEND_ENGINE_2_4
+DEF_STRUCT_P_FUNC(`zend_literal', , `dnl {{{
+	STRUCT(zval, constant)
+	DISPATCH(zend_ulong, hash_value)
+	DISPATCH(zend_uint,  cache_slot)
+')
+dnl }}}
+#endif
 DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	IFRESTORE(`
 	const xc_op_array_info_t *op_array_info = &processor->active_op_array_infos_src[processor->active_op_array_index];
@@ -551,7 +687,9 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	STRUCT_ARRAY(num_args, zend_arg_info, arg_info)
 	DISPATCH(zend_uint, num_args)
 	DISPATCH(zend_uint, required_num_args)
+#	ifndef ZEND_ENGINE_2_4
 	DISPATCH(zend_bool, pass_rest_by_reference)
+#	endif
 #else
 	if (src->arg_types) {
 		ALLOC(dst->arg_types, zend_uchar, src->arg_types[0] + 1)
@@ -582,7 +720,9 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		')
 	}
 #endif
+#ifndef ZEND_ENGINE_2_4
 	DISPATCH(unsigned char, return_reference)
+#endif
 	/* END of common elements */
 #ifdef IS_UNICODE
 	dnl SETNULL(u_twin)
@@ -599,12 +739,16 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	STRUCT_ARRAY(last, zend_op, opcodes)
 	popdef(`AFTER_ALLOC')
 	DISPATCH(zend_uint, last)
+#ifndef ZEND_ENGINE_2_4
 	IFCOPY(`dst->size = src->last;DONE(size)', `DISPATCH(zend_uint, size)')
+#endif
 
 #ifdef IS_CV
 	STRUCT_ARRAY(last_var, zend_compiled_variable, vars)
 	DISPATCH(int, last_var)
+#	ifndef ZEND_ENGINE_2_4
 	IFCOPY(`dst->size_var = src->last_var;DONE(size_var)', `DISPATCH(zend_uint, size_var)')
+#	endif
 #else
 	dnl zend_cv.m4 is illegal to be made public, don not ask me for it
 	IFDASM(`
@@ -616,7 +760,9 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 
 	STRUCT_ARRAY(last_brk_cont, zend_brk_cont_element, brk_cont_array)
 	DISPATCH(zend_uint, last_brk_cont)
+#ifndef ZEND_ENGINE_2_4
 	DISPATCH(zend_uint, current_brk_cont)
+#endif
 #ifndef ZEND_ENGINE_2
 	DISPATCH(zend_bool, uses_globals)
 #endif
@@ -628,13 +774,17 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 
 	STRUCT_P(HashTable, static_variables, HashTable_zval_ptr)
 
+#ifndef ZEND_ENGINE_2_4
 	COPY(start_op)
 	DISPATCH(int, backpatch_count)
+#endif
 #ifdef ZEND_ENGINE_2_3
 	DISPATCH(zend_uint, this_var)
 #endif
 
+#ifndef ZEND_ENGINE_2_4
 	DISPATCH(zend_bool, done_pass_two)
+#endif
 	/* 5.0 <= ver < 5.3 */
 #if defined(ZEND_ENGINE_2) && !defined(ZEND_ENGINE_2_3)
 	DISPATCH(zend_bool, uses_this)
@@ -696,6 +846,14 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 				COPYNULL(prototype)
 			')
 	')
+#ifdef ZEND_ENGINE_2_4
+	DISPATCH(int, last_literal)
+	IFRESTORE(`COPY(literals)', `STRUCT_ARRAY(last_literal, zend_literal, literals)')
+
+	COPYNULL(run_time_cache)
+	COPYNULL(last_cache_slot)
+#endif
+
 #endif
 
 #ifdef ZEND_ENGINE_2
