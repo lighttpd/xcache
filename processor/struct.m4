@@ -29,11 +29,10 @@ define(`DEF_STRUCT_P_FUNC', `
 DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 	{
 		pushdef(`ELEMENTS_DONE')
-		ifdef(`SIZEOF_$1', , `m4_errprint(`AUTOCHECK WARN: $1: missing structinfo, dont panic')define(`SIZEOF_$1', 0)')
 		IFASSERT(`
 			/* {{{ init assert */
-			ifdef(`SIZEOF_$1', , `m4_errprint(`missing SIZEOF_$1, safe to ignore')define(`SIZEOF_$1', 0)')
-			ifdef(`COUNTOF_$1', , `m4_errprint(`missing COUNTOF_$1, safe to ignore')define(`COUNTOF_$1', 0)')
+			ifdef(`SIZEOF_$1', , `m4_errprint(`missing SIZEOF_$1, safe to ignore')')
+			ifdef(`COUNTOF_$1', , `m4_errprint(`missing COUNTOF_$1, safe to ignore'))')
 			dnl SIZEOF_x COUNTOF_x can be both defined or both not
 			ifdef(`SIZEOF_$1', `
 				ifdef(`COUNTOF_$1', , `m4_errprint(`AUTOCHECK WARN: missing COUNTOF_$1')')
@@ -47,11 +46,15 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 			')
 			int assert_size = SIZEOF_$1, assert_count = COUNTOF_$1;
 			int done_size = 0, done_count = 0;
+			const char *assert_names[] = { ifdef(`ELEMENTSOF_$1', `ELEMENTSOF_$1') };
+			HashTable done_names;
+			zend_hash_init(&done_names, 0, NULL, NULL, 0);
 			/* }}} */
 			IFRESTORE(`assert(xc_is_shm(src));')
 			IFCALCSTORE(`assert(!xc_is_shm(src));')
 			do {
 		')
+		ifdef(`SIZEOF_$1', , `m4_errprint(`AUTOCHECK WARN: $1: missing structinfo, dont panic')')
 
 		ifdef(`USEMEMCPY', `IFCOPY(`
 			memcpy(dst, src, sizeof($1));
@@ -67,9 +70,17 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 			indent --;
 			INDENT()fprintf(stderr, "}\n");
 		')
-		ifdef(`SKIPASSERT_ONCE', `undefine(`SKIPASSERT_ONCE')', `
+		ifdef(`SKIPASSERT_ONCE', `
+			undefine(`SKIPASSERT_ONCE')
 			IFASSERT(`
-				/* {{{ check assert */
+				zend_hash_destroy(&done_names);
+			')
+		', `
+			IFASSERT(`
+			/* {{{ check assert */ do {
+				int name_check_errors = xc_check_names(__FILE__, __LINE__, "FUNC_NAME", assert_names, sizeof(assert_names) / sizeof(assert_names[0]), &done_names);
+				zend_hash_destroy(&done_names);
+
 				if (done_count != assert_count) {
 					fprintf(stderr
 						, "count assertion failed at %s `#'%d FUNC_NAME`' : unexpected:%d - expecting:%d = %d != 0\n"
@@ -84,10 +95,10 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 						, done_size, assert_size, done_size - assert_size
 						);
 				}
-				if (done_count != assert_count || done_size != assert_size) {
+				if (name_check_errors || done_count != assert_count || done_size != assert_size) {
 					assert(0);
 				}
-				/* }}} */
+			} while (0); /* }}} */
 			')
 			ifdef(`ELEMENTSOF_$1', `
 				pushdef(`ELEMENTS_UNDONE', LIST_DIFF(defn(`ELEMENTSOF_$1'), defn(`ELEMENTS_DONE')))

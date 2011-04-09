@@ -205,12 +205,25 @@ foreach(`i', `($1)', `popdef(`item_'defn(`i'))')dnl
 ')
 dnl }}}
 dnl {{{ DONE_*
-define(`DONE_SIZE', `IFASSERT(`
+define(`DONE_SIZE', `IFASSERT(`dnl
 	done_size += $1`';
 	done_count ++;
 ')')
 define(`DONE', `
-	define(`ELEMENTS_DONE', defn(`ELEMENTS_DONE')`,$1')
+	define(`ELEMENTS_DONE', defn(`ELEMENTS_DONE')`,"$1"')
+	IFASSERT(`dnl
+		if (zend_hash_exists(&done_names, "$1", sizeof("$1"))) {
+			fprintf(stderr
+				, "duplicate field at %s `#'%d FUNC_NAME`' : %s\n"
+				, __FILE__, __LINE__
+				, "$1"
+				);
+		}
+		else {
+			zend_uchar b = 1;
+			zend_hash_add(&done_names, "$1", sizeof("$1"), (void*)&b, sizeof(b), NULL);
+		}
+	')
 	DONE_SIZE(`sizeof(src->$1)')
 ')
 define(`DISABLECHECK', `
