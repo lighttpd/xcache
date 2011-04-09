@@ -800,7 +800,12 @@ class Decompiler
 							break;
 						case ZEND_FETCH_CLASS_PARENT:
 							$class = 'parent';
+							break;
+						case ZEND_FETCH_CLASS_STATIC:
+							$class = 'static';
+							break;
 						}
+						$istmpres = true;
 					}
 					else {
 						$class = $op2['constant'];
@@ -1062,17 +1067,12 @@ class Decompiler
 						break;
 					}
 					array_push($EX['arg_types_stack'], array($EX['fbc'], $EX['object'], $EX['called_scope']));
-					if ($opc == XC_INIT_STATIC_METHOD_CALL) {
-						$EX['object'] = null;
-						$EX['called_scope'] = $op1['var'];
-					}
-					else if ($opc == XC_INIT_METHOD_CALL || $op1['op_type'] != XC_IS_UNUSED) {
+					if ($opc == XC_INIT_STATIC_METHOD_CALL || $opc == XC_INIT_METHOD_CALL || $op1['op_type'] != XC_IS_UNUSED) {
 						$obj = $this->getOpVal($op1, $EX);
 						if (!isset($obj)) {
 							$obj = '$this';
 						}
-						// looks like PHP4 only
-						if (isset($op1['constant'])) {
+						if ($opc == XC_INIT_STATIC_METHOD_CALL || /* PHP4 */ isset($op1['constant'])) {
 							$EX['object'] = null;
 							$EX['called_scope'] = $this->unquoteName($obj);
 						}
@@ -1864,6 +1864,7 @@ define('ZEND_FETCH_CLASS_MAIN',       3);
 define('ZEND_FETCH_CLASS_GLOBAL',     4);
 define('ZEND_FETCH_CLASS_AUTO',       5);
 define('ZEND_FETCH_CLASS_INTERFACE',  6);
+define('ZEND_FETCH_CLASS_STATIC',     7);
 
 define('ZEND_EVAL',               (1<<0));
 define('ZEND_INCLUDE',            (1<<1));
