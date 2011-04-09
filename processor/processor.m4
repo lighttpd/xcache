@@ -822,6 +822,13 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 #if defined(HARDENING_PATCH) && HARDENING_PATCH
 	DISPATCH(zend_bool, created_by_eval)
 #endif
+#ifdef ZEND_ENGINE_2_4
+	DISPATCH(int, last_literal)
+	IFRESTORE(`COPY(literals)', `STRUCT_ARRAY(last_literal, zend_literal, literals)')
+
+	COPYNULL(run_time_cache)
+	COPYNULL(last_cache_slot)
+#endif
 	} while (0);
 	IFRESTORE(`xc_fix_op_array_info(processor->entry_src, processor->php_src, dst, !shallow_copy, op_array_info TSRMLS_CC);')
 
@@ -855,13 +862,6 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 				COPYNULL(prototype)
 			')
 	')
-#ifdef ZEND_ENGINE_2_4
-	DISPATCH(int, last_literal)
-	IFRESTORE(`COPY(literals)', `STRUCT_ARRAY(last_literal, zend_literal, literals)')
-
-	COPYNULL(run_time_cache)
-	COPYNULL(last_cache_slot)
-#endif
 
 #endif
 
