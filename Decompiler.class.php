@@ -1669,7 +1669,7 @@ class Decompiler
 		}
 		// }}}
 		// {{{ properties
-		if (!empty($class['default_properties'])) {
+		if (!empty($class['default_properties']) || !empty($class['default_static_members'])) {
 			echo "\n";
 			$infos = !empty($class['properties_info']) ? $class['properties_info'] : null;
 			foreach (!empty($class['properties_info']) ? $class['properties_info'] : ($class['default_static_members'] + $class['default_properties']) as $name => $dummy) {
