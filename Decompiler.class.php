@@ -1020,7 +1020,17 @@ class Decompiler
 					else {
 						$container = $this->getOpVal($op1, $EX);
 						$dim = $this->getOpVal($op2, $EX);
-						$rvalue = $container . "[$dim]";
+						if ($opc == XC_ISSET_ISEMPTY_PROP_OBJ) {
+							if (preg_match($this->rQuotedName, $dim)) {
+								$rvalue = $container . "->" . substr($dim, 1, -1);
+							}
+							else {
+								$rvalue = $container . "->{" . $dim . "}";
+							}
+						}
+						else {
+							$rvalue = $container . "[$dim]";
+						}
 					}
 
 					switch ((PHP_VERSION < 5 ? $op['op2']['var'] /* constant */ : $ext) & (ZEND_ISSET|ZEND_ISEMPTY)) {
