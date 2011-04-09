@@ -3,7 +3,6 @@
 
 1.3.2 2011-??-??
 ========
- * PHP_6: catch up with php 6 devel
  * memory leak on recompile
  * disassembler fixes and updates for new PHP
  * win32 build fix
