@@ -19,6 +19,11 @@ zend_uchar xc_get_opcode_spec_count()
 
 const xc_opcode_spec_t *xc_get_opcode_spec(zend_uchar opcode)
 {
+#ifndef NDEBUG
+	if (xc_get_opcode_count() != xc_get_opcode_spec_count()) {
+		fprintf(stderr, "count mismatch: xc_get_opcode_count=%d, xc_get_opcode_spec_count=%d\n", xc_get_opcode_count(), xc_get_opcode_spec_count());
+	}
+#endif
 	assert(xc_get_opcode_count() == xc_get_opcode_spec_count());
 	assert(opcode < xc_get_opcode_spec_count());
 	return &xc_opcode_spec[opcode];

@@ -64,7 +64,6 @@ define(`DEF_HASH_TABLE_FUNC', `
 			')
 
 			efree(buf);
-			return; /* no check size */
 		', `
 		dnl }}}
 		Bucket *b, *pnew = NULL, *prev = NULL;

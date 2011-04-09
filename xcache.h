@@ -21,14 +21,17 @@
 #include "lock.h"
 
 #define HAVE_INODE
-#if !defined(ZEND_ENGINE_2_1) && (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 1 || PHP_MAJOR_VERSION > 5)
-#	define ZEND_ENGINE_2_1
+#if !defined(ZEND_ENGINE_2_4) && (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION == 3 && PHP_RELEASE_VERSION >= 99 || PHP_MAJOR_VERSION > 5)
+#	define ZEND_ENGINE_2_4
 #endif
-#if !defined(ZEND_ENGINE_2_2) && (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 2 || PHP_MAJOR_VERSION > 5)
+#if !defined(ZEND_ENGINE_2_3) && (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION == 3 || defined(ZEND_ENGINE_2_4))
+#	define ZEND_ENGINE_2_3
+#endif
+#if !defined(ZEND_ENGINE_2_2) && (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION == 2 || defined(ZEND_ENGINE_2_3))
 #	define ZEND_ENGINE_2_2
 #endif
-#if !defined(ZEND_ENGINE_2_3) && (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 3 || PHP_MAJOR_VERSION > 5)
-#	define ZEND_ENGINE_2_3
+#if !defined(ZEND_ENGINE_2_1) && (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION == 1 || defined(ZEND_ENGINE_2_2))
+#	define ZEND_ENGINE_2_1
 #endif
 
 #define NOTHING
@@ -88,6 +91,22 @@ static inline void my_add_assoc_null_ex(zval *arg, char *key, uint key_len)
 #	undef add_assoc_null_ex
 #	define add_assoc_null_ex my_add_assoc_null_ex
 #endif
+
+#ifdef ZEND_ENGINE_2_4
+#	define Z_OP(op) (op)
+#	define Z_OP_CONSTANT(op) (op).literal->constant
+#	define Z_OP_TYPE(op) op##_##type
+
+#	define Z_CLASS_INFO(className) (className).info.user
+#else
+#	define Z_OP(op) (op).u
+#	define Z_OP_CONSTANT(op) (op).u.constant
+#	define Z_OP_TYPE(op) (op).op_type
+typedef znode znode_op;
+
+#	define Z_CLASS_INFO(className) (className)
+#endif
+
 /* }}} */
 
 /* unicode */

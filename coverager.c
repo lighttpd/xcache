@@ -378,25 +378,23 @@ static void xc_coverager_add_hits(HashTable *cov, long line, long hits TSRMLS_DC
 
 static int xc_coverager_get_op_array_size_no_tail(zend_op_array *op_array) /* {{{ */
 {
-	zend_uint size;
-
-	size = op_array->size;
+	zend_uint last = op_array->last;
 	do {
 next_op:
-		if (size == 0) {
+		if (last == 0) {
 			break;
 		}
-		switch (op_array->opcodes[size - 1].opcode) {
+		switch (op_array->opcodes[last - 1].opcode) {
 #ifdef ZEND_HANDLE_EXCEPTION
 			case ZEND_HANDLE_EXCEPTION:
 #endif
 			case ZEND_RETURN:
 			case ZEND_EXT_STMT:
-				size --;
+				--last;
 				goto next_op;
 		}
 	} while (0);
-	return size;
+	return last;
 }
 /* }}} */
 
