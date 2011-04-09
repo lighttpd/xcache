@@ -930,8 +930,8 @@ static void xc_cache_early_binding_class_cb(zend_op *opline, int oplineno, void 
 	xc_cest_t cest;
 	xc_entry_data_php_t *php = (xc_entry_data_php_t *) data;
 
-	class_name = opline->op1.u.constant.value.str.val;
-	class_len  = opline->op1.u.constant.value.str.len;
+	class_name = Z_OP_CONSTANT(opline->op1).value.str.val;
+	class_len  = Z_OP_CONSTANT(opline->op1).value.str.len;
 	if (zend_hash_find(CG(class_table), class_name, class_len, (void **) &cest) == FAILURE) {
 		assert(0);
 	}
@@ -2436,21 +2436,22 @@ PHP_FUNCTION(xcache_get_special_value)
 		return;
 	}
 
-	if (value->type == IS_CONSTANT) {
+	switch ((Z_TYPE_P(value) & IS_CONSTANT_TYPE_MASK)) {
+	case IS_CONSTANT:
 		*return_value = *value;
 		zval_copy_ctor(return_value);
 		return_value->type = UNISW(IS_STRING, UG(unicode) ? IS_UNICODE : IS_STRING);
-		return;
-	}
+		break;
 
-	if (value->type == IS_CONSTANT_ARRAY) {
+	case IS_CONSTANT_ARRAY:
 		*return_value = *value;
 		zval_copy_ctor(return_value);
 		return_value->type = IS_ARRAY;
-		return;
-	}
+		break;
 
-	RETURN_NULL();
+	default:
+		RETURN_NULL();
+	}
 }
 /* }}} */
 /* {{{ proto string xcache_coredump(int op_type) */
@@ -2477,7 +2478,7 @@ PHP_FUNCTION(xcache_is_autoglobal)
 	RETURN_BOOL(zend_hash_exists(CG(auto_globals), name, name_len + 1));
 }
 /* }}} */
-static function_entry xcache_functions[] = /* {{{ */
+static zend_function_entry xcache_functions[] = /* {{{ */
 {
 	PHP_FE(xcache_count,             NULL)
 	PHP_FE(xcache_info,              NULL)
