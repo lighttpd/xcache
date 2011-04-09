@@ -22,7 +22,6 @@ static void xc_dasm(xc_sandbox_t *sandbox, zval *dst, zend_op_array *op_array TS
 	xc_compile_result_t cr;
 	int bufsize = 2;
 	char *buf;
-	int keysize;
 
 	xc_compile_result_init_cur(&cr, op_array TSRMLS_CC);
 
@@ -45,7 +44,7 @@ static void xc_dasm(xc_sandbox_t *sandbox, zval *dst, zend_op_array *op_array TS
 		array_init(zv);
 		xc_dasm_zend_function(zv, b->pData TSRMLS_CC);
 
-		add_u_assoc_zval_ex(list, BUCKET_KEY_TYPE(b), b->arKey, b->nKeyLength, zv);
+		add_u_assoc_zval_ex(list, BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY_S(b)), b->nKeyLength, zv);
 	}
 	add_assoc_zval_ex(dst, ZEND_STRS("function_table"), list);
 	
@@ -54,6 +53,8 @@ static void xc_dasm(xc_sandbox_t *sandbox, zval *dst, zend_op_array *op_array TS
 	array_init(list);
 	b = TG(internal_class_tail) ? TG(internal_class_tail)->pListNext : TG(class_table).pListHead;
 	for (; b; b = b->pListNext) {
+		int keysize, keyLength;
+
 		ALLOC_INIT_ZVAL(zv);
 		array_init(zv);
 		xc_dasm_zend_class_entry(zv, CestToCePtr(*(xc_cest_t *)b->pData) TSRMLS_CC);
@@ -67,20 +68,20 @@ static void xc_dasm(xc_sandbox_t *sandbox, zval *dst, zend_op_array *op_array TS
 		}
 		memcpy(buf, BUCKET_KEY_S(b), keysize);
 		buf[keysize - 2] = buf[keysize - 1] = ""[0];
-		keysize = b->nKeyLength;
+		keyLength = b->nKeyLength;
 #ifdef IS_UNICODE
 		if (BUCKET_KEY_TYPE(b) == IS_UNICODE) {
 			if (buf[0] == ""[0] && buf[1] == ""[0]) {
-				keysize ++;
+				keyLength ++;
 			}
 		} else
 #endif
 		{
 			if (buf[0] == ""[0]) {
-				keysize ++;
+				keyLength ++;
 			}
 		}
-		add_u_assoc_zval_ex(list, BUCKET_KEY_TYPE(b), ZSTR(buf), b->nKeyLength, zv);
+		add_u_assoc_zval_ex(list, BUCKET_KEY_TYPE(b), ZSTR(buf), keyLength, zv);
 	}
 	efree(buf);
 	add_assoc_zval_ex(dst, ZEND_STRS("class_table"), list);

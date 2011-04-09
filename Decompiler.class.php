@@ -1072,15 +1072,17 @@ class Decompiler
 					break;
 					// }}}
 				case XC_DECLARE_CLASS: 
-				case XC_DECLARE_INHERITED_CLASS: // {{{
+				case XC_DECLARE_INHERITED_CLASS:
+				case XC_DECLARE_INHERITED_CLASS_DELAYED: // {{{
 					$key = $op1['u.constant'];
-					$class = &$this->dc['class_table'][$key];
-					if (!isset($class)) {
-						echo 'class not found: ' . $key;
+					if (!isset($this->dc['class_table'][$key])) {
+						echo 'class not found: ', $key, 'existing classes are:', "\n";
+						var_dump(array_keys($this->dc['class_table']));
 						exit;
 					}
+					$class = &$this->dc['class_table'][$key];
 					$class['name'] = $this->unquoteName($this->getOpVal($op2, $EX));
-					if ($opc == XC_DECLARE_INHERITED_CLASS) {
+					if ($opc == XC_DECLARE_INHERITED_CLASS || $opc == XC_DECLARE_INHERITED_CLASS_DELAYED) {
 						$ext /= XC_SIZEOF_TEMP_VARIABLE;
 						$class['parent'] = $T[$ext];
 						unset($T[$ext]);
@@ -1866,6 +1868,7 @@ foreach (array (
 	'XC_VERIFY_ABSTRACT_CLASS' => -1,
 	'XC_DECLARE_CLASS' => -1,
 	'XC_DECLARE_INHERITED_CLASS' => -1,
+	'XC_DECLARE_INHERITED_CLASS_DELAYED' => -1,
 	'XC_ADD_INTERFACE' => -1,
 	'XC_POST_DEC_OBJ' => -1,
 	'XC_POST_INC_OBJ' => -1,

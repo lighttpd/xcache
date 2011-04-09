@@ -1,4 +1,4 @@
-/* size = 154 */
+/* size = 157 */
 static const char *const xc_opcode_names[] = {
 /* 0 */	"NOP",
 /* 1 */	"ADD",
@@ -111,7 +111,7 @@ static const char *const xc_opcode_names[] = {
 /* 108 */	"THROW",
 /* 109 */	"FETCH_CLASS",
 /* 110 */	"CLONE",
-/* 111 */	"UNDEF",
+/* 111 */	"RETURN_BY_REF",
 /* 112 */	"INIT_METHOD_CALL",
 /* 113 */	"INIT_STATIC_METHOD_CALL",
 /* 114 */	"ISSET_ISEMPTY_VAR",
@@ -151,7 +151,10 @@ static const char *const xc_opcode_names[] = {
 /* 148 */	"ISSET_ISEMPTY_PROP_OBJ",
 /* 149 */	"HANDLE_EXCEPTION",
 /* 150 */	"USER_OPCODE",
-/* 151 */	"U_NORMALIZE",
+/* 151 */	"UNDEF",
 /* 152 */	"JMP_SET",
-/* 153 */	"DECLARE_LAMBDA_FUNCTION"
+/* 153 */	"DECLARE_LAMBDA_FUNCTION",
+/* 154 */	"ADD_TRAIT",
+/* 155 */	"BIND_TRAITS",
+/* 156 */	"SEPARATE"
 };
