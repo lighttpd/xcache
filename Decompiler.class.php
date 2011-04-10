@@ -281,7 +281,7 @@ class Decompiler_Array extends Decompiler_Value // {{{
 					$assoclen = $len;
 				}
 			}
-			if (is_array($v)) {
+			if (is_array(value($v))) {
 				$multiline ++;
 			}
 			++ $i;
@@ -465,14 +465,14 @@ class Decompiler
 		return $ret;
 	}
 	// }}}
-	function &dop_array($op_array, $indent = '') // {{{
+	function &fixOpcode($opcodes, $removeTailing = false) // {{{
 	{
-		$opcodes = &$op_array['opcodes'];
-		$last = count($opcodes) - 1;
-		if ($opcodes[$last]['opcode'] == XC_HANDLE_EXCEPTION) {
-			unset($opcodes[$last]);
+		if ($removeTailing) {
+			$last = count($opcodes) - 1;
+			if ($opcodes[$last]['opcode'] == XC_HANDLE_EXCEPTION) {
+				unset($opcodes[$last]);
+			}
 		}
-		$EX['indent'] = '';
 		for ($i = 0, $cnt = count($opcodes); $i < $cnt; $i ++) {
 			if (function_exists('xcache_get_fixed_opcode')) {
 				$opcodes[$i]['opcode'] = xcache_get_fixed_opcode($opcodes[$i]['opcode'], $i);
@@ -504,6 +504,14 @@ class Decompiler
 				$opcodes[$i] = $op;
 			}
 		}
+		return $opcodes;
+	}
+	// }}}
+	function &dop_array($op_array, $indent = '') // {{{
+	{
+		$op_array['opcodes'] = $this->fixOpcode($op_array['opcodes'], true);
+		$opcodes = &$op_array['opcodes'];
+		$EX['indent'] = '';
 		// {{{ build jmp array
 		for ($i = 0, $cnt = count($opcodes); $i < $cnt; $i ++) {
 			$op = &$opcodes[$i];
@@ -756,7 +764,7 @@ class Decompiler
 			// $this->dumpop($op, $EX); //var_dump($op);
 
 			$resvar = null;
-			if (isset($res['EA.type']) && ($res['EA.type'] & EXT_TYPE_UNUSED) || $res['op_type'] == XC_IS_UNUSED) {
+			if ((ZEND_ENGINE_2_4 ? ($res['op_type'] & EXT_TYPE_UNUSED) : ($res['EA.type'] & EXT_TYPE_UNUSED)) || $res['op_type'] == XC_IS_UNUSED) {
 				$istmpres = false;
 			}
 			else {
@@ -790,14 +798,14 @@ class Decompiler
 					$EX['object'] = (int) $res['var'];
 					$EX['called_scope'] = null;
 					$EX['fbc'] = 'new ' . $this->unquoteName($this->getOpVal($op1, $EX));
-					if (PHP_VERSION < 5) {
+					if (!ZEND_ENGINE_2) {
 						$resvar = '$new object$';
 					}
 					break;
 					// }}}
 				case XC_FETCH_CLASS: // {{{
 					if ($op2['op_type'] == XC_IS_UNUSED) {
-						switch ($ext) {
+						switch (($ext & (defined('ZEND_FETCH_CLASS_MASK') ? ZEND_FETCH_CLASS_MASK : 0xFF))) {
 						case ZEND_FETCH_CLASS_SELF:
 							$class = 'self';
 							break;
@@ -842,7 +850,12 @@ class Decompiler
 				case XC_FETCH_IS:
 				case XC_UNSET_VAR:
 					$rvalue = $this->getOpVal($op1, $EX);
-					$fetchtype = $op2[PHP_VERSION < 5 ? 'fetch_type' : 'EA.type'];
+					if (defined('ZEND_FETCH_TYPE_MASK')) {
+						$fetchtype = ($ext & ZEND_FETCH_TYPE_MASK);
+					}
+					else {
+						$fetchtype = $op2[!ZEND_ENGINE_2 ? 'fetch_type' : 'EA.type'];
+					}
 					switch ($fetchtype) {
 					case ZEND_FETCH_STATIC_MEMBER:
 						$class = $this->getOpVal($op2, $EX);
@@ -956,6 +969,7 @@ class Decompiler
 						if (substr($src, 1, -1) == substr($lvalue, 1)) {
 							switch ($rvalue->fetchType) {
 							case ZEND_FETCH_GLOBAL:
+							case ZEND_FETCH_GLOBAL_LOCK:
 								$resvar = 'global ' . $lvalue;
 								break 2;
 							case ZEND_FETCH_STATIC:
@@ -969,9 +983,11 @@ class Decompiler
 								}
 								unset($statics);
 								break 2;
+							default:
 							}
 						}
 					}
+					// TODO: PHP_6 global
 					$rvalue = str($rvalue);
 					$resvar = "$lvalue = &$rvalue";
 					break;
@@ -1043,7 +1059,7 @@ class Decompiler
 						}
 					}
 
-					switch ((PHP_VERSION < 5 ? $op['op2']['var'] /* constant */ : $ext) & (ZEND_ISSET|ZEND_ISEMPTY)) {
+					switch ((!ZEND_ENGINE_2 ? $op['op2']['var'] /* constant */ : $ext) & (ZEND_ISSET|ZEND_ISEMPTY)) {
 					case ZEND_ISSET:
 						$rvalue = "isset($rvalue)";
 						break;
@@ -1510,6 +1526,8 @@ class Decompiler
 
 			default:
 				if ($kk == 'res') {
+					var_dump($op);
+					exit;
 					assert(0);
 				}
 				else {
@@ -1699,7 +1717,7 @@ class Decompiler
 				}
 
 				$mangled = false;
-				if (PHP_VERSION < 5) {
+				if (!ZEND_ENGINE_2) {
 					echo 'var ';
 				}
 				else if (!isset($info)) {
@@ -1861,11 +1879,29 @@ define('ZEND_ACC_ALLOW_STATIC',   0x10000);
 
 define('ZEND_ACC_SHADOW', 0x2000);
 
-define('ZEND_FETCH_GLOBAL',           0);
-define('ZEND_FETCH_LOCAL',            1);
-define('ZEND_FETCH_STATIC',           2);
-define('ZEND_FETCH_STATIC_MEMBER',    3);
-define('ZEND_FETCH_GLOBAL_LOCK',      4);
+define('ZEND_ENGINE_2_4', PHP_VERSION >= "5.3.99");
+define('ZEND_ENGINE_2_3', ZEND_ENGINE_2_4 || PHP_VERSION >= "5.3.");
+define('ZEND_ENGINE_2_2', ZEND_ENGINE_2_3 || PHP_VERSION >= "5.2.");
+define('ZEND_ENGINE_2_1', ZEND_ENGINE_2_2 || PHP_VERSION >= "5.1.");
+define('ZEND_ENGINE_2',   ZEND_ENGINE_2_1 || PHP_VERSION >= "5.0.");
+
+if (ZEND_ENGINE_2_4) {
+	define('ZEND_FETCH_GLOBAL',           0x00000000);
+	define('ZEND_FETCH_LOCAL',            0x10000000);
+	define('ZEND_FETCH_STATIC',           0x20000000);
+	define('ZEND_FETCH_STATIC_MEMBER',    0x30000000);
+	define('ZEND_FETCH_GLOBAL_LOCK',      0x40000000);
+	define('ZEND_FETCH_LEXICAL',          0x50000000);
+
+	define('ZEND_FETCH_TYPE_MASK',        0x70000000);
+}
+else {
+	define('ZEND_FETCH_GLOBAL',           0);
+	define('ZEND_FETCH_LOCAL',            1);
+	define('ZEND_FETCH_STATIC',           2);
+	define('ZEND_FETCH_STATIC_MEMBER',    3);
+	define('ZEND_FETCH_GLOBAL_LOCK',      4);
+}
 
 define('ZEND_FETCH_CLASS_DEFAULT',    0);
 define('ZEND_FETCH_CLASS_SELF',       1);
@@ -1875,6 +1911,12 @@ define('ZEND_FETCH_CLASS_GLOBAL',     4);
 define('ZEND_FETCH_CLASS_AUTO',       5);
 define('ZEND_FETCH_CLASS_INTERFACE',  6);
 define('ZEND_FETCH_CLASS_STATIC',     7);
+if (ZEND_ENGINE_2_4) {
+	define('ZEND_FETCH_CLASS_TRAIT',     14);
+}
+if (ZEND_ENGINE_2_3) {
+	define('ZEND_FETCH_CLASS_MASK',     0xF);
+}
 
 define('ZEND_EVAL',               (1<<0));
 define('ZEND_INCLUDE',            (1<<1));
@@ -1884,7 +1926,12 @@ define('ZEND_REQUIRE_ONCE',       (1<<4));
 
 define('ZEND_ISSET',              (1<<0));
 define('ZEND_ISEMPTY',            (1<<1));
-define('EXT_TYPE_UNUSED',         (1<<0));
+if (ZEND_ENGINE_2_4) {
+	define('EXT_TYPE_UNUSED',     (1<<5));
+}
+else {
+	define('EXT_TYPE_UNUSED',     (1<<0));
+}
 
 define('ZEND_FETCH_STANDARD',     0);
 define('ZEND_FETCH_ADD_LOCK',     1);
