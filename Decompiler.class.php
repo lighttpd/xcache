@@ -1557,17 +1557,18 @@ class Decompiler
 			if ($i) {
 				echo ', ';
 			}
+			$arg = $EX['recvs'][$i + 1];
 			if (isset($op_array['arg_info'])) {
 				$ai = $op_array['arg_info'][$i];
 				if (!empty($ai['class_name'])) {
 					echo $ai['class_name'], ' ';
-					if ($ai['allow_null']) {
+					if (!ZEND_ENGINE_2_2 && $ai['allow_null']) {
 						echo 'or NULL ';
 					}
 				}
 				else if (!empty($ai['array_type_hint'])) {
 					echo 'array ';
-					if ($ai['allow_null']) {
+					if (!ZEND_ENGINE_2_2 && $ai['allow_null']) {
 						echo 'or NULL ';
 					}
 				}
@@ -1596,11 +1597,10 @@ class Decompiler
 						assert(0);
 					}
 				}
-				$arg = $EX['recvs'][$i + 1];
 				echo toCode($arg[0], $indent);
-				if (isset($arg[1])) {
-					echo ' = ', toCode($arg[1], $indent);
-				}
+			}
+			if (isset($arg[1])) {
+				echo ' = ', toCode($arg[1], $indent);
 			}
 		}
 	}
