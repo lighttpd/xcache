@@ -1014,7 +1014,7 @@ class Decompiler
 							$rvalue = '$' . substr($rvalue, 1, -1);
 						}
 						else {
-							$rvalue = "${" . $rvalue . "}";
+							$rvalue = '${' . $rvalue . '}';
 						}
 						if ($op2['EA.type'] == ZEND_FETCH_STATIC_MEMBER) {
 							$class = $this->getOpVal($op2, $EX);
