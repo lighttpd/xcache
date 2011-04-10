@@ -251,24 +251,29 @@ class Decompiler_Array extends Decompiler_Value // {{{
 	{
 		$exp = "array(";
 		$indent = $indent . INDENT;
-		$assoclen = 0;
+		$assocWidth = 0;
 		$multiline = 0;
 		$i = 0;
 		foreach ($this->value as $k => $v) {
 			if ($i !== $k) {
+				$assocWidth = 1;
+			}
+			++$i;
+		}
+		foreach ($this->value as $k => $v) {
+			if ($assocWidth) {
 				$len = strlen($k);
-				if ($assoclen < $len) {
-					$assoclen = $len;
+				if ($assocWidth < $len) {
+					$assocWidth = $len;
 				}
 			}
 			$spec = xcache_get_special_value($v);
 			if (is_array(isset($spec) ? $spec : $v)) {
 				$multiline ++;
 			}
-			++ $i;
 		}
-		if ($assoclen) {
-			$assoclen += 2;
+		if ($assocWidth) {
+			$assocWidth += 2;
 		}
 
 		$i = 0;
@@ -288,11 +293,13 @@ class Decompiler_Array extends Decompiler_Value // {{{
 			}
 
 			$k = var_export($k, true);
-			if ($multiline) {
-				$exp .= sprintf("%{$assoclen}s => ", $k);
-			}
-			else if ($assoclen) {
-				$exp .= $k . ' => ';
+			if ($assocWidth) {
+				if ($multiline) {
+					$exp .= sprintf("%{$assocWidth}s => ", $k);
+				}
+				else {
+					$exp .= $k . ' => ';
+				}
 			}
 
 			$exp .= toCode(value($v), $subindent);
@@ -446,14 +453,8 @@ class Decompiler
 		return $ret;
 	}
 	// }}}
-	function &fixOpcode($opcodes, $removeTailing = false) // {{{
+	function &fixOpcode($opcodes, $removeTailing = false, $defaultReturnValue = null) // {{{
 	{
-		if ($removeTailing) {
-			$last = count($opcodes) - 1;
-			if ($opcodes[$last]['opcode'] == XC_HANDLE_EXCEPTION) {
-				unset($opcodes[$last]);
-			}
-		}
 		for ($i = 0, $cnt = count($opcodes); $i < $cnt; $i ++) {
 			if (function_exists('xcache_get_fixed_opcode')) {
 				$opcodes[$i]['opcode'] = xcache_get_fixed_opcode($opcodes[$i]['opcode'], $i);
@@ -485,12 +486,27 @@ class Decompiler
 				$opcodes[$i] = $op;
 			}
 		}
+
+		if ($removeTailing) {
+			$last = count($opcodes) - 1;
+			if ($opcodes[$last]['opcode'] == XC_HANDLE_EXCEPTION) {
+				unset($opcodes[$last]);
+				--$last;
+			}
+			if ($opcodes[$last]['opcode'] == XC_RETURN) {
+				$op1 = $opcodes[$last]['op1'];
+				if ($op1['op_type'] == XC_IS_CONST && array_key_exists('constant', $op1) && $op1['constant'] === $defaultReturnValue) {
+					unset($opcodes[$last]);
+					--$last;
+				}
+			}
+		}
 		return $opcodes;
 	}
 	// }}}
 	function &dop_array($op_array, $indent = '') // {{{
 	{
-		$op_array['opcodes'] = $this->fixOpcode($op_array['opcodes'], true);
+		$op_array['opcodes'] = $this->fixOpcode($op_array['opcodes'], true, $indent == '' ? 1 : null);
 		$opcodes = &$op_array['opcodes'];
 		$EX['indent'] = '';
 		// {{{ build jmp array
