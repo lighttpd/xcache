@@ -327,10 +327,10 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 
 #ifdef ZEND_ENGINE_2_4
 	DISPATCH(int, default_properties_count)
-	STRUCT_ARRAY(default_properties_count, zval, default_properties_table)
+	STRUCT_ARRAY(default_properties_count, zval_ptr, default_properties_table)
 	DISPATCH(int, default_static_members_count)
-	STRUCT_ARRAY(default_static_members_count, zval, default_static_members_table)
-	IFCOPY(`dst->static_members_table = &dst->default_static_members_table;')
+	STRUCT_ARRAY(default_static_members_count, zval_ptr, default_static_members_table)
+	IFCOPY(`dst->static_members_table = dst->default_static_members_table;')
 	DONE(static_members_table)
 #else
 	IFCOPY(`dst->builtin_functions = src->builtin_functions;')

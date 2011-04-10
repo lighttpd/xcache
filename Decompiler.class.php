@@ -1669,10 +1669,11 @@ class Decompiler
 		}
 		// }}}
 		// {{{ properties
-		if (!empty($class['default_properties']) || !empty($class['default_static_members'])) {
+		$member_variables = isset($class['properties_info']) ? $class['properties_info'] : ($class['default_static_members'] + $class['default_properties']);
+		if ($member_variables) {
 			echo "\n";
 			$infos = !empty($class['properties_info']) ? $class['properties_info'] : null;
-			foreach (!empty($class['properties_info']) ? $class['properties_info'] : ($class['default_static_members'] + $class['default_properties']) as $name => $dummy) {
+			foreach ($member_variables as $name => $dummy) {
 				$info = (isset($infos) && isset($infos[$name])) ? $infos[$name] : null;
 				if (isset($info)) {
 					if (!empty($info['doc_comment'])) {
@@ -1725,9 +1726,14 @@ class Decompiler
 
 				echo '$', $name;
 
-				$key = isset($info) ? $info['name'] . ($mangled ? "\000" : "") : $name;
+				if (isset($info['offset'])) {
+					$value = $class[$static ? 'default_static_members_table' : 'default_properties_table'][$info['offset']];
+				}
+				else {
+					$key = isset($info) ? $info['name'] . ($mangled ? "\000" : "") : $name;
 
-				$value = $class[$static ? 'default_static_members' : 'default_properties'][$key];
+					$value = $class[$static ? 'default_static_members' : 'default_properties'][$key];
+				}
 				if (isset($value)) {
 					echo ' = ';
 					echo str(value($value));
