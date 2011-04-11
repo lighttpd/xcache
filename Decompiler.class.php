@@ -8,6 +8,18 @@ function color($str, $color = 33)
 	return "\x1B[{$color}m$str\x1B[0m";
 }
 
+function str($code, $indent = '') // {{{
+{
+	if (is_object($code)) {
+		if (get_class($code) != 'Decompiler_Code') {
+			$code = toCode($code, $indent);
+		}
+		return $code->__toString();
+	}
+
+	return (string) $code;
+}
+// }}}
 function toCode($src, $indent = '') // {{{
 {
 	if (is_array($indent)) {
@@ -19,10 +31,10 @@ function toCode($src, $indent = '') // {{{
 			var_dump($src);
 			exit('no toCode');
 		}
-		return $src->toCode($indent);
+		return new Decompiler_Code($src->toCode($indent));
 	}
 
-	return $src;
+	return new Decompiler_Code($src);
 }
 // }}}
 function value($value) // {{{
@@ -36,11 +48,11 @@ function value($value) // {{{
 		}
 	}
 
-	if ($value instanceof Decompiler_Object) {
+	if (is_a($value, 'Decompiler_Object')) {
 		// use as is
 	}
 	else if (is_array($value)) {
-		$value = new Decompiler_Array($value);
+		$value = new Decompiler_ConstArray($value);
 	}
 	else {
 		$value = new Decompiler_Value($value);
@@ -77,6 +89,11 @@ class Decompiler_Code extends Decompiler_Object // {{{
 	}
 
 	function toCode($indent)
+	{
+		return $this;
+	}
+
+	function __toString()
 	{
 		return $this->src;
 	}
@@ -242,43 +259,55 @@ class Decompiler_ListBox extends Decompiler_Box // {{{
 // }}}
 class Decompiler_Array extends Decompiler_Value // {{{
 {
-	function Decompiler_Array($value = array())
+	// emenets
+	function Decompiler_Array()
 	{
-		$this->value = $value;
+		$this->value = array();
 	}
 
 	function toCode($indent)
 	{
+		$subindent = $indent . INDENT;
+
+		$elementsCode = array();
+		$index = 0;
+		foreach ($this->value as $element) {
+			list($key, $value) = $element;
+			if (!isset($key)) {
+				$key = $index++;
+			}
+			$elementsCode[] = array(str($key, $subindent), str($value, $subindent), $key, $value);
+		}
+
 		$exp = "array(";
 		$indent = $indent . INDENT;
 		$assocWidth = 0;
 		$multiline = 0;
 		$i = 0;
-		foreach ($this->value as $k => $v) {
-			if ($i !== $k) {
+		foreach ($elementsCode as $element) {
+			list($keyCode, $valueCode) = $element;
+			if ((string) $i !== $keyCode) {
 				$assocWidth = 1;
+				break;
 			}
 			++$i;
 		}
-		foreach ($this->value as $k => $v) {
+		foreach ($elementsCode as $element) {
+			list($keyCode, $valueCode, $key, $value) = $element;
 			if ($assocWidth) {
-				$len = strlen($k);
+				$len = strlen($keyCode);
 				if ($assocWidth < $len) {
 					$assocWidth = $len;
 				}
 			}
-			$spec = xcache_get_special_value($v);
-			if (is_array(isset($spec) ? $spec : $v)) {
+			if (is_array($value) || is_a($value, 'Decompiler_Array')) {
 				$multiline ++;
 			}
 		}
-		if ($assocWidth) {
-			$assocWidth += 2;
-		}
 
 		$i = 0;
-		$subindent = $indent . INDENT;
-		foreach ($this->value as $k => $v) {
+		foreach ($elementsCode as $element) {
+			list($keyCode, $value) = $element;
 			if ($multiline) {
 				if ($i) {
 					$exp .= ",";
@@ -292,17 +321,16 @@ class Decompiler_Array extends Decompiler_Value // {{{
 				}
 			}
 
-			$k = var_export($k, true);
 			if ($assocWidth) {
 				if ($multiline) {
-					$exp .= sprintf("%{$assocWidth}s => ", $k);
+					$exp .= sprintf("%-{$assocWidth}s => ", $keyCode);
 				}
 				else {
-					$exp .= $k . ' => ';
+					$exp .= $keyCode . ' => ';
 				}
 			}
 
-			$exp .= toCode(value($v), $subindent);
+			$exp .= $value;
 
 			$i ++;
 		}
@@ -313,6 +341,18 @@ class Decompiler_Array extends Decompiler_Value // {{{
 			$exp .= ")";
 		}
 		return $exp;
+	}
+}
+// }}}
+class Decompiler_ConstArray extends Decompiler_Array // {{{
+{
+	function Decompiler_ConstArray($array)
+	{
+		$elements = array();
+		foreach ($array as $key => $value) {
+			$elements[] = array(value($key), value($value));
+		}
+		$this->value = $elements;
 	}
 }
 // }}}
@@ -1238,12 +1278,12 @@ class Decompiler
 					$rvalue = $this->getOpVal($op1, $EX, false, true);
 
 					if ($opc == XC_ADD_ARRAY_ELEMENT) {
-						$offset = $this->getOpVal($op2, $EX);
-						if (isset($offset)) {
-							$T[$res['var']]->value[$offset] = $rvalue;
+						$assoc = $this->getOpVal($op2, $EX);
+						if (isset($assoc)) {
+							$T[$res['var']]->value[] = array($assoc, $rvalue);
 						}
 						else {
-							$T[$res['var']]->value[] = $rvalue;
+							$T[$res['var']]->value[] = array(null, $rvalue);
 						}
 					}
 					else {
@@ -1254,12 +1294,12 @@ class Decompiler
 							}
 						}
 
-						$offset = $this->getOpVal($op2, $EX);
-						if (isset($offset)) {
-							$resvar->value[$offset] = $rvalue;
+						$assoc = $this->getOpVal($op2, $EX);
+						if (isset($assoc)) {
+							$resvar->value[] = array($assoc, $rvalue);
 						}
 						else {
-							$resvar->value[] = $rvalue;
+							$resvar->value[] = array(null, $rvalue);
 						}
 					}
 					break;
@@ -1372,7 +1412,7 @@ class Decompiler
 					else {
 						$default = null;
 					}
-					$EX['recvs'][$offset] = array($lvalue, $default);
+					$EX['recvs'][str($offset)] = array($lvalue, $default);
 					break;
 				case XC_POST_DEC:
 				case XC_POST_INC:
