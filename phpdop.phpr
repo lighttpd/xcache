@@ -2,6 +2,7 @@
 <?php
 
 $srcdir = dirname(__FILE__);
+require_once("$srcdir/Decompiler.class.php");
 if (file_exists("$srcdir/phpdc.debug.php")) {
 	include("$srcdir/phpdc.debug.php");
 }
@@ -10,31 +11,33 @@ function get_op($op)
 {
 	switch ($op['op_type']) {
 	case 1: // CONST
-		return var_export($op['u.constant'], true);
+		return var_export($op['constant'], true);
 
 	case 2: // IS_TMP_VAR
-		return 't@' . $op['u.var'];
+		return 't@' . $op['var'];
 
 	case 4:
-		return 'v$' . $op['u.var'];
+		return 'v$' . $op['var'];
 
 	case 8: // UNUSED
-		if (isset($op['u.opline_num'])) {
-			return 'l#' . $op['u.opline_num'];
+		if (isset($op['opline_num'])) {
+			return 'l#' . $op['opline_num'];
 		}
 		else {
 			return '-';
 		}
 
 	default:
-		return $op['op_type'] . $op['u.var'];
+		return $op['op_type'] . $op['var'];
 	}
 }
 
-function dump_opcodes($op_array, $indent = '')
+function dump_opcodes($opcodes, $indent = '')
 {
+	global $decompiler;
+
 	$types = array('result' => 5, 'op1' => 20, 'op2' => 20);
-	foreach ($op_array as $line => $op) {
+	foreach ($decompiler->fixOpcode($opcodes) as $line => $op) {
 		echo $indent;
 		echo sprintf("%3d ", $op['lineno']);
 		echo sprintf("%3x ", $line);
@@ -90,6 +93,7 @@ function dump_class($name, $class, $indent = '')
 if (!isset($argv[1])) {
 	die("Usage: $argv[0] <file>\n");
 }
+$decompiler = new Decompiler();
 $pk = xcache_dasm_file($argv[1]);
 $op_array = $funcs = $classes = null;
 if (isset($pk['op_array'])) {
