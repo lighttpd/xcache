@@ -45,6 +45,15 @@ class ClassName
 		array('array')
 		))
 	{
+		$runtimeArray = array('1');
+		$runtimeArray2 = array(
+			'1',
+			array()
+			);
+		$runtimeArray3 = array(
+			'a' => '1',
+			2   => array()
+			);
 		return 'protected';
 	}
 
