@@ -64,5 +64,6 @@ class ClassName
 	}
 }
 
+echo str_replace(array('a' => 'a', 'b' => 'c'), 'b');
 
 ?>
