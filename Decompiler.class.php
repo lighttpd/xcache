@@ -11,30 +11,33 @@ function color($str, $color = 33)
 function str($code, $indent = '') // {{{
 {
 	if (is_object($code)) {
-		if (get_class($code) != 'Decompiler_Code') {
-			$code = toCode($code, $indent);
-		}
+		$code = toCode($code, $indent);
 		return $code->__toString();
 	}
 
 	return (string) $code;
 }
 // }}}
-function toCode($src, $indent = '') // {{{
+function toCode($src, $indent = '') // {{{ wrap or rewrap anything to Decompiler_Code
 {
 	if (is_array($indent)) {
 		$indent = $indent['indent'];
 	}
 
-	if (is_object($src)) {
-		if (!method_exists($src, 'toCode')) {
-			var_dump($src);
-			exit('no toCode');
-		}
-		return new Decompiler_Code($src->toCode($indent));
+	if (!is_object($src)) {
+		return new Decompiler_Code($src);
 	}
 
-	return new Decompiler_Code($src);
+	if (!method_exists($src, 'toCode')) {
+		var_dump($src);
+		exit('no toCode');
+	}
+	if (get_class($src) != 'Decompiler_Code') {
+		// rewrap it
+		$src = new Decompiler_Code($src->toCode($indent));
+	}
+
+	return $src;
 }
 // }}}
 function value($value) // {{{
@@ -90,7 +93,7 @@ class Decompiler_Code extends Decompiler_Object // {{{
 
 	function toCode($indent)
 	{
-		return $this;
+		return $this->src;
 	}
 
 	function __toString()
