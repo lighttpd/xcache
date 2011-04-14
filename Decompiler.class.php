@@ -131,7 +131,7 @@ class Decompiler_Binop extends Decompiler_Code // {{{
 		if ($op1 == '0' && $this->opc == XC_SUB) {
 			return $opstr . str($this->op2, $indent);
 		}
-		return $op1 . ' ' . $opstr . ' ' . foldToCodfoldToCode($this->op2, $indent);
+		return str($op1) . ' ' . $opstr . ' ' . str($this->op2, $indent);
 	}
 }
 // }}}
