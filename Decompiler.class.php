@@ -88,6 +88,7 @@ class Decompiler_Code extends Decompiler_Object // {{{
 
 	function Decompiler_Code($src)
 	{
+		assert('isset($src)');
 		$this->src = $src;
 	}
 
@@ -1403,6 +1404,10 @@ class Decompiler
 					break;
 					// }}}
 				case XC_CASE:
+					$switchValue = $this->getOpVal($op1, $EX);
+					$caseValue = $this->getOpVal($op2, $EX);
+					$resvar = $switchValue . ' == ' . $caseValue;
+					break;
 				case XC_BRK:
 					break;
 				case XC_RECV_INIT:

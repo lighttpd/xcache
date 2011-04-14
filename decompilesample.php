@@ -66,4 +66,18 @@ class ClassName
 
 echo str_replace(array('a' => 'a', 'b' => 'c'), 'b');
 
+switch ($switch) {
+case 'case1':
+	echo 'case1';
+	break;
+
+case 'case2':
+	echo 'case2';
+	break;
+
+default:
+	echo 'default';
+	break;
+}
+
 ?>
