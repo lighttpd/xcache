@@ -2,6 +2,8 @@
 
 abstract class ClassName
 {
+	const CONST_VALUE = 'A constant value';
+
 	/** doc */
 	static public $static = array(
 		array('array'),
@@ -24,9 +26,6 @@ abstract class ClassName
 	private $private_property = array(2, 'str');
 	/** doc */
 	protected $protected_property = array(2, 'str');
-
-	/** doc */
-	const CONST_VALUE = 'A constant value';
 
 	/** doc */
 	public function __construct($a, $b)
@@ -88,36 +87,34 @@ final class Child extends ClassName implements IInterface
 		echo __METHOD__;
 	}
 
-	function __set($name, $value)
+	public function __set($name, $value)
 	{
 	}
 
-	function __get($name)
+	public function __get($name)
 	{
 	}
 
-	function __isset($name)
+	public function __isset($name)
 	{
 	}
 
-	function __unset($name)
+	public function __unset($name)
 	{
 	}
 
-	function __sleep()
+	public function __sleep()
 	{
 	}
 
-	function __wakeup()
+	public function __wakeup()
 	{
 	}
 }
 
 echo str_replace(array('a' => 'a', 'b' => 'c'), 'b');
-
-$object = new ClassName;
+$object = new ClassName();
 $cloned = clone $object;
-
 $a = 1;
 $a = $b + $c;
 $a = $b + 1;
