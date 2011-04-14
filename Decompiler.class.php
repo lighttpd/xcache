@@ -433,22 +433,23 @@ class Decompiler
 		for ($i = $opline; $i <= $last; $i ++) {
 			$op = $opcodes[$i];
 			if (isset($op['php'])) {
-				$toticks = isset($op['ticks']) ? $op['ticks'] : 0;
+				$toticks = isset($op['ticks']) ? (int) str($op['ticks']) : 0;
 				if ($curticks != $toticks) {
-					if (!$toticks) {
+					$oldticks = $curticks;
+					$curticks = $toticks;
+					if (!$curticks) {
 						echo $origindent, "}\n";
 						$indent = $origindent;
 					}
 					else {
-						if ($curticks) {
+						if ($oldticks) {
 							echo $origindent, "}\n";
 						}
-						else if (!$curticks) {
+						else if (!$oldticks) {
 							$indent .= INDENT;
 						}
-						echo $origindent, "declare(ticks=$curticks) {\n";
+						echo $origindent, "declare (ticks=$curticks) {\n";
 					}
-					$curticks = $toticks;
 				}
 				echo $indent, str($op['php'], $indent), ";\n";
 			}
@@ -718,7 +719,7 @@ class Decompiler
 		}
 		if (!empty($op['jmpouts']) && isset($op['isjmp'])) {
 			if (isset($op['cond'])) {
-				echo "{$indent}check ($op[cond]) {\n";
+				echo "{$indent}check (" . str($op["cond"]) . ") {\n";
 				echo INDENT;
 			}
 			echo $indent;
@@ -1326,7 +1327,7 @@ class Decompiler
 				case XC_INCLUDE_OR_EVAL: // {{{
 					$type = $op2['var']; // hack
 					$keyword = $this->includeTypes[$type];
-					$resvar = "$keyword(" . $this->getOpVal($op1, $EX) . ")";
+					$resvar = "$keyword(" . str($this->getOpVal($op1, $EX)) . ")";
 					break;
 					// }}}
 				case XC_FE_RESET: // {{{
