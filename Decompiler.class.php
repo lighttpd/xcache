@@ -10,15 +10,22 @@ function color($str, $color = 33)
 
 function str($code, $indent = '') // {{{
 {
+	if (is_array($code)) {
+		$array = array();
+		foreach ($code as $key => $value) {
+			$array[$key] = str($value, $indent);
+		}
+		return $array;
+	}
 	if (is_object($code)) {
-		$code = toCode($code, $indent);
-		return $code->__toString();
+		$code = foldToCode($code, $indent);
+		return $code->toCode($indent);
 	}
 
 	return (string) $code;
 }
 // }}}
-function toCode($src, $indent = '') // {{{ wrap or rewrap anything to Decompiler_Code
+function foldToCode($src, $indent = '') // {{{ wrap or rewrap anything to Decompiler_Code
 {
 	if (is_array($indent)) {
 		$indent = $indent['indent'];
@@ -96,11 +103,6 @@ class Decompiler_Code extends Decompiler_Object // {{{
 	{
 		return $this->src;
 	}
-
-	function __toString()
-	{
-		return $this->src;
-	}
 }
 // }}}
 class Decompiler_Binop extends Decompiler_Code // {{{
@@ -121,15 +123,15 @@ class Decompiler_Binop extends Decompiler_Code // {{{
 
 	function toCode($indent)
 	{
-		$op1 = toCode($this->op1, $indent);
+		$op1 = foldToCode($this->op1, $indent);
 		if (is_a($this->op1, 'Decompiler_Binop') && $this->op1->opc != $this->opc) {
 			$op1 = "($op1)";
 		}
 		$opstr = $this->parent->binops[$this->opc];
 		if ($op1 == '0' && $this->opc == XC_SUB) {
-			return $opstr . toCode($this->op2, $indent);
+			return $opstr . str($this->op2, $indent);
 		}
-		return $op1 . ' ' . $opstr . ' ' . toCode($this->op2, $indent);
+		return $op1 . ' ' . $opstr . ' ' . foldToCodfoldToCode($this->op2, $indent);
 	}
 }
 // }}}
@@ -186,13 +188,13 @@ class Decompiler_Dim extends Decompiler_Value // {{{
 	function toCode($indent)
 	{
 		if (is_a($this->value, 'Decompiler_ListBox')) {
-			$exp = toCode($this->value->obj->src, $indent);
+			$exp = foldToCode($this->value->obj->src, $indent);
 		}
 		else {
-			$exp = toCode($this->value, $indent);
+			$exp = foldToCode($this->value, $indent);
 		}
 		foreach ($this->offsets as $dim) {
-			$exp .= '[' . toCode($dim, $indent) . ']';
+			$exp .= '[' . foldToCode($dim, $indent) . ']';
 		}
 		return $exp;
 	}
@@ -215,9 +217,9 @@ class Decompiler_List extends Decompiler_Code // {{{
 			unset($dim->value);
 			$dim->value = $this->src;
 			if (!isset($dim->assign)) {
-				return toCode($dim, $indent);
+				return foldToCode($dim, $indent);
 			}
-			return toCode($this->dims[0]->assign, $indent) . ' = ' . toCode($dim, $indent);
+			return foldToCode($this->dims[0]->assign, $indent) . ' = ' . foldToCode($dim, $indent);
 		}
 		/* flatten dims */
 		$assigns = array();
@@ -226,9 +228,9 @@ class Decompiler_List extends Decompiler_Code // {{{
 			foreach ($dim->offsets as $offset) {
 				$assign = &$assign[$offset];
 			}
-			$assign = toCode($dim->assign, $indent);
+			$assign = foldToCode($dim->assign, $indent);
 		}
-		return $this->toList($assigns) . ' = ' . toCode($this->src, $indent);
+		return $this->toList($assigns) . ' = ' . foldToCode($this->src, $indent);
 	}
 
 	function toList($assigns)
@@ -448,7 +450,7 @@ class Decompiler
 					}
 					$curticks = $toticks;
 				}
-				echo $indent, toCode($op['php'], $indent), ";\n";
+				echo $indent, str($op['php'], $indent), ";\n";
 			}
 		}
 		if ($curticks) {
@@ -460,14 +462,14 @@ class Decompiler
 	{
 		switch ($op['op_type']) {
 		case XC_IS_CONST:
-			return toCode(value($op['constant']), $EX);
+			return foldToCode(value($op['constant']), $EX);
 
 		case XC_IS_VAR:
 		case XC_IS_TMP_VAR:
 			$T = &$EX['Ts'];
 			$ret = $T[$op['var']];
 			if ($tostr) {
-				$ret = toCode($ret, $EX);
+				$ret = foldToCode($ret, $EX);
 			}
 			if ($free) {
 				unset($T[$op['var']]);
@@ -681,11 +683,11 @@ class Decompiler
 			$this->outputCode($EX, $opline, $end /* - 1 skip last jmp */, $indent . INDENT);
 			$body = ob_get_clean();
 
-			$as = toCode($op['fe_as'], $EX);
+			$as = foldToCode($op['fe_as'], $EX);
 			if (isset($op['fe_key'])) {
-				$as = toCode($op['fe_key'], $EX) . ' => ' . $as;
+				$as = str($op['fe_key'], $EX) . ' => ' . str($as);
 			}
-			echo "{$indent}foreach (" . toCode($op['fe_src'], $EX) . " as $as) {\n";
+			echo "{$indent}foreach (" . str($op['fe_src'], $EX) . " as $as) {\n";
 			echo $body;
 			echo "{$indent}}";
 			// $this->outputCode($EX, $next, $last, $indent);
@@ -754,7 +756,7 @@ class Decompiler
 		if (isset($op['cond_false'])) {
 			// $this->dumpop($op, $EX);
 			// any true comes here, so it's a "or"
-			$cond = implode(' and ', $op['cond_false']);
+			$cond = implode(' and ', str($op['cond_false']));
 			// var_dump($op['cond'] = $cond);
 			/*
 			$rvalue = implode(' or ', $op['cond_true']) . ' or ' . $rvalue;
@@ -770,6 +772,7 @@ class Decompiler
 	// }}}
 	function unquoteName($str) // {{{
 	{
+		$str = str($str);
 		if (preg_match($this->rQuotedName, $str)) {
 			$str = substr($str, 1, -1);
 		}
@@ -909,7 +912,7 @@ class Decompiler
 						break;
 					}
 					if ($opc == XC_UNSET_VAR) {
-						$op['php'] = "unset(" . toCode($rvalue, $EX) . ")";
+						$op['php'] = "unset(" . str($rvalue, $EX) . ")";
 						$lastphpop = &$op;
 					}
 					else if ($res['op_type'] != XC_IS_UNUSED) {
@@ -970,10 +973,10 @@ class Decompiler
 						$lvalue = $rvalue;
 						++ $i;
 						$rvalue = $this->getOpVal($opcodes[$i]['op1'], $EX);
-						$resvar = toCode($lvalue, $EX) . ' = ' . $rvalue;
+						$resvar = str($lvalue, $EX) . ' = ' . $rvalue;
 					}
 					else if ($opc == XC_UNSET_DIM) {
-						$op['php'] = "unset(" . toCode($rvalue, $EX) . ")";
+						$op['php'] = "unset(" . str($rvalue, $EX) . ")";
 						$lastphpop = &$op;
 					}
 					else if ($res['op_type'] != XC_IS_UNUSED) {
@@ -994,19 +997,19 @@ class Decompiler
 						$dim = &$rvalue->obj;
 						$dim->assign = $lvalue;
 						if ($dim->isLast) {
-							$resvar = toCode($dim->value, $EX);
+							$resvar = foldToCode($dim->value, $EX);
 						}
 						unset($dim);
 						break;
 					}
-					$resvar = "$lvalue = " . toCode($rvalue, $EX);
+					$resvar = "$lvalue = " . str($rvalue, $EX);
 					break;
 					// }}}
 				case XC_ASSIGN_REF: // {{{
 					$lvalue = $this->getOpVal($op1, $EX);
 					$rvalue = $this->getOpVal($op2, $EX, false);
 					if (is_a($rvalue, 'Decompiler_Fetch')) {
-						$src = toCode($rvalue->src, $EX);
+						$src = foldToCode($rvalue->src, $EX);
 						if (substr($src, 1, -1) == substr($lvalue, 1)) {
 							switch ($rvalue->fetchType) {
 							case ZEND_FETCH_GLOBAL:
@@ -1020,7 +1023,7 @@ class Decompiler
 								if (isset($statics[$name])) {
 									$var = $statics[$name];
 									$resvar .= ' = ';
-									$resvar .= toCode(value($var), $EX);
+									$resvar .= str(value($var), $EX);
 								}
 								unset($statics);
 								break 2;
@@ -1029,7 +1032,7 @@ class Decompiler
 						}
 					}
 					// TODO: PHP_6 global
-					$rvalue = toCode($rvalue, $EX);
+					$rvalue = foldToCode($rvalue, $EX);
 					$resvar = "$lvalue = &$rvalue";
 					break;
 					// }}}
@@ -1116,7 +1119,7 @@ class Decompiler
 				case XC_SEND_REF:
 				case XC_SEND_VAR: // {{{
 					$ref = ($opc == XC_SEND_REF ? '&' : '');
-					$EX['argstack'][] = $ref . $this->getOpVal($op1, $EX);
+					$EX['argstack'][] = $ref . str($this->getOpVal($op1, $EX));
 					break;
 					// }}}
 				case XC_INIT_STATIC_METHOD_CALL:
@@ -1242,10 +1245,10 @@ class Decompiler
 					$op2val = $this->getOpVal($op2, $EX);
 					switch ($opc) {
 					case XC_ADD_CHAR:
-						$op2val = toCode(chr($op2val), $EX);
+						$op2val = foldToCode(chr($op2val), $EX);
 						break;
 					case XC_ADD_STRING:
-						$op2val = toCode($op2val, $EX);
+						$op2val = foldToCode($op2val, $EX);
 						break;
 					case XC_ADD_VAR:
 						break;
@@ -1257,7 +1260,7 @@ class Decompiler
 						$rvalue = $op1val;
 					}
 					else {
-						$rvalue = $op1val . ' . ' . $op2val;
+						$rvalue = str($op1val) . ' . ' . str($op2val);
 					}
 					$resvar = $rvalue;
 					// }}}
@@ -1269,7 +1272,7 @@ class Decompiler
 					// }}}
 				case XC_ECHO: // {{{
 					$op1val = $this->getOpVal($op1, $EX);
-					$resvar = "echo $op1val";
+					$resvar = "echo " . str($op1val);
 					break;
 					// }}}
 				case XC_EXIT: // {{{
@@ -1317,7 +1320,7 @@ class Decompiler
 					break;
 					// }}}
 				case XC_RETURN: // {{{
-					$resvar = "return " . $this->getOpVal($op1, $EX);
+					$resvar = "return " . str($this->getOpVal($op1, $EX));
 					break;
 					// }}}
 				case XC_INCLUDE_OR_EVAL: // {{{
@@ -1385,10 +1388,10 @@ class Decompiler
 					if ($opc == XC_JMPZ_EX || $opc == XC_JMPNZ_EX || $opc == XC_JMPZ) {
 						$targetop = &$EX['opcodes'][$op2['opline_num']];
 						if ($opc == XC_JMPNZ_EX) {
-							$targetop['cond_true'][] = toCode($rvalue, $EX);
+							$targetop['cond_true'][] = foldToCode($rvalue, $EX);
 						}
 						else {
-							$targetop['cond_false'][] = toCode($rvalue, $EX);
+							$targetop['cond_false'][] = foldToCode($rvalue, $EX);
 						}
 						unset($targetop);
 					}
@@ -1406,7 +1409,7 @@ class Decompiler
 				case XC_CASE:
 					$switchValue = $this->getOpVal($op1, $EX);
 					$caseValue = $this->getOpVal($op2, $EX);
-					$resvar = $switchValue . ' == ' . $caseValue;
+					$resvar = str($switchValue) . ' == ' . str($caseValue);
 					break;
 				case XC_BRK:
 					break;
@@ -1460,7 +1463,7 @@ class Decompiler
 					// }}}
 				case XC_END_SILENCE: // {{{
 					$EX['silence'] --;
-					$lastresvar = '@' . toCode($lastresvar, $EX);
+					$lastresvar = '@' . str($lastresvar, $EX);
 					break;
 					// }}}
 				case XC_CONT: // {{{
@@ -1530,7 +1533,7 @@ class Decompiler
 		for ($i = 0; $i < $n; $i ++) {
 			$a = array_pop($EX['argstack']);
 			if (is_array($a)) {
-				array_unshift($args, toCode($a, $EX));
+				array_unshift($args, foldToCode($a, $EX));
 			}
 			else {
 				array_unshift($args, $a);
@@ -1645,10 +1648,10 @@ class Decompiler
 						assert(0);
 					}
 				}
-				echo toCode($arg[0], $indent);
+				echo str($arg[0], $indent);
 			}
 			if (isset($arg[1])) {
-				echo ' = ', toCode($arg[1], $indent);
+				echo ' = ', str($arg[1], $indent);
 			}
 		}
 	}
@@ -1724,7 +1727,7 @@ class Decompiler
 				foreach ($class[$type] as $name => $v) {
 					echo $newindent;
 					echo $prefix, $name, ' = ';
-					echo toCode(value($v), $newindent);
+					echo str(value($v), $newindent);
 					echo ";\n";
 				}
 			}
@@ -1798,7 +1801,7 @@ class Decompiler
 				}
 				if (isset($value)) {
 					echo ' = ';
-					echo toCode(value($value), $newindent);
+					echo str(value($value), $newindent);
 				}
 				echo ";\n";
 			}
