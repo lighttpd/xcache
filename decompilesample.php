@@ -31,13 +31,22 @@ abstract class ClassName
 	public function __construct($a, $b)
 	{
 		echo CONST_VALUE;
-		echo $this::CONST_VALUE;
-		echo $a::CONST_VALUE;
 		echo ClassName::CONST_VALUE;
+		unset(ClassName::$classProp);
+		unset($obj->objProp);
+		unset($this->thisProp);
+		unset($array['index']->valueProp);
+		unset($obj->array['index']);
+		unset($this->array['index']);
+		$obj->objProp = 1;
+		$this->thisProp = 1;
+		$array['index']->valueProp = 1;
+		$array['index'] = 1;
+		$array[1] = 1;
 	}
 
 	/** doc */
-	abstract function abastractMethod();
+	abstract public function abastractMethod();
 
 	/** doc */
 	public function method(array $a = NULL, $b = NULL)
@@ -78,13 +87,35 @@ interface IInterface
 	public function nothing();
 }
 
+function f1($f)
+{
+	echo $f;
+}
+
 final class Child extends ClassName implements IInterface
 {
 	public function __construct()
 	{
 		parent::__construct();
+		ClassName::__construct();
 		echo __CLASS__;
 		echo __METHOD__;
+		throw new Exception();
+		$this->methodCall();
+	}
+
+	public function __destruct()
+	{
+		parent::__destruct();
+		functionCall();
+	}
+
+	static public function __callStatic($name, $args)
+	{
+	}
+
+	public function __toString()
+	{
 	}
 
 	public function __set($name, $value)
@@ -110,10 +141,22 @@ final class Child extends ClassName implements IInterface
 	public function __wakeup()
 	{
 	}
+
+	public function __clone()
+	{
+		return array();
+	}
 }
 
 echo str_replace(array('a' => 'a', 'b' => 'c'), 'b');
 $object = new ClassName();
+$object = new $className();
+try {
+	echo 'code being try';
+}
+catch (Exception $e) {
+	echo $e;
+}
 $cloned = clone $object;
 $a = 1;
 $a = $b + $c;
@@ -134,21 +177,25 @@ $a = $b >> $c;
 $a = $b == $c;
 $a = $b === $c;
 $a = $b != $c;
-$a = $b <> $c;
 $a = $b < $c;
 $a = $b <= $c;
-$a = $b > $c;
 $a = $b <= $c;
 $a = $b++;
 $a = ++$b;
+$a = $obj->b++;
+$a = ++$obj->b;
 $a = $b--;
 $a = --$b;
+$a = $obj->b--;
+$a = --$obj->b;
 $a = $b and $c;
 $a = $b or $c;
 $a = $b xor $c;
 $a = !$b;
 $a = $b && $c;
 $a = $b || $c;
+$a = $b ? $c : $d;
+$a = f1() ? f2() : f3();
 $a = $b instanceof ClassName;
 
 if ($a) {
@@ -175,7 +222,7 @@ for ($i = 1; $i < 10; ++$i) {
 }
 
 foreach ($array as $key => $value) {
-	echo "$key = $value\n";
+	echo $key . ' = ' . $value . "\n";
 	continue;
 }
 
@@ -203,29 +250,37 @@ require_once 'require_once.php';
 include 'include.php';
 include_once 'include_once.php';
 
+//* >= PHP 5.3
+echo $this::CONST_VALUE;
+echo $a::CONST_VALUE;
+$this::__construct();
+$obj::__construct();
+
+$a = $b ?: $d;
+$a = f1() ?: f2();
+
+echo 'goto a';
 goto a;
-echo 'foo';
+
+for ($i = 1; $i <= 2; ++$i) {
+	goto a;
+}
 
 a:
-echo 'bar';
-
+echo 'label a';
 echo preg_replace_callback('~-([a-z])~', function ($match) {
-		return strtoupper($match[1]);
+	return strtoupper($match[1]);
 }, 'hello-world');
-
-$greet = function($name)
-{
+$greet = function ($name) {
 	printf("Hello %s\r\n", $name);
 };
 $greet('World');
 $greet('PHP');
-
-$total = 0.00;
-
-$callback = function ($quantity, $product) use ($tax, &$total)
-{
-	$pricePerItem = constant(__CLASS__ . "::PRICE_" . strtoupper($product));
-	$total += ($pricePerItem * $quantity) * ($tax + 1.0);
+$total = 0;
+$callback = function ($quantity, $product) use ($tax, &$total) {
+	$pricePerItem = constant('PRICE_' . strtoupper($product));
+	$total += $pricePerItem * $quantity * ($tax + 1);
 };
+// */
 
 ?>

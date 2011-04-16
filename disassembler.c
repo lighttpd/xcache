@@ -36,19 +36,45 @@ static void xc_dasm(xc_sandbox_t *sandbox, zval *dst, zend_op_array *op_array TS
 	xc_dasm_zend_op_array(zv, op_array TSRMLS_CC);
 	add_assoc_zval_ex(dst, ZEND_STRS("op_array"), zv);
 
+	buf = emalloc(bufsize);
+
 	ALLOC_INIT_ZVAL(list);
 	array_init(list);
 	b = TG(internal_function_tail) ? TG(internal_function_tail)->pListNext : TG(function_table).pListHead;
 	for (; b; b = b->pListNext) {
+		int keysize, keyLength;
+
 		ALLOC_INIT_ZVAL(zv);
 		array_init(zv);
 		xc_dasm_zend_function(zv, b->pData TSRMLS_CC);
 
-		add_u_assoc_zval_ex(list, BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY_S(b)), b->nKeyLength, zv);
+		keysize = BUCKET_KEY_SIZE(b) + 2;
+		if (keysize > bufsize) {
+			do {
+				bufsize *= 2;
+			} while (keysize > bufsize);
+			buf = erealloc(buf, bufsize);
+		}
+		memcpy(buf, BUCKET_KEY_S(b), keysize);
+		buf[keysize - 2] = buf[keysize - 1] = ""[0];
+		keyLength = b->nKeyLength;
+#ifdef IS_UNICODE
+		if (BUCKET_KEY_TYPE(b) == IS_UNICODE) {
+			if (buf[0] == ""[0] && buf[1] == ""[0]) {
+				keyLength ++;
+			}
+		} else
+#endif
+		{
+			if (buf[0] == ""[0]) {
+				keyLength ++;
+			}
+		}
+
+		add_u_assoc_zval_ex(list, BUCKET_KEY_TYPE(b), ZSTR(buf), keyLength, zv);
 	}
 	add_assoc_zval_ex(dst, ZEND_STRS("function_table"), list);
 	
-	buf = emalloc(bufsize);
 	ALLOC_INIT_ZVAL(list);
 	array_init(list);
 	b = TG(internal_class_tail) ? TG(internal_class_tail)->pListNext : TG(class_table).pListHead;
