@@ -70,13 +70,13 @@ function value($value) // {{{
 	return $value;
 }
 // }}}
-function unquoteName_($str, $asProperty, $indent = '') // {{{
+function unquoteName_($str, $asVariableName, $indent = '') // {{{
 {
 	$str = str($str, $indent);
 	if (preg_match("!^'[\\w_][\\w\\d_\\\\]*'\$!", $str)) {
 		return str_replace('\\\\', '\\', substr($str, 1, -1));
 	}
-	else if ($asProperty) {
+	else if ($asVariableName) {
 		return "{" . $str . "}";
 	}
 	else {
@@ -84,7 +84,7 @@ function unquoteName_($str, $asProperty, $indent = '') // {{{
 	}
 }
 // }}}
-function unquoteProperty($str, $indent = '') // {{{
+function unquoteVariableName($str, $indent = '') // {{{
 {
 	return unquoteName_($str, true, $indent);
 }
@@ -246,7 +246,7 @@ class Decompiler_Dim extends Decompiler_Value // {{{
 		$last = count($this->offsets) - 1;
 		foreach ($this->offsets as $i => $dim) {
 			if ($this->isObject && $i == $last) {
-				$exp .= '->' . unquoteProperty($dim, $indent);
+				$exp .= '->' . unquoteVariableName($dim, $indent);
 			}
 			else {
 				$exp .= '[' . str($dim, $indent) . ']';
@@ -436,6 +436,20 @@ class Decompiler
 
 	function Decompiler()
 	{
+		// {{{ testing
+		// XC_UNDEF XC_OP_DATA
+		$this->test = !empty($_ENV['XCACHE_DECOMPILER_TEST']);
+		$this->usedOps = array();
+
+		if ($this->test) {
+			$content = file_get_contents(__FILE__);
+			for ($i = 0; $opname = xcache_get_opcode($i); $i ++) {
+				if (!preg_match("/\\bXC_" . $opname . "\\b(?!')/", $content)) {
+					echo "not recognized opcode ", $opname, "\n";
+				}
+			}
+		}
+		// }}}
 		// {{{ opinfo
 		$this->unaryops = array(
 				XC_BW_NOT   => '~',
@@ -618,6 +632,7 @@ class Decompiler
 		if ($removeTailing) {
 			$last = count($opcodes) - 1;
 			if ($opcodes[$last]['opcode'] == XC_HANDLE_EXCEPTION) {
+				$this->usedOps[XC_HANDLE_EXCEPTION] = true;
 				unset($opcodes[$last]);
 				--$last;
 			}
@@ -881,6 +896,7 @@ class Decompiler
 			$op = &$opcodes[$i];
 			$opc = $op['opcode'];
 			if ($opc == XC_NOP) {
+				$this->usedOps[$opc] = true;
 				continue;
 			}
 
@@ -910,9 +926,11 @@ class Decompiler
 
 			$call = array(&$this, $opname);
 			if (is_callable($call)) {
+				$this->usedOps[$opc] = true;
 				$this->{$opname}($op, $EX);
 			}
 			else if (isset($this->binops[$opc])) { // {{{
+				$this->usedOps[$opc] = true;
 				$op1val = $this->getOpVal($op1, $EX, false);
 				$op2val = $this->getOpVal($op2, $EX, false);
 				$rvalue = new Decompiler_Binop($this, $op1val, $opc, $op2val);
@@ -920,6 +938,7 @@ class Decompiler
 				// }}}
 			}
 			else if (isset($this->unaryops[$opc])) { // {{{
+				$this->usedOps[$opc] = true;
 				$op1val = $this->getOpVal($op1, $EX);
 				$myop = $this->unaryops[$opc];
 				$rvalue = $myop . str($op1val);
@@ -927,6 +946,7 @@ class Decompiler
 				// }}}
 			}
 			else {
+				$covered = true;
 				switch ($opc) {
 				case XC_NEW: // {{{
 					array_push($EX['arg_types_stack'], array($EX['fbc'], $EX['object'], $EX['called_scope']));
@@ -1164,7 +1184,7 @@ class Decompiler
 					if (!isset($obj)) {
 						$obj = '$this';
 					}
-					$rvalue = str($obj) . "->" . unquoteProperty($this->getOpVal($op2, $EX), $EX);
+					$rvalue = str($obj) . "->" . unquoteVariableName($this->getOpVal($op2, $EX), $EX);
 					if ($res['op_type'] != XC_IS_UNUSED) {
 						$resvar = $rvalue;
 					}
@@ -1181,13 +1201,7 @@ class Decompiler
 				case XC_ISSET_ISEMPTY:
 				case XC_ISSET_ISEMPTY_VAR: // {{{
 					if ($opc == XC_ISSET_ISEMPTY_VAR) {
-						$rvalue = $this->getOpVal($op1, $EX);;
-						if (preg_match($this->rQuotedName, $rvalue)) {
-							$rvalue = '$' . substr($rvalue, 1, -1);
-						}
-						else {
-							$rvalue = '${' . $rvalue . '}';
-						}
+						$rvalue = $this->getOpVal($op1, $EX);
 						if ($op2['EA.type'] == ZEND_FETCH_STATIC_MEMBER) {
 							$class = $this->getOpVal($op2, $EX);
 							$rvalue = $class . '::' . $rvalue;
@@ -1200,15 +1214,13 @@ class Decompiler
 						$container = $this->getOpVal($op1, $EX);
 						$dim = $this->getOpVal($op2, $EX);
 						if ($opc == XC_ISSET_ISEMPTY_PROP_OBJ) {
-							if (preg_match($this->rQuotedName, $dim)) {
-								$rvalue = $container . "->" . substr($dim, 1, -1);
+							if (!isset($container)) {
+								$container = '$this';
 							}
-							else {
-								$rvalue = $container . "->{" . $dim . "}";
-							}
+							$rvalue = $container . "->" . unquoteVariableName($dim);
 						}
 						else {
-							$rvalue = $container . "[$dim]";
+							$rvalue = $container . '[' . str($dim) .']';
 						}
 					}
 
@@ -1356,6 +1368,7 @@ class Decompiler
 						else {
 							break;
 						}
+						$this->usedOps[XC_ADD_INTERFACE] = true;
 
 						$fetchop = &$opcodes[$i + 1];
 						$interface = $this->stripNamespace(unquoteName($this->getOpVal($fetchop['op2'], $EX), $EX));
@@ -1401,7 +1414,7 @@ class Decompiler
 					break;
 				case XC_PRINT: // {{{
 					$op1val = $this->getOpVal($op1, $EX);
-					$resvar = "print($op1val)";
+					$resvar = "print(" . str($op1val) . ")";
 					break;
 					// }}}
 				case XC_ECHO: // {{{
@@ -1583,7 +1596,7 @@ class Decompiler
 				case XC_PRE_INC_OBJ: // {{{
 					$flags = array_flip(explode('_', $opname));
 					if (isset($flags['OBJ'])) {
-						$resvar = $this->getOpVal($op1, $EX) . '->' . unquoteProperty($this->getOpVal($op2, $EX), $EX);
+						$resvar = $this->getOpVal($op1, $EX) . '->' . unquoteVariableName($this->getOpVal($op2, $EX), $EX);
 					}
 					else {
 						$resvar = $this->getOpVal($op1, $EX);
@@ -1660,7 +1673,11 @@ class Decompiler
 					break;
 				default: // {{{
 					echo "\x1B[31m * TODO ", $opname, "\x1B[0m\n";
+					$covered = false;
 					// }}}
+				}
+				if ($covered) {
+					$this->usedOps[$opc] = true;
 				}
 			}
 			if (isset($resvar)) {
@@ -2078,7 +2095,24 @@ class Decompiler
 
 		$this->dop_array($this->dc['op_array']);
 		echo "\n?" . ">\n";
+
+		if (!empty($this->test)) {
+			$this->outputUnusedOp();
+		}
 		return true;
+	}
+	// }}}
+	function outputUnusedOp() // {{{
+	{
+		for ($i = 0; $opname = xcache_get_opcode($i); $i ++) {
+			if ($opname == 'UNDEF')  {
+				continue;
+			}
+
+			if (!isset($this->usedOps[$i])) {
+				echo "not covered opcode ", $opname, "\n";
+			}
+		}
 	}
 	// }}}
 }
@@ -2186,10 +2220,10 @@ define('BYREF_FORCE_REST', 3);
 define('IS_NULL',     0);
 define('IS_LONG',     1);
 define('IS_DOUBLE',   2);
-define('IS_STRING',   3);
+define('IS_BOOL',     ZEND_ENGINE_2 ? 3 : 6);
 define('IS_ARRAY',    4);
 define('IS_OBJECT',   5);
-define('IS_BOOL',     6);
+define('IS_STRING',   ZEND_ENGINE_2 ? 6 : 3);
 define('IS_RESOURCE', 7);
 define('IS_CONSTANT', 8);
 define('IS_CONSTANT_ARRAY',   9);
@@ -2256,14 +2290,5 @@ foreach (array (
 		define($k, $v);
 	}
 }
-
-//* XC_UNDEF XC_OP_DATA
-$content = file_get_contents(__FILE__);
-for ($i = 0; $opname = xcache_get_opcode($i); $i ++) {
-	if (!preg_match("/\\bXC_" . $opname . "\\b(?!')/", $content)) {
-		echo "not done ", $opname, "\n";
-	}
-}
-// */
 // }}}
 
