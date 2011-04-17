@@ -148,6 +148,9 @@ final class Child extends ClassName implements IInterface
 	}
 }
 
+echo "\r\n";
+echo "\r";
+echo "\n";
 echo str_replace(array('a' => 'a', 'b' => 'c'), 'b');
 $object = new ClassName();
 $object = new $className();
