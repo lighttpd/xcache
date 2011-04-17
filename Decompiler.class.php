@@ -266,9 +266,9 @@ class Decompiler_List extends Decompiler_Code // {{{
 			unset($dim->value);
 			$dim->value = $this->src;
 			if (!isset($dim->assign)) {
-				return foldToCode($dim, $indent);
+				return str($dim, $indent);
 			}
-			return foldToCode($this->dims[0]->assign, $indent) . ' = ' . str($dim, $indent);
+			return str($this->dims[0]->assign, $indent) . ' = ' . str($dim, $indent);
 		}
 		/* flatten dims */
 		$assigns = array();
@@ -279,7 +279,7 @@ class Decompiler_List extends Decompiler_Code // {{{
 			}
 			$assign = foldToCode($dim->assign, $indent);
 		}
-		return $this->toList($assigns) . ' = ' . str($this->src, $indent);
+		return str($this->toList($assigns)) . ' = ' . str($this->src, $indent);
 	}
 
 	function toList($assigns)
@@ -1103,7 +1103,7 @@ class Decompiler
 					$rvalue = $this->getOpVal($op2, $EX, false);
 					if (is_a($rvalue, 'Decompiler_Fetch')) {
 						$src = str($rvalue->src, $EX);
-						if (substr($src, 1, -1) == substr($lvalue, 1)) {
+						if ('$' . unquoteName($src) == $lvalue) {
 							switch ($rvalue->fetchType) {
 							case ZEND_FETCH_GLOBAL:
 							case ZEND_FETCH_GLOBAL_LOCK:
@@ -1112,9 +1112,10 @@ class Decompiler
 							case ZEND_FETCH_STATIC:
 								$statics = &$EX['op_array']['static_variables'];
 								$resvar = 'static ' . $lvalue;
-								$name = substr($src, 1, -1);
+								$name = unquoteName($src);
 								if (isset($statics[$name])) {
 									$var = $statics[$name];
+									var_dump(str(value($statics)));
 									$resvar .= ' = ';
 									$resvar .= str(value($var), $EX);
 								}
@@ -1125,7 +1126,7 @@ class Decompiler
 						}
 					}
 					// TODO: PHP_6 global
-					$rvalue = foldToCode($rvalue, $EX);
+					$rvalue = str($rvalue, $EX);
 					$resvar = "$lvalue = &$rvalue";
 					break;
 					// }}}
