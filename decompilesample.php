@@ -205,12 +205,12 @@ $a = $obj->b--;
 $a = --$obj->b;
 $a = $b xor $c;
 $a = !$b;
+$a = $b ? $c : $d;
+$a = f1() ? f2() : f3();
 $a = $b and $c;
 $a = $b or $c;
 $a = $b && $c;
 $a = $b || $c;
-$a = $b ? $c : $d;
-$a = f1() ? f2() : f3();
 
 try {
 	echo 'outer try 1';
@@ -293,6 +293,7 @@ $this::__construct();
 $obj::__construct();
 
 $a = $b ?: $d;
+$a = ($b ?: $d) + $c;
 $a = f1() ?: f2();
 
 echo 'goto a';
