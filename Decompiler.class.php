@@ -649,6 +649,11 @@ class Decompiler
 			*/
 			$op['line'] = $i;
 			switch ($op['opcode']) {
+			case XC_CONT:
+			case XC_BRK:
+				$op['jmpouts'] = array();
+				break;
+
 			case XC_GOTO:
 			case XC_JMP:
 				$target = $op['op1']['var'];
@@ -800,19 +805,30 @@ class Decompiler
 		if (!isset($next)) {
 			return;
 		}
-		if (!empty($op['jmpouts']) && isset($op['isjmp'])) {
+		if (isset($op['jmpouts']) && isset($op['isjmp'])) {
 			if (isset($op['cond'])) {
 				echo "{$indent}check (" . str($op["cond"]) . ") {\n";
 				echo INDENT;
 			}
-			echo $indent;
-			echo xcache_get_opcode($op['opcode']), ' line', $op['jmpouts'][0];
-			if (isset($op['jmpouts'][1])) {
-				echo ', line', $op['jmpouts'][1];
+			switch ($op['opcode']) {
+			case XC_CONT:
+			case XC_BRK:
+				break;
+
+			case XC_GOTO:
+				echo $indent, 'goto', ' line', $op['jmpouts'][0], ';', "\n";
+				break;
+
+			default:
+				echo $indent;
+				echo xcache_get_opcode($op['opcode']), ' line', $op['jmpouts'][0];
+				if (isset($op['jmpouts'][1])) {
+					echo ', line', $op['jmpouts'][1];
+				}
+				echo ";";
+				// echo ' // <- line', $op['line'];
+				echo "\n";
 			}
-			echo ";";
-			// echo ' // <- line', $op['line'];
-			echo "\n";
 			if (isset($op['cond'])) echo "$indent}\n";
 		}
 
@@ -1520,6 +1536,16 @@ class Decompiler
 					}
 					break;
 					// }}}
+				case XC_CONT:
+				case XC_BRK:
+					$op['cond'] = null;
+					$op['isjmp'] = true;
+					$resvar = $opc == XC_CONT ? 'continue' : 'break';
+					$count = str($this->getOpVal($op2, $EX));
+					if ($count != '1') {
+						$resvar .= ' ' . $count;
+					}
+					break;
 				case XC_GOTO:
 				case XC_JMP: // {{{
 					$op['cond'] = null;
@@ -1530,8 +1556,6 @@ class Decompiler
 					$switchValue = $this->getOpVal($op1, $EX);
 					$caseValue = $this->getOpVal($op2, $EX);
 					$resvar = str($switchValue) . ' == ' . str($caseValue);
-					break;
-				case XC_BRK:
 					break;
 				case XC_RECV_INIT:
 				case XC_RECV:
@@ -1577,9 +1601,6 @@ class Decompiler
 				case XC_END_SILENCE: // {{{
 					$EX['silence'] --;
 					$lastresvar = '@' . str($lastresvar, $EX);
-					break;
-					// }}}
-				case XC_CONT: // {{{
 					break;
 					// }}}
 				case XC_CAST: // {{{
