@@ -633,13 +633,13 @@ class Decompiler
 			$last = count($opcodes) - 1;
 			if ($opcodes[$last]['opcode'] == XC_HANDLE_EXCEPTION) {
 				$this->usedOps[XC_HANDLE_EXCEPTION] = true;
-				unset($opcodes[$last]);
+				$opcodes[$last]['opcode'] = XC_NOP;
 				--$last;
 			}
 			if ($opcodes[$last]['opcode'] == XC_RETURN) {
 				$op1 = $opcodes[$last]['op1'];
 				if ($op1['op_type'] == XC_IS_CONST && array_key_exists('constant', $op1) && $op1['constant'] === $defaultReturnValue) {
-					unset($opcodes[$last]);
+					$opcodes[$last]['opcode'] = XC_NOP;
 					--$last;
 				}
 			}
@@ -912,7 +912,7 @@ class Decompiler
 				$this->dumpop($op, $EX);
 				continue;
 			}
-			// echo $i; $this->dumpop($op, $EX); //var_dump($op);
+			// echo $i, ' '; $this->dumpop($op, $EX); //var_dump($op);
 
 			$resvar = null;
 			if ((ZEND_ENGINE_2_4 ? ($res['op_type'] & EXT_TYPE_UNUSED) : ($res['EA.type'] & EXT_TYPE_UNUSED)) || $res['op_type'] == XC_IS_UNUSED) {
@@ -1724,24 +1724,24 @@ class Decompiler
 	{
 		$op1 = $op['op1'];
 		$op2 = $op['op2'];
-		$d = array('opname' => xcache_get_opcode($op['opcode']), 'opcode' => $op['opcode']);
+		$d = array('n' => xcache_get_opcode($op['opcode']), 'c' => $op['opcode']);
 
-		foreach (array('op1' => 'op1', 'op2' => 'op2', 'result' => 'res') as $k => $kk) {
+		foreach (array('op1' => '1:', 'op2' => '2:', 'result' => '>') as $k => $kk) {
 			switch ($op[$k]['op_type']) {
 			case XC_IS_UNUSED:
-				$d[$kk] = '*UNUSED* ' . $op[$k]['opline_num'];
+				$d[$kk] = 'U:' . $op[$k]['opline_num'];
 				break;
 
 			case XC_IS_VAR:
 				$d[$kk] = '$' . $op[$k]['var'];
-				if ($kk != 'res') {
+				if ($k != 'result') {
 					$d[$kk] .= ':' . str($this->getOpVal($op[$k], $EX));
 				}
 				break;
 
 			case XC_IS_TMP_VAR:
 				$d[$kk] = '#' . $op[$k]['var'];
-				if ($kk != 'res') {
+				if ($k != 'result') {
 					$d[$kk] .= ':' . str($this->getOpVal($op[$k], $EX));
 				}
 				break;
@@ -1751,7 +1751,7 @@ class Decompiler
 				break;
 
 			default:
-				if ($kk == 'res') {
+				if ($k == 'result') {
 					var_dump($op);
 					exit;
 					assert(0);
@@ -1761,9 +1761,12 @@ class Decompiler
 				}
 			}
 		}
-		$d['ext'] = $op['extended_value'];
+		$d[';'] = $op['extended_value'];
 
-		var_dump($d);
+		foreach ($d as $k => $v) {
+			echo $k, str($v), "\t";
+		}
+		echo PHP_EOL;
 	}
 	// }}}
 	function dargs(&$EX, $indent) // {{{
