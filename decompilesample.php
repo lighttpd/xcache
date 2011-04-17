@@ -185,6 +185,8 @@ $a = $b & $c;
 $a = $b | $c;
 $a = $b ^ $c;
 $a = ~$b;
+$a = -$b;
+$a = +$b;
 $a = $b >> $c;
 $a = $b >> $c;
 $a = $b == $c;
@@ -248,8 +250,11 @@ for ($i = 1; $i < 10; ++$i) {
 }
 
 foreach ($array as $key => $value) {
-	echo $key . ' = ' . $value . "\n";
-	continue;
+	foreach ($array as $key => $value) {
+		echo $key . ' = ' . $value . "\n";
+		break 2;
+		continue;
+	}
 }
 
 switch ($switch) {
@@ -278,7 +283,7 @@ include_once 'include_once.php';
 echo __FILE__;
 echo __LINE__;
 
-//* >= PHP 5.3
+//*
 echo 'PHP 5.3+ code testing';
 const CONST_VALUE = 1;
 echo $this::CONST_VALUE;
@@ -308,7 +313,10 @@ $greet = function ($name) {
 $greet('World');
 $greet('PHP');
 $total = 0;
+$tax = 1;
 $callback = function ($quantity, $product) use ($tax, &$total) {
+	static $static = array(1);
+	$tax = 'tax';
 	$pricePerItem = constant('PRICE_' . strtoupper($product));
 	$total += $pricePerItem * $quantity * ($tax + 1);
 };
