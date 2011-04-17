@@ -896,7 +896,7 @@ class Decompiler
 				$this->dumpop($op, $EX);
 				continue;
 			}
-			// $this->dumpop($op, $EX); //var_dump($op);
+			// echo $i; $this->dumpop($op, $EX); //var_dump($op);
 
 			$resvar = null;
 			if ((ZEND_ENGINE_2_4 ? ($res['op_type'] & EXT_TYPE_UNUSED) : ($res['EA.type'] & EXT_TYPE_UNUSED)) || $res['op_type'] == XC_IS_UNUSED) {
@@ -1499,6 +1499,10 @@ class Decompiler
 				case XC_JMP_NO_CTOR:
 					break;
 				case XC_JMP_SET: // ?:
+					$resvar = $this->getOpVal($op1, $EX);
+					$op['cond'] = $resvar; 
+					$op['isjmp'] = true;
+					break;
 				case XC_JMPNZ: // while
 				case XC_JMPZNZ: // for
 				case XC_JMPZ_EX: // and
@@ -1520,7 +1524,7 @@ class Decompiler
 						echo "TODO(cond_false):\n";
 						var_dump($op);// exit;
 					}
-					if ($opc == XC_JMPZ_EX || $opc == XC_JMPNZ_EX || $opc == XC_JMPZ) {
+					if ($opc == XC_JMPZ_EX || $opc == XC_JMPNZ_EX) {
 						$targetop = &$EX['opcodes'][$op2['opline_num']];
 						if ($opc == XC_JMPNZ_EX) {
 							$targetop['cond_true'][] = foldToCode($rvalue, $EX);
