@@ -275,8 +275,11 @@ echo __FILE__;
 echo __LINE__;
 
 //* >= PHP 5.3
+echo 'PHP 5.3+ code testing';
+const CONST_VALUE = 1;
 echo $this::CONST_VALUE;
 echo $a::CONST_VALUE;
+echo CONST_VALUE;
 $this::__construct();
 $obj::__construct();
 
