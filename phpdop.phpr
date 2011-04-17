@@ -109,17 +109,17 @@ if (isset($pk['class_table'])) {
 	unset($pk['class_table']);
 }
 var_dump($pk);
-if (isset($op_array)) {
-	dump_opcodes($op_array['opcodes']);
+if (isset($classes)) {
+	foreach ($classes as $name => $class) {
+		dump_class($name, $class);
+	}
 }
 if (isset($funcs)) {
 	foreach ($funcs as $name => $func) {
 		dump_function($name, $func);
 	}
 }
-if (isset($classes)) {
-	foreach ($classes as $name => $class) {
-		dump_class($name, $class);
-	}
+if (isset($op_array)) {
+	dump_opcodes($op_array['opcodes']);
 }
 
