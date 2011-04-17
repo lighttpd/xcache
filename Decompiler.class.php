@@ -1724,7 +1724,7 @@ class Decompiler
 	{
 		$op1 = $op['op1'];
 		$op2 = $op['op2'];
-		$d = array('n' => xcache_get_opcode($op['opcode']), 'c' => $op['opcode']);
+		$d = array(xcache_get_opcode($op['opcode']), $op['opcode']);
 
 		foreach (array('op1' => '1:', 'op2' => '2:', 'result' => '>') as $k => $kk) {
 			switch ($op[$k]['op_type']) {
@@ -1764,7 +1764,7 @@ class Decompiler
 		$d[';'] = $op['extended_value'];
 
 		foreach ($d as $k => $v) {
-			echo $k, str($v), "\t";
+			echo is_int($k) ? '' : $k, str($v), "\t";
 		}
 		echo PHP_EOL;
 	}
