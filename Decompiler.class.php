@@ -1568,11 +1568,15 @@ class Decompiler
 				case XC_DECLARE_FUNCTION:
 					$this->dfunction($this->dc['function_table'][$op1['constant']], $EX['indent']);
 					break;
-				case XC_DECLARE_LAMBDA_FUNCTION:
+				case XC_DECLARE_LAMBDA_FUNCTION: // {{{
 					ob_start();
 					$this->dfunction($this->dc['function_table'][$op1['constant']], $EX['indent']);
 					$resvar = ob_get_clean();
 					$istmpres = true;
+					break;
+					// }}}
+				case XC_DECLARE_CONST:
+					$resvar = 'const ' . unquoteName($this->getOpVal($op1, $EX), $EX) . ' = ' . str($this->getOpVal($op2, $EX));
 					break;
 				case XC_DECLARE_FUNCTION_OR_CLASS:
 					/* always removed by compiler */
