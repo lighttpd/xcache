@@ -161,15 +161,22 @@ class Decompiler_Binop extends Decompiler_Code // {{{
 
 	function toCode($indent)
 	{
+		$opstr = $this->parent->binops[$this->opc];
+
 		$op1 = foldToCode($this->op1, $indent);
 		if (is_a($this->op1, 'Decompiler_Binop') && $this->op1->opc != $this->opc) {
-			$op1 = "($op1)";
+			$op1 = "(" . str($op1, $indent) . ")";
 		}
-		$opstr = $this->parent->binops[$this->opc];
-		if ($op1 == '0' && $this->opc == XC_SUB) {
-			return $opstr . str($this->op2, $indent);
+		$op2 = foldToCode($this->op2, $indent);
+		if (is_a($this->op2, 'Decompiler_Binop') && $this->op2->opc != $this->opc && substr($opstr, -1) != '=') {
+			$op2 = "(" . str($op2, $indent) . ")";
 		}
-		return str($op1) . ' ' . $opstr . ' ' . str($this->op2, $indent);
+
+		if (str($op1) == '0' && ($this->opc == XC_ADD || $this->opc == XC_SUB)) {
+			return $opstr . str($op2, $indent);
+		}
+
+		return str($op1) . ' ' . $opstr . ' ' . str($op2);
 	}
 }
 // }}}
@@ -899,7 +906,7 @@ class Decompiler
 			else if (isset($this->unaryops[$opc])) { // {{{
 				$op1val = $this->getOpVal($op1, $EX);
 				$myop = $this->unaryops[$opc];
-				$rvalue = "$myop$op1val";
+				$rvalue = $myop . str($op1val);
 				$resvar = $rvalue;
 				// }}}
 			}
