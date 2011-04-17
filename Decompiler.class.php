@@ -70,26 +70,28 @@ function value($value) // {{{
 	return $value;
 }
 // }}}
-function unquoteProperty($str, $indent = '') // {{{
+function unquoteName_($str, $asProperty, $indent = '') // {{{
 {
 	$str = str($str, $indent);
-	if (preg_match("!^'[\\w_][\\w\\d_]*'\$!", $str)) {
-		return substr($str, 1, -1);
+	if (preg_match("!^'[\\w_][\\w\\d_\\\\]*'\$!", $str)) {
+		return str_replace('\\\\', '\\', substr($str, 1, -1));
 	}
-	else {
+	else if ($asProperty) {
 		return "{" . $str . "}";
-	}
-}
-// }}}
-function unquoteName($str, $indent = '') // {{{
-{
-	$str = str($str, $indent);
-	if (preg_match("!^'[\\w_][\\w\\d_]*'\$!", $str)) {
-		return substr($str, 1, -1);
 	}
 	else {
 		return $str;
 	}
+}
+// }}}
+function unquoteProperty($str, $indent = '') // {{{
+{
+	return unquoteName_($str, true, $indent);
+}
+// }}}
+function unquoteName($str, $indent = '') // {{{
+{
+	return unquoteName_($str, false, $indent);
 }
 // }}}
 class Decompiler_Object // {{{
@@ -422,7 +424,8 @@ class Decompiler_ForeachBox extends Decompiler_Box // {{{
 
 class Decompiler
 {
-	var $rName = '!^[\\w_][\\w\\d_]*$!';
+	var $namespace;
+	var $namespaceDecided;
 
 	function Decompiler()
 	{
@@ -472,6 +475,31 @@ class Decompiler
 				);
 				// }}}
 	}
+	function detectNamespace($name) // {{{
+	{
+		if ($this->namespaceDecided) {
+			return;
+		}
+
+		if (strpos($name, '\\') !== false) {
+			$this->namespace = strtok($name, '\\');
+			echo 'namespace ', $this->namespace, ";\n\n";
+		}
+
+		$this->namespaceDecided = true;
+	}
+	// }}}
+	function stripNamespace($name) // {{{
+	{
+		$len = strlen($this->namespace) + 1;
+		if (substr($name, 0, $len) == $this->namespace . '\\') {
+			return substr($name, $len);
+		}
+		else {
+			return $name;
+		}
+	}
+	// }}}
 	function outputPhp(&$opcodes, $opline, $last, $indent) // {{{
 	{
 		$origindent = $indent;
@@ -921,7 +949,7 @@ class Decompiler
 					else {
 						$class = $this->getOpVal($op2, $EX);
 						if (isset($op2['constant'])) {
-							$class = unquoteName($class);
+							$class = $this->stripNamespace(unquoteName($class));
 						}
 					}
 					$resvar = $class;
@@ -929,12 +957,12 @@ class Decompiler
 					// }}}
 				case XC_FETCH_CONSTANT: // {{{
 					if ($op1['op_type'] == XC_IS_UNUSED) {
-						$resvar = $op2['constant'];
+						$resvar = $this->stripNamespace($op2['constant']);
 						break;
 					}
 
 					if ($op1['op_type'] == XC_IS_CONST) {
-						$resvar = $op1['constant'];
+						$resvar = $this->stripNamespace($op1['constant']);
 					}
 					else {
 						$resvar = $this->getOpVal($op1, $EX);
@@ -1190,7 +1218,7 @@ class Decompiler
 						}
 						if ($opc == XC_INIT_STATIC_METHOD_CALL || /* PHP4 */ isset($op1['constant'])) {
 							$EX['object'] = null;
-							$EX['called_scope'] = unquoteName($obj, $EX);
+							$EX['called_scope'] = $this->stripNamespace(unquoteName($obj, $EX));
 						}
 						else {
 							$EX['object'] = $obj;
@@ -1211,6 +1239,7 @@ class Decompiler
 					}
 					break;
 					// }}}
+				case XC_INIT_NS_FCALL_BY_NAME:
 				case XC_INIT_FCALL_BY_NAME: // {{{
 					if (!ZEND_ENGINE_2 && ($ext & ZEND_CTOR_CALL)) {
 						break;
@@ -1248,10 +1277,11 @@ class Decompiler
 
 					$args = $this->popargs($EX, $ext);
 
-					$resvar =
-						(isset($object) ? $object . '->' : '' )
-						. (isset($EX['called_scope']) ? $EX['called_scope'] . '::' : '' )
-						. $fname . "($args)";
+					$prefix = (isset($object) ? $object . '->' : '' )
+						. (isset($EX['called_scope']) ? $EX['called_scope'] . '::' : '' );
+					$resvar = $prefix
+						. (!$prefix ? $this->stripNamespace($fname) : $fname)
+						. "($args)";
 					unset($args);
 
 					if (is_int($EX['object'])) {
@@ -1304,9 +1334,9 @@ class Decompiler
 						}
 
 						$fetchop = &$opcodes[$i + 1];
-						$impl = unquoteName($this->getOpVal($fetchop['op2'], $EX), $EX);
+						$interface = $this->stripNamespace(unquoteName($this->getOpVal($fetchop['op2'], $EX), $EX));
 						$addop = &$opcodes[$i + 2];
-						$class['interfaces'][$addop['extended_value']] = $impl;
+						$class['interfaces'][$addop['extended_value']] = $interface;
 						unset($fetchop, $addop);
 						$i += 2;
 					}
@@ -1576,7 +1606,9 @@ class Decompiler
 					break;
 					// }}}
 				case XC_DECLARE_CONST:
-					$resvar = 'const ' . unquoteName($this->getOpVal($op1, $EX), $EX) . ' = ' . str($this->getOpVal($op2, $EX));
+					$name = $this->stripNamespace(unquoteName($this->getOpVal($op1, $EX), $EX));
+					$value = str($this->getOpVal($op2, $EX));
+					$resvar = 'const ' . $name . ' = ' . $value;
 					break;
 				case XC_DECLARE_FUNCTION_OR_CLASS:
 					/* always removed by compiler */
@@ -1708,7 +1740,7 @@ class Decompiler
 			if (isset($op_array['arg_info'])) {
 				$ai = $op_array['arg_info'][$i];
 				if (!empty($ai['class_name'])) {
-					echo $ai['class_name'], ' ';
+					echo $this->stripNamespace($ai['class_name']), ' ';
 					if (!ZEND_ENGINE_2_2 && $ai['allow_null']) {
 						echo 'or NULL ';
 					}
@@ -1754,6 +1786,8 @@ class Decompiler
 	// }}}
 	function dfunction($func, $indent = '', $nobody = false) // {{{
 	{
+		$this->detectNamespace($func['op_array']['function_name']);
+
 		if ($nobody) {
 			$EX = array();
 			$EX['op_array'] = &$func['op_array'];
@@ -1769,7 +1803,7 @@ class Decompiler
 			}
 		}
 
-		$functionName = $func['op_array']['function_name'];
+		$functionName = $this->stripNamespace($func['op_array']['function_name']);
 		if ($functionName == '{closure}') {
 			$functionName = '';
 		}
@@ -1798,6 +1832,8 @@ class Decompiler
 	// }}}
 	function dclass($class, $indent = '') // {{{
 	{
+		$this->detectNamespace($class['name']);
+
 		// {{{ class decl
 		if (!empty($class['doc_comment'])) {
 			echo $indent;
@@ -1818,7 +1854,7 @@ class Decompiler
 				}
 			}
 		}
-		echo $isinterface ? 'interface ' : 'class ', $class['name'];
+		echo $isinterface ? 'interface ' : 'class ', $this->stripNamespace($class['name']);
 		if ($class['parent']) {
 			echo ' extends ', $class['parent'];
 		}

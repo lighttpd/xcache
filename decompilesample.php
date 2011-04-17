@@ -1,5 +1,9 @@
 <?php
 
+//* >= PHP 5.3
+namespace ns;
+// */
+
 abstract class ClassName
 {
 	const CONST_VALUE = 'A constant value';
