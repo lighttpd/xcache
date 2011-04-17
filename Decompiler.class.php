@@ -1115,7 +1115,6 @@ class Decompiler
 								$name = unquoteName($src);
 								if (isset($statics[$name])) {
 									$var = $statics[$name];
-									var_dump(str(value($statics)));
 									$resvar .= ' = ';
 									$resvar .= str(value($var), $EX);
 								}
