@@ -1275,7 +1275,9 @@ class Decompiler
 						exit;
 					}
 					$class = &$this->dc['class_table'][$key];
-					$class['name'] = unquoteName($this->getOpVal($op2, $EX), $EX);
+					if (!isset($class['name'])) {
+						$class['name'] = unquoteName($this->getOpVal($op2, $EX), $EX);
+					}
 					if ($opc == XC_DECLARE_INHERITED_CLASS || $opc == XC_DECLARE_INHERITED_CLASS_DELAYED) {
 						$ext /= XC_SIZEOF_TEMP_VARIABLE;
 						$class['parent'] = $T[$ext];
@@ -1562,6 +1564,9 @@ class Decompiler
 				case XC_EXT_FCALL_BEGIN:
 				case XC_EXT_FCALL_END:
 				case XC_EXT_NOP:
+					break;
+				case XC_DECLARE_FUNCTION:
+					$this->dfunction($this->dc['function_table'][$op1['constant']], $EX['indent']);
 					break;
 				case XC_DECLARE_LAMBDA_FUNCTION:
 					ob_start();

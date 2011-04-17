@@ -89,6 +89,7 @@ interface IInterface
 
 function f1($f)
 {
+	echo __FUNCTION__;
 	echo $f;
 }
 
@@ -148,18 +149,23 @@ final class Child extends ClassName implements IInterface
 	}
 }
 
+if ($late) {
+class LateBindingClass
+{}
+
+function lateBindingFunction($arg)
+{
+	echo 'lateFunction';
+}
+}
+
 echo "\r\n";
 echo "\r";
 echo "\n";
 echo str_replace(array('a' => 'a', 'b' => 'c'), 'b');
 $object = new ClassName();
 $object = new $className();
-try {
-	echo 'code being try';
-}
-catch (Exception $e) {
-	echo $e;
-}
+$result = $object instanceof ClassName;
 $cloned = clone $object;
 $a = 1;
 $a = $b + $c;
@@ -191,15 +197,28 @@ $a = $b--;
 $a = --$b;
 $a = $obj->b--;
 $a = --$obj->b;
-$a = $b and $c;
-$a = $b or $c;
 $a = $b xor $c;
 $a = !$b;
+$a = $b and $c;
+$a = $b or $c;
 $a = $b && $c;
 $a = $b || $c;
 $a = $b ? $c : $d;
 $a = f1() ? f2() : f3();
-$a = $b instanceof ClassName;
+
+try {
+	echo 'outer try 1';
+	try {
+		echo 'inner try';
+	}
+	catch (InnerException $e) {
+		echo $e;
+	}
+	echo 'outer try 2';
+}
+catch (OuterException $e) {
+	echo $e;
+}
 
 if ($a) {
 	echo 'if ($a)';
@@ -252,6 +271,8 @@ require 'require.php';
 require_once 'require_once.php';
 include 'include.php';
 include_once 'include_once.php';
+echo __FILE__;
+echo __LINE__;
 
 //* >= PHP 5.3
 echo $this::CONST_VALUE;
