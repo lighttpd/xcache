@@ -1242,6 +1242,7 @@ class Decompiler
 					// }}}
 				case XC_INIT_NS_FCALL_BY_NAME:
 				case XC_INIT_FCALL_BY_NAME: // {{{
+					array_push($EX['arg_types_stack'], array($EX['fbc'], $EX['object'], $EX['called_scope']));
 					if (!ZEND_ENGINE_2 && ($ext & ZEND_CTOR_CALL)) {
 						break;
 					}
