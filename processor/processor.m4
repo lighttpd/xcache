@@ -642,7 +642,7 @@ dnl }}}
 #endif
 DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	IFRESTORE(`
-	const xc_op_array_info_t *op_array_info = &processor->active_op_array_infos_src[processor->active_op_array_index];
+	const xc_op_array_info_t *op_array_info = &processor->active_op_array_infos_src[processor->active_op_array_index++];
 	dnl shadow copy must NOT meet:
 	dnl readonly_protection=on
 	dnl main op_array && have early binding
