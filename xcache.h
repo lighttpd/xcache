@@ -96,12 +96,14 @@ static inline void my_add_assoc_null_ex(zval *arg, char *key, uint key_len)
 #	define Z_OP(op) (op)
 #	define Z_OP_CONSTANT(op) (op).literal->constant
 #	define Z_OP_TYPE(op) op##_##type
+#	define Z_OP_TYPEOF_TYPE zend_uchar
 
 #	define Z_CLASS_INFO(className) (className).info.user
 #else
 #	define Z_OP(op) (op).u
 #	define Z_OP_CONSTANT(op) (op).u.constant
 #	define Z_OP_TYPE(op) (op).op_type
+#	define Z_OP_TYPEOF_TYPE int
 typedef znode znode_op;
 
 #	define Z_CLASS_INFO(className) (className)
