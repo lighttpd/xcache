@@ -10,31 +10,41 @@ function color($str, $color = 33)
 
 function str($code, $indent = '') // {{{
 {
-	if (is_object($code)) {
-		if (get_class($code) != 'Decompiler_Code') {
-			$code = toCode($code, $indent);
+	if (is_array($code)) {
+		$array = array();
+		foreach ($code as $key => $value) {
+			$array[$key] = str($value, $indent);
 		}
-		return $code->__toString();
+		return $array;
+	}
+	if (is_object($code)) {
+		$code = foldToCode($code, $indent);
+		return $code->toCode($indent);
 	}
 
 	return (string) $code;
 }
 // }}}
-function toCode($src, $indent = '') // {{{
+function foldToCode($src, $indent = '') // {{{ wrap or rewrap anything to Decompiler_Code
 {
 	if (is_array($indent)) {
 		$indent = $indent['indent'];
 	}
 
-	if (is_object($src)) {
-		if (!method_exists($src, 'toCode')) {
-			var_dump($src);
-			exit('no toCode');
-		}
-		return new Decompiler_Code($src->toCode($indent));
+	if (!is_object($src)) {
+		return new Decompiler_Code($src);
 	}
 
-	return new Decompiler_Code($src);
+	if (!method_exists($src, 'toCode')) {
+		var_dump($src);
+		exit('no toCode');
+	}
+	if (get_class($src) != 'Decompiler_Code') {
+		// rewrap it
+		$src = new Decompiler_Code($src->toCode($indent));
+	}
+
+	return $src;
 }
 // }}}
 function value($value) // {{{
@@ -60,6 +70,30 @@ function value($value) // {{{
 	return $value;
 }
 // }}}
+function unquoteName_($str, $asVariableName, $indent = '') // {{{
+{
+	$str = str($str, $indent);
+	if (preg_match("!^'[\\w_][\\w\\d_\\\\]*'\$!", $str)) {
+		return str_replace('\\\\', '\\', substr($str, 1, -1));
+	}
+	else if ($asVariableName) {
+		return "{" . $str . "}";
+	}
+	else {
+		return $str;
+	}
+}
+// }}}
+function unquoteVariableName($str, $indent = '') // {{{
+{
+	return unquoteName_($str, true, $indent);
+}
+// }}}
+function unquoteName($str, $indent = '') // {{{
+{
+	return unquoteName_($str, false, $indent);
+}
+// }}}
 class Decompiler_Object // {{{
 {
 }
@@ -75,7 +109,21 @@ class Decompiler_Value extends Decompiler_Object // {{{
 
 	function toCode($indent)
 	{
-		return var_export($this->value, true);
+		$code = var_export($this->value, true);
+		if (gettype($this->value) == 'string') {
+			switch ($this->value) {
+			case "\r":
+				return '"\\r"';
+			case "\n":
+				return '"\\n"';
+			case "\r\n":
+				return '"\\r\\n"';
+			}
+			$code = str_replace("\r\n", '\' . "\\r\\n" . \'', $code);
+			$code = str_replace("\r", '\' . "\\r" . \'', $code);
+			$code = str_replace("\n", '\' . "\\n" . \'', $code);
+		}
+		return $code;
 	}
 }
 // }}}
@@ -85,15 +133,11 @@ class Decompiler_Code extends Decompiler_Object // {{{
 
 	function Decompiler_Code($src)
 	{
+		assert('isset($src)');
 		$this->src = $src;
 	}
 
 	function toCode($indent)
-	{
-		return $this;
-	}
-
-	function __toString()
 	{
 		return $this->src;
 	}
@@ -117,15 +161,22 @@ class Decompiler_Binop extends Decompiler_Code // {{{
 
 	function toCode($indent)
 	{
-		$op1 = toCode($this->op1, $indent);
-		if (is_a($this->op1, 'Decompiler_Binop') && $this->op1->opc != $this->opc) {
-			$op1 = "($op1)";
-		}
 		$opstr = $this->parent->binops[$this->opc];
-		if ($op1 == '0' && $this->opc == XC_SUB) {
-			return $opstr . toCode($this->op2, $indent);
+
+		$op1 = foldToCode($this->op1, $indent);
+		if (is_a($this->op1, 'Decompiler_Binop') && $this->op1->opc != $this->opc) {
+			$op1 = "(" . str($op1, $indent) . ")";
 		}
-		return $op1 . ' ' . $opstr . ' ' . toCode($this->op2, $indent);
+		$op2 = foldToCode($this->op2, $indent);
+		if (is_a($this->op2, 'Decompiler_Binop') && $this->op2->opc != $this->opc && substr($opstr, -1) != '=') {
+			$op2 = "(" . str($op2, $indent) . ")";
+		}
+
+		if (str($op1) == '0' && ($this->opc == XC_ADD || $this->opc == XC_SUB)) {
+			return $opstr . str($op2, $indent);
+		}
+
+		return str($op1) . ' ' . $opstr . ' ' . str($op2);
 	}
 }
 // }}}
@@ -147,6 +198,10 @@ class Decompiler_Fetch extends Decompiler_Code // {{{
 		case ZEND_FETCH_LOCAL:
 			return '$' . substr($this->src, 1, -1);
 		case ZEND_FETCH_STATIC:
+			if (ZEND_ENGINE_2_3) {
+				// closure local variable?
+				return str($this->src);
+			}
 			die('static fetch cant to string');
 		case ZEND_FETCH_GLOBAL:
 		case ZEND_FETCH_GLOBAL_LOCK:
@@ -177,18 +232,25 @@ class Decompiler_Dim extends Decompiler_Value // {{{
 {
 	var $offsets = array();
 	var $isLast = false;
+	var $isObject = false;
 	var $assign = null;
 
 	function toCode($indent)
 	{
 		if (is_a($this->value, 'Decompiler_ListBox')) {
-			$exp = toCode($this->value->obj->src, $indent);
+			$exp = str($this->value->obj->src, $indent);
 		}
 		else {
-			$exp = toCode($this->value, $indent);
+			$exp = str($this->value, $indent);
 		}
-		foreach ($this->offsets as $dim) {
-			$exp .= '[' . toCode($dim, $indent) . ']';
+		$last = count($this->offsets) - 1;
+		foreach ($this->offsets as $i => $dim) {
+			if ($this->isObject && $i == $last) {
+				$exp .= '->' . unquoteVariableName($dim, $indent);
+			}
+			else {
+				$exp .= '[' . str($dim, $indent) . ']';
+			}
 		}
 		return $exp;
 	}
@@ -211,9 +273,9 @@ class Decompiler_List extends Decompiler_Code // {{{
 			unset($dim->value);
 			$dim->value = $this->src;
 			if (!isset($dim->assign)) {
-				return toCode($dim, $indent);
+				return str($dim, $indent);
 			}
-			return toCode($this->dims[0]->assign, $indent) . ' = ' . toCode($dim, $indent);
+			return str($this->dims[0]->assign, $indent) . ' = ' . str($dim, $indent);
 		}
 		/* flatten dims */
 		$assigns = array();
@@ -222,9 +284,9 @@ class Decompiler_List extends Decompiler_Code // {{{
 			foreach ($dim->offsets as $offset) {
 				$assign = &$assign[$offset];
 			}
-			$assign = toCode($dim->assign, $indent);
+			$assign = foldToCode($dim->assign, $indent);
 		}
-		return $this->toList($assigns) . ' = ' . toCode($this->src, $indent);
+		return str($this->toList($assigns)) . ' = ' . str($this->src, $indent);
 	}
 
 	function toList($assigns)
@@ -369,11 +431,25 @@ class Decompiler_ForeachBox extends Decompiler_Box // {{{
 
 class Decompiler
 {
-	var $rName = '!^[\\w_][\\w\\d_]*$!';
-	var $rQuotedName = "!^'[\\w_][\\w\\d_]*'\$!";
+	var $namespace;
+	var $namespaceDecided;
 
 	function Decompiler()
 	{
+		// {{{ testing
+		// XC_UNDEF XC_OP_DATA
+		$this->test = !empty($_ENV['XCACHE_DECOMPILER_TEST']);
+		$this->usedOps = array();
+
+		if ($this->test) {
+			$content = file_get_contents(__FILE__);
+			for ($i = 0; $opname = xcache_get_opcode($i); $i ++) {
+				if (!preg_match("/\\bXC_" . $opname . "\\b(?!')/", $content)) {
+					echo "not recognized opcode ", $opname, "\n";
+				}
+			}
+		}
+		// }}}
 		// {{{ opinfo
 		$this->unaryops = array(
 				XC_BW_NOT   => '~',
@@ -420,6 +496,31 @@ class Decompiler
 				);
 				// }}}
 	}
+	function detectNamespace($name) // {{{
+	{
+		if ($this->namespaceDecided) {
+			return;
+		}
+
+		if (strpos($name, '\\') !== false) {
+			$this->namespace = strtok($name, '\\');
+			echo 'namespace ', $this->namespace, ";\n\n";
+		}
+
+		$this->namespaceDecided = true;
+	}
+	// }}}
+	function stripNamespace($name) // {{{
+	{
+		$len = strlen($this->namespace) + 1;
+		if (substr($name, 0, $len) == $this->namespace . '\\') {
+			return substr($name, $len);
+		}
+		else {
+			return $name;
+		}
+	}
+	// }}}
 	function outputPhp(&$opcodes, $opline, $last, $indent) // {{{
 	{
 		$origindent = $indent;
@@ -427,24 +528,25 @@ class Decompiler
 		for ($i = $opline; $i <= $last; $i ++) {
 			$op = $opcodes[$i];
 			if (isset($op['php'])) {
-				$toticks = isset($op['ticks']) ? $op['ticks'] : 0;
+				$toticks = isset($op['ticks']) ? (int) str($op['ticks']) : 0;
 				if ($curticks != $toticks) {
-					if (!$toticks) {
-						echo $origindent, "}\n";
+					$oldticks = $curticks;
+					$curticks = $toticks;
+					if (!$curticks) {
+						echo $origindent, "}\n\n";
 						$indent = $origindent;
 					}
 					else {
-						if ($curticks) {
-							echo $origindent, "}\n";
+						if ($oldticks) {
+							echo $origindent, "}\n\n";
 						}
-						else if (!$curticks) {
+						else if (!$oldticks) {
 							$indent .= INDENT;
 						}
-						echo $origindent, "declare(ticks=$curticks) {\n";
+						echo $origindent, "declare (ticks=$curticks) {\n";
 					}
-					$curticks = $toticks;
 				}
-				echo $indent, toCode($op['php'], $indent), ";\n";
+				echo $indent, str($op['php'], $indent), ";\n";
 			}
 		}
 		if ($curticks) {
@@ -456,14 +558,14 @@ class Decompiler
 	{
 		switch ($op['op_type']) {
 		case XC_IS_CONST:
-			return toCode(value($op['constant']), $EX);
+			return foldToCode(value($op['constant']), $EX);
 
 		case XC_IS_VAR:
 		case XC_IS_TMP_VAR:
 			$T = &$EX['Ts'];
 			$ret = $T[$op['var']];
 			if ($tostr) {
-				$ret = toCode($ret, $EX);
+				$ret = foldToCode($ret, $EX);
 			}
 			if ($free) {
 				unset($T[$op['var']]);
@@ -530,13 +632,14 @@ class Decompiler
 		if ($removeTailing) {
 			$last = count($opcodes) - 1;
 			if ($opcodes[$last]['opcode'] == XC_HANDLE_EXCEPTION) {
-				unset($opcodes[$last]);
+				$this->usedOps[XC_HANDLE_EXCEPTION] = true;
+				$opcodes[$last]['opcode'] = XC_NOP;
 				--$last;
 			}
 			if ($opcodes[$last]['opcode'] == XC_RETURN) {
 				$op1 = $opcodes[$last]['op1'];
 				if ($op1['op_type'] == XC_IS_CONST && array_key_exists('constant', $op1) && $op1['constant'] === $defaultReturnValue) {
-					unset($opcodes[$last]);
+					$opcodes[$last]['opcode'] = XC_NOP;
 					--$last;
 				}
 			}
@@ -561,6 +664,12 @@ class Decompiler
 			*/
 			$op['line'] = $i;
 			switch ($op['opcode']) {
+			case XC_CONT:
+			case XC_BRK:
+				$op['jmpouts'] = array();
+				break;
+
+			case XC_GOTO:
 			case XC_JMP:
 				$target = $op['op1']['var'];
 				$op['jmpouts'] = array($target);
@@ -579,6 +688,7 @@ class Decompiler
 			case XC_JMPNZ:
 			case XC_JMPZ_EX:
 			case XC_JMPNZ_EX:
+			case XC_JMP_SET:
 			// case XC_FE_RESET:
 			case XC_FE_FETCH:
 			// case XC_JMP_NO_CTOR:
@@ -677,11 +787,11 @@ class Decompiler
 			$this->outputCode($EX, $opline, $end /* - 1 skip last jmp */, $indent . INDENT);
 			$body = ob_get_clean();
 
-			$as = toCode($op['fe_as'], $EX);
+			$as = foldToCode($op['fe_as'], $EX);
 			if (isset($op['fe_key'])) {
-				$as = toCode($op['fe_key'], $EX) . ' => ' . $as;
+				$as = str($op['fe_key'], $EX) . ' => ' . str($as);
 			}
-			echo "{$indent}foreach (" . toCode($op['fe_src'], $EX) . " as $as) {\n";
+			echo "{$indent}foreach (" . str($op['fe_src'], $EX) . " as $as) {\n";
 			echo $body;
 			echo "{$indent}}";
 			// $this->outputCode($EX, $next, $last, $indent);
@@ -710,19 +820,30 @@ class Decompiler
 		if (!isset($next)) {
 			return;
 		}
-		if (!empty($op['jmpouts']) && isset($op['isjmp'])) {
+		if (isset($op['jmpouts']) && isset($op['isjmp'])) {
 			if (isset($op['cond'])) {
-				echo "{$indent}check ($op[cond]) {\n";
+				echo "{$indent}check (" . str($op["cond"]) . ") {\n";
 				echo INDENT;
 			}
-			echo $indent;
-			echo xcache_get_opcode($op['opcode']), ' line', $op['jmpouts'][0];
-			if (isset($op['jmpouts'][1])) {
-				echo ', line', $op['jmpouts'][1];
+			switch ($op['opcode']) {
+			case XC_CONT:
+			case XC_BRK:
+				break;
+
+			case XC_GOTO:
+				echo $indent, 'goto', ' line', $op['jmpouts'][0], ';', "\n";
+				break;
+
+			default:
+				echo $indent;
+				echo xcache_get_opcode($op['opcode']), ' line', $op['jmpouts'][0];
+				if (isset($op['jmpouts'][1])) {
+					echo ', line', $op['jmpouts'][1];
+				}
+				echo ";";
+				// echo ' // <- line', $op['line'];
+				echo "\n";
 			}
-			echo ";";
-			// echo ' // <- line', $op['line'];
-			echo "\n";
 			if (isset($op['cond'])) echo "$indent}\n";
 		}
 
@@ -750,7 +871,7 @@ class Decompiler
 		if (isset($op['cond_false'])) {
 			// $this->dumpop($op, $EX);
 			// any true comes here, so it's a "or"
-			$cond = implode(' and ', $op['cond_false']);
+			$cond = implode(' and ', str($op['cond_false']));
 			// var_dump($op['cond'] = $cond);
 			/*
 			$rvalue = implode(' or ', $op['cond_true']) . ' or ' . $rvalue;
@@ -764,14 +885,6 @@ class Decompiler
 		$this->outputCode($EX, $next, $last, $indent);
 	}
 	// }}}
-	function unquoteName($str) // {{{
-	{
-		if (preg_match($this->rQuotedName, $str)) {
-			$str = substr($str, 1, -1);
-		}
-		return $str;
-	}
-	// }}}
 	function dasmBasicBlock(&$EX, $opline, $last) // {{{
 	{
 		$T = &$EX['Ts'];
@@ -783,6 +896,7 @@ class Decompiler
 			$op = &$opcodes[$i];
 			$opc = $op['opcode'];
 			if ($opc == XC_NOP) {
+				$this->usedOps[$opc] = true;
 				continue;
 			}
 
@@ -798,7 +912,7 @@ class Decompiler
 				$this->dumpop($op, $EX);
 				continue;
 			}
-			// $this->dumpop($op, $EX); //var_dump($op);
+			// echo $i, ' '; $this->dumpop($op, $EX); //var_dump($op);
 
 			$resvar = null;
 			if ((ZEND_ENGINE_2_4 ? ($res['op_type'] & EXT_TYPE_UNUSED) : ($res['EA.type'] & EXT_TYPE_UNUSED)) || $res['op_type'] == XC_IS_UNUSED) {
@@ -812,9 +926,11 @@ class Decompiler
 
 			$call = array(&$this, $opname);
 			if (is_callable($call)) {
+				$this->usedOps[$opc] = true;
 				$this->{$opname}($op, $EX);
 			}
 			else if (isset($this->binops[$opc])) { // {{{
+				$this->usedOps[$opc] = true;
 				$op1val = $this->getOpVal($op1, $EX, false);
 				$op2val = $this->getOpVal($op2, $EX, false);
 				$rvalue = new Decompiler_Binop($this, $op1val, $opc, $op2val);
@@ -822,22 +938,40 @@ class Decompiler
 				// }}}
 			}
 			else if (isset($this->unaryops[$opc])) { // {{{
+				$this->usedOps[$opc] = true;
 				$op1val = $this->getOpVal($op1, $EX);
 				$myop = $this->unaryops[$opc];
-				$rvalue = "$myop$op1val";
+				$rvalue = $myop . str($op1val);
 				$resvar = $rvalue;
 				// }}}
 			}
 			else {
+				$covered = true;
 				switch ($opc) {
 				case XC_NEW: // {{{
 					array_push($EX['arg_types_stack'], array($EX['fbc'], $EX['object'], $EX['called_scope']));
 					$EX['object'] = (int) $res['var'];
 					$EX['called_scope'] = null;
-					$EX['fbc'] = 'new ' . $this->unquoteName($this->getOpVal($op1, $EX));
+					$EX['fbc'] = 'new ' . unquoteName($this->getOpVal($op1, $EX), $EX);
 					if (!ZEND_ENGINE_2) {
 						$resvar = '$new object$';
 					}
+					break;
+					// }}}
+				case XC_THROW: // {{{
+					$resvar = 'throw ' . str($this->getOpVal($op1, $EX));
+					break;
+					// }}}
+				case XC_CLONE: // {{{
+					$resvar = 'clone ' . str($this->getOpVal($op1, $EX));
+					break;
+					// }}}
+				case XC_CATCH: // {{{
+					$resvar = 'catch (' . str($this->getOpVal($op1, $EX)) . ' ' . str($this->getOpVal($op2, $EX)) . ')';
+					break;
+					// }}}
+				case XC_INSTANCEOF: // {{{
+					$resvar = str($this->getOpVal($op1, $EX)) . ' instanceof ' . str($this->getOpVal($op2, $EX));
 					break;
 					// }}}
 				case XC_FETCH_CLASS: // {{{
@@ -856,26 +990,28 @@ class Decompiler
 						$istmpres = true;
 					}
 					else {
-						$class = $op2['constant'];
-						if (is_object($class)) {
-							$class = get_class($class);
+						$class = $this->getOpVal($op2, $EX);
+						if (isset($op2['constant'])) {
+							$class = $this->stripNamespace(unquoteName($class));
 						}
 					}
 					$resvar = $class;
 					break;
 					// }}}
 				case XC_FETCH_CONSTANT: // {{{
-					if ($op1['op_type'] == XC_IS_CONST) {
-						$resvar = $op1['constant'];
+					if ($op1['op_type'] == XC_IS_UNUSED) {
+						$resvar = $this->stripNamespace($op2['constant']);
+						break;
 					}
-					else if ($op1['op_type'] == XC_IS_UNUSED) {
-						$resvar = $op2['constant'];
+
+					if ($op1['op_type'] == XC_IS_CONST) {
+						$resvar = $this->stripNamespace($op1['constant']);
 					}
 					else {
-						$class = $T[$op1['var']];
-						assert($class[0] == 'class');
-						$resvar = $class[1] . '::' . $op2['constant'];
+						$resvar = $this->getOpVal($op1, $EX);
 					}
+
+					$resvar = str($resvar) . '::' . unquoteName($this->getOpVal($op2, $EX));
 					break;
 					// }}}
 					// {{{ case XC_FETCH_*
@@ -896,16 +1032,16 @@ class Decompiler
 					switch ($fetchtype) {
 					case ZEND_FETCH_STATIC_MEMBER:
 						$class = $this->getOpVal($op2, $EX);
-						$rvalue = $class . '::$' . $this->unquoteName($rvalue);
+						$rvalue = str($class) . '::$' . unquoteName($rvalue, $EX);
 						break;
 					default:
-						$name = $this->unquoteName($rvalue);
-						$globalname = xcache_is_autoglobal($name) ? "\$$name" : "\$GLOBALS[$rvalue]";
+						$name = unquoteName($rvalue, $EX);
+						$globalname = xcache_is_autoglobal($name) ? "\$$name" : "\$GLOBALS[" . str($rvalue) . "]";
 						$rvalue = new Decompiler_Fetch($rvalue, $fetchtype, $globalname);
 						break;
 					}
 					if ($opc == XC_UNSET_VAR) {
-						$op['php'] = "unset(" . toCode($rvalue, $EX) . ")";
+						$op['php'] = "unset(" . str($rvalue, $EX) . ")";
 						$lastphpop = &$op;
 					}
 					else if ($res['op_type'] != XC_IS_UNUSED) {
@@ -922,20 +1058,23 @@ class Decompiler
 				case XC_FETCH_DIM_UNSET:
 				case XC_FETCH_DIM_IS:
 				case XC_ASSIGN_DIM:
+				case XC_UNSET_DIM_OBJ: // PHP 4 only
 				case XC_UNSET_DIM:
-				case XC_UNSET_DIM_OBJ:
+				case XC_UNSET_OBJ:
 					$src = $this->getOpVal($op1, $EX, false);
 					if (is_a($src, "Decompiler_ForeachBox")) {
 						$src->iskey = $this->getOpVal($op2, $EX);
 						$resvar = $src;
 						break;
 					}
-					else if (is_a($src, "Decompiler_DimBox")) {
+
+					if (is_a($src, "Decompiler_DimBox")) {
 						$dimbox = $src;
 					}
 					else {
 						if (!is_a($src, "Decompiler_ListBox")) {
-							$list = new Decompiler_List($this->getOpVal($op1, $EX, false));
+							$op1val = $this->getOpVal($op1, $EX, false);
+							$list = new Decompiler_List(isset($op1val) ? $op1val : '$this');
 
 							$src = new Decompiler_ListBox($list);
 							if (!isset($op1['var'])) {
@@ -959,17 +1098,21 @@ class Decompiler
 					else if ($ext == ZEND_FETCH_STANDARD) {
 						$dim->isLast = true;
 					}
+					if ($opc == XC_UNSET_OBJ) {
+						$dim->isObject = true;
+					}
 					unset($dim);
 					$rvalue = $dimbox;
+					unset($dimbox);
 
 					if ($opc == XC_ASSIGN_DIM) {
 						$lvalue = $rvalue;
 						++ $i;
 						$rvalue = $this->getOpVal($opcodes[$i]['op1'], $EX);
-						$resvar = toCode($lvalue, $EX) . ' = ' . $rvalue;
+						$resvar = str($lvalue, $EX) . ' = ' . str($rvalue);
 					}
-					else if ($opc == XC_UNSET_DIM) {
-						$op['php'] = "unset(" . toCode($rvalue, $EX) . ")";
+					else if ($opc == XC_UNSET_DIM || $opc == XC_UNSET_OBJ) {
+						$op['php'] = "unset(" . str($rvalue, $EX) . ")";
 						$lastphpop = &$op;
 					}
 					else if ($res['op_type'] != XC_IS_UNUSED) {
@@ -990,20 +1133,20 @@ class Decompiler
 						$dim = &$rvalue->obj;
 						$dim->assign = $lvalue;
 						if ($dim->isLast) {
-							$resvar = toCode($dim->value, $EX);
+							$resvar = foldToCode($dim->value, $EX);
 						}
 						unset($dim);
 						break;
 					}
-					$resvar = "$lvalue = " . toCode($rvalue, $EX);
+					$resvar = "$lvalue = " . str($rvalue, $EX);
 					break;
 					// }}}
 				case XC_ASSIGN_REF: // {{{
 					$lvalue = $this->getOpVal($op1, $EX);
 					$rvalue = $this->getOpVal($op2, $EX, false);
 					if (is_a($rvalue, 'Decompiler_Fetch')) {
-						$src = toCode($rvalue->src, $EX);
-						if (substr($src, 1, -1) == substr($lvalue, 1)) {
+						$src = str($rvalue->src, $EX);
+						if ('$' . unquoteName($src) == $lvalue) {
 							switch ($rvalue->fetchType) {
 							case ZEND_FETCH_GLOBAL:
 							case ZEND_FETCH_GLOBAL_LOCK:
@@ -1012,11 +1155,11 @@ class Decompiler
 							case ZEND_FETCH_STATIC:
 								$statics = &$EX['op_array']['static_variables'];
 								$resvar = 'static ' . $lvalue;
-								$name = substr($src, 1, -1);
+								$name = unquoteName($src);
 								if (isset($statics[$name])) {
 									$var = $statics[$name];
 									$resvar .= ' = ';
-									$resvar .= toCode(value($var), $EX);
+									$resvar .= str(value($var), $EX);
 								}
 								unset($statics);
 								break 2;
@@ -1025,7 +1168,7 @@ class Decompiler
 						}
 					}
 					// TODO: PHP_6 global
-					$rvalue = toCode($rvalue, $EX);
+					$rvalue = str($rvalue, $EX);
 					$resvar = "$lvalue = &$rvalue";
 					break;
 					// }}}
@@ -1041,14 +1184,7 @@ class Decompiler
 					if (!isset($obj)) {
 						$obj = '$this';
 					}
-					$prop = $this->getOpVal($op2, $EX);
-					if (preg_match($this->rQuotedName, $prop)) {
-						$prop = substr($prop, 1, -1);;
-						$rvalue = "{$obj}->$prop";
-					}
-					else {
-						$rvalue = "{$obj}->{" . "$prop}";
-					}
+					$rvalue = str($obj) . "->" . unquoteVariableName($this->getOpVal($op2, $EX), $EX);
 					if ($res['op_type'] != XC_IS_UNUSED) {
 						$resvar = $rvalue;
 					}
@@ -1056,7 +1192,7 @@ class Decompiler
 						++ $i;
 						$lvalue = $rvalue;
 						$rvalue = $this->getOpVal($opcodes[$i]['op1'], $EX);
-						$resvar = "$lvalue = $rvalue";
+						$resvar = "$lvalue = " . str($rvalue);
 					}
 					break;
 					// }}}
@@ -1065,13 +1201,7 @@ class Decompiler
 				case XC_ISSET_ISEMPTY:
 				case XC_ISSET_ISEMPTY_VAR: // {{{
 					if ($opc == XC_ISSET_ISEMPTY_VAR) {
-						$rvalue = $this->getOpVal($op1, $EX);;
-						if (preg_match($this->rQuotedName, $rvalue)) {
-							$rvalue = '$' . substr($rvalue, 1, -1);
-						}
-						else {
-							$rvalue = '${' . $rvalue . '}';
-						}
+						$rvalue = $this->getOpVal($op1, $EX);
 						if ($op2['EA.type'] == ZEND_FETCH_STATIC_MEMBER) {
 							$class = $this->getOpVal($op2, $EX);
 							$rvalue = $class . '::' . $rvalue;
@@ -1084,15 +1214,13 @@ class Decompiler
 						$container = $this->getOpVal($op1, $EX);
 						$dim = $this->getOpVal($op2, $EX);
 						if ($opc == XC_ISSET_ISEMPTY_PROP_OBJ) {
-							if (preg_match($this->rQuotedName, $dim)) {
-								$rvalue = $container . "->" . substr($dim, 1, -1);
+							if (!isset($container)) {
+								$container = '$this';
 							}
-							else {
-								$rvalue = $container . "->{" . $dim . "}";
-							}
+							$rvalue = $container . "->" . unquoteVariableName($dim);
 						}
 						else {
-							$rvalue = $container . "[$dim]";
+							$rvalue = $container . '[' . str($dim) .']';
 						}
 					}
 
@@ -1112,16 +1240,11 @@ class Decompiler
 				case XC_SEND_REF:
 				case XC_SEND_VAR: // {{{
 					$ref = ($opc == XC_SEND_REF ? '&' : '');
-					$EX['argstack'][] = $ref . $this->getOpVal($op1, $EX);
+					$EX['argstack'][] = $ref . str($this->getOpVal($op1, $EX));
 					break;
 					// }}}
 				case XC_INIT_STATIC_METHOD_CALL:
-				case XC_INIT_METHOD_CALL:
-				case XC_INIT_FCALL_BY_FUNC:
-				case XC_INIT_FCALL_BY_NAME: // {{{
-					if (($ext & ZEND_CTOR_CALL)) {
-						break;
-					}
+				case XC_INIT_METHOD_CALL: // {{{
 					array_push($EX['arg_types_stack'], array($EX['fbc'], $EX['object'], $EX['called_scope']));
 					if ($opc == XC_INIT_STATIC_METHOD_CALL || $opc == XC_INIT_METHOD_CALL || $op1['op_type'] != XC_IS_UNUSED) {
 						$obj = $this->getOpVal($op1, $EX);
@@ -1130,7 +1253,7 @@ class Decompiler
 						}
 						if ($opc == XC_INIT_STATIC_METHOD_CALL || /* PHP4 */ isset($op1['constant'])) {
 							$EX['object'] = null;
-							$EX['called_scope'] = $this->unquoteName($obj);
+							$EX['called_scope'] = $this->stripNamespace(unquoteName($obj, $EX));
 						}
 						else {
 							$EX['object'] = $obj;
@@ -1145,13 +1268,28 @@ class Decompiler
 						$EX['called_scope'] = null;
 					}
 
-					if ($opc == XC_INIT_FCALL_BY_FUNC) {
-						$which = $op1['var'];
-						$EX['fbc'] = $EX['op_array']['funcs'][$which]['name'];
+					$EX['fbc'] = $this->getOpVal($op2, $EX, false);
+					if (($opc == XC_INIT_STATIC_METHOD_CALL || $opc == XC_INIT_METHOD_CALL) && !isset($EX['fbc'])) {
+						$EX['fbc'] = '__construct';
 					}
-					else {
-						$EX['fbc'] = $this->getOpVal($op2, $EX, false);
+					break;
+					// }}}
+				case XC_INIT_NS_FCALL_BY_NAME:
+				case XC_INIT_FCALL_BY_NAME: // {{{
+					array_push($EX['arg_types_stack'], array($EX['fbc'], $EX['object'], $EX['called_scope']));
+					if (!ZEND_ENGINE_2 && ($ext & ZEND_CTOR_CALL)) {
+						break;
 					}
+					$EX['object'] = null;
+					$EX['called_scope'] = null;
+					$EX['fbc'] = $this->getOpVal($op2, $EX);
+					break;
+					// }}}
+				case XC_INIT_FCALL_BY_FUNC: // {{{ deprecated even in PHP 4?
+					$EX['object'] = null;
+					$EX['called_scope'] = null;
+					$which = $op1['var'];
+					$EX['fbc'] = $EX['op_array']['funcs'][$which]['name'];
 					break;
 					// }}}
 				case XC_DO_FCALL_BY_FUNC:
@@ -1161,24 +1299,25 @@ class Decompiler
 					$resvar = $fname . "($args)";
 					break;
 				case XC_DO_FCALL:
-					$fname = $this->unquoteName($this->getOpVal($op1, $EX, false));
+					$fname = unquoteName($this->getOpVal($op1, $EX, false), $EX);
 					$args = $this->popargs($EX, $ext);
 					$resvar = $fname . "($args)";
 					break;
 				case XC_DO_FCALL_BY_NAME: // {{{
 					$object = null;
 
-					$fname = $this->unquoteName($EX['fbc']);
+					$fname = unquoteName($EX['fbc'], $EX);
 					if (!is_int($EX['object'])) {
 						$object = $EX['object'];
 					}
 
 					$args = $this->popargs($EX, $ext);
 
-					$resvar =
-						(isset($object) ? $object . '->' : '' )
-						. (isset($EX['called_scope']) ? $EX['called_scope'] . '::' : '' )
-						. $fname . "($args)";
+					$prefix = (isset($object) ? $object . '->' : '' )
+						. (isset($EX['called_scope']) ? $EX['called_scope'] . '::' : '' );
+					$resvar = $prefix
+						. (!$prefix ? $this->stripNamespace($fname) : $fname)
+						. "($args)";
 					unset($args);
 
 					if (is_int($EX['object'])) {
@@ -1202,7 +1341,9 @@ class Decompiler
 						exit;
 					}
 					$class = &$this->dc['class_table'][$key];
-					$class['name'] = $this->unquoteName($this->getOpVal($op2, $EX));
+					if (!isset($class['name'])) {
+						$class['name'] = unquoteName($this->getOpVal($op2, $EX), $EX);
+					}
 					if ($opc == XC_DECLARE_INHERITED_CLASS || $opc == XC_DECLARE_INHERITED_CLASS_DELAYED) {
 						$ext /= XC_SIZEOF_TEMP_VARIABLE;
 						$class['parent'] = $T[$ext];
@@ -1212,18 +1353,32 @@ class Decompiler
 						$class['parent'] = null;
 					}
 
-					while ($i + 2 < $ic
-					 && $opcodes[$i + 2]['opcode'] == XC_ADD_INTERFACE
-					 && $opcodes[$i + 2]['op1']['var'] == $res['var']
-					 && $opcodes[$i + 1]['opcode'] == XC_FETCH_CLASS) {
+					for (;;) {
+						if ($i + 1 < $ic
+						 && $opcodes[$i + 1]['opcode'] == XC_ADD_INTERFACE
+						 && $opcodes[$i + 1]['op1']['var'] == $res['var']) {
+							// continue
+						}
+						else if ($i + 2 < $ic
+						 && $opcodes[$i + 2]['opcode'] == XC_ADD_INTERFACE
+						 && $opcodes[$i + 2]['op1']['var'] == $res['var']
+						 && $opcodes[$i + 1]['opcode'] == XC_FETCH_CLASS) {
+							// continue
+						}
+						else {
+							break;
+						}
+						$this->usedOps[XC_ADD_INTERFACE] = true;
+
 						$fetchop = &$opcodes[$i + 1];
-						$impl = $this->unquoteName($this->getOpVal($fetchop['op2'], $EX));
+						$interface = $this->stripNamespace(unquoteName($this->getOpVal($fetchop['op2'], $EX), $EX));
 						$addop = &$opcodes[$i + 2];
-						$class['interfaces'][$addop['extended_value']] = $impl;
+						$class['interfaces'][$addop['extended_value']] = $interface;
 						unset($fetchop, $addop);
 						$i += 2;
 					}
 					$this->dclass($class);
+					echo "\n";
 					unset($class);
 					break;
 					// }}}
@@ -1238,34 +1393,33 @@ class Decompiler
 					$op2val = $this->getOpVal($op2, $EX);
 					switch ($opc) {
 					case XC_ADD_CHAR:
-						$op2val = toCode(chr($op2val), $EX);
+						$op2val = value(chr(str($op2val)));
 						break;
 					case XC_ADD_STRING:
-						$op2val = toCode($op2val, $EX);
 						break;
 					case XC_ADD_VAR:
 						break;
 					}
-					if ($op1val == "''") {
+					if (str($op1val) == "''") {
 						$rvalue = $op2val;
 					}
-					else if ($op2val == "''") {
+					else if (str($op2val) == "''") {
 						$rvalue = $op1val;
 					}
 					else {
-						$rvalue = $op1val . ' . ' . $op2val;
+						$rvalue = str($op1val) . ' . ' . str($op2val);
 					}
 					$resvar = $rvalue;
 					// }}}
 					break;
 				case XC_PRINT: // {{{
 					$op1val = $this->getOpVal($op1, $EX);
-					$resvar = "print($op1val)";
+					$resvar = "print(" . str($op1val) . ")";
 					break;
 					// }}}
 				case XC_ECHO: // {{{
 					$op1val = $this->getOpVal($op1, $EX);
-					$resvar = "echo $op1val";
+					$resvar = "echo " . str($op1val);
 					break;
 					// }}}
 				case XC_EXIT: // {{{
@@ -1313,13 +1467,13 @@ class Decompiler
 					break;
 					// }}}
 				case XC_RETURN: // {{{
-					$resvar = "return " . $this->getOpVal($op1, $EX);
+					$resvar = "return " . str($this->getOpVal($op1, $EX));
 					break;
 					// }}}
 				case XC_INCLUDE_OR_EVAL: // {{{
 					$type = $op2['var']; // hack
 					$keyword = $this->includeTypes[$type];
-					$resvar = "$keyword(" . $this->getOpVal($op1, $EX) . ")";
+					$resvar = "$keyword " . str($this->getOpVal($op1, $EX));
 					break;
 					// }}}
 				case XC_FE_RESET: // {{{
@@ -1357,6 +1511,11 @@ class Decompiler
 					// }}}
 				case XC_JMP_NO_CTOR:
 					break;
+				case XC_JMP_SET: // ?:
+					$resvar = $this->getOpVal($op1, $EX);
+					$op['cond'] = $resvar; 
+					$op['isjmp'] = true;
+					break;
 				case XC_JMPNZ: // while
 				case XC_JMPZNZ: // for
 				case XC_JMPZ_EX: // and
@@ -1378,13 +1537,13 @@ class Decompiler
 						echo "TODO(cond_false):\n";
 						var_dump($op);// exit;
 					}
-					if ($opc == XC_JMPZ_EX || $opc == XC_JMPNZ_EX || $opc == XC_JMPZ) {
+					if ($opc == XC_JMPZ_EX || $opc == XC_JMPNZ_EX) {
 						$targetop = &$EX['opcodes'][$op2['opline_num']];
 						if ($opc == XC_JMPNZ_EX) {
-							$targetop['cond_true'][] = toCode($rvalue, $EX);
+							$targetop['cond_true'][] = foldToCode($rvalue, $EX);
 						}
 						else {
-							$targetop['cond_false'][] = toCode($rvalue, $EX);
+							$targetop['cond_false'][] = foldToCode($rvalue, $EX);
 						}
 						unset($targetop);
 					}
@@ -1394,13 +1553,26 @@ class Decompiler
 					}
 					break;
 					// }}}
+				case XC_CONT:
+				case XC_BRK:
+					$op['cond'] = null;
+					$op['isjmp'] = true;
+					$resvar = $opc == XC_CONT ? 'continue' : 'break';
+					$count = str($this->getOpVal($op2, $EX));
+					if ($count != '1') {
+						$resvar .= ' ' . $count;
+					}
+					break;
+				case XC_GOTO:
 				case XC_JMP: // {{{
 					$op['cond'] = null;
 					$op['isjmp'] = true;
 					break;
 					// }}}
 				case XC_CASE:
-				case XC_BRK:
+					$switchValue = $this->getOpVal($op1, $EX);
+					$caseValue = $this->getOpVal($op2, $EX);
+					$resvar = str($switchValue) . ' == ' . str($caseValue);
 					break;
 				case XC_RECV_INIT:
 				case XC_RECV:
@@ -1424,24 +1596,17 @@ class Decompiler
 				case XC_PRE_INC_OBJ: // {{{
 					$flags = array_flip(explode('_', $opname));
 					if (isset($flags['OBJ'])) {
-						$resvar = $this->getOpVal($op1, $EX);
-						$prop = $this->unquoteName($this->getOpVal($op2, $EX));
-						if ($prop{0} == '$') {
-							$resvar = $resvar . "{" . $prop . "}";
-						}
-						else {
-							$resvar = $resvar . "->" . $prop;
-						}
+						$resvar = $this->getOpVal($op1, $EX) . '->' . unquoteVariableName($this->getOpVal($op2, $EX), $EX);
 					}
 					else {
 						$resvar = $this->getOpVal($op1, $EX);
 					}
 					$opstr = isset($flags['DEC']) ? '--' : '++';
 					if (isset($flags['POST'])) {
-						$resvar .= ' ' . $opstr;
+						$resvar .= $opstr;
 					}
 					else {
-						$resvar = "$opstr $resvar";
+						$resvar = "$opstr$resvar";
 					}
 					break;
 					// }}}
@@ -1452,10 +1617,7 @@ class Decompiler
 					// }}}
 				case XC_END_SILENCE: // {{{
 					$EX['silence'] --;
-					$lastresvar = '@' . toCode($lastresvar, $EX);
-					break;
-					// }}}
-				case XC_CONT: // {{{
+					$lastresvar = '@' . str($lastresvar, $EX);
 					break;
 					// }}}
 				case XC_CAST: // {{{
@@ -1479,6 +1641,21 @@ class Decompiler
 				case XC_EXT_FCALL_END:
 				case XC_EXT_NOP:
 					break;
+				case XC_DECLARE_FUNCTION:
+					$this->dfunction($this->dc['function_table'][$op1['constant']], $EX['indent']);
+					break;
+				case XC_DECLARE_LAMBDA_FUNCTION: // {{{
+					ob_start();
+					$this->dfunction($this->dc['function_table'][$op1['constant']], $EX['indent']);
+					$resvar = ob_get_clean();
+					$istmpres = true;
+					break;
+					// }}}
+				case XC_DECLARE_CONST:
+					$name = $this->stripNamespace(unquoteName($this->getOpVal($op1, $EX), $EX));
+					$value = str($this->getOpVal($op2, $EX));
+					$resvar = 'const ' . $name . ' = ' . $value;
+					break;
 				case XC_DECLARE_FUNCTION_OR_CLASS:
 					/* always removed by compiler */
 					break;
@@ -1486,9 +1663,21 @@ class Decompiler
 					$lastphpop['ticks'] = $this->getOpVal($op1, $EX);
 					// $EX['tickschanged'] = true;
 					break;
+				case XC_RAISE_ABSTRACT_ERROR:
+					// abstract function body is empty, don't need this code
+					break;
+				case XC_USER_OPCODE:
+					echo '// ZEND_USER_OPCODE, impossible to decompile';
+					break;
+				case XC_OP_DATA:
+					break;
 				default: // {{{
 					echo "\x1B[31m * TODO ", $opname, "\x1B[0m\n";
+					$covered = false;
 					// }}}
+				}
+				if ($covered) {
+					$this->usedOps[$opc] = true;
 				}
 			}
 			if (isset($resvar)) {
@@ -1522,7 +1711,7 @@ class Decompiler
 		for ($i = 0; $i < $n; $i ++) {
 			$a = array_pop($EX['argstack']);
 			if (is_array($a)) {
-				array_unshift($args, toCode($a, $EX));
+				array_unshift($args, foldToCode($a, $EX));
 			}
 			else {
 				array_unshift($args, $a);
@@ -1535,25 +1724,25 @@ class Decompiler
 	{
 		$op1 = $op['op1'];
 		$op2 = $op['op2'];
-		$d = array('opname' => xcache_get_opcode($op['opcode']), 'opcode' => $op['opcode']);
+		$d = array(xcache_get_opcode($op['opcode']), $op['opcode']);
 
-		foreach (array('op1' => 'op1', 'op2' => 'op2', 'result' => 'res') as $k => $kk) {
+		foreach (array('op1' => '1:', 'op2' => '2:', 'result' => '>') as $k => $kk) {
 			switch ($op[$k]['op_type']) {
 			case XC_IS_UNUSED:
-				$d[$kk] = '*UNUSED* ' . $op[$k]['opline_num'];
+				$d[$kk] = 'U:' . $op[$k]['opline_num'];
 				break;
 
 			case XC_IS_VAR:
 				$d[$kk] = '$' . $op[$k]['var'];
-				if ($kk != 'res') {
-					$d[$kk] .= ':' . $this->getOpVal($op[$k], $EX);
+				if ($k != 'result') {
+					$d[$kk] .= ':' . str($this->getOpVal($op[$k], $EX));
 				}
 				break;
 
 			case XC_IS_TMP_VAR:
 				$d[$kk] = '#' . $op[$k]['var'];
-				if ($kk != 'res') {
-					$d[$kk] .= ':' . $this->getOpVal($op[$k], $EX);
+				if ($k != 'result') {
+					$d[$kk] .= ':' . str($this->getOpVal($op[$k], $EX));
 				}
 				break;
 
@@ -1562,7 +1751,7 @@ class Decompiler
 				break;
 
 			default:
-				if ($kk == 'res') {
+				if ($k == 'result') {
 					var_dump($op);
 					exit;
 					assert(0);
@@ -1572,9 +1761,12 @@ class Decompiler
 				}
 			}
 		}
-		$d['ext'] = $op['extended_value'];
+		$d[';'] = $op['extended_value'];
 
-		var_dump($d);
+		foreach ($d as $k => $v) {
+			echo is_int($k) ? '' : $k, str($v), "\t";
+		}
+		echo PHP_EOL;
 	}
 	// }}}
 	function dargs(&$EX, $indent) // {{{
@@ -1601,7 +1793,7 @@ class Decompiler
 			if (isset($op_array['arg_info'])) {
 				$ai = $op_array['arg_info'][$i];
 				if (!empty($ai['class_name'])) {
-					echo $ai['class_name'], ' ';
+					echo $this->stripNamespace($ai['class_name']), ' ';
 					if (!ZEND_ENGINE_2_2 && $ai['allow_null']) {
 						echo 'or NULL ';
 					}
@@ -1637,18 +1829,19 @@ class Decompiler
 						assert(0);
 					}
 				}
-				echo toCode($arg[0], $indent);
+				echo str($arg[0], $indent);
 			}
 			if (isset($arg[1])) {
-				echo ' = ', toCode($arg[1], $indent);
+				echo ' = ', str($arg[1], $indent);
 			}
 		}
 	}
 	// }}}
 	function dfunction($func, $indent = '', $nobody = false) // {{{
 	{
+		$this->detectNamespace($func['op_array']['function_name']);
+
 		if ($nobody) {
-			$body = ";\n";
 			$EX = array();
 			$EX['op_array'] = &$func['op_array'];
 			$EX['recvs'] = array();
@@ -1663,16 +1856,37 @@ class Decompiler
 			}
 		}
 
-		echo 'function ', $func['op_array']['function_name'], '(';
+		$functionName = $this->stripNamespace($func['op_array']['function_name']);
+		if ($functionName == '{closure}') {
+			$functionName = '';
+		}
+		echo 'function ', $functionName, '(';
 		$this->dargs($EX, $indent);
-		echo ")\n";
-		echo $indent, "{\n";
-		echo $body;
-		echo "$indent}\n";
+		echo ")";
+		if ($nobody) {
+			echo ";\n";
+		}
+		else {
+			if ($functionName !== '') {
+				echo "\n";
+				echo $indent, "{\n";
+			}
+			else {
+				echo " {\n";
+			}
+
+			echo $body;
+			echo "$indent}";
+			if ($functionName !== '') {
+				echo "\n";
+			}
+		}
 	}
 	// }}}
 	function dclass($class, $indent = '') // {{{
 	{
+		$this->detectNamespace($class['name']);
+
 		// {{{ class decl
 		if (!empty($class['doc_comment'])) {
 			echo $indent;
@@ -1682,19 +1896,18 @@ class Decompiler
 		$isinterface = false;
 		if (!empty($class['ce_flags'])) {
 			if ($class['ce_flags'] & ZEND_ACC_INTERFACE) {
-				echo 'interface ';
 				$isinterface = true;
 			}
 			else {
-				if ($class['ce_flags'] & ZEND_ACC_IMPLICIT_ABSTRACT) {
+				if ($class['ce_flags'] & ZEND_ACC_IMPLICIT_ABSTRACT_CLASS) {
 					echo "abstract ";
 				}
-				if ($class['ce_flags'] & ZEND_ACC_FINAL) {
+				if ($class['ce_flags'] & ZEND_ACC_FINAL_CLASS) {
 					echo "final ";
 				}
 			}
 		}
-		echo 'class ', $class['name'];
+		echo $isinterface ? 'interface ' : 'class ', $this->stripNamespace($class['name']);
 		if ($class['parent']) {
 			echo ' extends ', $class['parent'];
 		}
@@ -1716,7 +1929,7 @@ class Decompiler
 				foreach ($class[$type] as $name => $v) {
 					echo $newindent;
 					echo $prefix, $name, ' = ';
-					echo toCode(value($v), $newindent);
+					echo str(value($v), $newindent);
 					echo ";\n";
 				}
 			}
@@ -1790,7 +2003,7 @@ class Decompiler
 				}
 				if (isset($value)) {
 					echo ' = ';
-					echo toCode(value($value), $newindent);
+					echo str(value($value), $newindent);
 				}
 				echo ";\n";
 			}
@@ -1809,9 +2022,11 @@ class Decompiler
 						echo "\n";
 					}
 					echo $newindent;
+					$isAbstractMethod = false;
 					if (isset($opa['fn_flags'])) {
-						if ($opa['fn_flags'] & ZEND_ACC_ABSTRACT) {
+						if (($opa['fn_flags'] & ZEND_ACC_ABSTRACT) && !$isinterface) {
 							echo "abstract ";
+							$isAbstractMethod = true;
 						}
 						if ($opa['fn_flags'] & ZEND_ACC_FINAL) {
 							echo "final ";
@@ -1835,7 +2050,7 @@ class Decompiler
 								break;
 						}
 					}
-					$this->dfunction($func, $newindent, $isinterface);
+					$this->dfunction($func, $newindent, $isinterface || $isAbstractMethod);
 					if ($opa['function_name'] == 'Decompiler') {
 						//exit;
 					}
@@ -1866,30 +2081,52 @@ class Decompiler
 	// }}}
 	function output() // {{{
 	{
-		echo "<?". "php\n";
+		echo "<?". "php\n\n";
 		foreach ($this->dc['class_table'] as $key => $class) {
 			if ($key{0} != "\0") {
-				echo "\n";
 				$this->dclass($class);
+				echo "\n";
 			}
 		}
 
 		foreach ($this->dc['function_table'] as $key => $func) {
 			if ($key{0} != "\0") {
-				echo "\n";
 				$this->dfunction($func);
+				echo "\n";
 			}
 		}
 
-		echo "\n";
 		$this->dop_array($this->dc['op_array']);
 		echo "\n?" . ">\n";
+
+		if (!empty($this->test)) {
+			$this->outputUnusedOp();
+		}
 		return true;
+	}
+	// }}}
+	function outputUnusedOp() // {{{
+	{
+		for ($i = 0; $opname = xcache_get_opcode($i); $i ++) {
+			if ($opname == 'UNDEF')  {
+				continue;
+			}
+
+			if (!isset($this->usedOps[$i])) {
+				echo "not covered opcode ", $opname, "\n";
+			}
+		}
 	}
 	// }}}
 }
 
 // {{{ defines
+define('ZEND_ENGINE_2_4', PHP_VERSION >= "5.3.99");
+define('ZEND_ENGINE_2_3', ZEND_ENGINE_2_4 || PHP_VERSION >= "5.3.");
+define('ZEND_ENGINE_2_2', ZEND_ENGINE_2_3 || PHP_VERSION >= "5.2.");
+define('ZEND_ENGINE_2_1', ZEND_ENGINE_2_2 || PHP_VERSION >= "5.1.");
+define('ZEND_ENGINE_2',   ZEND_ENGINE_2_1 || PHP_VERSION >= "5.0.");
+
 define('ZEND_ACC_STATIC',         0x01);
 define('ZEND_ACC_ABSTRACT',       0x02);
 define('ZEND_ACC_FINAL',          0x04);
@@ -1899,6 +2136,9 @@ define('ZEND_ACC_IMPLICIT_ABSTRACT_CLASS',    0x10);
 define('ZEND_ACC_EXPLICIT_ABSTRACT_CLASS',    0x20);
 define('ZEND_ACC_FINAL_CLASS',                0x40);
 define('ZEND_ACC_INTERFACE',                  0x80);
+if (ZEND_ENGINE_2_4) {
+	define('ZEND_ACC_TRAIT',                  0x120);
+}
 define('ZEND_ACC_PUBLIC',     0x100);
 define('ZEND_ACC_PROTECTED',  0x200);
 define('ZEND_ACC_PRIVATE',    0x400);
@@ -1914,12 +2154,6 @@ define('ZEND_ACC_CLONE',      0x8000);
 define('ZEND_ACC_ALLOW_STATIC',   0x10000);
 
 define('ZEND_ACC_SHADOW', 0x2000);
-
-define('ZEND_ENGINE_2_4', PHP_VERSION >= "5.3.99");
-define('ZEND_ENGINE_2_3', ZEND_ENGINE_2_4 || PHP_VERSION >= "5.3.");
-define('ZEND_ENGINE_2_2', ZEND_ENGINE_2_3 || PHP_VERSION >= "5.2.");
-define('ZEND_ENGINE_2_1', ZEND_ENGINE_2_2 || PHP_VERSION >= "5.1.");
-define('ZEND_ENGINE_2',   ZEND_ENGINE_2_1 || PHP_VERSION >= "5.0.");
 
 if (ZEND_ENGINE_2_4) {
 	define('ZEND_FETCH_GLOBAL',           0x00000000);
@@ -1989,10 +2223,10 @@ define('BYREF_FORCE_REST', 3);
 define('IS_NULL',     0);
 define('IS_LONG',     1);
 define('IS_DOUBLE',   2);
-define('IS_STRING',   3);
+define('IS_BOOL',     ZEND_ENGINE_2 ? 3 : 6);
 define('IS_ARRAY',    4);
 define('IS_OBJECT',   5);
-define('IS_BOOL',     6);
+define('IS_STRING',   ZEND_ENGINE_2 ? 6 : 3);
 define('IS_RESOURCE', 7);
 define('IS_CONSTANT', 8);
 define('IS_CONSTANT_ARRAY',   9);
@@ -2018,7 +2252,7 @@ foreach (array (
 	'XC_FETCH_DIM_' => -1,
 	'XC_ASSIGN_DIM' => -1,
 	'XC_UNSET_DIM' => -1,
-	'XC_FETCH_OBJ_' => -1,
+	'XC_UNSET_OBJ' => -1,
 	'XC_ASSIGN_OBJ' => -1,
 	'XC_ISSET_ISEMPTY_DIM_OBJ' => -1,
 	'XC_ISSET_ISEMPTY_PROP_OBJ' => -1,
@@ -2039,24 +2273,25 @@ foreach (array (
 	'XC_FETCH_' => -1,
 	'XC_FETCH_DIM_' => -1,
 	'XC_UNSET_DIM_OBJ' => -1,
-	'XC_FETCH_OBJ_' => -1,
 	'XC_ISSET_ISEMPTY' => -1,
 	'XC_INIT_FCALL_BY_FUNC' => -1,
 	'XC_DO_FCALL_BY_FUNC' => -1,
 	'XC_DECLARE_FUNCTION_OR_CLASS' => -1,
+	'XC_INIT_NS_FCALL_BY_NAME' => -1,
+	'XC_GOTO' => -1,
+	'XC_CATCH' => -1,
+	'XC_THROW' => -1,
+	'XC_INSTANCEOF' => -1,
+	'XC_DECLARE_FUNCTION' => -1,
+	'XC_RAISE_ABSTRACT_ERROR' => -1,
+	'XC_DECLARE_CONST' => -1,
+	'XC_USER_OPCODE' => -1,
+	'XC_JMP_SET' => -1,
+	'XC_DECLARE_LAMBDA_FUNCTION' => -1,
 ) as $k => $v) {
 	if (!defined($k)) {
 		define($k, $v);
 	}
 }
-
-/* XC_UNDEF XC_OP_DATA
-$content = file_get_contents(__FILE__);
-for ($i = 0; $opname = xcache_get_opcode($i); $i ++) {
-	if (!preg_match("/\\bXC_" . $opname . "\\b(?!')/", $content)) {
-		echo "not done ", $opname, "\n";
-	}
-}
-// */
 // }}}
 
