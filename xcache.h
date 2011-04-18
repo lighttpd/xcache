@@ -137,6 +137,7 @@ typedef znode znode_op;
 
 #ifndef IS_UNICODE
 typedef char *zstr;
+typedef const char *const_zstr;
 #	define ZSTR_S(s)     (s)
 #	define ZSTR_U(s)     (s)
 #	define ZSTR_V(s)     (s)
@@ -144,6 +145,7 @@ typedef char *zstr;
 #	define ZSTR_PU(s)    (s)
 #	define ZSTR_PV(s)    (s)
 #else
+typedef const zstr const_zstr;
 #	define ZSTR_S(zs)    ((zs).s)
 #	define ZSTR_U(zs)    ((zs).u)
 #	define ZSTR_V(zs)    ((zs).v)
