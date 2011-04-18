@@ -1,7 +1,7 @@
 #ifndef __XCACHE_H
 #define __XCACHE_H
 #define XCACHE_NAME       "XCache"
-#define XCACHE_VERSION    "2.0.0-dev"
+#define XCACHE_VERSION    "2.0.0-beta1"
 #define XCACHE_AUTHOR     "mOo"
 #define XCACHE_COPYRIGHT  "Copyright (c) 2005-2011"
 #define XCACHE_URL        "http://xcache.lighttpd.net"
@@ -96,12 +96,14 @@ static inline void my_add_assoc_null_ex(zval *arg, char *key, uint key_len)
 #	define Z_OP(op) (op)
 #	define Z_OP_CONSTANT(op) (op).literal->constant
 #	define Z_OP_TYPE(op) op##_##type
+#	define Z_OP_TYPEOF_TYPE zend_uchar
 
 #	define Z_CLASS_INFO(className) (className).info.user
 #else
 #	define Z_OP(op) (op).u
 #	define Z_OP_CONSTANT(op) (op).u.constant
 #	define Z_OP_TYPE(op) (op).op_type
+#	define Z_OP_TYPEOF_TYPE int
 typedef znode znode_op;
 
 #	define Z_CLASS_INFO(className) (className)
@@ -135,6 +137,7 @@ typedef znode znode_op;
 
 #ifndef IS_UNICODE
 typedef char *zstr;
+typedef const char *const_zstr;
 #	define ZSTR_S(s)     (s)
 #	define ZSTR_U(s)     (s)
 #	define ZSTR_V(s)     (s)
@@ -142,6 +145,7 @@ typedef char *zstr;
 #	define ZSTR_PU(s)    (s)
 #	define ZSTR_PV(s)    (s)
 #else
+typedef const zstr const_zstr;
 #	define ZSTR_S(zs)    ((zs).s)
 #	define ZSTR_U(zs)    ((zs).u)
 #	define ZSTR_V(zs)    ((zs).v)

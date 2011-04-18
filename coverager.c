@@ -171,9 +171,13 @@ static void xc_coverager_save_cov(char *srcfile, char *outfilename, coverager_t 
 	p[0] = 0;
 	p[1] = covlines;
 
-	ftruncate(fd, 0);
+	if (ftruncate(fd, 0) != 0) {
+		goto bailout;
+	}
 	lseek(fd, 0, SEEK_SET);
-	write(fd, (char *) buf, size);
+	if (write(fd, (char *) buf, size) != size) {
+		goto bailout;
+	}
 
 bailout:
 	if (contents) efree(contents);
