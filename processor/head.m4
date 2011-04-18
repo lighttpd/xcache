@@ -140,7 +140,7 @@ IFASSERT(`
 #undef C_RELAYLINE
 #define C_RELAYLINE , __LINE__
 ')
-static inline void xc_calc_string_n(xc_processor_t *processor, zend_uchar type, const zstr const str, long size IFASSERT(`, int relayline')) {
+static inline void xc_calc_string_n(xc_processor_t *processor, zend_uchar type, const_zstr const str, long size IFASSERT(`, int relayline')) {
 	pushdef(`__LINE__', `relayline')
 	int realsize = UNISW(size, (type == IS_UNICODE) ? UBYTES(size) : size);
 	long dummy = 1;
@@ -162,7 +162,7 @@ static inline void xc_calc_string_n(xc_processor_t *processor, zend_uchar type, 
 /* }}} */
 /* {{{ xc_store_string_n */
 REDEF(`KIND', `store')
-static inline zstr xc_store_string_n(xc_processor_t *processor, zend_uchar type, const zstr const str, long size IFASSERT(`, int relayline')) {
+static inline zstr xc_store_string_n(xc_processor_t *processor, zend_uchar type, const_zstr const str, long size IFASSERT(`, int relayline')) {
 	pushdef(`__LINE__', `relayline')
 	int realsize = UNISW(size, (type == IS_UNICODE) ? UBYTES(size) : size);
 	zstr ret, *pret;
