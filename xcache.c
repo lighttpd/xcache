@@ -1000,7 +1000,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	/* }}} */
 	/* {{{ restore */
 	/* stale precheck */
-	if (cache->compiling) {
+	if (XG(request_time) - cache->compiling < 30) {
 		cache->clogs ++; /* is it safe here? */
 		return old_compile_file(h, type TSRMLS_CC);
 	}
@@ -1009,7 +1009,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	op_array = NULL;
 	ENTER_LOCK_EX(cache) {
 		/* clogged */
-		if (cache->compiling) {
+		if (XG(request_time) - cache->compiling < 30) {
 			cache->clogs ++;
 			op_array = NULL;
 			clogged = 1;
