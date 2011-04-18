@@ -187,7 +187,7 @@ static XC_SHM_INIT(xc_mmap_init) /* {{{ */
 		}
 	}
 
-	if (ftruncate(fd, size) != 0) {
+	if (ftruncate(fd, size) != 0 && errno != EINVAL) {
 		perror(shm->name);
 		errstr = "Failed to ftruncate the file";
 		goto err;
