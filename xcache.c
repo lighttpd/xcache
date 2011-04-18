@@ -1704,7 +1704,7 @@ static zend_op_array *xc_compile_file_ex(xc_entry_t *xce, zend_file_handle *h, i
 	xc_sandbox_t sandbox;
 
 	/* stale clogs precheck */
-	if (cache->compiling) {
+	if (XG(request_time) - cache->compiling < 30) {
 		cache->clogs ++;
 		return old_compile_file(h, type TSRMLS_CC);
 	}
@@ -1732,7 +1732,7 @@ static zend_op_array *xc_compile_file_ex(xc_entry_t *xce, zend_file_handle *h, i
 
 			/* miss but compiling */
 			if (!stored_php) {
-				if (cache->compiling) {
+				if (XG(request_time) - cache->compiling < 30) {
 					TRACE("%s", "miss but compiling");
 					cache->clogs ++;
 					gaveup = 1;
