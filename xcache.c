@@ -3155,7 +3155,10 @@ static void xcache_signal_handler(int sig) /* {{{ */
 {
 	xcache_restore_signal_handler();
 	if (xc_coredump_dir && xc_coredump_dir[0]) {
-		chdir(xc_coredump_dir);
+		if (chdir(xc_coredump_dir) != 0) {
+			/* error, but nothing can do about it
+			 * and should'nt print anything which might SEGV again */
+		}
 	}
 	raise(sig);
 }

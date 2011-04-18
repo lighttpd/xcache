@@ -186,7 +186,12 @@ static XC_SHM_INIT(xc_mmap_init) /* {{{ */
 			goto err;
 		}
 	}
-	ftruncate(fd, size);
+
+	if (ftruncate(fd, size) != 0) {
+		perror(shm->name);
+		errstr = "Failed to ftruncate the file";
+		goto err;
+	}
 #endif
 
 #ifdef ZEND_WIN32
