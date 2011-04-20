@@ -1201,7 +1201,11 @@ class Decompiler
 				case XC_ISSET_ISEMPTY:
 				case XC_ISSET_ISEMPTY_VAR: // {{{
 					if ($opc == XC_ISSET_ISEMPTY_VAR) {
-						$rvalue = '$' . unquoteVariableName($this->getOpVal($op1, $EX));
+						$rvalue = $this->getOpVal($op1, $EX);
+						// for < PHP_5_3
+						if ($op1['op_type'] == XC_IS_CONST) {
+							$rvalue = '$' . unquoteVariableName($this->getOpVal($op1, $EX));
+						}
 						if ($op2['EA.type'] == ZEND_FETCH_STATIC_MEMBER) {
 							$class = $this->getOpVal($op2, $EX);
 							$rvalue = $class . '::' . $rvalue;
