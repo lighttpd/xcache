@@ -146,7 +146,9 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
 	OPSPEC(    UNUSED,        VAR,        STD,        VAR) /* 96 FETCH_DIM_UNSET                */
 	OPSPEC(    UNUSED,      VAR_2,        STD,        VAR) /* 97 FETCH_OBJ_UNSET                */
 	OPSPEC(    UNUSED,        STD,        STD,        VAR) /* 98 FETCH_DIM_TMP_VAR              */
-#ifdef ZEND_ENGINE_2
+#ifdef ZEND_ENGINE_2_3
+	OPSPEC(    UNUSED,      VAR_2,        STD,        TMP) /* 99 FETCH_CONSTANT                 */
+#elif defined(ZEND_ENGINE_2)
 	OPSPEC(    UNUSED,     UCLASS,        STD,        TMP) /* 99 FETCH_CONSTANT                 */
 #else
 	OPSPEC(    UNUSED,        STD,     UNUSED,        TMP) /* 99 FETCH_CONSTANT                 */
