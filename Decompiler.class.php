@@ -1226,10 +1226,10 @@ class Decompiler
 
 					switch ((!ZEND_ENGINE_2 ? $op['op2']['var'] /* constant */ : $ext) & (ZEND_ISSET|ZEND_ISEMPTY)) {
 					case ZEND_ISSET:
-						$rvalue = "isset($rvalue)";
+						$rvalue = "isset(" . str($rvalue) . ")";
 						break;
 					case ZEND_ISEMPTY:
-						$rvalue = "empty($rvalue)";
+						$rvalue = "empty(" . str($rvalue) . ")";
 						break;
 					}
 					$resvar = $rvalue;
