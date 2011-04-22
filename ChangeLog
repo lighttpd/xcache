@@ -12,6 +12,7 @@ ChangeLog
 
 1.3.2 2011-??-??
 ========
+ * avoid possible filename injection in admin page
  * adds 30 seconds timeout to "compiling" flag
  * decompiler: improves decompiling
  * disassembler: DECLARE_INHERITED_CLASS/DELAYED class not found
