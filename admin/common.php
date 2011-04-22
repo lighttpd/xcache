@@ -1,5 +1,10 @@
 <?php
 
+function xcache_validateFileName($name)
+{
+	return preg_match('!^[a-zA-Z0-9._-]+$!', $name);
+}
+
 function get_language_file_ex($name, $l, $s)
 {
 	static $lmap = array(
@@ -15,16 +20,19 @@ function get_language_file_ex($name, $l, $s)
 	if (isset($lmap[$l])) {
 		$l = $lmap[$l];
 	}
-	if (file_exists($file = "$name-$l-$s.lang.php")) {
+	$file = "$name-$l-$s.lang.php";
+	if (xcache_validateFileName($file) && file_exists($file)) {
 		return $file;
 	}
 	if (isset($smap[$s])) {
 		$s = $smap[$s];
-		if (file_exists($file = "$name-$l-$s.lang.php")) {
+		$file = "$name-$l-$s.lang.php";
+		if (xcache_validateFileName($file) && file_exists($file)) {
 			return $file;
 		}
 	}
-	if (file_exists($file = "$name-$l.lang.php")) {
+	$file = "$name-$l.lang.php";
+	if (xcache_validateFileName($file) && file_exists($file)) {
 		return $file;
 	}
 	return null;

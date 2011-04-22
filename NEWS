@@ -3,6 +3,7 @@
 
 1.3.2 2011-??-??
 ========
+ * admin page security fix
  * adds 30 seconds timeout to "compiling" flag
  * improves decompiling
  * memory leak on recompile
