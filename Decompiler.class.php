@@ -736,6 +736,8 @@ class Decompiler
 		$EX['arg_types_stack'] = array();
 		$EX['last'] = count($opcodes) - 1;
 		$EX['silence'] = 0;
+		$EX['recvs'] = array();
+		$EX['uses'] = array();
 
 		for ($next = 0, $last = $EX['last'];
 				$loop = $this->outputCode($EX, $next, $last, $indent, true);
@@ -1138,6 +1140,21 @@ class Decompiler
 						unset($dim);
 						break;
 					}
+					if (is_a($rvalue, 'Decompiler_Fetch')) {
+						$src = str($rvalue->src, $EX);
+						if ('$' . unquoteName($src) == $lvalue) {
+							switch ($rvalue->fetchType) {
+							case ZEND_FETCH_STATIC:
+								$statics = &$EX['op_array']['static_variables'];
+								if ((xcache_get_type($statics[$name]) & IS_LEXICAL_VAR)) {
+									$EX['uses'][] = str($lvalue);
+									unset($statics);
+									break 2;
+								}
+								unset($statics);
+							}
+						}
+					}
 					$resvar = "$lvalue = " . str($rvalue, $EX);
 					break;
 					// }}}
@@ -1154,6 +1171,12 @@ class Decompiler
 								break 2;
 							case ZEND_FETCH_STATIC:
 								$statics = &$EX['op_array']['static_variables'];
+								if ((xcache_get_type($statics[$name]) & IS_LEXICAL_REF)) {
+									$EX['uses'][] = '&' . str($lvalue);
+									unset($statics);
+									break 2;
+								}
+
 								$resvar = 'static ' . $lvalue;
 								$name = unquoteName($src);
 								if (isset($statics[$name])) {
@@ -1202,6 +1225,10 @@ class Decompiler
 				case XC_ISSET_ISEMPTY_VAR: // {{{
 					if ($opc == XC_ISSET_ISEMPTY_VAR) {
 						$rvalue = $this->getOpVal($op1, $EX);
+						// for < PHP_5_3
+						if ($op1['op_type'] == XC_IS_CONST) {
+							$rvalue = '$' . unquoteVariableName($this->getOpVal($op1, $EX));
+						}
 						if ($op2['EA.type'] == ZEND_FETCH_STATIC_MEMBER) {
 							$class = $this->getOpVal($op2, $EX);
 							$rvalue = $class . '::' . $rvalue;
@@ -1226,10 +1253,10 @@ class Decompiler
 
 					switch ((!ZEND_ENGINE_2 ? $op['op2']['var'] /* constant */ : $ext) & (ZEND_ISSET|ZEND_ISEMPTY)) {
 					case ZEND_ISSET:
-						$rvalue = "isset($rvalue)";
+						$rvalue = "isset(" . str($rvalue) . ")";
 						break;
 					case ZEND_ISEMPTY:
-						$rvalue = "empty($rvalue)";
+						$rvalue = "empty(" . str($rvalue) . ")";
 						break;
 					}
 					$resvar = $rvalue;
@@ -1837,6 +1864,13 @@ class Decompiler
 		}
 	}
 	// }}}
+	function duses(&$EX, $indent) // {{{
+	{
+		if ($EX['uses']) {
+			echo ' use(', implode(', ', $EX['uses']), ')';
+		}
+	}
+	// }}}
 	function dfunction($func, $indent = '', $nobody = false) // {{{
 	{
 		$this->detectNamespace($func['op_array']['function_name']);
@@ -1845,24 +1879,23 @@ class Decompiler
 			$EX = array();
 			$EX['op_array'] = &$func['op_array'];
 			$EX['recvs'] = array();
+			$EX['uses'] = array();
 		}
 		else {
 			ob_start();
 			$newindent = INDENT . $indent;
 			$EX = &$this->dop_array($func['op_array'], $newindent);
 			$body = ob_get_clean();
-			if (!isset($EX['recvs'])) {
-				$EX['recvs'] = array();
-			}
 		}
 
 		$functionName = $this->stripNamespace($func['op_array']['function_name']);
 		if ($functionName == '{closure}') {
 			$functionName = '';
 		}
-		echo 'function ', $functionName, '(';
+		echo 'function', $functionName ? ' ' . $functionName : '', '(';
 		$this->dargs($EX, $indent);
 		echo ")";
+		$this->duses($EX, $indent);
 		if ($nobody) {
 			echo ";\n";
 		}
@@ -2230,6 +2263,12 @@ define('IS_STRING',   ZEND_ENGINE_2 ? 6 : 3);
 define('IS_RESOURCE', 7);
 define('IS_CONSTANT', 8);
 define('IS_CONSTANT_ARRAY',   9);
+/* Ugly hack to support constants as static array indices */
+define('IS_CONSTANT_TYPE_MASK',   0x0f);
+define('IS_CONSTANT_UNQUALIFIED', 0x10);
+define('IS_CONSTANT_INDEX',       0x80);
+define('IS_LEXICAL_VAR',          0x20);
+define('IS_LEXICAL_REF',          0x40);
 
 @define('XC_IS_CV', 16);
 

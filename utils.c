@@ -244,12 +244,6 @@ static void xc_fix_opcode_ex_znode(int tofix, xc_op_spec_t spec, Z_OP_TYPEOF_TYP
 			case IS_TMP_VAR:
 				break;
 
-			case IS_CONST:
-				if (spec == OPSPEC_UCLASS) {
-					break;
-				}
-				/* fall */
-
 			default:
 				/* TODO: data lost, find a way to keep it */
 				/* assert(*op_type == IS_CONST); */

@@ -2279,6 +2279,34 @@ PHP_FUNCTION(xcache_dec)
 	xc_var_inc_dec(-1, INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 /* }}} */
+/* {{{ proto int xcache_get_refcount(mixed variable)
+   XCache internal uses only: Get reference count of variable */
+PHP_FUNCTION(xcache_get_refcount)
+{
+	zval *variable;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &variable) == FAILURE) {
+		RETURN_NULL();
+	}
+
+	RETURN_LONG(Z_REFCOUNT_P(variable));
+}
+/* }}} */
+/* {{{ proto bool xcache_get_isref(mixed variable)
+   XCache internal uses only: Check if variable data is marked referenced */
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_get_isref, 0, 0, 1)
+	ZEND_ARG_INFO(1, variable)
+ZEND_END_ARG_INFO()
+
+PHP_FUNCTION(xcache_get_isref)
+{
+	zval *variable;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &variable) == FAILURE) {
+		RETURN_NULL();
+	}
+
+	RETURN_BOOL(Z_ISREF_P(variable) && Z_REFCOUNT_P(variable) >= 3);
+}
+/* }}} */
 #ifdef HAVE_XCACHE_DPRINT
 /* {{{ proto bool  xcache_dprint(mixed value)
    Prints variable (or value) internal struct (debug only) */
@@ -2427,7 +2455,8 @@ PHP_FUNCTION(xcache_get_opcode_spec)
 }
 /* }}} */
 #endif
-/* {{{ proto mixed xcache_get_special_value(zval value) */
+/* {{{ proto mixed xcache_get_special_value(zval value)
+   XCache internal use only: For decompiler to get static value with type fixed */
 PHP_FUNCTION(xcache_get_special_value)
 {
 	zval *value;
@@ -2452,6 +2481,19 @@ PHP_FUNCTION(xcache_get_special_value)
 	default:
 		RETURN_NULL();
 	}
+}
+/* }}} */
+/* {{{ proto int xcache_get_type(zval value)
+   XCache internal use only for disassembler to get variable type in engine level */
+PHP_FUNCTION(xcache_get_type)
+{
+	zval *value;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &value) == FAILURE) {
+		return;
+	}
+
+	RETURN_LONG(Z_TYPE_P(value));
 }
 /* }}} */
 /* {{{ proto string xcache_coredump(int op_type) */
@@ -2506,6 +2548,7 @@ static zend_function_entry xcache_functions[] = /* {{{ */
 	PHP_FE(xcache_coverager_get,     NULL)
 #endif
 	PHP_FE(xcache_get_special_value, NULL)
+	PHP_FE(xcache_get_type,          NULL)
 	PHP_FE(xcache_get_op_type,       NULL)
 	PHP_FE(xcache_get_data_type,     NULL)
 	PHP_FE(xcache_get_opcode,        NULL)
@@ -2520,6 +2563,8 @@ static zend_function_entry xcache_functions[] = /* {{{ */
 	PHP_FE(xcache_isset,             NULL)
 	PHP_FE(xcache_unset,             NULL)
 	PHP_FE(xcache_unset_by_prefix,   NULL)
+	PHP_FE(xcache_get_refcount,      NULL)
+	PHP_FE(xcache_get_isref,         arginfo_xcache_get_isref)
 #ifdef HAVE_XCACHE_DPRINT
 	PHP_FE(xcache_dprint,            NULL)
 #endif
