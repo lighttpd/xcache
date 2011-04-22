@@ -1140,15 +1140,22 @@ class Decompiler
 						unset($dim);
 						break;
 					}
+					if (is_a($rvalue, 'Decompiler_Fetch')) {
+						$src = str($rvalue->src, $EX);
+						if ('$' . unquoteName($src) == $lvalue) {
+							switch ($rvalue->fetchType) {
+							case ZEND_FETCH_STATIC:
+								$statics = &$EX['op_array']['static_variables'];
+								if ((xcache_get_type($statics[$name]) & IS_LEXICAL_VAR)) {
+									$EX['uses'][] = str($lvalue);
+									unset($statics);
+									break 2;
+								}
+								unset($statics);
+							}
+						}
+					}
 					$resvar = "$lvalue = " . str($rvalue, $EX);
-					if (0) {
-					if ($op2['op_type'] == XC_IS_VAR) {
-						$resvar .= ' /* isvar */';
-					}
-					else if ($op2['op_type'] == XC_IS_TMP_VAR) {
-						$resvar .= ' /* istmp */';
-					}
-					}
 					break;
 					// }}}
 				case XC_ASSIGN_REF: // {{{
@@ -1164,6 +1171,12 @@ class Decompiler
 								break 2;
 							case ZEND_FETCH_STATIC:
 								$statics = &$EX['op_array']['static_variables'];
+								if ((xcache_get_type($statics[$name]) & IS_LEXICAL_REF)) {
+									$EX['uses'][] = '&' . str($lvalue);
+									unset($statics);
+									break 2;
+								}
+
 								$resvar = 'static ' . $lvalue;
 								$name = unquoteName($src);
 								if (isset($statics[$name])) {
@@ -1853,15 +1866,9 @@ class Decompiler
 	// }}}
 	function duses(&$EX, $indent) // {{{
 	{
-		if (!$EX['uses']) {
-			return;
+		if ($EX['uses']) {
+			echo ' use(', implode(', ', $EX['uses']), ')';
 		}
-
-		$uses = array();
-		foreach ($EX['uses'] as $name => $value) {
-			$uses = '$' . $name;
-		}
-		echo ' use(', implode(', ', $uses), ')';
 	}
 	// }}}
 	function dfunction($func, $indent = '', $nobody = false) // {{{
@@ -1885,7 +1892,7 @@ class Decompiler
 		if ($functionName == '{closure}') {
 			$functionName = '';
 		}
-		echo 'function ', $functionName, '(';
+		echo 'function', $functionName ? ' ' . $functionName : '', '(';
 		$this->dargs($EX, $indent);
 		echo ")";
 		$this->duses($EX, $indent);
@@ -2256,6 +2263,12 @@ define('IS_STRING',   ZEND_ENGINE_2 ? 6 : 3);
 define('IS_RESOURCE', 7);
 define('IS_CONSTANT', 8);
 define('IS_CONSTANT_ARRAY',   9);
+/* Ugly hack to support constants as static array indices */
+define('IS_CONSTANT_TYPE_MASK',   0x0f);
+define('IS_CONSTANT_UNQUALIFIED', 0x10);
+define('IS_CONSTANT_INDEX',       0x80);
+define('IS_LEXICAL_VAR',          0x20);
+define('IS_LEXICAL_REF',          0x40);
 
 @define('XC_IS_CV', 16);
 
