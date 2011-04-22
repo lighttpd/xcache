@@ -359,8 +359,10 @@ $greet('World');
 $greet('PHP');
 $total = 0;
 $tax = 1;
-$callback = function ($quantity, $product) use ($tax, &$total) {
-	static $static = array(1);
+$callback = function($quantity, $product) use($tax, &$total) {
+	$tax = 'tax';
+	static $static1 = array(1);
+	static $static2;
 	$tax = 'tax';
 	$tax = --$tax;
 	$pricePerItem = constant('PRICE_' . strtoupper($product));
