@@ -38,20 +38,20 @@ function get_language_file($name)
 		$l = strtolower($lang);
 		$file = get_language_file_ex($name, $l, $s);
 		if (!isset($file)) {
-			$l = strtok($l, '-');
+			$l = strtok($l, ':-');
 			$file = get_language_file_ex($name, $l, $s);
 		}
 	}
 	else if (!empty($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
 		foreach (explode(',', str_replace(' ', '', $_SERVER['HTTP_ACCEPT_LANGUAGE'])) as $l) {
-			$l = strtok($l, ';');
+			$l = strtok($l, ':;');
 			$file = get_language_file_ex($name, $l, $s);
 			if (isset($file)) {
 				$lang = $l;
 				break;
 			}
 			if (strpos($l, '-') !== false) {
-				$ll = strtok($l, '-');
+				$ll = strtok($l, ':-');
 				$file = get_language_file_ex($name, $ll, $s);
 				if (isset($file)) {
 					$lang = $l;
