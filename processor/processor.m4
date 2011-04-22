@@ -611,7 +611,9 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 			case ZEND_GOTO:
 #endif
 			case ZEND_JMP:
+				assert(Z_OP(src->op1).jmp_addr > processor->active_opcodes_src && Z_OP(src->op1).jmp_addr - processor->active_opcodes_src < processor->active_op_array_src->last);
 				Z_OP(dst->op1).jmp_addr = processor->active_opcodes_dst + (Z_OP(src->op1).jmp_addr - processor->active_opcodes_src);
+				assert(Z_OP(dst->op1).jmp_addr > processor->active_opcodes_dst && Z_OP(dst->op1).jmp_addr - processor->active_opcodes_dst < processor->active_op_array_dst->last);
 				break;
 
 			case ZEND_JMPZ:
@@ -621,7 +623,9 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 #ifdef ZEND_JMP_SET
 			case ZEND_JMP_SET:
 #endif
+				assert(Z_OP(src->op2).jmp_addr > processor->active_opcodes_src && Z_OP(src->op2).jmp_addr - processor->active_opcodes_src < processor->active_op_array_src->last);
 				Z_OP(dst->op2).jmp_addr = processor->active_opcodes_dst + (Z_OP(src->op2).jmp_addr - processor->active_opcodes_src);
+				assert(Z_OP(dst->op2).jmp_addr > processor->active_opcodes_dst && Z_OP(dst->op2).jmp_addr - processor->active_opcodes_dst < processor->active_op_array_dst->last);
 				break;
 
 			default:
@@ -667,8 +671,33 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		IFRESTORE(`dst->filename = processor->entry_src->filepath;')
 #ifndef ZEND_ENGINE_2_4
 		if (op_array_info->oplineinfo_cnt) {
+			zend_op *opline, *end;
 			gc_opcodes = 1;
 			COPY_N_EX(last, zend_op, opcodes)
+
+			for (opline = dst->opcodes, end = opline + src->last; opline < end; ++opline) {
+				switch (opline->opcode) {
+#ifdef ZEND_GOTO
+					case ZEND_GOTO:
+#endif
+					case ZEND_JMP:
+						Z_OP(opline->op1).jmp_addr = dst->opcodes + (Z_OP(opline->op1).jmp_addr - src->opcodes);
+						break;
+
+					case ZEND_JMPZ:
+					case ZEND_JMPNZ:
+					case ZEND_JMPZ_EX:
+					case ZEND_JMPNZ_EX:
+#ifdef ZEND_JMP_SET
+					case ZEND_JMP_SET:
+#endif
+						Z_OP(opline->op2).jmp_addr = dst->opcodes + (Z_OP(opline->op2).jmp_addr - src->opcodes);
+						break;
+
+					default:
+						break;
+				}
+			}
 		}
 #endif
 		if (gc_arg_info || gc_opcodes) {
@@ -742,6 +771,10 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	IFSTORE(`dst->refcount[0] = 1;')
 
 	pushdef(`AFTER_ALLOC', `IFCOPY(`
+#ifndef NDEBUG
+		processor->active_op_array_dst = dst;
+		processor->active_op_array_src = src;
+#endif
 		processor->active_opcodes_dst = dst->opcodes;
 		processor->active_opcodes_src = src->opcodes;
 	')')
