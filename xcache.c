@@ -2874,6 +2874,30 @@ PHP_FUNCTION(xcache_dec)
 	xc_var_inc_dec(-1, INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 /* }}} */
+/* {{{ proto int xcache_get_refcount(mixed variable)
+   Get reference count of variable */
+PHP_FUNCTION(xcache_get_refcount)
+{
+	zval *variable;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &variable) == FAILURE) {
+		RETURN_NULL();
+	}
+
+	RETURN_LONG(Z_REFCOUNT_P(variable));
+}
+/* }}} */
+/* {{{ proto bool xcache_get_isref(mixed variable)
+   check if variable data is marked referenced */
+PHP_FUNCTION(xcache_get_isref)
+{
+	zval *variable;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &variable) == FAILURE) {
+		RETURN_NULL();
+	}
+
+	RETURN_BOOL(Z_ISREF_P(variable));
+}
+/* }}} */
 #ifdef HAVE_XCACHE_DPRINT
 /* {{{ proto bool  xcache_dprint(mixed value)
    Prints variable (or value) internal struct (debug only) */
@@ -3115,6 +3139,8 @@ static zend_function_entry xcache_functions[] = /* {{{ */
 	PHP_FE(xcache_isset,             NULL)
 	PHP_FE(xcache_unset,             NULL)
 	PHP_FE(xcache_unset_by_prefix,   NULL)
+	PHP_FE(xcache_get_refcount,      NULL)
+	PHP_FE(xcache_get_isref,         NULL)
 #ifdef HAVE_XCACHE_DPRINT
 	PHP_FE(xcache_dprint,            NULL)
 #endif

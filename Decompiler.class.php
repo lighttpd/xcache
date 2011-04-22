@@ -736,6 +736,8 @@ class Decompiler
 		$EX['arg_types_stack'] = array();
 		$EX['last'] = count($opcodes) - 1;
 		$EX['silence'] = 0;
+		$EX['recvs'] = array();
+		$EX['uses'] = array();
 
 		for ($next = 0, $last = $EX['last'];
 				$loop = $this->outputCode($EX, $next, $last, $indent, true);
@@ -1139,6 +1141,14 @@ class Decompiler
 						break;
 					}
 					$resvar = "$lvalue = " . str($rvalue, $EX);
+					if (0) {
+					if ($op2['op_type'] == XC_IS_VAR) {
+						$resvar .= ' /* isvar */';
+					}
+					else if ($op2['op_type'] == XC_IS_TMP_VAR) {
+						$resvar .= ' /* istmp */';
+					}
+					}
 					break;
 					// }}}
 				case XC_ASSIGN_REF: // {{{
@@ -1841,6 +1851,19 @@ class Decompiler
 		}
 	}
 	// }}}
+	function duses(&$EX, $indent) // {{{
+	{
+		if (!$EX['uses']) {
+			return;
+		}
+
+		$uses = array();
+		foreach ($EX['uses'] as $name => $value) {
+			$uses = '$' . $name;
+		}
+		echo ' use(', implode(', ', $uses), ')';
+	}
+	// }}}
 	function dfunction($func, $indent = '', $nobody = false) // {{{
 	{
 		$this->detectNamespace($func['op_array']['function_name']);
@@ -1849,15 +1872,13 @@ class Decompiler
 			$EX = array();
 			$EX['op_array'] = &$func['op_array'];
 			$EX['recvs'] = array();
+			$EX['uses'] = array();
 		}
 		else {
 			ob_start();
 			$newindent = INDENT . $indent;
 			$EX = &$this->dop_array($func['op_array'], $newindent);
 			$body = ob_get_clean();
-			if (!isset($EX['recvs'])) {
-				$EX['recvs'] = array();
-			}
 		}
 
 		$functionName = $this->stripNamespace($func['op_array']['function_name']);
@@ -1867,6 +1888,7 @@ class Decompiler
 		echo 'function ', $functionName, '(';
 		$this->dargs($EX, $indent);
 		echo ")";
+		$this->duses($EX, $indent);
 		if ($nobody) {
 			echo ";\n";
 		}
