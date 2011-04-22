@@ -72,6 +72,10 @@ struct _xc_processor_t {
 	const zend_class_entry *cache_ce;
 	zend_uint cache_class_index;
 
+#ifndef NDEBUG
+	const zend_op_array    *active_op_array_src;
+	zend_op_array          *active_op_array_dst;
+#endif
 	const zend_op          *active_opcodes_src;
 	zend_op                *active_opcodes_dst;
 	const zend_class_entry *active_class_entry_src;
