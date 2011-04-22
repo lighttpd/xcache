@@ -362,6 +362,7 @@ $tax = 1;
 $callback = function ($quantity, $product) use ($tax, &$total) {
 	static $static = array(1);
 	$tax = 'tax';
+	$tax = --$tax;
 	$pricePerItem = constant('PRICE_' . strtoupper($product));
 	$total += $pricePerItem * $quantity * ($tax + 1);
 };
