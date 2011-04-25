@@ -301,9 +301,14 @@ foreach ($array as $key => $value) {
 	}
 }
 
-switch ($switch) {
+switch ($normalSwitch) {
 case 'case1':
 	echo 'case1';
+
+	switch ($nestedSwitch) {
+	case 1:
+	}
+
 	break;
 
 case 'case2':
@@ -311,8 +316,57 @@ case 'case2':
 	break;
 
 default:
+	switch ($nestedSwitch) {
+	case 1:
+	}
+
 	echo 'default';
 	break;
+}
+
+switch ($switchWithoutDefault) {
+case 'case1':
+	echo 'case1';
+	break;
+
+case 'case2':
+	echo 'case2';
+	break;
+}
+
+switch ($switchWithMiddleDefault) {
+case 'case1':
+	echo 'case1';
+	break;
+
+default:
+	echo 'default';
+	break;
+
+case 'case2':
+	echo 'case2';
+	break;
+}
+
+switch ($switchWithInitialDefault) {
+default:
+	echo 'default';
+	break;
+
+case 'case1':
+	echo 'case1';
+	break;
+
+case 'case2':
+	echo 'case2';
+	break;
+}
+
+switch (emptySwitch()) {
+}
+
+switch (emptySwitch()) {
+default:
 }
 
 declare (ticks=1) {

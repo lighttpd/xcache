@@ -563,6 +563,7 @@ class Decompiler
 					echo PHP_EOL;
 				}
 				echo $indent, str($op['php'], $indent), ";\n";
+				$EX['lastBlock'] = 'basic';
 			}
 		}
 		if ($curticks) {
@@ -666,7 +667,7 @@ class Decompiler
 	function decompileBasicBlock(&$EX, $first, $last, $indent) // {{{
 	{
 		$this->dasmBasicBlock($EX, $first, $last);
-		// $this->dumpRange($EX, $first, $last);
+		// $this->dumpRange($EX, $first, $last, $indent);
 		$this->outputPhp($EX, $first, $last, $indent);
 	}
 	// }}}
@@ -698,10 +699,108 @@ class Decompiler
 	// }}}
 	function decompileComplexBlock(&$EX, $first, $last, $indent) // {{{
 	{
+		$T = &$EX['Ts'];
 		$opcodes = &$EX['opcodes'];
 
 		$firstOp = &$opcodes[$first];
 		$lastOp = &$opcodes[$last];
+
+		if ($firstOp['opcode'] == XC_SWITCH_FREE && isset($T[$firstOp['op1']['var']])) {
+			// TODO: merge this code to CASE code. use SWITCH_FREE to detect begin of switch by using $Ts if possible
+			$this->beginComplexBlock($EX);
+			echo $indent, 'switch (' . str($this->getOpVal($firstOp['op1'], $EX)) . ') {', PHP_EOL;
+			echo $indent, '}', PHP_EOL;
+			$this->endComplexBlock($EX);
+			return;
+		}
+
+		if (
+			($firstOp['opcode'] == XC_CASE
+			|| $firstOp['opcode'] == XC_JMP && !empty($firstOp['jmpouts']) && $opcodes[$firstOp['jmpouts'][0]]['opcode'] == XC_CASE
+			)
+		 	 && !empty($lastOp['jmpouts'])
+		) {
+			$cases = array();
+			$caseNext = null;
+			$caseDefault = null;
+			$caseOp = null;
+			for ($i = $first; $i <= $last; ++$i) {
+				$op = $opcodes[$i];
+				if ($op['opcode'] == XC_CASE) {
+					if (!isset($caseOp)) {
+						$caseOp = $op;
+					}
+					$jmpz = $opcodes[$i + 1];
+					assert('$jmpz["opcode"] == XC_JMPZ');
+					$caseNext = $jmpz['jmpouts'][0];
+					$i = $cases[$i] = $caseNext - 1;
+				}
+				else if ($op['opcode'] == XC_JMP) {
+					// default
+					if ($op['jmpouts'][0] >= $i) {
+						$caseNext = $op['jmpouts'][0];
+						$caseDefault = $i;
+						$i = $cases[$i] = $caseNext - 1;
+					}
+				}
+			}
+
+			$this->beginComplexBlock($EX);
+
+			echo $indent, 'switch (', str($this->getOpVal($caseOp['op1'], $EX, true, true), $EX), ') {', PHP_EOL;
+			$caseIsOut = false;
+			foreach ($cases as $caseFirst => $caseLast) {
+				if ($caseIsOut && !empty($EX['lastBlock']) && empty($lastCaseFall)) {
+					echo PHP_EOL;
+				}
+				unset($EX['lastBlock']);
+
+				$caseOp = $opcodes[$caseFirst];
+
+				echo $indent;
+				if ($caseOp['opcode'] == XC_CASE) {
+					echo 'case ';
+					echo str($this->getOpVal($caseOp['op2'], $EX), $EX);
+					echo ':', PHP_EOL;
+
+					$this->removeJmpInfo($EX, $caseFirst);
+					++$caseFirst;
+
+					assert('$opcodes[$caseFirst]["opcode"] == XC_JMPZ');
+					$this->removeJmpInfo($EX, $caseFirst);
+					++$caseFirst;
+				}
+				else {
+					echo 'default';
+					echo ':', PHP_EOL;
+
+					assert('$opcodes[$caseFirst]["opcode"] == XC_JMP');
+					$this->removeJmpInfo($EX, $caseFirst);
+					++$caseFirst;
+				}
+
+				assert('$opcodes[$caseLast]["opcode"] == XC_JMP');
+				$this->removeJmpInfo($EX, $caseLast);
+				--$caseLast;
+				switch ($opcodes[$caseLast]['opcode']) {
+				case XC_BRK:
+				case XC_CONT:
+				case XC_GOTO:
+					$lastCaseFall = false;
+					break;
+
+				default:
+					$lastCaseFall = true;
+				}
+
+				$this->recognizeAndDecompileClosedBlocks($EX, $caseFirst, $caseLast, $indent . INDENT);
+				$caseIsOut = true;
+			}
+			echo $indent, '}', PHP_EOL;
+
+			$this->endComplexBlock($EX);
+			return;
+		}
 
 		if ($lastOp['opcode'] == XC_JMPNZ && !empty($lastOp['jmpouts'])
 		 && $lastOp['jmpouts'][0] == $first) {
@@ -787,7 +886,9 @@ class Decompiler
 				$blockFirst = $i;
 				$blockLast = -1;
 				$i = $blockFirst;
+				// $this->dumpRange($EX, $i, $last, $indent);
 				do {
+					$op = $opcodes[$i];
 					if (!empty($op['jmpins'])) {
 						// care about jumping from blocks behind, not before
 						foreach ($op['jmpins'] as $oplineNumber) {
@@ -809,8 +910,8 @@ class Decompiler
 					}
 					$this->decompileComplexBlock($EX, $blockFirst, $blockLast, $indent);
 					$i = $starti = $blockLast + 1;
+					continue;
 				}
-				continue;
 			}
 			++$i;
 		}
@@ -875,6 +976,17 @@ class Decompiler
 				$op['jmpouts'] = array();
 				break;
 			*/
+
+			case XC_SWITCH_FREE:
+				$op['jmpouts'] = array($i + 1);
+				$opcodes[$i + 1]['jmpins'][] = $i;
+				break;
+
+			case XC_CASE:
+				// just to link together
+				$op['jmpouts'] = array($i + 2);
+				$opcodes[$i + 2]['jmpins'][] = $i;
+				break;
 			}
 			/*
 			if (!empty($op['jmpouts']) || !empty($op['jmpins'])) {
@@ -913,8 +1025,17 @@ class Decompiler
 		$EX['recvs'] = array();
 		$EX['uses'] = array();
 
+		$first = 0;
+		$last = count($opcodes) - 1;
+
+		/* dump whole array
+		$this->dasmBasicBlock($EX, $first, $last);
+		for ($i = $first; $i <= $last; ++$i) {
+			echo $i, "\t", $this->dumpop($opcodes[$i], $EX);
+		}
+		// */
 		// decompile in a tree way
-		$this->recognizeAndDecompileClosedBlocks($EX, 0, count($opcodes) - 1, $EX['indent']);
+		$this->recognizeAndDecompileClosedBlocks($EX, $first, $last, $EX['indent']);
 		return $EX;
 	}
 	// }}}
@@ -1672,7 +1793,6 @@ class Decompiler
 					break;
 					// }}}
 				case XC_SWITCH_FREE: // {{{
-					// unset($T[$op1['var']]);
 					break;
 					// }}}
 				case XC_FREE: // {{{
@@ -1749,9 +1869,9 @@ class Decompiler
 					break;
 					// }}}
 				case XC_CASE:
-					$switchValue = $this->getOpVal($op1, $EX);
+					// $switchValue = $this->getOpVal($op1, $EX);
 					$caseValue = $this->getOpVal($op2, $EX);
-					$resvar = str($switchValue) . ' == ' . str($caseValue);
+					$resvar = $caseValue;
 					break;
 				case XC_RECV_INIT:
 				case XC_RECV:
@@ -1948,12 +2068,12 @@ class Decompiler
 		echo PHP_EOL;
 	}
 	// }}}
-	function dumpRange(&$EX, $first, $last) // {{{
+	function dumpRange(&$EX, $first, $last, $indent = '') // {{{
 	{
 		for ($i = $first; $i <= $last; ++$i) {
-			echo $i, "\t"; $this->dumpop($EX['opcodes'][$i], $EX);
+			echo $indent, $i, "\t"; $this->dumpop($EX['opcodes'][$i], $EX);
 		}
-		echo "==", PHP_EOL;
+		echo $indent, "==", PHP_EOL;
 	}
 	// }}}
 	function dargs(&$EX, $indent) // {{{
