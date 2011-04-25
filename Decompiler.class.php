@@ -523,11 +523,16 @@ class Decompiler
 	// }}}
 	function outputPhp(&$EX, $opline, $last, $indent) // {{{
 	{
+		$needBlankline = isset($EX['lastBlock']);
 		$origindent = $indent;
 		$curticks = 0;
 		for ($i = $opline; $i <= $last; $i ++) {
 			$op = $EX['opcodes'][$i];
 			if (isset($op['gofrom'])) {
+				if ($needBlankline) {
+					$needBlankline = false;
+					echo PHP_EOL;
+				}
 				echo 'label' . $i, ":\n";
 			}
 			if (isset($op['php'])) {
@@ -546,8 +551,16 @@ class Decompiler
 						else if (!$oldticks) {
 							$indent .= INDENT;
 						}
+						if ($needBlankline) {
+							$needBlankline = false;
+							echo PHP_EOL;
+						}
 						echo $origindent, "declare (ticks=$curticks) {\n";
 					}
+				}
+				if ($needBlankline) {
+					$needBlankline = false;
+					echo PHP_EOL;
 				}
 				echo $indent, str($op['php'], $indent), ";\n";
 			}
@@ -652,9 +665,6 @@ class Decompiler
 	// }}}
 	function decompileBasicBlock(&$EX, $first, $last, $indent) // {{{
 	{
-		if (isset($EX['lastBlock'])) {
-			echo PHP_EOL;
-		}
 		$this->dasmBasicBlock($EX, $first, $last);
 		// $this->dumpRange($EX, $first, $last);
 		$this->outputPhp($EX, $first, $last, $indent);
@@ -669,7 +679,7 @@ class Decompiler
 			unset($jmpins[$line]);
 			$jmpins = array_keys($jmpins);
 		}
-		$opcodes[$line]['opcode'] = XC_NOP;
+		// $opcodes[$line]['opcode'] = XC_NOP;
 		unset($opcodes[$line]['jmpouts']);
 	}
 	// }}}
@@ -693,13 +703,15 @@ class Decompiler
 		$firstOp = &$opcodes[$first];
 		$lastOp = &$opcodes[$last];
 
-		if ($lastOp['opcode'] == XC_JMPNZ
+		if ($lastOp['opcode'] == XC_JMPNZ && !empty($lastOp['jmpouts'])
 		 && $lastOp['jmpouts'][0] == $first) {
 			$this->removeJmpInfo($EX, $last);
 			$this->beginComplexBlock($EX);
+
 			echo $indent, 'do {', PHP_EOL;
 			$this->recognizeAndDecompileClosedBlocks($EX, $first, $last, $indent . INDENT);
 			echo $indent, '} while (', str($this->getOpVal($lastOp['op1'], $EX)), ');', PHP_EOL;
+
 			$this->endComplexBlock($EX);
 			return;
 		}
@@ -716,18 +728,47 @@ class Decompiler
 
 		if (isset($firstJmpOp)
 		 && $firstJmpOp['opcode'] == XC_JMPZ
-		 && $lastOp['opcode'] == XC_JMP
+		 && $firstJmpOp['jmpouts'][0] > $last
+		 && $lastOp['opcode'] == XC_JMP && !empty($lastOp['jmpouts'])
 		 && $lastOp['jmpouts'][0] == $first) {
 			$this->removeJmpInfo($EX, $firstJmp);
 			$this->removeJmpInfo($EX, $last);
-
 			$this->beginComplexBlock($EX);
+
 			ob_start();
 			$this->recognizeAndDecompileClosedBlocks($EX, $first, $last, $indent . INDENT);
-			$code = ob_get_clean();
+			$body = ob_get_clean();
+
 			echo $indent, 'while (', str($this->getOpVal($firstJmpOp['op1'], $EX)), ') {', PHP_EOL;
-			echo $code;
+			echo $body;
 			echo $indent, '}', PHP_EOL;
+
+			$this->endComplexBlock($EX);
+			return;
+		}
+
+		if (isset($firstJmpOp)
+		 && $firstJmpOp['opcode'] == XC_FE_FETCH
+		 && $firstJmpOp['jmpouts'][0] > $last
+		 && $lastOp['opcode'] == XC_JMP && !empty($lastOp['jmpouts'])
+		 && $lastOp['jmpouts'][0] == $firstJmp) {
+			$this->removeJmpInfo($EX, $firstJmp);
+			$this->removeJmpInfo($EX, $last);
+			$this->beginComplexBlock($EX);
+
+			ob_start();
+			$this->recognizeAndDecompileClosedBlocks($EX, $first, $last, $indent . INDENT);
+			$body = ob_get_clean();
+
+			$as = foldToCode($firstJmpOp['fe_as'], $EX);
+			if (isset($firstJmpOp['fe_key'])) {
+				$as = str($firstJmpOp['fe_key'], $EX) . ' => ' . str($as);
+			}
+
+			echo $indent, 'foreach (', str($firstJmpOp['fe_src'], $EX), " as $as) {", PHP_EOL;
+			echo $body;
+			echo $indent, '}', PHP_EOL;
+
 			$this->endComplexBlock($EX);
 			return;
 		}
@@ -909,25 +950,6 @@ class Decompiler
 		}
 		else {
 			$next = null;
-		}
-		if ($op['opcode'] == XC_FE_FETCH) {
-			$opline = $next;
-			$next = $op['op2']['opline_num'];
-			$end = $next - 1;
-
-			ob_start();
-			$this->outputCode($EX, $opline, $end /* - 1 skip last jmp */, $indent . INDENT);
-			$body = ob_get_clean();
-
-			$as = foldToCode($op['fe_as'], $EX);
-			if (isset($op['fe_key'])) {
-				$as = str($op['fe_key'], $EX) . ' => ' . str($as);
-			}
-			echo "{$indent}foreach (" . str($op['fe_src'], $EX) . " as $as) {\n";
-			echo $body;
-			echo "{$indent}}";
-			// $this->outputCode($EX, $next, $last, $indent);
-			// return;
 		}
 		/*
 		if ($op['opcode'] == XC_JMPZ) {
