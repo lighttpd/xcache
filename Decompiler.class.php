@@ -584,7 +584,7 @@ class Decompiler
 			if ($tostr) {
 				$ret = foldToCode($ret, $EX);
 			}
-			if ($free) {
+			if ($free && empty($this->keepTs)) {
 				unset($T[$op['var']]);
 			}
 			return $ret;
@@ -879,16 +879,15 @@ class Decompiler
 	{
 		$opcodes = &$EX['opcodes'];
 
-		$i = $starti = $first;
-		while ($i <= $last) {
+		$starti = $first;
+		for ($i = $starti; $i <= $last; ++$i) {
 			$op = $opcodes[$i];
 			if (!empty($op['jmpins']) || !empty($op['jmpouts'])) {
 				$blockFirst = $i;
 				$blockLast = -1;
-				$i = $blockFirst;
-				// $this->dumpRange($EX, $i, $last, $indent);
+				$j = $blockFirst;
 				do {
-					$op = $opcodes[$i];
+					$op = $opcodes[$j];
 					if (!empty($op['jmpins'])) {
 						// care about jumping from blocks behind, not before
 						foreach ($op['jmpins'] as $oplineNumber) {
@@ -900,8 +899,8 @@ class Decompiler
 					if (!empty($op['jmpouts'])) {
 						$blockLast = max($blockLast, max($op['jmpouts']) - 1);
 					}
-					++$i;
-				} while ($i <= $blockLast);
+					++$j;
+				} while ($j <= $blockLast);
 				assert('$blockLast <= $last');
 
 				if ($blockLast >= $blockFirst) {
@@ -909,11 +908,11 @@ class Decompiler
 						$this->decompileBasicBlock($EX, $starti, $blockFirst - 1, $indent);
 					}
 					$this->decompileComplexBlock($EX, $blockFirst, $blockLast, $indent);
-					$i = $starti = $blockLast + 1;
+					$starti = $blockLast + 1;
+					$i = $starti - 1;
 					continue;
 				}
 			}
-			++$i;
 		}
 		if ($starti <= $last) {
 			$this->decompileBasicBlock($EX, $starti, $last, $indent);
@@ -1029,6 +1028,7 @@ class Decompiler
 		$last = count($opcodes) - 1;
 
 		/* dump whole array
+		$this->keepTs = true;
 		$this->dasmBasicBlock($EX, $first, $last);
 		for ($i = $first; $i <= $last; ++$i) {
 			echo $i, "\t", $this->dumpop($opcodes[$i], $EX);
@@ -1777,7 +1777,7 @@ class Decompiler
 					break;
 					// }}}
 				case XC_FE_FETCH: // {{{
-					$op['fe_src'] = $this->getOpVal($op1, $EX);
+					$op['fe_src'] = $this->getOpVal($op1, $EX, false, true);
 					$fe = new Decompiler_ForeachBox($op);
 					$fe->iskey = false;
 					$T[$res['var']] = $fe;
