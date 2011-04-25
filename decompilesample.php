@@ -294,7 +294,7 @@ for ($i = 1; $i < 10; ++$i) {
 }
 
 foreach ($array as $key => $value) {
-	foreach ($array as $key => $value) {
+	foreach ($value as $key => $value) {
 		echo $key . ' = ' . $value . "\n";
 		break 2;
 		continue;
