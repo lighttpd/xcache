@@ -349,10 +349,10 @@ for ($i = 1; $i <= 2; ++$i) {
 
 a:
 echo 'label a';
-echo preg_replace_callback('~-([a-z])~', function ($match) {
+echo preg_replace_callback('~-([a-z])~', function($match) {
 	return strtoupper($match[1]);
 }, 'hello-world');
-$greet = function ($name) {
+$greet = function($name) {
 	printf("Hello %s\r\n", $name);
 };
 $greet('World');
