@@ -270,13 +270,22 @@ catch (OuterException $e) {
 	echo $e;
 }
 
-if ($a) {
-	echo 'if ($a)';
+if (if_()) {
+	echo 'if';
+	if (innerIf_()) {
+		echo 'if innerIf';
+	}
 }
-else if ($b) {
-	echo 'else if ($b)';
+else if (elseif_()) {
+	echo 'else if';
+	if (innerIf_()) {
+		echo 'if innerIf';
+	}
 }
 else {
+	if (innerIf_()) {
+		echo 'if innerIf';
+	}
 	echo 'else';
 }
 
