@@ -521,12 +521,15 @@ class Decompiler
 		}
 	}
 	// }}}
-	function outputPhp(&$opcodes, $opline, $last, $indent) // {{{
+	function outputPhp(&$EX, $opline, $last, $indent) // {{{
 	{
 		$origindent = $indent;
 		$curticks = 0;
 		for ($i = $opline; $i <= $last; $i ++) {
-			$op = $opcodes[$i];
+			$op = $EX['opcodes'][$i];
+			if (isset($op['gofrom'])) {
+				echo 'label' . $i, ":\n";
+			}
 			if (isset($op['php'])) {
 				$toticks = isset($op['ticks']) ? (int) str($op['ticks']) : 0;
 				if ($curticks != $toticks) {
@@ -647,21 +650,122 @@ class Decompiler
 		return $opcodes;
 	}
 	// }}}
+	function decompileBasicBlock(&$EX, $first, $last, $indent) // {{{
+	{
+		$this->dasmBasicBlock($EX, $first, $last);
+		// $this->dumpRange($EX, $first, $last);
+		$this->outputPhp($EX, $first, $last, $indent);
+	}
+	// }}}
+	function removeJmpInfo(&$EX, $line) // {{{
+	{
+		$opcodes = &$EX['opcodes'];
+		foreach ($opcodes[$line]['jmpouts'] as $jmpTo) {
+			$jmpins = &$opcodes[$jmpTo]['jmpins'];
+			$jmpins = array_flip($jmpins);
+			unset($jmpins[$line]);
+			$jmpins = array_keys($jmpins);
+		}
+		$opcodes[$line]['opcode'] = XC_NOP;
+		unset($opcodes[$line]['jmpouts']);
+	}
+	// }}}
+	function decompileComplexBlock(&$EX, $first, $last, $indent) // {{{
+	{
+		$opcodes = &$EX['opcodes'];
+
+		$firstOp = &$opcodes[$first];
+		$lastOp = &$opcodes[$last];
+
+		if ($lastOp['opcode'] == XC_JMPNZ
+		 && $lastOp['jmpouts'][0] == $first) {
+			$this->removeJmpInfo($EX, $last);
+			echo $indent, 'do {', PHP_EOL;
+			$this->recognizeAndDecompileClosedBlocks($EX, $first, $last, $indent . INDENT);
+			echo $indent, '} while (', str($this->getOpVal($lastOp['op1'], $EX)), ');', PHP_EOL;
+			return;
+		}
+
+		$firstJmp = null;
+		$firstJmpOp = null;
+		for ($i = $first; $i <= $last; ++$i) {
+			if (!empty($opcodes[$i]['jmpouts'])) {
+				$firstJmp = $i;
+				$firstJmpOp = &$opcodes[$firstJmp];
+				break;
+			}
+		}
+
+		if (isset($firstJmpOp)
+		 && $firstJmpOp['opcode'] == XC_JMPZ
+		 && $lastOp['opcode'] == XC_JMP
+		 && $lastOp['jmpouts'][0] == $first) {
+			$this->removeJmpInfo($EX, $firstJmp);
+			$this->removeJmpInfo($EX, $last);
+
+			ob_start();
+			$this->recognizeAndDecompileClosedBlocks($EX, $first, $last, $indent . INDENT);
+			$code = ob_get_clean();
+			echo $indent, 'while (', str($this->getOpVal($firstJmpOp['op1'], $EX)), ') {', PHP_EOL;
+			echo $code;
+			echo $indent, '}', PHP_EOL;
+			return;
+		}
+
+		$this->decompileBasicBlock($EX, $first, $last, $indent);
+	}
+	// }}}
+	function recognizeAndDecompileClosedBlocks(&$EX, $first, $last, $indent) // {{{ decompile in a tree way
+	{
+		$opcodes = &$EX['opcodes'];
+		$firstComplex = false;
+
+		$i = $starti = $first;
+		while ($i <= $last) {
+			$op = $opcodes[$i];
+			if (!empty($op['jmpins']) || !empty($op['jmpouts'])) {
+				$blockFirst = $i;
+				$blockLast = -1;
+				$i = $blockFirst;
+				do {
+					if (!empty($op['jmpins'])) {
+						// care about jumping from blocks behind, not before
+						foreach ($op['jmpins'] as $oplineNumber) {
+							if ($oplineNumber <= $last && $blockLast < $oplineNumber) {
+								$blockLast = $oplineNumber;
+							}
+						}
+					}
+					if (!empty($op['jmpouts'])) {
+						$blockLast = max($blockLast, max($op['jmpouts']) - 1);
+					}
+					++$i;
+				} while ($i <= $blockLast);
+				assert('$blockLast <= $last');
+
+				if ($blockLast >= $blockFirst) {
+					if ($blockFirst > $starti) {
+						$this->decompileBasicBlock($EX, $starti, $blockFirst - 1, $indent);
+					}
+					$this->decompileComplexBlock($EX, $blockFirst, $blockLast, $indent);
+					$i = $starti = $blockLast + 1;
+				}
+				continue;
+			}
+			++$i;
+		}
+		if ($starti <= $last) {
+			$this->decompileBasicBlock($EX, $starti, $last, $indent);
+		}
+	}
+	// }}}
 	function &dop_array($op_array, $indent = '') // {{{
 	{
 		$op_array['opcodes'] = $this->fixOpcode($op_array['opcodes'], true, $indent == '' ? 1 : null);
 		$opcodes = &$op_array['opcodes'];
-		$EX['indent'] = '';
-		// {{{ build jmp array
+		// {{{ build jmpins/jmpouts to op_array
 		for ($i = 0, $cnt = count($opcodes); $i < $cnt; $i ++) {
 			$op = &$opcodes[$i];
-			/*
-			if ($op['opcode'] == XC_JMPZ) {
-				$this->dumpop($op, $EX);
-				var_dump($op);
-			}
-			continue;
-			*/
 			$op['line'] = $i;
 			switch ($op['opcode']) {
 			case XC_CONT:
@@ -670,6 +774,11 @@ class Decompiler
 				break;
 
 			case XC_GOTO:
+				$target = $op['op1']['var'];
+				$op['goto'] = $target;
+				$opcodes[$target]['gofrom'][] = $i;
+				break;
+
 			case XC_JMP:
 				$target = $op['op1']['var'];
 				$op['jmpouts'] = array($target);
@@ -707,6 +816,11 @@ class Decompiler
 				break;
 			*/
 			}
+			/*
+			if (!empty($op['jmpouts']) || !empty($op['jmpins'])) {
+				echo $i, "\t", xcache_get_opcode($op['opcode']), PHP_EOL;
+			}
+			// */
 		}
 		unset($op);
 		// }}}
@@ -739,11 +853,8 @@ class Decompiler
 		$EX['recvs'] = array();
 		$EX['uses'] = array();
 
-		for ($next = 0, $last = $EX['last'];
-				$loop = $this->outputCode($EX, $next, $last, $indent, true);
-				list($next, $last) = $loop) {
-			// empty
-		}
+		// decompile in a tree way
+		$this->recognizeAndDecompileClosedBlocks($EX, 0, count($opcodes) - 1, $EX['indent']);
 		return $EX;
 	}
 	// }}}
@@ -764,7 +875,7 @@ class Decompiler
 			// echo ";;;\n";
 		}
 		$this->dasmBasicBlock($EX, $opline, $end);
-		$this->outputPhp($EX['opcodes'], $opline, $end, $indent);
+		$this->outputPhp($EX, $opline, $end, $indent);
 		// jmpout op
 		$op = &$EX['opcodes'][$end];
 		$op1 = $op['op1'];
@@ -832,10 +943,6 @@ class Decompiler
 			case XC_BRK:
 				break;
 
-			case XC_GOTO:
-				echo $indent, 'goto', ' line', $op['jmpouts'][0], ';', "\n";
-				break;
-
 			default:
 				echo $indent;
 				echo xcache_get_opcode($op['opcode']), ' line', $op['jmpouts'][0];
@@ -893,7 +1000,7 @@ class Decompiler
 		$opcodes = &$EX['opcodes'];
 		$lastphpop = null;
 
-		for ($i = $opline, $ic = $last + 1; $i < $ic; $i ++) {
+		for ($i = $opline; $i <= $last; $i ++) {
 			// {{{ prepair
 			$op = &$opcodes[$i];
 			$opc = $op['opcode'];
@@ -1381,12 +1488,12 @@ class Decompiler
 					}
 
 					for (;;) {
-						if ($i + 1 < $ic
+						if ($i + 1 <= $last
 						 && $opcodes[$i + 1]['opcode'] == XC_ADD_INTERFACE
 						 && $opcodes[$i + 1]['op1']['var'] == $res['var']) {
 							// continue
 						}
-						else if ($i + 2 < $ic
+						else if ($i + 2 <= $last
 						 && $opcodes[$i + 2]['opcode'] == XC_ADD_INTERFACE
 						 && $opcodes[$i + 2]['op1']['var'] == $res['var']
 						 && $opcodes[$i + 1]['opcode'] == XC_FETCH_CLASS) {
@@ -1591,6 +1698,10 @@ class Decompiler
 					}
 					break;
 				case XC_GOTO:
+					$resvar = 'goto label' . $op['op1']['var'];
+					$istmpres = false;
+					break;
+
 				case XC_JMP: // {{{
 					$op['cond'] = null;
 					$op['isjmp'] = true;
@@ -1794,6 +1905,14 @@ class Decompiler
 			echo is_int($k) ? '' : $k, str($v), "\t";
 		}
 		echo PHP_EOL;
+	}
+	// }}}
+	function dumpRange(&$EX, $first, $last) // {{{
+	{
+		for ($i = $first; $i <= $last; ++$i) {
+			echo $i, "\t"; $this->dumpop($EX['opcodes'][$i], $EX);
+		}
+		echo "==", PHP_EOL;
 	}
 	// }}}
 	function dargs(&$EX, $indent) // {{{
