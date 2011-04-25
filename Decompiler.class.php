@@ -652,6 +652,9 @@ class Decompiler
 	// }}}
 	function decompileBasicBlock(&$EX, $first, $last, $indent) // {{{
 	{
+		if (isset($EX['lastBlock'])) {
+			echo PHP_EOL;
+		}
 		$this->dasmBasicBlock($EX, $first, $last);
 		// $this->dumpRange($EX, $first, $last);
 		$this->outputPhp($EX, $first, $last, $indent);
@@ -670,6 +673,19 @@ class Decompiler
 		unset($opcodes[$line]['jmpouts']);
 	}
 	// }}}
+	function beginComplexBlock(&$EX) // {{{
+	{
+		if (isset($EX['lastBlock'])) {
+			echo PHP_EOL;
+			$EX['lastBlock'] = null;
+		}
+	}
+	// }}}
+	function endComplexBlock(&$EX) // {{{
+	{
+		$EX['lastBlock'] = 'complex';
+	}
+	// }}}
 	function decompileComplexBlock(&$EX, $first, $last, $indent) // {{{
 	{
 		$opcodes = &$EX['opcodes'];
@@ -680,9 +696,11 @@ class Decompiler
 		if ($lastOp['opcode'] == XC_JMPNZ
 		 && $lastOp['jmpouts'][0] == $first) {
 			$this->removeJmpInfo($EX, $last);
+			$this->beginComplexBlock($EX);
 			echo $indent, 'do {', PHP_EOL;
 			$this->recognizeAndDecompileClosedBlocks($EX, $first, $last, $indent . INDENT);
 			echo $indent, '} while (', str($this->getOpVal($lastOp['op1'], $EX)), ');', PHP_EOL;
+			$this->endComplexBlock($EX);
 			return;
 		}
 
@@ -703,12 +721,14 @@ class Decompiler
 			$this->removeJmpInfo($EX, $firstJmp);
 			$this->removeJmpInfo($EX, $last);
 
+			$this->beginComplexBlock($EX);
 			ob_start();
 			$this->recognizeAndDecompileClosedBlocks($EX, $first, $last, $indent . INDENT);
 			$code = ob_get_clean();
 			echo $indent, 'while (', str($this->getOpVal($firstJmpOp['op1'], $EX)), ') {', PHP_EOL;
 			echo $code;
 			echo $indent, '}', PHP_EOL;
+			$this->endComplexBlock($EX);
 			return;
 		}
 
@@ -718,7 +738,6 @@ class Decompiler
 	function recognizeAndDecompileClosedBlocks(&$EX, $first, $last, $indent) // {{{ decompile in a tree way
 	{
 		$opcodes = &$EX['opcodes'];
-		$firstComplex = false;
 
 		$i = $starti = $first;
 		while ($i <= $last) {
