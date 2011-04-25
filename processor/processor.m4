@@ -611,9 +611,9 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 			case ZEND_GOTO:
 #endif
 			case ZEND_JMP:
-				assert(Z_OP(src->op1).jmp_addr > processor->active_opcodes_src && Z_OP(src->op1).jmp_addr - processor->active_opcodes_src < processor->active_op_array_src->last);
+				assert(Z_OP(src->op1).jmp_addr >= processor->active_opcodes_src && Z_OP(src->op1).jmp_addr - processor->active_opcodes_src < processor->active_op_array_src->last);
 				Z_OP(dst->op1).jmp_addr = processor->active_opcodes_dst + (Z_OP(src->op1).jmp_addr - processor->active_opcodes_src);
-				assert(Z_OP(dst->op1).jmp_addr > processor->active_opcodes_dst && Z_OP(dst->op1).jmp_addr - processor->active_opcodes_dst < processor->active_op_array_dst->last);
+				assert(Z_OP(dst->op1).jmp_addr >= processor->active_opcodes_dst && Z_OP(dst->op1).jmp_addr - processor->active_opcodes_dst < processor->active_op_array_dst->last);
 				break;
 
 			case ZEND_JMPZ:
@@ -623,9 +623,9 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 #ifdef ZEND_JMP_SET
 			case ZEND_JMP_SET:
 #endif
-				assert(Z_OP(src->op2).jmp_addr > processor->active_opcodes_src && Z_OP(src->op2).jmp_addr - processor->active_opcodes_src < processor->active_op_array_src->last);
+				assert(Z_OP(src->op2).jmp_addr >= processor->active_opcodes_src && Z_OP(src->op2).jmp_addr - processor->active_opcodes_src < processor->active_op_array_src->last);
 				Z_OP(dst->op2).jmp_addr = processor->active_opcodes_dst + (Z_OP(src->op2).jmp_addr - processor->active_opcodes_src);
-				assert(Z_OP(dst->op2).jmp_addr > processor->active_opcodes_dst && Z_OP(dst->op2).jmp_addr - processor->active_opcodes_dst < processor->active_op_array_dst->last);
+				assert(Z_OP(dst->op2).jmp_addr >= processor->active_opcodes_dst && Z_OP(dst->op2).jmp_addr - processor->active_opcodes_dst < processor->active_op_array_dst->last);
 				break;
 
 			default:
