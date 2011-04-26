@@ -184,7 +184,7 @@ define(`COPYNULL_EX', `
 dnl }}}
 dnl {{{ COPYNULL(1:elm)
 define(`COPYNULL', `
-	COPYNULL_EX(`dst->$1', `$2')DONE(`$1')
+	COPYNULL_EX(`dst->$1', `$1')DONE(`$1')
 ')
 dnl }}}
 dnl {{{ LIST_DIFF(1:left-list, 2:right-list)
