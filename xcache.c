@@ -2883,7 +2883,7 @@ PHP_FUNCTION(xcache_get_refcount)
 		RETURN_NULL();
 	}
 
-	RETURN_LONG(Z_REFCOUNT_P(variable));
+	RETURN_LONG(Z_REFCOUNT(*variable));
 }
 /* }}} */
 /* {{{ proto bool xcache_get_isref(mixed variable)
@@ -2899,7 +2899,7 @@ PHP_FUNCTION(xcache_get_isref)
 		RETURN_NULL();
 	}
 
-	RETURN_BOOL(Z_ISREF_P(variable) && Z_REFCOUNT_P(variable) >= 3);
+	RETURN_BOOL(Z_ISREF(*variable) && Z_REFCOUNT(*variable) >= 3);
 }
 /* }}} */
 #ifdef HAVE_XCACHE_DPRINT
