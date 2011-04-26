@@ -380,7 +380,9 @@ default:
 
 declare (ticks=1) {
 	echo 1;
-	echo 2;
+	while (1) {
+		echo 2;
+	}
 }
 
 require 'require.php';
