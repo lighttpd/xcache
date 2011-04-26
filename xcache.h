@@ -53,11 +53,17 @@
 #	define my_free_alloca(size, use_heap) free_alloca(size)
 #	define ALLOCA_FLAG(x)
 #endif
+#ifndef Z_ISREF
+#	define Z_ISREF(z) (z).is_ref
+#endif
 #ifndef Z_SET_ISREF
 #	define Z_SET_ISREF(z) (z).is_ref = 1
 #endif
 #ifndef Z_UNSET_ISREF
 #	define Z_UNSET_ISREF(z) (z).is_ref = 0
+#endif
+#ifndef Z_REFCOUNT
+#	define Z_REFCOUNT(z) (z).refcount
 #endif
 #ifndef Z_SET_REFCOUNT
 #	define Z_SET_REFCOUNT(z, rc) (z).refcount = rc
