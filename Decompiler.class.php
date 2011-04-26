@@ -614,7 +614,8 @@ class Decompiler
 	// }}}
 	function &fixOpcode($opcodes, $removeTailing = false, $defaultReturnValue = null) // {{{
 	{
-		for ($i = 0, $cnt = count($opcodes); $i < $cnt; $i ++) {
+		$last = count($opcodes) - 1;
+		for ($i = 0; $i <= $last; $i ++) {
 			if (function_exists('xcache_get_fixed_opcode')) {
 				$opcodes[$i]['opcode'] = xcache_get_fixed_opcode($opcodes[$i]['opcode'], $i);
 			}
@@ -705,6 +706,61 @@ class Decompiler
 		$firstOp = &$opcodes[$first];
 		$lastOp = &$opcodes[$last];
 
+		// {{{ try/catch
+		if (!empty($firstOp['jmpins']) && !empty($opcodes[$firstOp['jmpins'][0]]['isCatchBegin'])) {
+			$catchBlocks = array();
+			$catchFirst = $firstOp['jmpins'][0];
+
+			$tryFirst = $first;
+			$tryLast = $catchFirst - 1;
+
+			// search for XC_CATCH
+			$this->removeJmpInfo($EX, $catchFirst);
+			for ($i = $catchFirst; $i <= $last; ) {
+				if ($opcodes[$i]['opcode'] == XC_CATCH) {
+					$catchOpLine = $i;
+					$this->removeJmpInfo($EX, $catchOpLine);
+
+					$catchNext = $opcodes[$catchOpLine]['extended_value'];
+					$catchBodyLast = $catchNext - 1;
+					if ($opcodes[$catchBodyLast]['opcode'] == XC_JMP) {
+						--$catchBodyLast;
+					}
+
+					$catchBlocks[$catchFirst] = array($catchOpLine, $catchBodyLast);
+
+					$i = $catchFirst = $catchNext;
+				}
+				else {
+					++$i;
+				}
+			}
+
+			if ($opcodes[$tryLast]['opcode'] == XC_JMP) {
+				--$tryLast;
+			}
+
+			$this->beginComplexBlock($EX);
+			echo $indent, 'try {', PHP_EOL;
+			$this->recognizeAndDecompileClosedBlocks($EX, $tryFirst, $tryLast, $indent . INDENT);
+			echo $indent, '}', PHP_EOL;
+			foreach ($catchBlocks as $catchFirst => $catchInfo) {
+				list($catchOpLine, $catchBodyLast) = $catchInfo;
+				$catchBodyFirst = $catchOpLine + 1;
+				$this->recognizeAndDecompileClosedBlocks($EX, $catchFirst, $catchOpLine, $indent);
+				$catchOp = &$opcodes[$catchOpLine];
+				echo $indent, 'catch (', str($this->getOpVal($catchOp['op1'], $EX)), ' ', str($this->getOpVal($catchOp['op2'], $EX)), ') {', PHP_EOL;
+				unset($catchOp);
+
+				$EX['lastBlock'] = null;
+				$this->recognizeAndDecompileClosedBlocks($EX, $catchBodyFirst, $catchBodyLast, $indent . INDENT);
+				echo $indent, '}', PHP_EOL;
+			}
+			$this->endComplexBlock($EX);
+			return;
+		}
+		// }}}
+
 		if ($firstOp['opcode'] == XC_SWITCH_FREE && isset($T[$firstOp['op1']['var']])) {
 			// TODO: merge this code to CASE code. use SWITCH_FREE to detect begin of switch by using $Ts if possible
 			$this->beginComplexBlock($EX);
@@ -721,10 +777,9 @@ class Decompiler
 		 	 && !empty($lastOp['jmpouts'])
 		) {
 			$cases = array();
-			$caseNext = null;
 			$caseDefault = null;
 			$caseOp = null;
-			for ($i = $first; $i <= $last; ++$i) {
+			for ($i = $first; $i <= $last; ) {
 				$op = $opcodes[$i];
 				if ($op['opcode'] == XC_CASE) {
 					if (!isset($caseOp)) {
@@ -733,15 +788,18 @@ class Decompiler
 					$jmpz = $opcodes[$i + 1];
 					assert('$jmpz["opcode"] == XC_JMPZ');
 					$caseNext = $jmpz['jmpouts'][0];
-					$i = $cases[$i] = $caseNext - 1;
+					$cases[$i] = $caseNext - 1;
+					$i = $caseNext;
 				}
-				else if ($op['opcode'] == XC_JMP) {
+				else if ($op['opcode'] == XC_JMP && $op['jmpouts'][0] >= $i) {
 					// default
-					if ($op['jmpouts'][0] >= $i) {
-						$caseNext = $op['jmpouts'][0];
-						$caseDefault = $i;
-						$i = $cases[$i] = $caseNext - 1;
-					}
+					$caseNext = $op['jmpouts'][0];
+					$caseDefault = $i;
+					$cases[$i] = $caseNext - 1;
+					$i = $caseNext;
+				}
+				else {
+					++$i;
 				}
 			}
 
@@ -880,9 +938,8 @@ class Decompiler
 		$opcodes = &$EX['opcodes'];
 
 		$starti = $first;
-		for ($i = $starti; $i <= $last; ++$i) {
-			$op = $opcodes[$i];
-			if (!empty($op['jmpins']) || !empty($op['jmpouts'])) {
+		for ($i = $starti; $i <= $last; ) {
+			if (!empty($opcodes[$i]['jmpins']) || !empty($opcodes[$i]['jmpouts'])) {
 				$blockFirst = $i;
 				$blockLast = -1;
 				$j = $blockFirst;
@@ -901,7 +958,9 @@ class Decompiler
 					}
 					++$j;
 				} while ($j <= $blockLast);
-				assert('$blockLast <= $last');
+				if (!assert('$blockLast <= $last')) {
+					var_dump($blockLast, $last);
+				}
 
 				if ($blockLast >= $blockFirst) {
 					if ($blockFirst > $starti) {
@@ -909,9 +968,14 @@ class Decompiler
 					}
 					$this->decompileComplexBlock($EX, $blockFirst, $blockLast, $indent);
 					$starti = $blockLast + 1;
-					$i = $starti - 1;
-					continue;
+					$i = $starti;
 				}
+				else {
+					++$i;
+				}
+			}
+			else {
+				++$i;
 			}
 		}
 		if ($starti <= $last) {
@@ -923,8 +987,9 @@ class Decompiler
 	{
 		$op_array['opcodes'] = $this->fixOpcode($op_array['opcodes'], true, $indent == '' ? 1 : null);
 		$opcodes = &$op_array['opcodes'];
+		$last = count($opcodes) - 1;
 		// {{{ build jmpins/jmpouts to op_array
-		for ($i = 0, $cnt = count($opcodes); $i < $cnt; $i ++) {
+		for ($i = 0; $i <= $last; $i ++) {
 			$op = &$opcodes[$i];
 			$op['line'] = $i;
 			switch ($op['opcode']) {
@@ -986,6 +1051,12 @@ class Decompiler
 				$op['jmpouts'] = array($i + 2);
 				$opcodes[$i + 2]['jmpins'][] = $i;
 				break;
+
+			case XC_CATCH:
+				$catchNext = $op['extended_value'];
+				$op['jmpouts'] = array($catchNext);
+				$opcodes[$catchNext]['jmpins'][] = $i;
+				break;
 			}
 			/*
 			if (!empty($op['jmpouts']) || !empty($op['jmpins'])) {
@@ -994,18 +1065,27 @@ class Decompiler
 			// */
 		}
 		unset($op);
+		if ($op_array['try_catch_array']) {
+			foreach ($op_array['try_catch_array'] as $try_catch_element) {
+				$catch_op = $try_catch_element['catch_op'];
+				$try_op = $try_catch_element['try_op'];
+				$opcodes[$try_op]['jmpins'][] = $catch_op;
+				$opcodes[$catch_op]['jmpouts'][] = $try_op;
+				$opcodes[$catch_op]['isCatchBegin'] = true;
+			}
+		}
 		// }}}
 		// build semi-basic blocks
 		$nextbbs = array();
 		$starti = 0;
-		for ($i = 1, $cnt = count($opcodes); $i < $cnt; $i ++) {
+		for ($i = 1; $i <= $last; $i ++) {
 			if (isset($opcodes[$i]['jmpins'])
 			 || isset($opcodes[$i - 1]['jmpouts'])) {
 				$nextbbs[$starti] = $i;
 				$starti = $i;
 			}
 		}
-		$nextbbs[$starti] = $cnt;
+		$nextbbs[$starti] = $last + 1;
 
 		$EX = array();
 		$EX['Ts'] = array();
@@ -1238,7 +1318,6 @@ class Decompiler
 					break;
 					// }}}
 				case XC_CATCH: // {{{
-					$resvar = 'catch (' . str($this->getOpVal($op1, $EX)) . ' ' . str($this->getOpVal($op2, $EX)) . ')';
 					break;
 					// }}}
 				case XC_INSTANCEOF: // {{{
@@ -2021,6 +2100,7 @@ class Decompiler
 	// }}}
 	function dumpop($op, &$EX) // {{{
 	{
+		assert('isset($op)');
 		$op1 = $op['op1'];
 		$op2 = $op['op2'];
 		$d = array(xcache_get_opcode($op['opcode']), $op['opcode']);
@@ -2052,8 +2132,8 @@ class Decompiler
 			default:
 				if ($k == 'result') {
 					var_dump($op);
-					exit;
 					assert(0);
+					exit;
 				}
 				else {
 					$d[$kk] = $this->getOpVal($op[$k], $EX);
@@ -2061,6 +2141,12 @@ class Decompiler
 			}
 		}
 		$d[';'] = $op['extended_value'];
+		if (!empty($op['jmpouts'])) {
+			$d['>>'] = implode(',', $op['jmpouts']);
+		}
+		if (!empty($op['jmpins'])) {
+			$d['<<'] = implode(',', $op['jmpins']);
+		}
 
 		foreach ($d as $k => $v) {
 			echo is_int($k) ? '' : $k, str($v), "\t";

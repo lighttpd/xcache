@@ -256,19 +256,23 @@ $a = $b or $c;
 $a = $b && $c;
 $a = $b || $c;
 
-try {
-	echo 'outer try 1';
+do {
 	try {
-		echo 'inner try';
+		echo 'outer try 1';
+
+		try {
+			echo 'inner try';
+		}
+		catch (InnerException $e) {
+			echo $e;
+		}
+
+		echo 'outer try 2';
 	}
-	catch (InnerException $e) {
+	catch (OuterException $e) {
 		echo $e;
 	}
-	echo 'outer try 2';
-}
-catch (OuterException $e) {
-	echo $e;
-}
+} while (0);
 
 if (if_()) {
 	echo 'if';
