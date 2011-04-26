@@ -149,7 +149,6 @@ class Decompiler_Binop extends Decompiler_Code // {{{
 	var $op1;
 	var $op2;
 	var $parent;
-	var $indent;
 
 	function Decompiler_Binop($parent, $op1, $opc, $op2)
 	{
@@ -163,20 +162,53 @@ class Decompiler_Binop extends Decompiler_Code // {{{
 	{
 		$opstr = $this->parent->binops[$this->opc];
 
-		$op1 = foldToCode($this->op1, $indent);
-		if (is_a($this->op1, 'Decompiler_Binop') && $this->op1->opc != $this->opc) {
-			$op1 = "(" . str($op1, $indent) . ")";
+		if (is_a($this->op1, 'Decompiler_TriOp') || is_a($this->op1, 'Decompiler_Binop') && $this->op1->opc != $this->opc) {
+			$op1 = "(" . str($this->op1, $indent) . ")";
 		}
-		$op2 = foldToCode($this->op2, $indent);
-		if (is_a($this->op2, 'Decompiler_Binop') && $this->op2->opc != $this->opc && substr($opstr, -1) != '=') {
-			$op2 = "(" . str($op2, $indent) . ")";
+		else {
+			$op1 = $this->op1;
+		}
+
+		if (is_a($this->op2, 'Decompiler_TriOp') || is_a($this->op2, 'Decompiler_Binop') && $this->op2->opc != $this->opc && substr($opstr, -1) != '=') {
+			$op2 = "(" . str($this->op2, $indent) . ")";
+		}
+		else {
+			$op2 = $this->op2;
 		}
 
 		if (str($op1) == '0' && ($this->opc == XC_ADD || $this->opc == XC_SUB)) {
 			return $opstr . str($op2, $indent);
 		}
 
-		return str($op1) . ' ' . $opstr . ' ' . str($op2);
+		return str($op1, $indent) . ' ' . $opstr . ' ' . str($op2, $indent);
+	}
+}
+// }}}
+class Decompiler_TriOp extends Decompiler_Code // {{{
+{
+	var $condition;
+	var $trueValue;
+	var $falseValue;
+
+	function Decompiler_TriOp($condition, $trueValue, $falseValue)
+	{
+		$this->condition = $condition;
+		$this->trueValue = $trueValue;
+		$this->falseValue = $falseValue;
+	}
+
+	function toCode($indent)
+	{
+		$trueValue = $this->trueValue;
+		if (is_a($this->trueValue, 'Decompiler_TriOp')) {
+			$trueValue = "(" . str($trueValue, $indent) . ")";
+		}
+		$falseValue = $this->falseValue;
+		if (is_a($this->falseValue, 'Decompiler_TriOp')) {
+			$falseValue = "(" . str($falseValue, $indent) . ")";
+		}
+
+		return str($this->condition) . ' ? ' . str($trueValue) . ' : ' . str($falseValue);
 	}
 }
 // }}}
@@ -485,6 +517,7 @@ class Decompiler
 				XC_BW_XOR              => "^",
 				XC_ASSIGN_BW_XOR       => "^=",
 				XC_BOOL_XOR            => "xor",
+				XC_JMP_SET             => "?:",
 				);
 		// }}}
 		$this->includeTypes = array( // {{{
@@ -706,6 +739,28 @@ class Decompiler
 		$firstOp = &$opcodes[$first];
 		$lastOp = &$opcodes[$last];
 
+		// {{{ ?: excludign JMP_SET
+		if ($firstOp['opcode'] == XC_JMPZ && !empty($firstOp['jmpouts'])
+		 && $last >= $first + 3
+		 && $opcodes[$firstOp['jmpouts'][0] - 2]['opcode'] == XC_QM_ASSIGN
+		 && $opcodes[$firstOp['jmpouts'][0] - 1]['opcode'] == XC_JMP && $opcodes[$firstOp['jmpouts'][0] - 1]['jmpouts'][0] == $last + 1
+		 && $lastOp['opcode'] == XC_QM_ASSIGN
+		) {
+			$trueFirst = $first + 1;
+			$trueLast = $firstOp['jmpouts'][0] - 2;
+			$falseFirst = $firstOp['jmpouts'][0];
+			$falseLast = $last;
+			$this->removeJmpInfo($EX, $first);
+
+			$condition = $this->getOpVal($firstOp['op1'], $EX);
+			$this->recognizeAndDecompileClosedBlocks($EX, $trueFirst, $trueLast, $indent . INDENT);
+			$trueValue = $this->getOpVal($opcodes[$trueLast]['op1'], $EX, false, true);
+			$this->recognizeAndDecompileClosedBlocks($EX, $falseFirst, $falseLast, $indent . INDENT);
+			$falseValue = $this->getOpVal($opcodes[$falseLast]['op1'], $EX, false, true);
+			$T[$opcodes[$trueLast]['result']['var']] = new Decompiler_TriOp($condition, $trueValue, $falseValue);
+			return false;
+		}
+		// }}}
 		// {{{ try/catch
 		if (!empty($firstOp['jmpins']) && !empty($opcodes[$firstOp['jmpins'][0]]['isCatchBegin'])) {
 			$catchBlocks = array();
@@ -973,7 +1028,12 @@ class Decompiler
 					if ($blockFirst > $starti) {
 						$this->decompileBasicBlock($EX, $starti, $blockFirst - 1, $indent);
 					}
-					$this->decompileComplexBlock($EX, $blockFirst, $blockLast, $indent);
+					if ($this->decompileComplexBlock($EX, $blockFirst, $blockLast, $indent) === false) {
+						if ($EX['lastBlock'] == 'complex') {
+							echo PHP_EOL;
+						}
+						$EX['lastBlock'] = null;
+					}
 					$starti = $blockLast + 1;
 					$i = $starti;
 				}
@@ -1029,7 +1089,7 @@ class Decompiler
 			case XC_JMPNZ:
 			case XC_JMPZ_EX:
 			case XC_JMPNZ_EX:
-			case XC_JMP_SET:
+			// case XC_JMP_SET:
 			// case XC_FE_RESET:
 			case XC_FE_FETCH:
 			// case XC_JMP_NO_CTOR:
@@ -1110,6 +1170,7 @@ class Decompiler
 		$EX['silence'] = 0;
 		$EX['recvs'] = array();
 		$EX['uses'] = array();
+		$EX['lastBlock'] = null;
 
 		$first = 0;
 		$last = count($opcodes) - 1;
@@ -1273,6 +1334,10 @@ class Decompiler
 			// echo $i, ' '; $this->dumpop($op, $EX); //var_dump($op);
 
 			$resvar = null;
+			unset($curResVar);
+			if (array_key_exists($res['var'], $T)) {
+				$curResVar = &$T[$res['var']];
+			}
 			if ((ZEND_ENGINE_2_4 ? ($res['op_type'] & EXT_TYPE_UNUSED) : ($res['EA.type'] & EXT_TYPE_UNUSED)) || $res['op_type'] == XC_IS_UNUSED) {
 				$istmpres = false;
 			}
@@ -1816,10 +1881,10 @@ class Decompiler
 					if ($opc == XC_ADD_ARRAY_ELEMENT) {
 						$assoc = $this->getOpVal($op2, $EX);
 						if (isset($assoc)) {
-							$T[$res['var']]->value[] = array($assoc, $rvalue);
+							$curResVar->value[] = array($assoc, $rvalue);
 						}
 						else {
-							$T[$res['var']]->value[] = array(null, $rvalue);
+							$curResVar->value[] = array(null, $rvalue);
 						}
 					}
 					else {
@@ -1841,7 +1906,12 @@ class Decompiler
 					break;
 					// }}}
 				case XC_QM_ASSIGN: // {{{
-					$resvar = $this->getOpVal($op1, $EX);
+					if (isset($curResVar) && is_a($curResVar, 'Decompiler_Binop')) {
+						$curResVar->op2 = $this->getOpVal($op1, $EX);
+					}
+					else {
+						$resvar = $this->getOpVal($op1, $EX);
+					}
 					break;
 					// }}}
 				case XC_BOOL: // {{{
@@ -1893,9 +1963,7 @@ class Decompiler
 				case XC_JMP_NO_CTOR:
 					break;
 				case XC_JMP_SET: // ?:
-					$resvar = $this->getOpVal($op1, $EX);
-					$op['cond'] = $resvar; 
-					$op['isjmp'] = true;
+					$resvar = new Decompiler_Binop($this, $this->getOpVal($op1, $EX), XC_JMP_SET, null);
 					break;
 				case XC_JMPNZ: // while
 				case XC_JMPZNZ: // for

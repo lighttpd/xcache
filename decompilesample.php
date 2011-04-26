@@ -404,10 +404,12 @@ echo $a::CONST_VALUE;
 echo CONST_VALUE;
 $this::__construct();
 $obj::__construct();
-
 $a = $b ?: $d;
 $a = ($b ?: $d) + $c;
 $a = f1() ?: f2();
+$a = $b ? $c : $d;
+$a = ($b ? $c : $d) + $c;
+$a = f1() ? f3() : f2();
 
 if ($b ?: $d) {
 	echo 'if ($b ?: $d)';
