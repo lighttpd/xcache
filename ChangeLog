@@ -15,6 +15,7 @@ ChangeLog
  * avoid possible filename injection in admin page
  * adds 30 seconds timeout to "compiling" flag
  * decompiler: improves decompiling
+ * disassembler: improper handling of null field
  * disassembler: DECLARE_INHERITED_CLASS/DELAYED class not found
  * disassembler: don't dump builtin functions
  * fix win32 build against win32 native gnu tools
