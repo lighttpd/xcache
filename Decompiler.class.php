@@ -741,7 +741,7 @@ class Decompiler
 			}
 
 			$this->beginComplexBlock($EX);
-			echo $indent, 'try {', PHP_EOL;
+			echo $indent, "try {", PHP_EOL;
 			$this->recognizeAndDecompileClosedBlocks($EX, $tryFirst, $tryLast, $indent . INDENT);
 			echo $indent, '}', PHP_EOL;
 			foreach ($catchBlocks as $catchFirst => $catchInfo) {
@@ -749,7 +749,7 @@ class Decompiler
 				$catchBodyFirst = $catchOpLine + 1;
 				$this->recognizeAndDecompileClosedBlocks($EX, $catchFirst, $catchOpLine, $indent);
 				$catchOp = &$opcodes[$catchOpLine];
-				echo $indent, 'catch (', str($this->getOpVal($catchOp['op1'], $EX)), ' ', str($this->getOpVal($catchOp['op2'], $EX)), ') {', PHP_EOL;
+				echo $indent, 'catch (', str($this->getOpVal($catchOp['op1'], $EX)), ' ', str($this->getOpVal($catchOp['op2'], $EX)), ") {", PHP_EOL;
 				unset($catchOp);
 
 				$EX['lastBlock'] = null;
@@ -760,11 +760,11 @@ class Decompiler
 			return;
 		}
 		// }}}
-
+		// {{{ switch/case
 		if ($firstOp['opcode'] == XC_SWITCH_FREE && isset($T[$firstOp['op1']['var']])) {
 			// TODO: merge this code to CASE code. use SWITCH_FREE to detect begin of switch by using $Ts if possible
 			$this->beginComplexBlock($EX);
-			echo $indent, 'switch (' . str($this->getOpVal($firstOp['op1'], $EX)) . ') {', PHP_EOL;
+			echo $indent, 'switch (', str($this->getOpVal($firstOp['op1'], $EX)), ") {", PHP_EOL;
 			echo $indent, '}', PHP_EOL;
 			$this->endComplexBlock($EX);
 			return;
@@ -805,7 +805,7 @@ class Decompiler
 
 			$this->beginComplexBlock($EX);
 
-			echo $indent, 'switch (', str($this->getOpVal($caseOp['op1'], $EX, true, true), $EX), ') {', PHP_EOL;
+			echo $indent, 'switch (', str($this->getOpVal($caseOp['op1'], $EX, true, true), $EX), ") {", PHP_EOL;
 			$caseIsOut = false;
 			foreach ($cases as $caseFirst => $caseLast) {
 				if ($caseIsOut && !empty($EX['lastBlock']) && empty($lastCaseFall)) {
@@ -859,20 +859,23 @@ class Decompiler
 			$this->endComplexBlock($EX);
 			return;
 		}
-
+		// }}}
+		// {{{ do/while
 		if ($lastOp['opcode'] == XC_JMPNZ && !empty($lastOp['jmpouts'])
 		 && $lastOp['jmpouts'][0] == $first) {
 			$this->removeJmpInfo($EX, $last);
 			$this->beginComplexBlock($EX);
 
-			echo $indent, 'do {', PHP_EOL;
+			echo $indent, "do {", PHP_EOL;
 			$this->recognizeAndDecompileClosedBlocks($EX, $first, $last, $indent . INDENT);
-			echo $indent, '} while (', str($this->getOpVal($lastOp['op1'], $EX)), ');', PHP_EOL;
+			echo $indent, "} while (", str($this->getOpVal($lastOp['op1'], $EX)), ');', PHP_EOL;
 
 			$this->endComplexBlock($EX);
 			return;
 		}
+		// }}}
 
+		// {{{ search firstJmpOp
 		$firstJmp = null;
 		$firstJmpOp = null;
 		for ($i = $first; $i <= $last; ++$i) {
@@ -882,7 +885,9 @@ class Decompiler
 				break;
 			}
 		}
+		// }}}
 
+		// {{{ while
 		if (isset($firstJmpOp)
 		 && $firstJmpOp['opcode'] == XC_JMPZ
 		 && $firstJmpOp['jmpouts'][0] > $last
@@ -896,14 +901,15 @@ class Decompiler
 			$this->recognizeAndDecompileClosedBlocks($EX, $first, $last, $indent . INDENT);
 			$body = ob_get_clean();
 
-			echo $indent, 'while (', str($this->getOpVal($firstJmpOp['op1'], $EX)), ') {', PHP_EOL;
+			echo $indent, 'while (', str($this->getOpVal($firstJmpOp['op1'], $EX)), ") {", PHP_EOL;
 			echo $body;
 			echo $indent, '}', PHP_EOL;
 
 			$this->endComplexBlock($EX);
 			return;
 		}
-
+		// }}}
+		// {{{ foreach
 		if (isset($firstJmpOp)
 		 && $firstJmpOp['opcode'] == XC_FE_FETCH
 		 && $firstJmpOp['jmpouts'][0] > $last
@@ -929,6 +935,7 @@ class Decompiler
 			$this->endComplexBlock($EX);
 			return;
 		}
+		// }}}
 
 		$this->decompileBasicBlock($EX, $first, $last, $indent);
 	}
