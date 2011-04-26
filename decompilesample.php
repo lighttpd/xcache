@@ -409,6 +409,18 @@ $a = $b ?: $d;
 $a = ($b ?: $d) + $c;
 $a = f1() ?: f2();
 
+if ($b ?: $d) {
+	echo 'if ($b ?: $d)';
+}
+
+if (($b ?: $d) + $c) {
+	echo 'if (($b ?: $d) + $c)';
+}
+
+if (f1() ?: f2()) {
+	echo 'if (f1() ?: f2())';
+}
+
 echo 'goto a';
 goto a;
 
