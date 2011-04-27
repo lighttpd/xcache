@@ -203,7 +203,6 @@ $a = $b--;
 $a = --$b;
 $a = $obj->b--;
 $a = --$obj->b;
-$a = $b xor $c;
 $a = !$b;
 $a = $b === $c;
 $a = $b !== $c;
@@ -251,8 +250,9 @@ $a = (object) $b;
 // PHP6+ $a = (scalar) $b;
 $a = ($b ? $c : $d);
 $a = (f1() ? f2() : f3());
-$a = $b and $c;
-$a = $b or $c;
+($a = $b) xor $c;
+($a = $b) and $c;
+($a = $b) or $c;
 $a = $b && $c;
 $a = $b || $c;
 
@@ -407,9 +407,9 @@ $obj::__construct();
 $a = $b ?: $d;
 $a = ($b ?: $d) + $c;
 $a = f1() ?: f2();
-$a = $b ? $c : $d;
+$a = ($b ? $c : $d);
 $a = ($b ? $c : $d) + $c;
-$a = f1() ? f3() : f2();
+$a = (f1() ? f3() : f2());
 
 if ($b ?: $d) {
 	echo 'if ($b ?: $d)';
