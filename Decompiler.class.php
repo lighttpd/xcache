@@ -708,6 +708,15 @@ class Decompiler
 		$this->outputPhp($EX, $range, $indent);
 	}
 	// }}}
+	function isIfCondition(&$EX, $range) // {{{
+	{
+		$opcodes = &$EX['opcodes'];
+		$firstOp = &$opcodes[$range[0]];
+		return $firstOp['opcode'] == XC_JMPZ && !empty($firstOp['jmpouts']) && $opcodes[$firstOp['jmpouts'][0] - 1]['opcode'] == XC_JMP
+		 && !empty($opcodes[$firstOp['jmpouts'][0] - 1]['jmpouts'])
+		 && $opcodes[$firstOp['jmpouts'][0] - 1]['jmpouts'][0] == $range[1] + 1;
+	}
+	// }}}
 	function removeJmpInfo(&$EX, $line) // {{{
 	{
 		$opcodes = &$EX['opcodes'];
@@ -827,6 +836,46 @@ class Decompiler
 			echo $indent, 'for (', str($initial, $EX), '; ', implode(', ', $conditionCodes), '; ', implode(', ', $nextCodes), ') ', '{', PHP_EOL;
 			$this->recognizeAndDecompileClosedBlocks($EX, $bodyRange, $indent . INDENT);
 			echo $indent, '}', PHP_EOL;
+			$this->endComplexBlock($EX);
+			return;
+		}
+		// }}}
+		// {{{ if/elseif/else
+		if ($this->isIfCondition($EX, $range)) {
+			$this->beginComplexBlock($EX);
+			$isElseIf = false;
+			do {
+				$ifRange = array($range[0], $opcodes[$range[0]]['jmpouts'][0] - 1);
+				$this->removeJmpInfo($EX, $ifRange[0]);
+				$this->removeJmpInfo($EX, $ifRange[1]);
+				$condition = $this->getOpVal($opcodes[$ifRange[0]]['op1'], $EX);
+
+				echo $indent, $isElseIf ? 'else if' : 'if', ' (', str($condition, $EX), ') ', '{', PHP_EOL;
+				$this->recognizeAndDecompileClosedBlocks($EX, $ifRange, $indent . INDENT);
+				$EX['lastBlock'] = null;
+				echo $indent, '}', PHP_EOL;
+
+				$isElseIf = true;
+				// search for else if
+				$range[0] = $ifRange[1] + 1;
+				for ($i = $ifRange[1] + 1; $i <= $range[1]; ++$i) {
+					// find first jmpout
+					if (!empty($opcodes[$i]['jmpouts'])) {
+						if ($this->isIfCondition($EX, array($i, $range[1]))) {
+							$this->dasmBasicBlock($EX, array($range[0], $i));
+							$range[0] = $i;
+						}
+						break;
+					}
+				}
+			} while ($this->isIfCondition($EX, $range));
+			if ($ifRange[1] < $range[1]) {
+				$elseRange = array($ifRange[1], $range[1]);
+				echo $indent, 'else ', '{', PHP_EOL;
+				$this->recognizeAndDecompileClosedBlocks($EX, $elseRange, $indent . INDENT);
+				$EX['lastBlock'] = null;
+				echo $indent, '}', PHP_EOL;
+			}
 			$this->endComplexBlock($EX);
 			return;
 		}
