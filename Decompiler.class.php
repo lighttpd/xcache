@@ -739,7 +739,7 @@ class Decompiler
 		$firstOp = &$opcodes[$range[0]];
 		$lastOp = &$opcodes[$range[1]];
 
-		// {{{ ?: excludign JMP_SET
+		// {{{ ?: excluding JMP_SET
 		if ($firstOp['opcode'] == XC_JMPZ && !empty($firstOp['jmpouts'])
 		 && $range[1] >= $range[0] + 3
 		 && $opcodes[$firstOp['jmpouts'][0] - 2]['opcode'] == XC_QM_ASSIGN
