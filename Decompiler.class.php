@@ -699,10 +699,12 @@ class Decompiler
 		return $opcodes;
 	}
 	// }}}
-	function decompileBasicBlock(&$EX, $range, $indent) // {{{
+	function decompileBasicBlock(&$EX, $range, $indent, $unhandled = false) // {{{
 	{
 		$this->dasmBasicBlock($EX, $range);
-		// $this->dumpRange($EX, $range, $indent);
+		if ($unhandled) {
+			$this->dumpRange($EX, $range, $indent);
+		}
 		$this->outputPhp($EX, $range, $indent);
 	}
 	// }}}
@@ -1004,11 +1006,14 @@ class Decompiler
 			echo $indent, '}', PHP_EOL;
 
 			$this->endComplexBlock($EX);
+			if ($opcodes[$range[1] + 1]['opcode'] == XC_SWITCH_FREE) {
+				$this->removeJmpInfo($EX, $range[1] + 1);
+			}
 			return;
 		}
 		// }}}
 
-		$this->decompileBasicBlock($EX, $range, $indent);
+		$this->decompileBasicBlock($EX, $range, $indent, true);
 	}
 	// }}}
 	function recognizeAndDecompileClosedBlocks(&$EX, $range, $indent) // {{{ decompile in a tree way
