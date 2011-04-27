@@ -301,7 +301,9 @@ do {
 	echo 'do/while';
 } while (false);
 
-for ($i = 1; $i < 10; ++$i) {
+$i = 1;
+
+for (; $i < 10; ++$i) {
 	echo $i;
 	break;
 }
@@ -426,7 +428,9 @@ if (f1() ?: f2()) {
 echo 'goto a';
 goto a;
 
-for ($i = 1; $i <= 2; ++$i) {
+$i = 1;
+
+for (; $i <= 2; ++$i) {
 	goto a;
 }
 

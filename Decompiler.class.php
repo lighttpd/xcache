@@ -781,6 +781,45 @@ class Decompiler
 		}
 		// }}}
 		// {{{ try/catch
+		if (!empty($firstOp['jmpins']) && $opcodes[$firstOp['jmpins'][0]]['opcode'] == XC_JMP
+		 && $lastOp['opcode'] == XC_JMP && !empty($lastOp['jmpouts']) && $lastOp['jmpouts'][0] <= $firstOp['jmpins'][0]
+		 && !empty($opcodes[$range[1] + 1]['jmpins']) && $opcodes[$opcodes[$range[1] + 1]['jmpins'][0]]['opcode'] == XC_JMPZNZ
+		) {
+			$nextRange = array($lastOp['jmpouts'][0], $firstOp['jmpins'][0]);
+			$conditionRange = array($range[0], $nextRange[0] - 1);
+			$this->removeJmpInfo($EX, $conditionRange[1]);
+			$bodyRange = array($nextRange[1], $range[1]);
+			$this->removeJmpInfo($EX, $bodyRange[1]);
+
+			$initial = '';
+			$this->dasmBasicBlock($EX, $conditionRange, $indent . INDENT);
+			$conditionCodes = array();
+			for ($i = $conditionRange[0]; $i <= $conditionRange[1]; ++$i) {
+				if (isset($opcodes[$i]['php'])) {
+					$conditionCodes[] = str($opcodes[$i]['php'], $EX);
+				}
+			}
+			$conditionCodes[] = str($this->getOpVal($opcodes[$conditionRange[1]]['op1'], $EX), $EX);
+			if (implode(',', $conditionCodes) == 'true') {
+				$conditionCodes = array();
+			}
+
+			$this->dasmBasicBlock($EX, $nextRange, $indent . INDENT);
+			$nextCodes = array();
+			for ($i = $nextRange[0]; $i <= $nextRange[1]; ++$i) {
+				if (isset($opcodes[$i]['php'])) {
+					$nextCodes[] = str($opcodes[$i]['php'], $EX);
+				}
+			}
+			$this->beginComplexBlock($EX);
+			echo $indent, 'for (', str($initial, $EX), '; ', implode(', ', $conditionCodes), '; ', implode(', ', $nextCodes), ') ', '{', PHP_EOL;
+			$this->recognizeAndDecompileClosedBlocks($EX, $bodyRange, $indent . INDENT);
+			echo $indent, '}', PHP_EOL;
+			$this->endComplexBlock($EX);
+			return;
+		}
+		// }}}
+		// {{{ try/catch
 		if (!empty($firstOp['jmpins']) && !empty($opcodes[$firstOp['jmpins'][0]]['isCatchBegin'])) {
 			$catchBlocks = array();
 			$catchFirst = $firstOp['jmpins'][0];
