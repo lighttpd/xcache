@@ -608,19 +608,16 @@ class Decompiler
 		}
 	}
 	// }}}
-	function getOpVal($op, &$EX, $tostr = true, $free = false) // {{{
+	function getOpVal($op, &$EX, $free = false) // {{{
 	{
 		switch ($op['op_type']) {
 		case XC_IS_CONST:
-			return foldToCode(value($op['constant']), $EX);
+			return value($op['constant']);
 
 		case XC_IS_VAR:
 		case XC_IS_TMP_VAR:
 			$T = &$EX['Ts'];
 			$ret = $T[$op['var']];
-			if ($tostr) {
-				$ret = foldToCode($ret, $EX);
-			}
 			if ($free && empty($this->keepTs)) {
 				unset($T[$op['var']]);
 			}
@@ -752,10 +749,10 @@ class Decompiler
 			$this->removeJmpInfo($EX, $range[0]);
 
 			$this->recognizeAndDecompileClosedBlocks($EX, array($range[0], $range[0]), $indent . INDENT);
-			$op1 = $this->getOpVal($firstOp['op1'], $EX, false, true);
+			$op1 = $this->getOpVal($firstOp['op1'], $EX, true);
 
 			$this->recognizeAndDecompileClosedBlocks($EX, array($range[0] + 1, $range[1]), $indent . INDENT);
-			$op2 = $this->getOpVal($lastOp['op1'], $EX, false, true);
+			$op2 = $this->getOpVal($lastOp['op1'], $EX, true);
 
 			$T[$firstOp['result']['var']] = new Decompiler_Binop($this, $op1, $firstOp['opcode'], $op2);
 			return false;
@@ -774,9 +771,9 @@ class Decompiler
 
 			$condition = $this->getOpVal($firstOp['op1'], $EX);
 			$this->recognizeAndDecompileClosedBlocks($EX, $trueRange, $indent . INDENT);
-			$trueValue = $this->getOpVal($opcodes[$trueRange[1]]['op1'], $EX, false, true);
+			$trueValue = $this->getOpVal($opcodes[$trueRange[1]]['op1'], $EX, true);
 			$this->recognizeAndDecompileClosedBlocks($EX, $falseRange, $indent . INDENT);
-			$falseValue = $this->getOpVal($opcodes[$falseRange[1]]['op1'], $EX, false, true);
+			$falseValue = $this->getOpVal($opcodes[$falseRange[1]]['op1'], $EX, true);
 			$T[$opcodes[$trueRange[1]]['result']['var']] = new Decompiler_TriOp($condition, $trueValue, $falseValue);
 			return false;
 		}
@@ -1478,7 +1475,7 @@ class Decompiler
 			case XC_UNSET_DIM_OBJ: // PHP 4 only
 			case XC_UNSET_DIM:
 			case XC_UNSET_OBJ:
-				$src = $this->getOpVal($op1, $EX, false);
+				$src = $this->getOpVal($op1, $EX);
 				if (is_a($src, "Decompiler_ForeachBox")) {
 					$src->iskey = $this->getOpVal($op2, $EX);
 					$resvar = $src;
@@ -1490,7 +1487,7 @@ class Decompiler
 				}
 				else {
 					if (!is_a($src, "Decompiler_ListBox")) {
-						$op1val = $this->getOpVal($op1, $EX, false);
+						$op1val = $this->getOpVal($op1, $EX);
 						$list = new Decompiler_List(isset($op1val) ? $op1val : '$this');
 
 						$src = new Decompiler_ListBox($list);
@@ -1539,7 +1536,7 @@ class Decompiler
 				// }}}
 			case XC_ASSIGN: // {{{
 				$lvalue = $this->getOpVal($op1, $EX);
-				$rvalue = $this->getOpVal($op2, $EX, false);
+				$rvalue = $this->getOpVal($op2, $EX);
 				if (is_a($rvalue, 'Decompiler_ForeachBox')) {
 					$type = $rvalue->iskey ? 'fe_key' : 'fe_as';
 					$rvalue->obj[$type] = $lvalue;
@@ -1575,7 +1572,7 @@ class Decompiler
 				// }}}
 			case XC_ASSIGN_REF: // {{{
 				$lvalue = $this->getOpVal($op1, $EX);
-				$rvalue = $this->getOpVal($op2, $EX, false);
+				$rvalue = $this->getOpVal($op2, $EX);
 				if (is_a($rvalue, 'Decompiler_Fetch')) {
 					$src = str($rvalue->src, $EX);
 					if ('$' . unquoteName($src) == $lvalue) {
@@ -1709,7 +1706,7 @@ class Decompiler
 					$EX['called_scope'] = null;
 				}
 
-				$EX['fbc'] = $this->getOpVal($op2, $EX, false);
+				$EX['fbc'] = $this->getOpVal($op2, $EX);
 				if (($opc == XC_INIT_STATIC_METHOD_CALL || $opc == XC_INIT_METHOD_CALL) && !isset($EX['fbc'])) {
 					$EX['fbc'] = '__construct';
 				}
@@ -1740,7 +1737,7 @@ class Decompiler
 				$resvar = $fname . "($args)";
 				break;
 			case XC_DO_FCALL:
-				$fname = unquoteName($this->getOpVal($op1, $EX, false), $EX);
+				$fname = unquoteName($this->getOpVal($op1, $EX), $EX);
 				$args = $this->popargs($EX, $ext);
 				$resvar = $fname . "($args)";
 				break;
@@ -1870,7 +1867,7 @@ class Decompiler
 				// }}}
 			case XC_INIT_ARRAY:
 			case XC_ADD_ARRAY_ELEMENT: // {{{
-				$rvalue = $this->getOpVal($op1, $EX, false, true);
+				$rvalue = $this->getOpVal($op1, $EX, true);
 
 				if ($opc == XC_ADD_ARRAY_ELEMENT) {
 					$assoc = $this->getOpVal($op2, $EX);
@@ -1927,7 +1924,7 @@ class Decompiler
 				break;
 				// }}}
 			case XC_FE_FETCH: // {{{
-				$op['fe_src'] = $this->getOpVal($op1, $EX, false, true);
+				$op['fe_src'] = $this->getOpVal($op1, $EX, true);
 				$fe = new Decompiler_ForeachBox($op);
 				$fe->iskey = false;
 				$T[$res['var']] = $fe;
@@ -2126,8 +2123,8 @@ class Decompiler
 				}
 				else if (isset($this->binops[$opc])) { // {{{
 					$this->usedOps[$opc] = true;
-					$op1val = $this->getOpVal($op1, $EX, false);
-					$op2val = $this->getOpVal($op2, $EX, false);
+					$op1val = $this->getOpVal($op1, $EX);
+					$op2val = $this->getOpVal($op2, $EX);
 					$rvalue = new Decompiler_Binop($this, $op1val, $opc, $op2val);
 					$resvar = $rvalue;
 					// }}}
