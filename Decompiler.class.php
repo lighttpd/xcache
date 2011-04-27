@@ -780,6 +780,18 @@ class Decompiler
 			return false;
 		}
 		// }}}
+		// {{{ goto
+		if ($firstOp['opcode'] == XC_JMP && !empty($firstOp['jmpouts']) && $firstOp['jmpouts'][0] == $range[1] + 1) {
+			$this->removeJmpInfo($EX, $range[0]);
+			$firstOp['opcode'] = XC_GOTO;
+			$target = $firstOp['op1']['var'];
+			$firstOp['goto'] = $target;
+			$opcodes[$target]['gofrom'][] = $range[0];
+
+			$this->recognizeAndDecompileClosedBlocks($EX, $range, $indent);
+			return false;
+		}
+		// }}}
 		// {{{ try/catch
 		if (!empty($firstOp['jmpins']) && $opcodes[$firstOp['jmpins'][0]]['opcode'] == XC_JMP
 		 && $lastOp['opcode'] == XC_JMP && !empty($lastOp['jmpouts']) && $lastOp['jmpouts'][0] <= $firstOp['jmpins'][0]
