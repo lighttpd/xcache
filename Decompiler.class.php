@@ -749,10 +749,10 @@ class Decompiler
 			$this->removeJmpInfo($EX, $range[0]);
 
 			$this->recognizeAndDecompileClosedBlocks($EX, array($range[0], $range[0]), $indent . INDENT);
-			$op1 = $this->getOpVal($firstOp['op1'], $EX, true);
+			$op1 = $this->getOpVal($firstOp['result'], $EX, true);
 
 			$this->recognizeAndDecompileClosedBlocks($EX, array($range[0] + 1, $range[1]), $indent . INDENT);
-			$op2 = $this->getOpVal($lastOp['op1'], $EX, true);
+			$op2 = $this->getOpVal($lastOp['result'], $EX, true);
 
 			$T[$firstOp['result']['var']] = new Decompiler_Binop($this, $op1, $firstOp['opcode'], $op2);
 			return false;
@@ -771,9 +771,9 @@ class Decompiler
 
 			$condition = $this->getOpVal($firstOp['op1'], $EX);
 			$this->recognizeAndDecompileClosedBlocks($EX, $trueRange, $indent . INDENT);
-			$trueValue = $this->getOpVal($opcodes[$trueRange[1]]['op1'], $EX, true);
+			$trueValue = $this->getOpVal($opcodes[$trueRange[1]]['result'], $EX, true);
 			$this->recognizeAndDecompileClosedBlocks($EX, $falseRange, $indent . INDENT);
-			$falseValue = $this->getOpVal($opcodes[$falseRange[1]]['op1'], $EX, true);
+			$falseValue = $this->getOpVal($opcodes[$falseRange[1]]['result'], $EX, true);
 			$T[$opcodes[$trueRange[1]]['result']['var']] = new Decompiler_TriOp($condition, $trueValue, $falseValue);
 			return false;
 		}
@@ -876,7 +876,7 @@ class Decompiler
 
 			$this->beginComplexBlock($EX);
 
-			echo $indent, 'switch (', str($this->getOpVal($caseOp['op1'], $EX, true, true), $EX), ") {", PHP_EOL;
+			echo $indent, 'switch (', str($this->getOpVal($caseOp['op1'], $EX), $EX), ") {", PHP_EOL;
 			$caseIsOut = false;
 			foreach ($cases as $caseFirst => $caseLast) {
 				if ($caseIsOut && !empty($EX['lastBlock']) && empty($lastCaseFall)) {
@@ -1956,10 +1956,13 @@ class Decompiler
 			case XC_JMP_SET: // ?:
 				$resvar = new Decompiler_Binop($this, $this->getOpVal($op1, $EX), XC_JMP_SET, null);
 				break;
-			case XC_JMPNZ: // while
-			case XC_JMPZNZ: // for
 			case XC_JMPZ_EX: // and
 			case XC_JMPNZ_EX: // or
+				$resvar = $this->getOpVal($op1, $EX);
+				break;
+
+			case XC_JMPNZ: // while
+			case XC_JMPZNZ: // for
 			case XC_JMPZ: // {{{
 				if ($opc == XC_JMP_NO_CTOR && $EX['object']) {
 					$rvalue = $EX['object'];
@@ -1977,20 +1980,8 @@ class Decompiler
 					echo "TODO(cond_false):\n";
 					var_dump($op);// exit;
 				}
-				if ($opc == XC_JMPZ_EX || $opc == XC_JMPNZ_EX) {
-					$targetop = &$EX['opcodes'][$op2['opline_num']];
-					if ($opc == XC_JMPNZ_EX) {
-						$targetop['cond_true'][] = foldToCode($rvalue, $EX);
-					}
-					else {
-						$targetop['cond_false'][] = foldToCode($rvalue, $EX);
-					}
-					unset($targetop);
-				}
-				else {
-					$op['cond'] = $rvalue; 
-					$op['isjmp'] = true;
-				}
+				$op['cond'] = $rvalue; 
+				$op['isjmp'] = true;
 				break;
 				// }}}
 			case XC_CONT:
