@@ -792,7 +792,7 @@ class Decompiler
 			return false;
 		}
 		// }}}
-		// {{{ try/catch
+		// {{{ for
 		if (!empty($firstOp['jmpins']) && $opcodes[$firstOp['jmpins'][0]]['opcode'] == XC_JMP
 		 && $lastOp['opcode'] == XC_JMP && !empty($lastOp['jmpouts']) && $lastOp['jmpouts'][0] <= $firstOp['jmpins'][0]
 		 && !empty($opcodes[$range[1] + 1]['jmpins']) && $opcodes[$opcodes[$range[1] + 1]['jmpins'][0]]['opcode'] == XC_JMPZNZ
