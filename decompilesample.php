@@ -64,8 +64,8 @@ abstract class ClassName
 
 	/** doc */
 	protected function protectedMethod(ClassName $a, $b = array(
-		array('array')
-		))
+			array('array')
+			))
 	{
 		$runtimeArray = array('1');
 		$runtimeArray2 = array(
@@ -154,13 +154,17 @@ final class Child extends ClassName implements IInterface
 }
 
 if ($late) {
-class LateBindingClass
-{}
+	class LateBindingClass
+	{
+		public function __construct()
+		{
+		}
+	}
 
-function lateBindingFunction($arg)
-{
-	echo 'lateFunction';
-}
+	function lateBindingFunction($arg)
+	{
+		echo 'lateFunction';
+	}
 }
 
 echo "\r\n";
@@ -276,12 +280,14 @@ do {
 
 if (if_()) {
 	echo 'if';
+
 	if (innerIf_()) {
 		echo 'if innerIf';
 	}
 }
 else if (elseif_()) {
 	echo 'else if';
+
 	if (innerIf_()) {
 		echo 'if innerIf';
 	}
@@ -290,6 +296,7 @@ else {
 	if (innerIf_()) {
 		echo 'if innerIf';
 	}
+
 	echo 'else';
 }
 
