@@ -64,8 +64,8 @@ abstract class ClassName
 
 	/** doc */
 	protected function protectedMethod(ClassName $a, $b = array(
-		array('array')
-		))
+			array('array')
+			))
 	{
 		$runtimeArray = array('1');
 		$runtimeArray2 = array(
@@ -154,13 +154,17 @@ final class Child extends ClassName implements IInterface
 }
 
 if ($late) {
-class LateBindingClass
-{}
+	class LateBindingClass
+	{
+		public function __construct()
+		{
+		}
+	}
 
-function lateBindingFunction($arg)
-{
-	echo 'lateFunction';
-}
+	function lateBindingFunction($arg)
+	{
+		echo 'lateFunction';
+	}
 }
 
 echo "\r\n";
@@ -203,7 +207,6 @@ $a = $b--;
 $a = --$b;
 $a = $obj->b--;
 $a = --$obj->b;
-$a = $b xor $c;
 $a = !$b;
 $a = $b === $c;
 $a = $b !== $c;
@@ -249,34 +252,51 @@ $a = (unset) $b;
 $a = (array) $b;
 $a = (object) $b;
 // PHP6+ $a = (scalar) $b;
-$a = $b ? $c : $d;
-$a = f1() ? f2() : f3();
-$a = $b and $c;
-$a = $b or $c;
+$a = ($b ? $c : $d);
+$a = (f1() ? f2() : f3());
+($a = $b) xor $c;
+($a = $b) and $c;
+($a = $b) or $c;
 $a = $b && $c;
 $a = $b || $c;
 
-try {
-	echo 'outer try 1';
+do {
 	try {
-		echo 'inner try';
+		echo 'outer try 1';
+
+		try {
+			echo 'inner try';
+		}
+		catch (InnerException $e) {
+			echo $e;
+		}
+
+		echo 'outer try 2';
 	}
-	catch (InnerException $e) {
+	catch (OuterException $e) {
 		echo $e;
 	}
-	echo 'outer try 2';
-}
-catch (OuterException $e) {
-	echo $e;
-}
+} while (0);
 
-if ($a) {
-	echo 'if ($a)';
+if (if_()) {
+	echo 'if';
+
+	if (innerIf_()) {
+		echo 'if innerIf';
+	}
 }
-else if ($b) {
-	echo 'else if ($b)';
+else if (elseif_()) {
+	echo 'else if';
+
+	if (innerIf_()) {
+		echo 'if innerIf';
+	}
 }
 else {
+	if (innerIf_()) {
+		echo 'if innerIf';
+	}
+
 	echo 'else';
 }
 
@@ -288,22 +308,29 @@ do {
 	echo 'do/while';
 } while (false);
 
-for ($i = 1; $i < 10; ++$i) {
+$i = 1;
+
+for (; $i < 10; ++$i) {
 	echo $i;
 	break;
 }
 
 foreach ($array as $key => $value) {
-	foreach ($array as $key => $value) {
+	foreach ($value as $key => $value) {
 		echo $key . ' = ' . $value . "\n";
 		break 2;
 		continue;
 	}
 }
 
-switch ($switch) {
+switch ($normalSwitch) {
 case 'case1':
 	echo 'case1';
+
+	switch ($nestedSwitch) {
+	case 1:
+	}
+
 	break;
 
 case 'case2':
@@ -311,13 +338,64 @@ case 'case2':
 	break;
 
 default:
+	switch ($nestedSwitch) {
+	case 1:
+	}
+
 	echo 'default';
 	break;
 }
 
+switch ($switchWithoutDefault) {
+case 'case1':
+	echo 'case1';
+	break;
+
+case 'case2':
+	echo 'case2';
+	break;
+}
+
+switch ($switchWithMiddleDefault) {
+case 'case1':
+	echo 'case1';
+	break;
+
+default:
+	echo 'default';
+	break;
+
+case 'case2':
+	echo 'case2';
+	break;
+}
+
+switch ($switchWithInitialDefault) {
+default:
+	echo 'default';
+	break;
+
+case 'case1':
+	echo 'case1';
+	break;
+
+case 'case2':
+	echo 'case2';
+	break;
+}
+
+switch (emptySwitch()) {
+}
+
+switch (emptySwitch()) {
+default:
+}
+
 declare (ticks=1) {
 	echo 1;
-	echo 2;
+	while (1) {
+		echo 2;
+	}
 }
 
 require 'require.php';
@@ -335,24 +413,40 @@ echo $a::CONST_VALUE;
 echo CONST_VALUE;
 $this::__construct();
 $obj::__construct();
-
 $a = $b ?: $d;
 $a = ($b ?: $d) + $c;
 $a = f1() ?: f2();
+$a = ($b ? $c : $d);
+$a = ($b ? $c : $d) + $c;
+$a = (f1() ? f3() : f2());
+
+if ($b ?: $d) {
+	echo 'if ($b ?: $d)';
+}
+
+if (($b ?: $d) + $c) {
+	echo 'if (($b ?: $d) + $c)';
+}
+
+if (f1() ?: f2()) {
+	echo 'if (f1() ?: f2())';
+}
 
 echo 'goto a';
 goto a;
 
-for ($i = 1; $i <= 2; ++$i) {
+$i = 1;
+
+for (; $i <= 2; ++$i) {
 	goto a;
 }
 
 a:
 echo 'label a';
-echo preg_replace_callback('~-([a-z])~', function ($match) {
+echo preg_replace_callback('~-([a-z])~', function($match) {
 	return strtoupper($match[1]);
 }, 'hello-world');
-$greet = function ($name) {
+$greet = function($name) {
 	printf("Hello %s\r\n", $name);
 };
 $greet('World');
