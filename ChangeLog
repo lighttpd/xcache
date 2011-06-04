@@ -1,4 +1,4 @@
-2.0.0 2007-?-?
+2.0.0 2011-?-?
 Ini Settings Changes
 ========
  * new: xcache.experimental = Off
@@ -10,7 +10,7 @@ ChangeLog
  * fixed #55: segv php tokenizer on certain special situation
  * compiler errors: all compiler warning (E_STRICT only currently) is now cached and is supported for user handler
 
-1.3.2 2011-??-??
+1.3.2 2011-06-04
 ========
  * avoid possible filename injection in admin page
  * adds 30 seconds timeout to "compiling" flag
