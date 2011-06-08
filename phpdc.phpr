@@ -13,7 +13,10 @@ if (!isset($argv)) {
 }
 
 $dc = new Decompiler();
-if (isset($argv[1])) {
+if (isset($argv[2])) {
+	eval('$dc->dc = ' . file_get_contents($argv[2]) . ';');
+}
+else if (isset($argv[1])) {
 	$dc->decompileFile($argv[1]);
 }
 else {
@@ -24,7 +27,7 @@ else {
 	while (!feof(stdin)) {
 		$phpcode .= fgets(stdin);
 	}
-	$dc->decompileFile($phpcode);
+	$dc->decompileString($phpcode);
 }
 $dc->output();
 
