@@ -905,6 +905,20 @@ class Decompiler
 			$this->endComplexBlock($EX);
 			return;
 		}
+		if ($firstOp['opcode'] == XC_JMPZ && !empty($firstOp['jmpouts'])
+		 && $firstOp['jmpouts'][0] - 1 == $range[1] && $opcodes[$firstOp['jmpouts'][0] - 1]['opcode'] == XC_RETURN) {
+			$this->beginComplexBlock($EX);
+			$this->removeJmpInfo($EX, $range[0]);
+			$condition = $this->getOpVal($opcodes[$range[0]]['op1'], $EX);
+
+			echo $indent, 'if (', str($condition, $EX), ') ', '{', PHP_EOL;
+			$this->beginScope($EX);
+			$this->recognizeAndDecompileClosedBlocks($EX, $range);
+			$this->endScope($EX);
+			echo $indent, '}', PHP_EOL;
+			$this->endComplexBlock($EX);
+			return;
+		}
 		// }}}
 		// {{{ try/catch
 		if (!empty($firstOp['jmpins']) && !empty($opcodes[$firstOp['jmpins'][0]]['isCatchBegin'])) {

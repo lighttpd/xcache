@@ -94,7 +94,12 @@ if (!isset($argv[1])) {
 	die("Usage: $argv[0] <file>\n");
 }
 $decompiler = new Decompiler();
-$pk = xcache_dasm_file($argv[1]);
+if (isset($argv[2])) {
+	eval('$pk = ' . file_get_contents($argv[2]) . ';');
+}
+else {
+	$pk = xcache_dasm_file($argv[1]);
+}
 $op_array = $funcs = $classes = null;
 if (isset($pk['op_array'])) {
 	$op_array = $pk['op_array'];
