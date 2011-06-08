@@ -2574,6 +2574,11 @@ class Decompiler
 		}
 	}
 	// }}}
+	function decompileDasm($content) // {{{
+	{
+		$this->dc = $content;
+	}
+	// }}}
 	function output() // {{{
 	{
 		echo "<?". "php\n\n";
