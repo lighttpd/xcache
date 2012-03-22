@@ -485,7 +485,8 @@ dnl }}}
 #ifdef ZEND_ENGINE_2_4
 undefine(`UNION_znode_op')
 define(`UNION_znode_op', `dnl {{{
-	switch ((src->$1_type & ~EXT_TYPE_UNUSED)) {
+#ifndef NDEBUG
+	switch ((src->$1_type ifelse($1, `result', & ~EXT_TYPE_UNUSED))) {
 	case IS_CONST:
 	case IS_VAR:
 	case IS_CV:
@@ -496,27 +497,35 @@ define(`UNION_znode_op', `dnl {{{
 	default:
 		assert(0);
 	}
+#endif
 
 	dnl dirty dispatch
 	DISABLECHECK(`
-	switch ((src->$1_type & ~EXT_TYPE_UNUSED)) {
+	switch ((src->$1_type ifelse($1, `result', & ~EXT_TYPE_UNUSED))) {
 		case IS_CONST:
-			dnl TODO: fix me, use literals
-			IFDASM(`{
-				zval *zv;
-				ALLOC_INIT_ZVAL(zv);
-				*zv = ((zend_literal *) src->$1.ptr)->constant;
-				zval_copy_ctor(zv);
-				add_assoc_zval_ex(dst, ZEND_STRS("$1.constant"), zv);
-				}
-			', `
+			ifelse($1, `result', `
 				DISPATCH(zend_uint, $1.constant)
+			', `
+				IFDASM(`{
+					zval *zv;
+					ALLOC_INIT_ZVAL(zv);
+					*zv = src->$1.literal->constant;
+					zval_copy_ctor(zv);
+					add_assoc_zval_ex(dst, ZEND_STRS("$1.constant"), zv);
+				}
+				', `
+					IFCOPY(`
+						dst->$1 = src->$1;
+					', `
+						DISPATCH(zend_uint, $1.constant)
+					')
+				')
 			')
 			break;
 		IFCOPY(`
 			IFNOTMEMCPY(`
 				default:
-					*dst = *src;
+					$1 = $2;
 			')
 		', `
 		case IS_VAR:
@@ -606,6 +615,17 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 	DISPATCH(zend_uchar, result_type)
 #endif
 	IFCOPY(`
+		pushdef(`UNION_znode_op_literal', `
+			if (dst->$1_type == IS_CONST) {
+				IFSTORE(`
+					dst->$1.constant = src->$1.literal - processor->active_op_array_src->literals;
+					dst->$1.literal = &processor->active_op_array_dst->literals[dst->$1.constant];
+				')
+			}
+		')
+		UNION_znode_op_literal(op1)
+		UNION_znode_op_literal(op2)
+		popdef(`UNION_znode_op_literal')
 		switch (src->opcode) {
 #ifdef ZEND_GOTO
 			case ZEND_GOTO:
@@ -658,7 +678,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	zend_bool shallow_copy = !processor->readonly_protection && !(src == processor->php_src->op_array && need_early_binding);
 	if (shallow_copy) {
 		zend_bool gc_arg_info = 0;
-		int gc_opcodes        = 0;
+		zend_bool gc_opcodes  = 0;
 		/* really fast shallow copy */
 		memcpy(dst, src, sizeof(src[0]));
 		dst->refcount[0] = 1000;
@@ -668,14 +688,33 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		STRUCT_ARRAY(num_args, zend_arg_info, arg_info)
 		gc_arg_info = 1;
 #endif
-		IFRESTORE(`dst->filename = processor->entry_src->filepath;')
-#ifndef ZEND_ENGINE_2_4
-		if (op_array_info->oplineinfo_cnt) {
-			zend_op *opline, *end;
+		dst->filename = processor->entry_src->filepath;
+#ifdef ZEND_ENGINE_2_4
+		if (src->literals /* || op_array_info->literalsinfo_cnt */) {
 			gc_opcodes = 1;
+		}
+#else
+		if (op_array_info->oplineinfo_cnt) {
+			gc_opcodes = 1;
+		}
+#endif
+		if (gc_opcodes) {
+			zend_op *opline, *end;
 			COPY_N_EX(last, zend_op, opcodes)
 
 			for (opline = dst->opcodes, end = opline + src->last; opline < end; ++opline) {
+#ifdef ZEND_ENGINE_2_4
+				pushdef(`UNION_znode_op_literal', `
+					if (opline->$1_type == IS_CONST) {
+						opline->$1.constant = opline->$1.literal - src->literals;
+						opline->$1.literal = &dst->literals[opline->$1.constant];
+					}
+				')
+				UNION_znode_op_literal(op1)
+				UNION_znode_op_literal(op2)
+				popdef(`UNION_znode_op_literal')
+#endif
+
 				switch (opline->opcode) {
 #ifdef ZEND_GOTO
 					case ZEND_GOTO:
@@ -699,14 +738,12 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 				}
 			}
 		}
-#endif
 		if (gc_arg_info || gc_opcodes) {
 			xc_gc_op_array_t gc_op_array;
 #ifdef ZEND_ENGINE_2
 			gc_op_array.num_args = gc_arg_info ? dst->num_args : 0;
 			gc_op_array.arg_info = gc_arg_info ? dst->arg_info : NULL;
 #endif
-			gc_op_array.last     = gc_opcodes > 1 ? dst->last : 0;
 			gc_op_array.opcodes  = gc_opcodes ? dst->opcodes : NULL;
 			xc_gc_add_op_array(&gc_op_array TSRMLS_CC);
 		}
@@ -769,6 +806,12 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	STRUCT_P(zend_uint, refcount)
 	UNFIXPOINTER(zend_uint, refcount)
 	IFSTORE(`dst->refcount[0] = 1;')
+
+#ifdef ZEND_ENGINE_2_4
+	dnl before copying opcodes
+	DISPATCH(int, last_literal)
+	STRUCT_ARRAY(last_literal, zend_literal, literals)
+#endif
 
 	pushdef(`AFTER_ALLOC', `IFCOPY(`
 #ifndef NDEBUG
@@ -856,9 +899,6 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	DISPATCH(zend_bool, created_by_eval)
 #endif
 #ifdef ZEND_ENGINE_2_4
-	DISPATCH(int, last_literal)
-	IFRESTORE(`COPY(literals)', `STRUCT_ARRAY(last_literal, zend_literal, literals)')
-
 	COPYNULL(run_time_cache)
 	COPYNULL(last_cache_slot)
 #endif

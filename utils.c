@@ -18,10 +18,14 @@
 #	define ZEND_VM_SET_OPCODE_HANDLER(opline) do { } while (0)
 #endif
 
-#define OP_ZVAL_DTOR(op) do { \
-	Z_UNSET_ISREF(Z_OP_CONSTANT(op)); \
-	zval_dtor(&Z_OP_CONSTANT(op)); \
-} while(0)
+#ifdef ZEND_ENGINE_2_4
+#	define OP_ZVAL_DTOR(op) do { } while(0)
+#else
+#	define OP_ZVAL_DTOR(op) do { \
+		Z_UNSET_ISREF(Z_OP_CONSTANT(op)); \
+		zval_dtor(&Z_OP_CONSTANT(op)); \
+	} while(0)
+#endif
 xc_compile_result_t *xc_compile_result_init(xc_compile_result_t *cr, /* {{{ */
 		zend_op_array *op_array,
 		HashTable *function_table,
@@ -129,12 +133,15 @@ int xc_apply_op_array(xc_compile_result_t *cr, apply_func_t applyer TSRMLS_DC) /
 	return applyer(cr->op_array TSRMLS_CC);
 }
 /* }}} */
-
 int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
 	zend_op *opline, *end;
 
-#ifndef ZEND_ENGINE_2_4
+#ifdef ZEND_ENGINE_2_4
+	if (!(op_array->fn_flags & ZEND_ACC_DONE_PASS_TWO)) {
+		return 0;
+	}
+#else
 	if (!op_array->done_pass_two) {
 		return 0;
 	}
@@ -143,6 +150,15 @@ int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	opline = op_array->opcodes;
 	end = opline + op_array->last;
 	while (opline < end) {
+#ifdef ZEND_ENGINE_2_4
+		if (opline->op1_type == IS_CONST) {
+			opline->op1.constant = opline->op1.literal - op_array->literals;
+		}
+		if (opline->op2_type == IS_CONST) {
+			opline->op2.constant = opline->op2.literal - op_array->literals;
+		}
+#endif
+
 #ifdef ZEND_ENGINE_2_1
 		switch (opline->opcode) {
 #ifdef ZEND_GOTO
@@ -166,7 +182,9 @@ int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 #endif
 		opline++;
 	}
-#ifndef ZEND_ENGINE_2_4
+#ifdef ZEND_ENGINE_2_4
+	op_array->fn_flags &= ~ZEND_ACC_DONE_PASS_TWO;
+#else
 	op_array->done_pass_two = 0;
 #endif
 
@@ -176,8 +194,15 @@ int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
 	zend_op *opline, *end;
+#ifdef ZEND_ENGINE_2_4
+	zend_literal *literal = op_array->literals;
+#endif
 
-#ifndef ZEND_ENGINE_2_4
+#ifdef ZEND_ENGINE_2_4
+	if ((op_array->fn_flags & ZEND_ACC_DONE_PASS_TWO)) {
+		return 0;
+	}
+#else
 	if (op_array->done_pass_two) {
 		return 0;
 	}
@@ -187,19 +212,30 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	op_array->opcodes = (zend_op *) erealloc(op_array->opcodes, sizeof(zend_op)*op_array->last);
 	op_array->size = op_array->last;
 	*/
+#ifdef ZEND_ENGINE_2_4
+	if (literal) {
+		zend_literal *end = literal + op_array->last_literal;
+		while (literal < end) {
+			Z_SET_ISREF(literal->constant);
+			Z_SET_REFCOUNT(literal->constant, 2); /* Make sure is_ref won't be reset */
+			literal++;
+		}
+	}
+#endif
 
 	opline = op_array->opcodes;
 	end = opline + op_array->last;
 	while (opline < end) {
+#ifndef ZEND_ENGINE_2_4
 		if (Z_OP_TYPE(opline->op1) == IS_CONST) {
 			Z_SET_ISREF(Z_OP_CONSTANT(opline->op1));
 			Z_SET_REFCOUNT(Z_OP_CONSTANT(opline->op1), 2); /* Make sure is_ref won't be reset */
-
 		}
 		if (Z_OP_TYPE(opline->op2) == IS_CONST) {
 			Z_SET_ISREF(Z_OP_CONSTANT(opline->op2));
 			Z_SET_REFCOUNT(Z_OP_CONSTANT(opline->op2), 2);
 		}
+#endif
 #ifdef ZEND_ENGINE_2_1
 		switch (opline->opcode) {
 #ifdef ZEND_GOTO
@@ -225,7 +261,9 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 		opline++;
 	}
 
-#ifndef ZEND_ENGINE_2_4
+#ifdef ZEND_ENGINE_2_4
+	op_array->fn_flags |= ZEND_ACC_DONE_PASS_TWO;
+#else
 	op_array->done_pass_two = 1;
 #endif
 	return 0;

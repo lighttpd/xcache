@@ -20,6 +20,12 @@
 #	define XCACHE_IS_CV 16
 #endif
 
+#ifdef ZEND_ENGINE_2_4
+#	undef Z_OP_CONSTANT
+/* Z_OP_CONSTANT is used before pass_two is applied */
+#	define Z_OP_CONSTANT(op) op_array->literals[op.constant].constant
+#endif
+
 typedef int bbid_t;
 enum {
 	BBID_INVALID = -1,
