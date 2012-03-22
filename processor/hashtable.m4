@@ -108,12 +108,9 @@ define(`DEF_HASH_TABLE_FUNC', `
 				n = b->h & src->nTableMask;
 				/* pnew into hash node chain */
 				pnew->pLast = NULL;
-				if (dst->arBuckets[n]) {
-					pnew->pNext = dst->arBuckets[n];
+				pnew->pNext = dst->arBuckets[n];
+				if (pnew->pNext) {
 					pnew->pNext->pLast = pnew;
-				}
-				else {
-					pnew->pNext = NULL;
 				}
 				dst->arBuckets[n] = pnew;
 			')
