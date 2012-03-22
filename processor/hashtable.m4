@@ -103,7 +103,15 @@ define(`DEF_HASH_TABLE_FUNC', `
 
 			IFCALCCOPY(`bucketsize = BUCKET_SIZE(b);')
 			ALLOC(pnew, char, bucketsize, , Bucket)
-			IFCOPY(`memcpy(pnew, b, bucketsize);')
+			IFCOPY(`
+#ifdef ZEND_ENGINE_2_4
+			memcpy(pnew, b, BUCKET_HEAD_SIZE(Bucket));
+			pnew->arKey = (const char *) (pnew + 1);
+			memcpy(pnew->arKey, b->arKey, BUCKET_KEY_SIZE(b));
+#else
+			memcpy(pnew, b, bucketsize);
+	#endif
+			')
 			IFCOPY(`
 				n = b->h & src->nTableMask;
 				/* pnew into hash node chain */

@@ -139,7 +139,12 @@ typedef znode znode_op;
 #else
 #	define BUCKET_HEAD_SIZE(b) XtOffsetOf(Bucket, arKey)
 #endif
-#define BUCKET_SIZE(b) (BUCKET_HEAD_SIZE(b) + BUCKET_KEY_SIZE(b))
+
+#ifdef ZEND_ENGINE_2_4
+#	define BUCKET_SIZE(b) (sizeof(Bucket) + BUCKET_KEY_SIZE(b))
+#else
+#	define BUCKET_SIZE(b) (BUCKET_HEAD_SIZE(b) + BUCKET_KEY_SIZE(b))
+#endif
 
 #ifndef IS_UNICODE
 typedef char *zstr;
