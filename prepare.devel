@@ -27,6 +27,7 @@ make_const_string() {
 	make_const_string_opcodes_php4.x.h
 	make_const_string_opcodes_php5.0.h
 	make_const_string_opcodes_php5.1.h
+	make_const_string_opcodes_php5.4.h
 	make_const_string_opcodes_php6.x.h
 }
 
@@ -45,6 +46,10 @@ make_const_string_opcodes_php5.0.h() {
 
 make_const_string_opcodes_php5.1.h() {
 	precheck const_string_opcodes_php5.1.h "${PHP5_1_DIR}/Zend/zend_vm_def.h"  && "$AWK" -f ./mkopcode.awk < "$I" > "$O.tmp" && mv "$O.tmp" "$O"
+}
+
+make_const_string_opcodes_php5.4.h() {
+	precheck const_string_opcodes_php5.4.h "${PHP5_4_DIR}/Zend/zend_vm_def.h"  && "$AWK" -f ./mkopcode.awk < "$I" > "$O.tmp" && mv "$O.tmp" "$O"
 }
 
 make_const_string_opcodes_php6.x.h() {
