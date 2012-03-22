@@ -28,6 +28,8 @@ define(`SIZEOF_zend_function', `sizeof(zend_function)')
 define(`COUNTOF_zend_function', `1')
 define(`SIZEOF_zval_ptr', `sizeof(zval_ptr)')
 define(`COUNTOF_zval_ptr', `1')
+define(`SIZEOF_zval_ptr_nullable', `sizeof(zval_ptr_nullable)')
+define(`COUNTOF_zval_ptr_nullable', `1')
 define(`SIZEOF_xc_entry_name_t', `sizeof(xc_entry_name_t)')
 define(`COUNTOF_xc_entry_name_t', `1')
 
@@ -48,6 +50,7 @@ sinclude(builddir`/structinfo.m4')
 #endif
 
 typedef zval *zval_ptr;
+typedef zval *zval_ptr_nullable;
 typedef zend_uchar zval_data_type;
 #ifdef IS_UNICODE
 typedef UChar zstr_uchar;
