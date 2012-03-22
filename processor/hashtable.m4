@@ -87,10 +87,12 @@ define(`DEF_HASH_TABLE_FUNC', `
 		DISPATCH(ulong, nNextFreeElement)
 		IFCOPY(`dst->pInternalPointer = NULL;	/* Used for element traversal */') DONE(pInternalPointer)
 		IFCOPY(`dst->pListHead = NULL;') DONE(pListHead)
+#ifdef ZEND_ENGINE_2_4
+		if (src->nTableMask) {
+#endif
 		CALLOC(dst->arBuckets, Bucket*, src->nTableSize)
 		DONE(arBuckets)
 		DISABLECHECK(`
-
 		for (b = src->pListHead; b != NULL; b = b->pListNext) {
 			ifelse($4, `', `', `
 				pushdef(`BUCKET', `b')
@@ -154,6 +156,12 @@ define(`DEF_HASH_TABLE_FUNC', `
 			prev = pnew;
 		}
 		')
+#ifdef ZEND_ENGINE_2_4
+	}
+	else { /* if (src->nTableMask) */
+		DONE(arBuckets)
+	}
+#endif
 		IFCOPY(`dst->pListTail = pnew;') DONE(pListTail)
 		IFCOPY(`dst->pDestructor = src->pDestructor;') DONE(pDestructor)
 		DISPATCH(zend_bool, persistent)
