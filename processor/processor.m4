@@ -2,6 +2,7 @@ dnl ================
 /* {{{ Pre-declare */
 DECL_STRUCT_P_FUNC(`zval')
 DECL_STRUCT_P_FUNC(`zval_ptr')
+DECL_STRUCT_P_FUNC(`zval_ptr_nullable')
 DECL_STRUCT_P_FUNC(`zend_op_array')
 DECL_STRUCT_P_FUNC(`zend_class_entry')
 #ifdef HAVE_XCACHE_CONSTANT
@@ -64,6 +65,7 @@ DEF_STRUCT_P_FUNC(`zend_brk_cont_element', , `
 ')
 dnl }}}
 DEF_HASH_TABLE_FUNC(`HashTable_zval_ptr',           `zval_ptr')
+DEF_HASH_TABLE_FUNC(`HashTable_zval_ptr_nullable',  `zval_ptr_nullable')
 DEF_HASH_TABLE_FUNC(`HashTable_zend_function',      `zend_function')
 #ifdef ZEND_ENGINE_2
 DEF_HASH_TABLE_FUNC(`HashTable_zend_property_info', `zend_property_info')
@@ -214,6 +216,16 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 	DONE_SIZE(sizeof(zval_ptr))
 ')
 dnl }}}
+DEF_STRUCT_P_FUNC(`zval_ptr_nullable', , `dnl {{{
+	if (src[0]) {
+		STRUCT_P_EX(zval_ptr, dst, src, `', `', ` ')
+	}
+	else {
+		IFCOPY(`COPYNULL_EX(src[0], src)')
+	}
+	DONE_SIZE(sizeof(zval_ptr_nullable))
+')
+dnl }}}
 dnl {{{ zend_arg_info
 #ifdef ZEND_ENGINE_2
 DEF_STRUCT_P_FUNC(`zend_arg_info', , `
@@ -327,9 +339,9 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 
 #ifdef ZEND_ENGINE_2_4
 	DISPATCH(int, default_properties_count)
-	STRUCT_ARRAY(default_properties_count, zval_ptr, default_properties_table)
+	STRUCT_ARRAY(default_properties_count, zval_ptr_nullable, default_properties_table)
 	DISPATCH(int, default_static_members_count)
-	STRUCT_ARRAY(default_static_members_count, zval_ptr, default_static_members_table)
+	STRUCT_ARRAY(default_static_members_count, zval_ptr_nullable, default_static_members_table)
 	IFCOPY(`dst->static_members_table = dst->default_static_members_table;')
 	DONE(static_members_table)
 #else
@@ -354,21 +366,23 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 		if (src->num_interfaces) {
 			CALLOC(dst->interfaces, zend_class_entry*, src->num_interfaces)
 			DONE(`interfaces')
+		}
+		else {
+			COPYNULL(`interfaces')
+		}
 #	ifdef ZEND_ENGINE_2_4
+		if (src->num_traits) {
 			CALLOC(dst->traits, zend_class_entry*, src->num_traits)
 			DONE(`traits')
 			DONE(`trait_aliases')
 			DONE(`trait_precedences')
-#	endif
 		}
 		else {
-			COPYNULL(`interfaces')
-#	ifdef ZEND_ENGINE_2_4
 			COPYNULL(`traits')
 			COPYNULL(`trait_aliases')
 			COPYNULL(`trait_precedences')
-#	endif
 		}
+#	endif
 	')
 	IFDASM(`
 		if (src->num_interfaces) {
@@ -385,20 +399,22 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 			add_assoc_zval_ex(dst, ZEND_STRS("interfaces"), arr);
 			*/
 			DONE(`interfaces')
-#	ifdef ZEND_ENGINE_2_4
-			DONE(`traits')
-			DONE(`trait_aliases')
-			DONE(`trait_precedences')
-#	endif
 		}
 		else {
 			COPYNULL(`interfaces')
+		}
 #	ifdef ZEND_ENGINE_2_4
+		if (src->num_traits) {
+			DONE(`traits')
+			DONE(`trait_aliases')
+			DONE(`trait_precedences')
+		}
+		else {
 			COPYNULL(`traits')
 			COPYNULL(`trait_aliases')
 			COPYNULL(`trait_precedences')
-#	endif
 		}
+#	endif
 	')
 	IFRESTORE(`', `
 		IFDASM(`', `
