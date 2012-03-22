@@ -63,6 +63,8 @@ const char *xc_get_data_type(zend_uchar data_type)
 /* {{{ xc_get_opcode */
 #if PHP_MAJOR_VERSION >= 6
 #	include "const_string_opcodes_php6.x.h"
+#elif defined(ZEND_ENGINE_2_4)
+#	include "const_string_opcodes_php5.4.h"
 #elif defined(ZEND_ENGINE_2_1)
 #	include "const_string_opcodes_php5.1.h"
 #elif defined(ZEND_ENGINE_2)
