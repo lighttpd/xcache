@@ -3526,7 +3526,7 @@ static PHP_MINIT_FUNCTION(xcache)
 
 	if (strcmp(sapi_module.name, "cli") == 0) {
 		if ((env = getenv("XCACHE_TEST")) != NULL) {
-			zend_alter_ini_entry("xcache.test", sizeof("xcache.test"), env, strlen(env) + 1, PHP_INI_SYSTEM, PHP_INI_STAGE_STARTUP);
+			xc_test = atoi(env);
 		}
 		if (!xc_test) {
 			/* disable cache for cli except for testing */
