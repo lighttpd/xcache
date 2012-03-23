@@ -636,16 +636,16 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 	DISPATCH(zend_uchar, result_type)
 #endif
 	IFCOPY(`
+#ifdef ZEND_ENGINE_2_4
 		pushdef(`UNION_znode_op_literal', `
-			if (dst->$1_type == IS_CONST) {
-				IFSTORE(`
-					dst->$1.constant = src->$1.literal - processor->active_op_array_src->literals;
-					dst->$1.literal = &processor->active_op_array_dst->literals[dst->$1.constant];
-				')
+			if (src->$1_type == IS_CONST) {
+				dst->$1.constant = src->$1.literal - processor->active_op_array_src->literals;
+				dst->$1.literal = &processor->active_op_array_dst->literals[dst->$1.constant];
 			}
 		')
 		UNION_znode_op_literal(op1)
 		UNION_znode_op_literal(op2)
+#endif
 		popdef(`UNION_znode_op_literal')
 		switch (src->opcode) {
 #ifdef ZEND_GOTO
@@ -924,7 +924,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	COPYNULL(last_cache_slot)
 #endif
 	} while (0);
-	IFRESTORE(`xc_fix_op_array_info(processor->entry_src, processor->php_src, dst, !shallow_copy, op_array_info TSRMLS_CC);')
+	IFRESTORE(`xc_fix_op_array_info(processor->entry_src, processor->php_src, dst, shallow_copy, op_array_info TSRMLS_CC);')
 
 #ifdef ZEND_ENGINE_2
 	dnl mark it as -1 on store, and lookup parent on restore
@@ -990,13 +990,18 @@ DEF_STRUCT_P_FUNC(`xc_constinfo_t', , `dnl {{{
 ')
 dnl }}}
 #endif
+DEF_STRUCT_P_FUNC(`xc_op_array_info_detail_t', , `dnl {{{
+	DISPATCH(zend_uint, index)
+	DISPATCH(zend_uint, info)
+')
+dnl }}}
 DEF_STRUCT_P_FUNC(`xc_op_array_info_t', , `dnl {{{
 #ifdef ZEND_ENGINE_2_4
 	DISPATCH(zend_uint, literalinfo_cnt)
-	DISPATCH_ARRAY(literalinfo_cnt, int, literalinfos)
+	STRUCT_ARRAY(literalinfo_cnt, xc_op_array_info_detail_t, literalinfos)
 #else
 	DISPATCH(zend_uint, oplineinfo_cnt)
-	DISPATCH_ARRAY(oplineinfo_cnt, int, oplineinfos)
+	STRUCT_ARRAY(oplineinfo_cnt, xc_op_array_info_detail_t, oplineinfos)
 #endif
 ')
 dnl }}}
