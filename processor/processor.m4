@@ -336,10 +336,10 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 #endif
 
 #ifdef ZEND_ENGINE_2_4
-	DISPATCH(int, default_properties_count)
 	STRUCT_ARRAY(default_properties_count, zval_ptr_nullable, default_properties_table)
-	DISPATCH(int, default_static_members_count)
+	DISPATCH(int, default_properties_count)
 	STRUCT_ARRAY(default_static_members_count, zval_ptr_nullable, default_static_members_table)
+	DISPATCH(int, default_static_members_count)
 	IFCOPY(`dst->static_members_table = dst->default_static_members_table;')
 	DONE(static_members_table)
 #else
@@ -830,8 +830,8 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 
 #ifdef ZEND_ENGINE_2_4
 	dnl before copying opcodes
-	DISPATCH(int, last_literal)
 	STRUCT_ARRAY(last_literal, zend_literal, literals)
+	DISPATCH(int, last_literal)
 #endif
 
 	pushdef(`AFTER_ALLOC', `IFCOPY(`
