@@ -33,4 +33,5 @@ echo "XCache test running with:"
 echo "TEST_PHP_CGI_EXECUTABLE: $TEST_PHP_CGI_EXECUTABLE"
 echo "TEST_PHP_EXECUTABLE:     $TEST_PHP_EXECUTABLE"
 
-exec "$php_cli" "$@"
+run_tests_php=$TEST_PHP_SRCDIR/run-tests.php
+exec "$php_cli" -d "open_basedir=" -d "safe_mode=0" -d "output_buffering=0" -d "memory_limit=-1" $run_tests_php "$@"
