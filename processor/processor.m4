@@ -612,6 +612,13 @@ dnl }}}
 DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 	DISPATCH(zend_uchar, opcode)
 #ifdef ZEND_ENGINE_2_4
+	IFRESTORE(`', `
+	switch (src->opcode) {
+	case ZEND_BIND_TRAITS:
+		((zend_op *) src)->op2_type = IS_UNUSED;
+		break;
+	}
+	')
 	UNION_znode_op(result)
 	UNION_znode_op(op1)
 	UNION_znode_op(op2)
