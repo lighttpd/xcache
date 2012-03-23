@@ -616,7 +616,7 @@ static void xc_sandbox_error_cb(int type, const char *error_filename, const uint
 		for (i = 0; i < sandbox->compilererror_cnt; i ++) {
 			compilererror = &sandbox->compilererrors[i];
 			CG(zend_lineno) = compilererror->lineno;
-			zend_error(type, "%s", compilererror->error);
+			zend_error(compilererror->type, "%s", compilererror->error);
 		}
 		CG(zend_lineno) = orig_lineno;
 		sandbox->compilererror_cnt = 0;
