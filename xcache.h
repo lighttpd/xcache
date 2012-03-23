@@ -271,14 +271,20 @@ typedef struct {
 	zend_ulong hits_by_second[5];
 } xc_cache_t;
 /* }}} */
+/* {{{ xc_op_array_info_detail_t */
+typedef struct {
+	zend_uint index;
+	zend_uint info;
+} xc_op_array_info_detail_t;
+/* }}} */
 /* {{{ xc_op_array_info_t */
 typedef struct {
 #ifdef ZEND_ENGINE_2_4
 	zend_uint literalinfo_cnt;
-	int *literalinfos;
+	xc_op_array_info_detail_t *literalinfos;
 #else
 	zend_uint oplineinfo_cnt;
-	int *oplineinfos;
+	xc_op_array_info_detail_t *oplineinfos;
 #endif
 } xc_op_array_info_t;
 /* }}} */
@@ -458,6 +464,6 @@ typedef struct {
 } xc_gc_op_array_t;
 /* }}} */
 void xc_gc_add_op_array(xc_gc_op_array_t *gc_op_array TSRMLS_DC);
-void xc_fix_op_array_info(const xc_entry_t *xce, const xc_entry_data_php_t *php, zend_op_array *op_array, int shallow_copied, const xc_op_array_info_t *op_array_info TSRMLS_DC);
+void xc_fix_op_array_info(const xc_entry_t *xce, const xc_entry_data_php_t *php, zend_op_array *op_array, int shallow_copy, const xc_op_array_info_t *op_array_info TSRMLS_DC);
 
 #endif /* __XCACHE_H */
