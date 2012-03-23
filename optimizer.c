@@ -56,6 +56,7 @@ typedef xc_stack_t bbs_t;
 static int op_array_convert_switch(zend_op_array *op_array) /* {{{ */
 {
 	int i;
+	zend_bool preserve_brk_cont_array = 0;
 
 	if (op_array->brk_cont_array == NULL) {
 		return SUCCESS;
@@ -64,11 +65,24 @@ static int op_array_convert_switch(zend_op_array *op_array) /* {{{ */
 	for (i = 0; i < op_array->last; i ++) {
 		zend_op *opline = &op_array->opcodes[i];
 		zend_brk_cont_element *jmp_to;
+		zend_bool can_convert = 1;
 		int array_offset, nest_levels, original_nest_levels;
 
-		if (opline->opcode != ZEND_BRK && opline->opcode != ZEND_CONT) {
+		switch (opline->opcode) {
+		case ZEND_BRK:
+		case ZEND_CONT:
+			break;
+
+#ifdef ZEND_GOTO
+		case ZEND_GOTO:
+			preserve_brk_cont_array = 1;
+			continue;
+#endif
+
+		default:
 			continue;
 		}
+
 		if (Z_OP_TYPE(opline->op2) != IS_CONST
 		 || Z_OP_CONSTANT(opline->op2).type != IS_LONG) {
 			return FAILURE;
@@ -91,30 +105,40 @@ static int op_array_convert_switch(zend_op_array *op_array) /* {{{ */
 
 				switch (brk_opline->opcode) {
 				case ZEND_SWITCH_FREE:
-					break;
 				case ZEND_FREE:
+					if (!(brk_opline->extended_value & EXT_TYPE_FREE_ON_RETURN)) {
+						can_convert = 0;
+						preserve_brk_cont_array = 1;
+					}
 					break;
 				}
 			}
 			array_offset = jmp_to->parent;
 		} while (--nest_levels > 0);
 
-		/* rewrite to jmp */
-		if (opline->opcode == ZEND_BRK) {
-			Z_OP(opline->op1).opline_num = jmp_to->brk;
+		if (can_convert) {
+			/* rewrite to jmp */
+			switch (opline->opcode) {
+			case ZEND_BRK:
+				Z_OP(opline->op1).opline_num = jmp_to->brk;
+				break;
+
+			case ZEND_CONT:
+				Z_OP(opline->op1).opline_num = jmp_to->cont;
+				break;
+			}
+			Z_OP_TYPE(opline->op2) = IS_UNUSED;
+			opline->opcode = ZEND_JMP;
 		}
-		else {
-			Z_OP(opline->op1).opline_num = jmp_to->cont;
-		}
-		Z_OP_TYPE(opline->op2) = IS_UNUSED;
-		opline->opcode = ZEND_JMP;
 	}
 
-	if (op_array->brk_cont_array != NULL) {
-		efree(op_array->brk_cont_array);
-		op_array->brk_cont_array = NULL;
+	if (!preserve_brk_cont_array) {
+		if (op_array->brk_cont_array != NULL) {
+			efree(op_array->brk_cont_array);
+			op_array->brk_cont_array = NULL;
+		}
+		op_array->last_brk_cont = 0;
 	}
-	op_array->last_brk_cont = 0;
 	return SUCCESS;
 }
 /* }}} */
