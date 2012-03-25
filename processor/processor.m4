@@ -404,12 +404,12 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 #ifdef ZEND_ENGINE_2_2
 	dnl runtime binding: ADD_INTERFACE will deal with it
 	COPYNULL(`interfaces')
-	COPYNULL(`num_interfaces')
+	COPYZERO(`num_interfaces')
 
 #	ifdef ZEND_ENGINE_2_4
 	dnl runtime binding: ADD_TRAIT will deal with it
 	COPYNULL(traits)
-	COPYNULL(num_traits)
+	COPYZERO(num_traits)
 #	endif
 #else
 	IFRESTORE(`

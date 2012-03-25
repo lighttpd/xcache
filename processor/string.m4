@@ -45,7 +45,7 @@ define(`PROC_STRING_N_EX', `
 				zend_make_printable_zval(&zv, &reszv, &usecopy);
 				fprintf(stderr, "string:%s:\t\"", "$1");
 				xc_dprint_str_len(Z_STRVAL(reszv), Z_STRLEN(reszv));
-				fprintf(stderr, "\" len=%d\n", $3 - 1);
+				fprintf(stderr, "\" len=%lu\n", (unsigned long) $3 - 1);
 				if (usecopy) {
 					zval_dtor(&reszv);
 				}
@@ -55,7 +55,7 @@ define(`PROC_STRING_N_EX', `
 			', `
 			fprintf(stderr, "string:%s:\t\"", "$1");
 			xc_dprint_str_len(SRCPTR, $3 - 1);
-			fprintf(stderr, "\" len=%d\n", $3 - 1);
+			fprintf(stderr, "\" len=%lu\n", (unsigned long) $3 - 1);
 			')
 		')
 		IFCALC(`xc_calc_string_n(processor, ISTYPE, SRCSTR, $3 C_RELAYLINE);')

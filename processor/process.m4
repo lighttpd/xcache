@@ -55,7 +55,7 @@ define(`PROCESS', `dnl PROCESS(1:type, 2:elm)
 	, `$1', `unsigned int',     `PROCESS_SCALAR(`$2', `u',  `$1')'
 	, `$1', `zend_ulong',       `PROCESS_SCALAR(`$2', `lu', `$1')'
 	, `$1', `ulong',            `PROCESS_SCALAR(`$2', `lu', `$1')'
-	, `$1', `size_t',           `PROCESS_SCALAR(`$2', `u', `$1')'
+	, `$1', `size_t',           `PROCESS_SCALAR(`$2', `lu', `$1')'
 	, `$1', `long',             `PROCESS_SCALAR(`$2', `ld', `$1')'
 	, `$1', `time_t',           `PROCESS_SCALAR(`$2', `ld', `$1')'
 	, `$1', `zend_ushort',      `PROCESS_SCALAR(`$2', `hu', `$1')'
