@@ -86,36 +86,36 @@ define(`PROC_STRING_N_EX', `
 ')
 dnl }}}
 dnl PROC_STRING_N(1:name, 2:size, 3:type)
-define(`PROC_STRING_N', `DBG(`$0($*)') DONE(`$1')`'PROC_STRING_N_EX(`dst->$1', `src->$1', `src->$2', `$1', `char')')
-define(`PROC_USTRING_N', `DBG(`$0($*)') DONE(`$1')`'PROC_STRING_N_EX(`dst->$1', `src->$1', `src->$2', `$1', `UChar')')
+define(`PROC_STRING_N', `DBG(`$0($*)') DONE(`$1')`'PROC_STRING_N_EX(`DST(`$1')', `SRC(`$1')', `SRC(`$2')', `$1', `char')')
+define(`PROC_USTRING_N', `DBG(`$0($*)') DONE(`$1')`'PROC_STRING_N_EX(`DST(`$1')', `SRC(`$1')', `SRC(`$2')', `$1', `UChar')')
 
 define(`PROC_STRING_L', `DBG(`$0($*)') PROC_STRING_N(`$1', `$2 + 1')')
 define(`PROC_USTRING_L', `DBG(`$0($*)') PROC_USTRING_N(`$1', `$2 + 1')')
-define(`PROC_STRING',   `DBG(`$0($*)') DONE(`$1')`'PROC_STRING_N_EX(`dst->$1', `src->$1', `strlen(src->$1) + 1', `$1', `char')')
-define(`PROC_USTRING',  `DBG(`$0($*)') DONE(`$1')`'PROC_STRING_N_EX(`dst->$1', `src->$1', `strlen(src->$1) + 1', `$1', `UChar')')
+define(`PROC_STRING',   `DBG(`$0($*)') DONE(`$1')`'PROC_STRING_N_EX(`DST(`$1')', `SRC(`$1')', `strlen(SRC(`$1')) + 1', `$1', `char')')
+define(`PROC_USTRING',  `DBG(`$0($*)') DONE(`$1')`'PROC_STRING_N_EX(`DST(`$1')', `SRC(`$1')', `strlen(SRC(`$1')) + 1', `$1', `UChar')')
 
 dnl {{{ PROC_ZSTRING_N(1:type, 2:name, 3:size, 4:size_type)
 define(`PROC_ZSTRING_N', `
 	DBG(`$0($*)')
 #ifdef IS_UNICODE
 	pushdef(`NSIZE', ifelse(
-			`$4', `strlen', `UNI_STRLEN (src->$2) + 1',
-			`$4', `len',    `src->$3 + 1',
-			`',   `',       `src->$3',
+			`$4', `strlen', `UNI_STRLEN (SRC(`$2')) + 1',
+			`$4', `len',    `SRC(`$3') + 1',
+			`',   `',       `SRC(`$3')',
 			))
 	DONE(`$2')
-	ifelse(`$1', `1', `PROC_STRING_N_EX(`dst->$2', `src->$2', defn(`NSIZE'), `$2', `zstr_uchar')
+	ifelse(`$1', `1', `PROC_STRING_N_EX(`DST(`$2')', `SRC(`$2')', defn(`NSIZE'), `$2', `zstr_uchar')
 	', `
-		if (ifelse(`$1', `', `UG(unicode)', `src->$1 == IS_UNICODE')) {
-			PROC_STRING_N_EX(`dst->$2', `src->$2', defn(`NSIZE'), `$2', `zstr_uchar')
+		if (ifelse(`$1', `', `UG(unicode)', `SRC(`$1') == IS_UNICODE')) {
+			PROC_STRING_N_EX(`DST(`$2')', `SRC(`$2')', defn(`NSIZE'), `$2', `zstr_uchar')
 		}
 		else {
-			PROC_STRING_N_EX(`dst->$2', `src->$2', defn(`NSIZE'), `$2', `zstr_char')
+			PROC_STRING_N_EX(`DST(`$2')', `SRC(`$2')', defn(`NSIZE'), `$2', `zstr_char')
 		}
 	')
 #else
 	DONE(`$2')
-	PROC_STRING_N_EX(`dst->$2', `src->$2', NSIZE, `$2', `zstr_char')
+	PROC_STRING_N_EX(`DST(`$2')', `SRC(`$2')', NSIZE, `$2', `zstr_char')
 #endif
 	popdef(`NSIZE')
 ')

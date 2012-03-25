@@ -77,14 +77,14 @@ define(`DEF_HASH_TABLE_FUNC', `
 		dnl elseif
 			IFRESTORE(`dst->canary = zend_hash_canary; DONE(canary)', `
 				dnl else
-				DISPATCH(unsigned int, canary)
+				PROCESS(unsigned int, canary)
 			')
 		')
 #endif
-		DISPATCH(uint, nTableSize)
-		DISPATCH(uint, nTableMask)
-		DISPATCH(uint, nNumOfElements)
-		DISPATCH(ulong, nNextFreeElement)
+		PROCESS(uint, nTableSize)
+		PROCESS(uint, nTableMask)
+		PROCESS(uint, nNumOfElements)
+		PROCESS(ulong, nNextFreeElement)
 		IFCOPY(`dst->pInternalPointer = NULL;	/* Used for element traversal */') DONE(pInternalPointer)
 		IFCOPY(`dst->pListHead = NULL;') DONE(pListHead)
 #ifdef ZEND_ENGINE_2_4
@@ -164,14 +164,14 @@ define(`DEF_HASH_TABLE_FUNC', `
 #endif
 		IFCOPY(`dst->pListTail = pnew;') DONE(pListTail)
 		IFCOPY(`dst->pDestructor = src->pDestructor;') DONE(pDestructor)
-		DISPATCH(zend_bool, persistent)
+		PROCESS(zend_bool, persistent)
 #ifdef IS_UNICODE
-		DISPATCH(zend_bool, unicode)
+		PROCESS(zend_bool, unicode)
 #endif
-		DISPATCH(unsigned char, nApplyCount)
-		DISPATCH(zend_bool, bApplyProtection)
+		PROCESS(unsigned char, nApplyCount)
+		PROCESS(zend_bool, bApplyProtection)
 #if ZEND_DEBUG
-		DISPATCH(int, inconsistent)
+		PROCESS(int, inconsistent)
 #endif
 		')dnl IFDASM
 		popdef(`FUNC_NAME')
