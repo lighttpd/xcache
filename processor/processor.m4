@@ -803,17 +803,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		DONE(arg_types)
 	}
 	else {
-		IFDASM(`do {
-			/* empty array */
-			zval *zv;
-			ALLOC_INIT_ZVAL(zv);
-			array_init(zv);
-			add_assoc_zval_ex(dst, ZEND_STRS("arg_types"), zv);
-		} while (0);
-		DONE(arg_types)
-		', `
 		COPYNULL(arg_types)
-		')
 	}
 #endif
 #ifndef ZEND_ENGINE_2_4

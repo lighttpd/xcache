@@ -2268,7 +2268,7 @@ class Decompiler
 		if (isset($op_array['num_args'])) {
 			$c = $op_array['num_args'];
 		}
-		else if ($op_array['arg_types']) {
+		else if (!empty($op_array['arg_types'])) {
 			$c = count($op_array['arg_types']);
 		}
 		else {
@@ -2305,7 +2305,7 @@ class Decompiler
 				if ($refrest) {
 					echo '&';
 				}
-				else if (isset($op_array['arg_types'][$i])) {
+				else if (!empty($op_array['arg_types']) && isset($op_array['arg_types'][$i])) {
 					switch ($op_array['arg_types'][$i]) {
 					case BYREF_FORCE_REST:
 						$refrest = true;
