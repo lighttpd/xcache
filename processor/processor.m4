@@ -15,17 +15,15 @@ DECL_STRUCT_P_FUNC(`zend_property_info')
 #endif
 /* }}} */
 dnl ====================================================
-dnl {{{ zend_compiled_variable
 #ifdef IS_CV
-DEF_STRUCT_P_FUNC(`zend_compiled_variable', , `
+DEF_STRUCT_P_FUNC(`zend_compiled_variable', , `dnl {{{
 	DISPATCH(int, name_len)
 	PROC_ZSTRING_L(, name, name_len)
 	DISPATCH(ulong, hash_value)
 ')
-#endif
 dnl }}}
-dnl {{{ zend_uint
-DEF_STRUCT_P_FUNC(`zend_uint', , `
+#endif
+DEF_STRUCT_P_FUNC(`zend_uint', , `dnl {{{
 	IFCOPY(`dst[0] = src[0];')
 	IFDPRINT(`
 		INDENT()
@@ -34,9 +32,8 @@ DEF_STRUCT_P_FUNC(`zend_uint', , `
 	DONE_SIZE(sizeof(src[0]))
 ')
 dnl }}}
-dnl {{{ int
 #ifndef ZEND_ENGINE_2
-DEF_STRUCT_P_FUNC(`int', , `
+DEF_STRUCT_P_FUNC(`int', , `dnl {{{
 	IFCOPY(`*dst = *src;')
 	IFDPRINT(`
 		INDENT()
@@ -44,18 +41,16 @@ DEF_STRUCT_P_FUNC(`int', , `
 	')
 	DONE_SIZE(sizeof(src[0]))
 ')
-#endif
 dnl }}}
-dnl {{{ zend_try_catch_element
+#endif
 #ifdef ZEND_ENGINE_2
-DEF_STRUCT_P_FUNC(`zend_try_catch_element', , `
+DEF_STRUCT_P_FUNC(`zend_try_catch_element', , `dnl {{{
 	DISPATCH(zend_uint, try_op)
 	DISPATCH(zend_uint, catch_op)
 ')
-#endif /* ifdef ZEND_ENGINE_2 */
 dnl }}}
-dnl {{{ zend_brk_cont_element
-DEF_STRUCT_P_FUNC(`zend_brk_cont_element', , `
+#endif
+DEF_STRUCT_P_FUNC(`zend_brk_cont_element', , `dnl {{{
 #ifdef ZEND_ENGINE_2_2
 	DISPATCH(int, start)
 #endif
@@ -226,9 +221,8 @@ DEF_STRUCT_P_FUNC(`zval_ptr_nullable', , `dnl {{{
 	DONE_SIZE(sizeof(zval_ptr_nullable))
 ')
 dnl }}}
-dnl {{{ zend_arg_info
 #ifdef ZEND_ENGINE_2
-DEF_STRUCT_P_FUNC(`zend_arg_info', , `
+DEF_STRUCT_P_FUNC(`zend_arg_info', , `dnl {{{
 	DISPATCH(zend_uint, name_len)
 	PROC_ZSTRING_L(, name, name_len)
 	DISPATCH(zend_uint, class_name_len)
@@ -245,8 +239,8 @@ DEF_STRUCT_P_FUNC(`zend_arg_info', , `
 	DISPATCH(int, required_num_args)
 #endif
 ')
-#endif
 dnl }}}
+#endif
 #ifdef HAVE_XCACHE_CONSTANT
 DEF_STRUCT_P_FUNC(`zend_constant', , `dnl {{{
 	STRUCT(zval, value)
@@ -280,9 +274,8 @@ DEF_STRUCT_P_FUNC(`zend_function', , `dnl {{{
 	DONE_SIZE(sizeof(src[0]))
 ')
 dnl }}}
-dnl {{{ zend_property_info
 #ifdef ZEND_ENGINE_2
-DEF_STRUCT_P_FUNC(`zend_property_info', , `
+DEF_STRUCT_P_FUNC(`zend_property_info', , `dnl {{{
 	DISPATCH(zend_uint, flags)
 	DISPATCH(int, name_length)
 	PROC_ZSTRING_L(, name, name_length)
@@ -299,8 +292,58 @@ DEF_STRUCT_P_FUNC(`zend_property_info', , `
 	PROC_CLASS_ENTRY_P(ce)
 #endif
 ')
-#endif
 dnl }}}
+#endif
+#ifdef ZEND_ENGINE_2_4
+DEF_STRUCT_P_FUNC(`zend_trait_method_reference', , `dnl {{{
+	DISPATCH(unsigned int, mname_len)
+	PROC_STRING_L(method_name, mname_len)
+	COPYNULL(ce)
+	DISPATCH(unsigned int, cname_len)
+	PROC_STRING_L(class_name, cname_len)
+')
+dnl }}}
+DEF_STRUCT_P_FUNC(`zend_trait_alias', , `dnl {{{
+	STRUCT_P(zend_trait_method_reference, trait_method)
+	DISPATCH(unsigned int, alias_len)
+	PROC_STRING_L(alias, alias_len)
+	DISPATCH(zend_uint, modifiers)
+	COPYNULL(function)
+')
+dnl }}}
+DEF_STRUCT_P_FUNC(`zend_trait_precedence', , `dnl {{{
+	STRUCT_P(zend_trait_method_reference, trait_method)
+	COPYNULL(exclude_from_classes)
+	COPYNULL(function)
+')
+dnl }}}
+DEF_STRUCT_P_FUNC(`zend_trait_alias_ptr', , `dnl {{{
+	IFDASM(`
+		pushdefFUNC_NAME(`zend_trait_alias')
+		FUNC_NAME (dst, src[0] TSRMLS_CC);
+		popdef(`FUNC_NAME')
+	', `
+		ALLOC(dst[0], zend_trait_alias)
+		STRUCT_P_EX(zend_trait_alias, dst[0], src[0], `[0]', `', ` ')
+		FIXPOINTER_EX(zend_trait_alias, dst[0])
+	')
+	DONE_SIZE(sizeof(zend_trait_alias))
+')
+dnl }}}
+DEF_STRUCT_P_FUNC(`zend_trait_precedence_ptr', , `dnl {{{
+	IFDASM(`
+		pushdefFUNC_NAME(`zend_trait_precedence')
+		FUNC_NAME (dst, src[0] TSRMLS_CC);
+		popdef(`FUNC_NAME')
+	', `
+		ALLOC(dst[0], zend_trait_precedence)
+		STRUCT_P_EX(zend_trait_precedence, dst[0], src[0], `[0]', `', ` ')
+		FIXPOINTER_EX(zend_trait_precedence, dst[0])
+	')
+	DONE_SIZE(sizeof(zend_trait_precedence))
+')
+dnl }}}
+#endif
 DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	IFCALCCOPY(`
 		processor->active_class_entry_src = src;
@@ -358,8 +401,17 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 #ifdef ZEND_ENGINE_2
 	STRUCT(HashTable, constants_table, HashTable_zval_ptr)
 
+#ifdef ZEND_ENGINE_2_2
 	dnl runtime binding: ADD_INTERFACE will deal with it
+	COPYNULL(`interfaces')
+	COPYNULL(`num_interfaces')
+
+#	ifdef ZEND_ENGINE_2_4
 	dnl runtime binding: ADD_TRAIT will deal with it
+	COPYNULL(traits)
+	COPYNULL(num_traits)
+#	endif
+#else
 	IFRESTORE(`
 		if (src->num_interfaces) {
 			CALLOC(dst->interfaces, zend_class_entry*, src->num_interfaces)
@@ -368,66 +420,13 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 		else {
 			COPYNULL(`interfaces')
 		}
-#	ifdef ZEND_ENGINE_2_4
-		if (src->num_traits) {
-			CALLOC(dst->traits, zend_class_entry*, src->num_traits)
-			DONE(`traits')
-			DONE(`trait_aliases')
-			DONE(`trait_precedences')
-		}
-		else {
-			COPYNULL(`traits')
-			COPYNULL(`trait_aliases')
-			COPYNULL(`trait_precedences')
-		}
-#	endif
-	')
-	IFDASM(`
-		if (src->num_interfaces) {
-			/*
-			int i;
-			zval *arr;
-			ALLOC_INIT_ZVAL(arr);
-			array_init(arr);
-			for (i = 0; i < src->num_interfaces; i ++) {
-				zval *zv;
-				ALLOC_INIT_ZVAL(zv);
-				ZVAL_STRING(src->num_interfaces);
-			}
-			add_assoc_zval_ex(dst, ZEND_STRS("interfaces"), arr);
-			*/
-			DONE(`interfaces')
-		}
-		else {
-			COPYNULL(`interfaces')
-		}
-#	ifdef ZEND_ENGINE_2_4
-		if (src->num_traits) {
-			DONE(`traits')
-			DONE(`trait_aliases')
-			DONE(`trait_precedences')
-		}
-		else {
-			COPYNULL(`traits')
-			COPYNULL(`trait_aliases')
-			COPYNULL(`trait_precedences')
-		}
-#	endif
-	')
-	IFRESTORE(`', `
-		IFDASM(`', `
-			DONE(`interfaces')
-#	ifdef ZEND_ENGINE_2_4
-			DONE(`traits')
-			DONE(`trait_aliases')
-			DONE(`trait_precedences')
-#	endif
-		')
+	', `
+		DONE(`interfaces')
 	')
 	DISPATCH(zend_uint, num_interfaces)
-#	ifdef ZEND_ENGINE_2_4
-	DISPATCH(zend_uint, num_traits)
-#	endif
+#endif
+	STRUCT_ARRAY(, zend_trait_alias_ptr, trait_aliases)
+	STRUCT_ARRAY(, zend_trait_precedence_ptr, trait_precedences)
 
 #	ifdef ZEND_ENGINE_2_4
 	DISABLECHECK(`
@@ -1138,8 +1137,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_var_t', , `dnl {{{
 	DONE(value)
 ')
 dnl }}}
-dnl {{{ xc_entry_t
-DEF_STRUCT_P_FUNC(`xc_entry_t', , `
+DEF_STRUCT_P_FUNC(`xc_entry_t', , `dnl {{{
 	DISPATCH(xc_entry_type_t, type)
 	DISPATCH(size_t, size)
 

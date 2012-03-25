@@ -180,6 +180,7 @@ dnl {{{ COPYNULL_EX(1:dst, 2:elm-name)
 define(`COPYNULL_EX', `
 	IFDASM(`add_assoc_null_ex(dst, ZEND_STRS("$2"));')
 	IFNOTMEMCPY(`IFCOPY(`$1 = NULL;')')
+	assert(patsubst($1, dst, src) == NULL);
 ')
 dnl }}}
 dnl {{{ COPYNULL(1:elm)

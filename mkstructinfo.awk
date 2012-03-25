@@ -5,6 +5,11 @@ BEGIN {
 	incomment = 0;
 	buffer_len = 0;
 }
+function printstruct(structname) {
+	printf "define(`ELEMENTSOF_%s', `%s')\n", structname, ELEMENTSOF[structname];
+	printf "define(`COUNTOF_%s', `%s')\n", structname, COUNTOF[structname];
+	printf "define(`SIZEOF_%s', `(  %s  )')\n", structname, SIZEOF[structname];
+}
 
 # multiline comment handling
 {
@@ -34,11 +39,12 @@ incomment {
 /^}.*;/ {
 	if (instruct) {
 		sub(";", "");
-		if (instruct == 1 && $2) {
-			instruct = $2;
+		structname = instruct;
+		if (structname == 1 && $2) {
+			structname = $2;
 		}
-		if (instruct in typedefs) {
-			instruct = typedefs[instruct];
+		if (structname in typedefs) {
+			structname = typedefs[structname];
 		}
 		sizeinfo = "";
 		elms = "";
@@ -46,7 +52,7 @@ incomment {
 			if (i) {
 				sizeinfo = sizeinfo " + ";
 			}
-			sizeinfo = sizeinfo "sizeof(((" instruct "*)NULL)->" buffer[i] ")";
+			sizeinfo = sizeinfo "sizeof(((" structname "*)NULL)->" buffer[i] ")";
 
 			if (i == 0) {
 				elms = "\"" buffer[i] "\"";
@@ -55,9 +61,10 @@ incomment {
 				elms = elms "," "\"" buffer[i] "\"";
 			}
 		}
-		printf "define(`ELEMENTSOF_%s', `%s')\n", instruct, elms;
-		printf "define(`COUNTOF_%s', `%s')\n", instruct, i;
-		printf "define(`SIZEOF_%s', `(  %s  )')\n", instruct, sizeinfo;
+		ELEMENTSOF[structname] = elms;
+		COUNTOF[structname]    = i;
+		SIZEOF[structname]     = sizeinfo;
+		printstruct(structname);
 		print "\n";
 		for (i in buffer) {
 			delete buffer[i];
@@ -148,7 +155,17 @@ incomment {
 
 /^typedef struct [^{]*;/ {
 	sub(";", "");
-	typedefs[$3] = $4;
+	typename=$3;
+	newtypename=$4;
+	typedefs[typename] = newtypename;
+	if (ELEMENTSOF[typename]) {
+		ELEMENTSOF[newtypename] = ELEMENTSOF[typename];
+		COUNTOF[newtypename]    = COUNTOF[typename];
+		sub(/.*/, SIZEOF[typename]);
+		gsub(typename, newtypename);
+		SIZEOF[newtypename]     = $0;
+		printstruct(newtypename);
+	}
 	next;
 }
 /^typedef struct .*\{[^}]*$/ {
