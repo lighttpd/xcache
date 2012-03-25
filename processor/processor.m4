@@ -313,7 +313,8 @@ DEF_STRUCT_P_FUNC(`zend_trait_alias', , `dnl {{{
 dnl }}}
 DEF_STRUCT_P_FUNC(`zend_trait_precedence', , `dnl {{{
 	STRUCT_P(zend_trait_method_reference, trait_method)
-	COPYNULL(exclude_from_classes)
+	dnl TODO
+	STRUCT_ARRAY(, xc_class_name_t, exclude_from_classes)
 	COPYNULL(function)
 ')
 dnl }}}
@@ -919,42 +920,40 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	DISPATCH(zend_bool, created_by_eval)
 #endif
 #ifdef ZEND_ENGINE_2_4
-	COPYNULL(run_time_cache)
-	COPYNULL(last_cache_slot)
+	SETNULL(run_time_cache)
+	DISPATCH(int, last_cache_slot)
 #endif
 	} while (0);
 	IFRESTORE(`xc_fix_op_array_info(processor->entry_src, processor->php_src, dst, shallow_copy, op_array_info TSRMLS_CC);')
 
 #ifdef ZEND_ENGINE_2
 	dnl mark it as -1 on store, and lookup parent on restore
-	IFSTORE(`dst->prototype = (processor->active_class_entry_src && src->prototype) ? (zend_function *) -1 : NULL; DONE(prototype)', `
-			IFRESTORE(`do {
-				zend_function *parent;
-				if (src->prototype != NULL
-				 && zend_u_hash_find(&(processor->active_class_entry_dst->parent->function_table),
-						UG(unicode) ? IS_UNICODE : IS_STRING,
-						src->function_name, xc_zstrlen(UG(unicode) ? IS_UNICODE : IS_STRING, src->function_name) + 1,
-						(void **) &parent) == SUCCESS) {
-					/* see do_inherit_method_check() */
-					if ((parent->common.fn_flags & ZEND_ACC_ABSTRACT)) {
-					  dst->prototype = parent;
-					} else if (!(parent->common.fn_flags & ZEND_ACC_CTOR) || (parent->common.prototype && (parent->common.prototype->common.scope->ce_flags & ZEND_ACC_INTERFACE))) {
-						/* ctors only have a prototype if it comes from an interface */
-						dst->prototype = parent->common.prototype ? parent->common.prototype : parent;
-					}
-					else {
-						dst->prototype = NULL;
-					}
+	IFSTORE(`dst->prototype = (processor->active_class_entry_src && src->prototype) ? (zend_function *) -1 : NULL;', `
+		IFRESTORE(`do {
+			zend_function *parent;
+			if (src->prototype != NULL
+			 && zend_u_hash_find(&(processor->active_class_entry_dst->parent->function_table),
+					UG(unicode) ? IS_UNICODE : IS_STRING,
+					src->function_name, xc_zstrlen(UG(unicode) ? IS_UNICODE : IS_STRING, src->function_name) + 1,
+					(void **) &parent) == SUCCESS) {
+				/* see do_inherit_method_check() */
+				if ((parent->common.fn_flags & ZEND_ACC_ABSTRACT)) {
+					dst->prototype = parent;
+				} else if (!(parent->common.fn_flags & ZEND_ACC_CTOR) || (parent->common.prototype && (parent->common.prototype->common.scope->ce_flags & ZEND_ACC_INTERFACE))) {
+					/* ctors only have a prototype if it comes from an interface */
+					dst->prototype = parent->common.prototype ? parent->common.prototype : parent;
 				}
 				else {
 					dst->prototype = NULL;
 				}
-				DONE(prototype)
-			} while (0);
-			', `
-				COPYNULL(prototype)
-			')
+			}
+			else {
+				dst->prototype = NULL;
+			}
+		} while (0);
+		')
 	')
+	DONE(prototype)
 
 #endif
 
