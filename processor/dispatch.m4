@@ -23,7 +23,7 @@ define(`DISPATCH', `
 	, `$1', `zval_data_type',   `PROC_INT(`$2', `u',  `$1')'
 	, `$1', `xc_entry_type_t',  `PROC_INT(`$2', `d',  `$1')'
 	, `$1', `xc_hash_value_t',  `PROC_INT(`$2', `lu', `$1')'
-	, `$1', `xc_md5sum_t',      `/* is copying enough? */COPY(`$2')'
+	, `$1', `xc_md5sum_t',      `COPY(`$2')'
 	, `', `', `m4_errprint(`Unknown type "$1"')'
 	)
 ')
@@ -38,7 +38,7 @@ define(`DISPATCH_ARRAY', `
 			for (i = 0; i < src->$1; i ++) {
 				ifelse(
 					`$2', `zend_bool', `add_assoc_bool_ex(arr, ZEND_STRS("$3"), src->$3[i] ? 1 : 0);'
-				, `', `', `add_assoc_long_ex(arr, ZEND_STRS("$3"), src->$3[i]);')
+				, `', `', `add_next_index_long(arr, src->$3[i]);')
 			}
 			add_assoc_zval_ex(dst, ZEND_STRS("$3"), arr);
 		', `
