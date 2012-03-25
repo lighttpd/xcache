@@ -56,7 +56,6 @@ typedef xc_stack_t bbs_t;
 static int op_array_convert_switch(zend_op_array *op_array) /* {{{ */
 {
 	int i;
-	zend_bool preserve_brk_cont_array = 0;
 
 	if (op_array->brk_cont_array == NULL) {
 		return SUCCESS;
@@ -75,9 +74,8 @@ static int op_array_convert_switch(zend_op_array *op_array) /* {{{ */
 
 #ifdef ZEND_GOTO
 		case ZEND_GOTO:
-			preserve_brk_cont_array = 1;
-			continue;
 #endif
+			continue;
 
 		default:
 			continue;
@@ -108,7 +106,6 @@ static int op_array_convert_switch(zend_op_array *op_array) /* {{{ */
 				case ZEND_FREE:
 					if (!(brk_opline->extended_value & EXT_TYPE_FREE_ON_RETURN)) {
 						can_convert = 0;
-						preserve_brk_cont_array = 1;
 					}
 					break;
 				}
@@ -132,13 +129,6 @@ static int op_array_convert_switch(zend_op_array *op_array) /* {{{ */
 		}
 	}
 
-	if (!preserve_brk_cont_array) {
-		if (op_array->brk_cont_array != NULL) {
-			efree(op_array->brk_cont_array);
-			op_array->brk_cont_array = NULL;
-		}
-		op_array->last_brk_cont = 0;
-	}
 	return SUCCESS;
 }
 /* }}} */
