@@ -95,18 +95,18 @@ if test "$PHP_XCACHE" != "no"; then
   XCACHE_INDENT=cat
   case $INDENT in
   */indent[)]
-    opts="-kr --use-tabs --tab-size 4 -sob -nce"
+    XCACHE_INDENT="$INDENT"
+    opts="-kr --use-tabs --tab-size 4"
     if echo | $INDENT $opts > /dev/null 2>&1 ; then
-      XCACHE_INDENT="$INDENT $opts"
-    else
-      opts="-sob -nce"
-      if echo | $INDENT $opts > /dev/null 2>&1 ; then
-        XCACHE_INDENT="$INDENT $opts"
-      else
-        if echo | $INDENT > /dev/null 2>&1 ; then
-          XCACHE_INDENT="$INDENT"
-        fi
-      fi
+      XCACHE_INDENT="$XCACHE_INDENT $opts"
+    fi
+    opts="-sob -nce"
+    if echo | $INDENT $opts > /dev/null 2>&1 ; then
+      XCACHE_INDENT="$XCACHE_INDENT $opts"
+    fi
+    opts="-l 160"
+    if echo | $INDENT $opts > /dev/null 2>&1 ; then
+      XCACHE_INDENT="$XCACHE_INDENT $opts"
     fi
     ;;
   esac
