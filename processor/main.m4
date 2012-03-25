@@ -19,6 +19,8 @@ undefine(`len')
 ')
 define(`ZEND_STRS', `($1), (sizeof($1))')
 define(`ZEND_STRL', `($1), (sizeof($1) - 1)')
+define(`DST', `dst->$1')
+define(`SRC', `src->$1')
 dnl ============
 define(`INDENT', `xc_dprint_indent(indent);')
 dnl }}}
@@ -80,31 +82,11 @@ define(`ALLOC', `
 	popdef(`COUNT')
 	popdef(`SIZE')
 ')
-dnl CALLOC(1:dst, 2:type [, 3:count=1 ])
-define(`CALLOC', `ALLOC(`$1', `$2', `$3', `1')')
-dnl }}}
-dnl {{{ PROC_INT(1:elm, 2:format=%d, 3:type=, 4:spec=)
-define(`PROC_INT', `
-	IFNOTMEMCPY(`IFCOPY(`dst->$1 = src->$1;')')
-	IFDPRINT(`
-		INDENT()
-		ifelse(
-			`$3 $1', `zval_data_type type', `fprintf(stderr, "$3:$1:\t%d %s\n", src->$1, xc_get_data_type(src->$1));'
-		, `$3 $1', `int op_type', `fprintf(stderr, "$3:$1:\t%d %s\n", src->$1, xc_get_op_type(src->$1));'
-		, `$3 $1', `zend_uchar opcode', `fprintf(stderr, "$3:$1:\t%d %s\n", src->$1, xc_get_opcode(src->$1));'
-		, `', `', `fprintf(stderr, "$3:$1:\t%ifelse(`$2',`',`d',`$2')\n", src->$1);')
-	')
-	IFDASM(`
-		ifelse(
-			`$3', `zend_bool', `add_assoc_bool_ex(dst, ZEND_STRS("$1"), src->$1 ? 1 : 0);'
-		, `', `', `add_assoc_long_ex(dst, ZEND_STRS("$1"), src->$1);'
-		)
-	')
-	DONE(`$1')
-')
+dnl CALLOC(1:dst, 2:type [, 3:count=1, 4:forcetype=$2 ])
+define(`CALLOC', `ALLOC(`$1', `$2', `$3', `1', `$4')')
 dnl }}}
 dnl {{{ PROC_CLASS_ENTRY_P(1:elm)
-define(`PROC_CLASS_ENTRY_P', `PROC_CLASS_ENTRY_P_EX(`dst->$1', `src->$1', `$1')`'DONE(`$1')')
+define(`PROC_CLASS_ENTRY_P', `PROC_CLASS_ENTRY_P_EX(`dst->$1', `SRC(`$1')', `$1')`'DONE(`$1')')
 dnl PROC_CLASS_ENTRY_P_EX(1:dst, 2:src, 3:elm-name)
 define(`PROC_CLASS_ENTRY_P_EX', `
 	if ($2) {
@@ -150,13 +132,13 @@ define(`UNFIXPOINTER_EX', `IFSTORE(`
 ')')
 dnl }}}
 dnl {{{ COPY
-define(`COPY', `IFNOTMEMCPY(`IFCOPY(`dst->$1 = src->$1;')')DONE(`$1')')
+define(`COPY', `IFNOTMEMCPY(`IFCOPY(`dst->$1 = SRC(`$1');')')DONE(`$1')')
 dnl }}}
 dnl {{{ COPY_N_EX
 define(`COPY_N_EX', `
-	ALLOC(`dst->$3', `$2', `src->$1')
+	ALLOC(`dst->$3', `$2', `SRC(`$1')')
 	IFCOPY(`
-		memcpy(dst->$3, src->$3, sizeof(dst->$3[0]) * src->$1);
+		memcpy(dst->$3, SRC(`$3'), sizeof(dst->$3[0]) * SRC(`$1'));
 		')
 ')
 dnl }}}
@@ -167,7 +149,7 @@ dnl {{{ COPYPOINTER
 define(`COPYPOINTER', `COPY(`$1')')
 dnl }}}
 dnl {{{ COPYARRAY_EX
-define(`COPYARRAY_EX', `IFNOTMEMCPY(`IFCOPY(`memcpy(dst->$1, src->$1, sizeof(dst->$1));')')')
+define(`COPYARRAY_EX', `IFNOTMEMCPY(`IFCOPY(`memcpy(dst->$1, SRC(`$1'), sizeof(dst->$1));')')')
 dnl }}}
 dnl {{{ COPYARRAY
 define(`COPYARRAY', `COPYARRAY_EX(`$1',`$2')DONE(`$1')')
@@ -225,7 +207,7 @@ define(`DONE', `
 			zend_hash_add(&done_names, "$1", sizeof("$1"), (void*)&b, sizeof(b), NULL);
 		}
 	')
-	DONE_SIZE(`sizeof(src->$1)')
+	DONE_SIZE(`sizeof(SRC(`$1'))')
 ')
 define(`DISABLECHECK', `
 	pushdef(`DONE_SIZE')
@@ -260,7 +242,7 @@ EXPORT(`zval')
 include(srcdir`/processor/hashtable.m4')
 include(srcdir`/processor/string.m4')
 include(srcdir`/processor/struct.m4')
-include(srcdir`/processor/dispatch.m4')
+include(srcdir`/processor/process.m4')
 include(srcdir`/processor/head.m4')
 
 define(`IFNOTMEMCPY', `ifdef(`USEMEMCPY', `', `$1')')

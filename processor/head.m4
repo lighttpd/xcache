@@ -36,6 +36,8 @@ define(`SIZEOF_zend_trait_precedence_ptr', `sizeof(zend_trait_precedence)')
 define(`COUNTOF_zend_trait_precedence_ptr', `1')
 define(`SIZEOF_xc_entry_name_t', `sizeof(xc_entry_name_t)')
 define(`COUNTOF_xc_entry_name_t', `1')
+define(`SIZEOF_xc_ztstring', `sizeof(xc_ztstring)')
+define(`COUNTOF_xc_ztstring', `1')
 
 ifdef(`XCACHE_ENABLE_TEST', `
 #undef NDEBUG
@@ -55,12 +57,15 @@ sinclude(builddir`/structinfo.m4')
 
 typedef zval *zval_ptr;
 typedef zval *zval_ptr_nullable;
+typedef char *xc_ztstring;
 #ifdef ZEND_ENGINE_2_4
 typedef zend_trait_alias *zend_trait_alias_ptr;
 typedef zend_trait_precedence *zend_trait_precedence_ptr;
 #endif
 
-typedef zend_uchar zval_data_type;
+typedef zend_uchar xc_zval_data_type;
+typedef int xc_op_type;
+typedef zend_uchar xc_opcode;
 #ifdef IS_UNICODE
 typedef UChar zstr_uchar;
 #endif
