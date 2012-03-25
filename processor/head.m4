@@ -110,7 +110,7 @@ IFASSERT(`dnl
 static void *memsetptr(void *mem, void *content, size_t n)
 {
 	void **p = (void **) mem;
-	void **end = (char *) mem + n;
+	void **end = (void **) ((char *) mem + n);
 	while (p < end - sizeof(content)) {
 		*p = content;
 		p += sizeof(content);
@@ -147,7 +147,7 @@ static void xc_dprint_str_len(const char *str, int len) /* {{{ */
 /* }}} */
 #endif
 /* {{{ xc_zstrlen_char */
-static inline int xc_zstrlen_char(zstr s)
+static inline int xc_zstrlen_char(const_zstr s)
 {
 	return strlen(ZSTR_S(s));
 }
@@ -160,7 +160,7 @@ static inline int xc_zstrlen_uchar(zstr s)
 }
 /* }}} */
 /* {{{ xc_zstrlen */
-static inline int xc_zstrlen(int type, zstr s)
+static inline int xc_zstrlen(int type, const_zstr s)
 {
 	return type == IS_UNICODE ? xc_zstrlen_uchar(s) : xc_zstrlen_char(s);
 }

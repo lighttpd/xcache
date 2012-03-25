@@ -108,8 +108,8 @@ define(`DEF_HASH_TABLE_FUNC', `
 			IFCOPY(`
 #ifdef ZEND_ENGINE_2_4
 			memcpy(pnew, b, BUCKET_HEAD_SIZE(Bucket));
+			memcpy((char *) (pnew + 1), b->arKey, BUCKET_KEY_SIZE(b));
 			pnew->arKey = (const char *) (pnew + 1);
-			memcpy(pnew->arKey, b->arKey, BUCKET_KEY_SIZE(b));
 #else
 			memcpy(pnew, b, bucketsize);
 	#endif

@@ -57,7 +57,7 @@ define(`ALLOC', `
 		')
 		$1 = (FORCETYPE *) (processor->p = (char *) ALIGN(processor->p));
 		ifelse(`$4', `', `
-				IFASSERT(`memsetptr($1, (void *) __LINE__, SIZE);')
+				IFASSERT(`memsetptr($1, (void *) (unsigned long) __LINE__, SIZE);')
 			', `
 				memset($1, 0, SIZE);
 		')
@@ -158,6 +158,10 @@ dnl {{{ SETNULL_EX
 define(`SETNULL_EX', `IFCOPY(`$1 = NULL;')')
 define(`SETNULL', `SETNULL_EX(`dst->$1')DONE(`$1')')
 dnl }}}
+dnl {{{ SETZERO_EX
+define(`SETZERO_EX', `IFCOPY(`$1 = 0;')')
+define(`SETZERO', `SETZERO_EX(`dst->$1')DONE(`$1')')
+dnl }}}
 dnl {{{ COPYNULL_EX(1:dst, 2:elm-name)
 define(`COPYNULL_EX', `
 	IFDASM(`add_assoc_null_ex(dst, ZEND_STRS("$2"));')
@@ -168,6 +172,18 @@ dnl }}}
 dnl {{{ COPYNULL(1:elm)
 define(`COPYNULL', `
 	COPYNULL_EX(`dst->$1', `$1')DONE(`$1')
+')
+dnl }}}
+dnl {{{ COPYZERO_EX(1:dst, 2:elm-name)
+define(`COPYZERO_EX', `
+	IFDASM(`add_assoc_long_ex(dst, ZEND_STRS("$2"), 0);')
+	IFNOTMEMCPY(`IFCOPY(`$1 = 0;')')
+	assert(patsubst($1, dst, src) == 0);
+')
+dnl }}}
+dnl {{{ COPYZERO(1:elm)
+define(`COPYZERO', `
+	COPYZERO_EX(`dst->$1', `$1')DONE(`$1')
 ')
 dnl }}}
 dnl {{{ LIST_DIFF(1:left-list, 2:right-list)
