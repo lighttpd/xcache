@@ -55,7 +55,7 @@ define(`ALLOC', `
 		')
 		$1 = (FORCETYPE *) (processor->p = (char *) ALIGN(processor->p));
 		ifelse(`$4', `', `
-				IFASSERT(`memset($1, -1, SIZE);')
+				IFASSERT(`memsetptr($1, (void *) __LINE__, SIZE);')
 			', `
 				memset($1, 0, SIZE);
 		')
@@ -72,7 +72,7 @@ define(`ALLOC', `
 				FORCETYPE*COUNT, `zval*1', `ALLOC_ZVAL($1);',
 				FORCETYPE*COUNT, `HashTable*1', `ALLOC_HASHTABLE($1);',
 				`', `', `$1 = (FORCETYPE *) emalloc(SIZE);')
-			IFASSERT(`memset($1, -1, SIZE);')
+			IFASSERT(`memsetptr($1, (void *) __LINE__, SIZE);')
 		', `
 			$1 = (FORCETYPE *) ecalloc(COUNT, sizeof($2));
 		')
