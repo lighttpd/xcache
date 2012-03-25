@@ -186,23 +186,50 @@ define(`STRUCT_ARRAY', `
 			zval *arr;
 			ALLOC_INIT_ZVAL(arr);
 			array_init(arr);
-			for (LOOPCOUNTER = 0; LOOPCOUNTER < src->$1; LOOPCOUNTER ++) {
+
+			LOOPCOUNTER = 0;
+			while (
+			ifelse(`$1', `', `src->$3[LOOPCOUNTER]',
+			`', `', `LOOPCOUNTER < src->$1')
+			) {
 				zval *zv;
 
 				ALLOC_INIT_ZVAL(zv);
 				array_init(zv);
 				FUNC_NAME (zv, &(src->$3[LOOPCOUNTER]) TSRMLS_CC);
 				add_next_index_zval(arr, zv);
+
+				++LOOPCOUNTER;
 			}
 			add_assoc_zval_ex(dst, ZEND_STRS("$3"), arr);
 		', `
-			ALLOC(`dst->$3', `$2', `src->$1')
+			dnl find count with NULL
+			ifelse(`$1', `', `
+				int count;
+				for (count = 0; src->$3[count]; ++count) {
+					/* just count */
+				}
+				++count;
+				pushdef(`STRUCT_COUNT', `count')
+			',
+			`', `', `pushdef(`STRUCT_COUNT', `src->$1')')
+			ALLOC(`dst->$3', `$2', `STRUCT_COUNT')
 			ifdef(`AFTER_ALLOC', AFTER_ALLOC)
-			for (LOOPCOUNTER = 0; LOOPCOUNTER < src->$1; LOOPCOUNTER ++) {
+
+			LOOPCOUNTER = 0;
+			while (
+			ifelse(`$1', `', `src->$3[LOOPCOUNTER]',
+			`', `', `LOOPCOUNTER < src->$1')
+			) {
 				DISABLECHECK(`
 					STRUCT(`$2', `$3[LOOPCOUNTER]', `$4')
 				')
+
+				++LOOPCOUNTER;
 			}
+			dnl tailing NULL
+			ifelse(`$1', `', `IFCOPY(`dst->$3[LOOPCOUNTER] = NULL;')')
+			popdef(`STRUCT_COUNT')
 		')dnl IFDASM
 		DONE(`$3')
 		popdef(`FUNC_NAME')
