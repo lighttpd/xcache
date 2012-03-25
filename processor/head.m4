@@ -30,6 +30,10 @@ define(`SIZEOF_zval_ptr', `sizeof(zval_ptr)')
 define(`COUNTOF_zval_ptr', `1')
 define(`SIZEOF_zval_ptr_nullable', `sizeof(zval_ptr_nullable)')
 define(`COUNTOF_zval_ptr_nullable', `1')
+define(`SIZEOF_zend_trait_alias_ptr', `sizeof(zend_trait_alias)')
+define(`COUNTOF_zend_trait_alias_ptr', `1')
+define(`SIZEOF_zend_trait_precedence_ptr', `sizeof(zend_trait_precedence)')
+define(`COUNTOF_zend_trait_precedence_ptr', `1')
 define(`SIZEOF_xc_entry_name_t', `sizeof(xc_entry_name_t)')
 define(`COUNTOF_xc_entry_name_t', `1')
 
@@ -51,6 +55,11 @@ sinclude(builddir`/structinfo.m4')
 
 typedef zval *zval_ptr;
 typedef zval *zval_ptr_nullable;
+#ifdef ZEND_ENGINE_2_4
+typedef zend_trait_alias *zend_trait_alias_ptr;
+typedef zend_trait_precedence *zend_trait_precedence_ptr;
+#endif
+
 typedef zend_uchar zval_data_type;
 #ifdef IS_UNICODE
 typedef UChar zstr_uchar;
@@ -90,6 +99,20 @@ struct _xc_processor_t {
 	zend_bool readonly_protection; /* wheather it's present */
 IFASSERT(xc_stack_t allocsizes;)
 };
+/* }}} */
+/* {{{ memsetptr */
+IFASSERT(`dnl
+static void *memsetptr(void *mem, void *content, size_t n)
+{
+	void **p = (void **) mem;
+	void **end = (char *) mem + n;
+	while (p < end) {
+		*p = content;
+		p += sizeof(content);
+	}
+	return mem;
+}
+')
 /* }}} */
 #ifdef HAVE_XCACHE_DPRINT
 static void xc_dprint_indent(int indent) /* {{{ */
@@ -314,7 +337,7 @@ static void xc_zend_extension_op_array_ctor_handler(zend_extension *extension, z
 /* }}} */
 /* {{{ field name checker */
 IFASSERT(`dnl
-int xc_check_names(const char *file, int line, const char *functionName, const char **assert_names, int assert_names_count, HashTable *done_names)
+static int xc_check_names(const char *file, int line, const char *functionName, const char **assert_names, int assert_names_count, HashTable *done_names)
 {
 	int errors = 0;
 	if (assert_names_count) {
