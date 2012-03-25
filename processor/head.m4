@@ -106,9 +106,12 @@ static void *memsetptr(void *mem, void *content, size_t n)
 {
 	void **p = (void **) mem;
 	void **end = (char *) mem + n;
-	while (p < end) {
+	while (p < end - sizeof(content)) {
 		*p = content;
 		p += sizeof(content);
+	}
+	if (p < end) {
+		memset(p, -1, end - p);
 	}
 	return mem;
 }
