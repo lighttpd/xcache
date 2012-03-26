@@ -37,13 +37,13 @@
 #include "opcode_spec.h"
 #include "utils.h"
 
-#define VAR_ENTRY_EXPIRED(pentry) ((pentry)->ttl && XG(request_time) > pentry->ctime + (pentry)->ttl)
+#define VAR_ENTRY_EXPIRED(pentry) ((pentry)->ttl && XG(request_time) > (pentry)->ctime + (pentry)->ttl)
 #define CHECK(x, e) do { if ((x) == NULL) { zend_error(E_ERROR, "XCache: " e); goto err; } } while (0)
-#define LOCK(x) xc_lock(x->lck)
-#define UNLOCK(x) xc_unlock(x->lck)
+#define LOCK(x) xc_lock((x)->lck)
+#define UNLOCK(x) xc_unlock((x)->lck)
 
 #define ENTER_LOCK_EX(x) \
-	xc_lock(x->lck); \
+	xc_lock((x)->lck); \
 	zend_try { \
 		do
 #define LEAVE_LOCK_EX(x) \
@@ -51,7 +51,7 @@
 	} zend_catch { \
 		catched = 1; \
 	} zend_end_try(); \
-	xc_unlock(x->lck)
+	xc_unlock((x)->lck)
 
 #define ENTER_LOCK(x) do { \
 	int catched = 0; \
@@ -858,14 +858,14 @@ static int xc_stat(const char *filename, const char *include_path, struct stat *
 
 	/* fall back to current directory */
 	if (zend_is_executing(TSRMLS_C)) {
-		char *path = zend_get_executed_filename(TSRMLS_C);
-		if (path && path[0] != '[') {
-			int len = strlen(path);
-			while ((--len >= 0) && !IS_SLASH(path[len])) {
+		const char *executed_filename = zend_get_executed_filename(TSRMLS_C);
+		if (executed_filename && executed_filename[0] != '[') {
+			int len = strlen(executed_filename);
+			while ((--len >= 0) && !IS_SLASH(executed_filename[len])) {
 				/* skipped */
 			}
 			if (len > 0 && len + strlen(filename) + 1 < MAXPATHLEN - 1) {
-				strcpy(filepath, path);
+				strcpy(filepath, executed_filename);
 				strcpy(filepath + len + 1, filename);
 				if (VCWD_STAT(filepath, pbuf) == 0) {
 					ret = SUCCESS;
@@ -885,10 +885,10 @@ finish:
 /* }}} */
 
 #define HASH(i) (i)
-#define HASH_ZSTR_L(t, s, l) HASH(zend_u_inline_hash_func(t, s, (l + 1) * sizeof(UChar)))
-#define HASH_STR_S(s, l) HASH(zend_inline_hash_func(s, l))
-#define HASH_STR_L(s, l) HASH_STR_S(s, l + 1)
-#define HASH_STR(s) HASH_STR_L(s, strlen(s) + 1)
+#define HASH_ZSTR_L(t, s, l) HASH(zend_u_inline_hash_func((t), (s), ((l) + 1) * sizeof(UChar)))
+#define HASH_STR_S(s, l) HASH(zend_inline_hash_func((s), (l)))
+#define HASH_STR_L(s, l) HASH_STR_S((s), (l) + 1)
+#define HASH_STR(s) HASH_STR_L((s), strlen((s)) + 1)
 #define HASH_NUM(n) HASH(n)
 static inline xc_hash_value_t xc_hash_fold(xc_hash_value_t hvalue, const xc_hash_t *hasher) /* {{{ fold hash bits as needed */
 {
@@ -961,15 +961,10 @@ static void xc_entry_free_key_php(xc_entry_t *xce TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
-static int xc_entry_init_key_php(xc_entry_t *xce, char *filename TSRMLS_DC) /* {{{ */
+static int xc_entry_init_key_php(xc_entry_t *xce, const char *filename TSRMLS_DC) /* {{{ */
 {
 	char opened_path_buffer[MAXPATHLEN];
-	struct stat buf, *pbuf;
-	xc_hash_value_t hv;
 	int cacheid;
-	xc_entry_data_php_t *php;
-	char *ptr;
-	time_t delta;
 
 	if (!filename || !SG(request_info).path_translated) {
 		return FAILURE;
@@ -979,9 +974,9 @@ static int xc_entry_init_key_php(xc_entry_t *xce, char *filename TSRMLS_DC) /* {
 		return FAILURE;
 	}
 
-	php = xce->data.php;
-
 	if (XG(stat)) {
+		struct stat buf, *pbuf;
+
 		if (strcmp(SG(request_info).path_translated, filename) == 0) {
 			/* sapi has already done this stat() for us */
 			pbuf = sapi_get_stat(TSRMLS_C);
@@ -1001,7 +996,7 @@ static int xc_entry_init_key_php(xc_entry_t *xce, char *filename TSRMLS_DC) /* {
 
 		/* relative path */
 		if (*filename == '.' && (IS_SLASH(filename[1]) || filename[1] == '.')) {
-			ptr = filename + 1;
+			const char *ptr = filename + 1;
 			if (*ptr == '.') {
 				while (*(++ptr) == '.');
 				if (!IS_SLASH(*ptr)) {
@@ -1024,9 +1019,11 @@ not_relative_path:
 		/* fall */
 
 stat_done:
-		delta = XG(request_time) - pbuf->st_mtime;
-		if (abs(delta) < 2 && !xc_test) {
-			return FAILURE;
+		{
+			time_t delta = XG(request_time) - pbuf->st_mtime;
+			if (abs(delta) < 2 && !xc_test) {
+				return FAILURE;
+			}
 		}
 
 		xce->mtime        = pbuf->st_mtime;
@@ -1034,7 +1031,7 @@ stat_done:
 		xce->device       = pbuf->st_dev;
 		xce->inode        = pbuf->st_ino;
 #endif
-		php->sourcesize   = pbuf->st_size;
+		xce->data.php->sourcesize = pbuf->st_size;
 	}
 	else { /* XG(inode) */
 		xce->mtime        = 0;
@@ -1042,7 +1039,7 @@ stat_done:
 		xce->device       = 0;
 		xce->inode        = 0;
 #endif
-		php->sourcesize   = 0;
+		xce->data.php->sourcesize = 0;
 	}
 
 #ifdef HAVE_INODE
@@ -1058,23 +1055,13 @@ stat_done:
 	}
 
 	UNISW(NOTHING, xce->name_type = IS_STRING;)
-	xce->name.str.val = filename;
+	xce->name.str.val = (char *) filename;
 	xce->name.str.len = strlen(filename);
 
-	if (xc_php_hcache.size > 1) {
-		hv = xc_entry_hash_php_basename(xce TSRMLS_CC);
-		cacheid = xc_hash_fold(hv, &xc_php_hcache);
-	}
-	else {
-		cacheid = 0;
-	}
+	cacheid = xc_php_hcache.size > 1 ? xc_hash_fold(xc_entry_hash_php_basename(xce TSRMLS_CC), &xc_php_hcache) : 0;
 	xce->cache = xc_php_caches[cacheid];
-
-	hv = xc_entry_hash_php(xce TSRMLS_CC);
-	xce->hvalue = xc_hash_fold(hv, &xc_php_hentry);
-
+	xce->hvalue = xc_hash_fold(xc_entry_hash_php(xce TSRMLS_CC), &xc_php_hentry);
 	xce->type = XC_TYPE_PHP;
-
 	xce->filepath  = NULL;
 	xce->dirpath   = NULL;
 #ifdef IS_UNICODE
@@ -1087,7 +1074,7 @@ stat_done:
 /* }}} */
 static inline xc_hash_value_t xc_php_hash_md5(xc_entry_data_php_t *php TSRMLS_DC) /* {{{ */
 {
-	return HASH_STR_S(&php->md5, sizeof(php->md5));
+	return HASH_STR_S(php->md5.digest, sizeof(php->md5));
 }
 /* }}} */
 static int xc_entry_init_key_php_md5(xc_entry_data_php_t *php, xc_entry_t *xce TSRMLS_DC) /* {{{ */
@@ -1096,7 +1083,6 @@ static int xc_entry_init_key_php_md5(xc_entry_data_php_t *php, xc_entry_t *xce T
 	PHP_MD5_CTX     context;
 	int             n;
 	php_stream     *stream;
-	xc_hash_value_t hv;
 	ulong           old_rsid = EG(regular_list).nNextFreeElement;
 
 	stream = php_stream_open_wrapper(xce->name.str.val, "rb", USE_PATH | REPORT_ERRORS | ENFORCE_SAFE_MODE | STREAM_DISABLE_OPEN_BASEDIR, NULL);
@@ -1119,9 +1105,8 @@ static int xc_entry_init_key_php_md5(xc_entry_data_php_t *php, xc_entry_t *xce T
 		return FAILURE;
 	}
 
-	hv = xc_php_hash_md5(php TSRMLS_CC);
 	php->cache  = xce->cache;
-	php->hvalue = (hv & php->cache->hphp->mask);
+	php->hvalue = (xc_php_hash_md5(php TSRMLS_CC) & php->cache->hphp->mask);
 #ifdef XCACHE_DEBUG
 	{
 		char md5str[33];
@@ -1133,7 +1118,7 @@ static int xc_entry_init_key_php_md5(xc_entry_data_php_t *php, xc_entry_t *xce T
 	return SUCCESS;
 }
 /* }}} */
-static void xc_entry_init_key_php_entry(xc_entry_t *xce, char *filepath TSRMLS_DC) /* {{{*/
+static void xc_entry_init_key_php_entry(xc_entry_t *xce, ZEND_24(const) char *filepath TSRMLS_DC) /* {{{*/
 {
 	xce->filepath     = filepath;
 	xce->filepath_len = strlen(xce->filepath);
@@ -1517,7 +1502,7 @@ static zend_op_array *xc_compile_php(xc_entry_t *xce, xc_entry_data_php_t *php, 
 
 	/* }}} */
 	/* {{{ prepare */
-	zend_restore_compiled_filename(h->opened_path ? h->opened_path : h->filename TSRMLS_CC);
+	zend_restore_compiled_filename(h->opened_path ? h->opened_path : (char *) h->filename TSRMLS_CC);
 	php->op_array      = op_array;
 
 #ifdef HAVE_XCACHE_CONSTANT
@@ -1889,9 +1874,9 @@ static zend_op_array *xc_compile_file_ex(xc_entry_t *xce, zend_file_handle *h, i
 	 * WARNING: this code is required to be after compile
 	 */
 	if (xce->inode) {
-		char *filename = h->opened_path ? h->opened_path : h->filename;
+		const char *filename = h->opened_path ? h->opened_path : h->filename;
 		if (xce->name.str.val != filename) {
-			xce->name.str.val = filename;
+			xce->name.str.val = (char *) filename;
 			xce->name.str.len = strlen(filename);
 		}
 	}
@@ -1978,7 +1963,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	zend_op_array *op_array;
 	xc_entry_t xce;
 	xc_entry_data_php_t php;
-	char *filename;
+	const char *filename;
 
 	assert(xc_initized);
 

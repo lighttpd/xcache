@@ -481,7 +481,7 @@ static int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, 
 #endif
 
 #ifdef HAVE_XCACHE_CONSTANT
-void xc_install_constant(char *filename, zend_constant *constant, zend_uchar type, zstr key, uint len, ulong h TSRMLS_DC) /* {{{ */
+void xc_install_constant(ZEND_24(const) char *filename, zend_constant *constant, zend_uchar type, const24_zstr key, uint len, ulong h TSRMLS_DC) /* {{{ */
 {
 	if (zend_u_hash_add(EG(zend_constants), type, key, len,
 				constant, sizeof(zend_constant),
@@ -501,7 +501,7 @@ void xc_install_constant(char *filename, zend_constant *constant, zend_uchar typ
 }
 /* }}} */
 #endif
-void xc_install_function(char *filename, zend_function *func, zend_uchar type, zstr key, uint len, ulong h TSRMLS_DC) /* {{{ */
+void xc_install_function(ZEND_24(const) char *filename, zend_function *func, zend_uchar type, const24_zstr key, uint len, ulong h TSRMLS_DC) /* {{{ */
 {
 	zend_bool istmpkey;
 
@@ -531,7 +531,7 @@ void xc_install_function(char *filename, zend_function *func, zend_uchar type, z
 	}
 }
 /* }}} */
-ZESW(xc_cest_t *, void) xc_install_class(char *filename, xc_cest_t *cest, int oplineno, zend_uchar type, zstr key, uint len, ulong h TSRMLS_DC) /* {{{ */
+ZESW(xc_cest_t *, void) xc_install_class(ZEND_24(const) char *filename, xc_cest_t *cest, int oplineno, zend_uchar type, const24_zstr key, uint len, ulong h TSRMLS_DC) /* {{{ */
 {
 	zend_bool istmpkey;
 	zend_class_entry *cep = CestToCePtr(*cest);
@@ -629,7 +629,7 @@ static void xc_sandbox_error_cb(int type, const char *error_filename, const uint
 /* }}} */
 #endif
 #ifdef ZEND_ENGINE_2_1
-static zend_bool xc_auto_global_callback(char *name, uint name_len TSRMLS_DC) /* {{{ */
+static zend_bool xc_auto_global_callback(ZEND_24(const) char *name, uint name_len TSRMLS_DC) /* {{{ */
 {
 	return 0;
 }
@@ -709,7 +709,7 @@ void xc_copy_internal_zend_constants(HashTable *target, HashTable *source) /* {{
 }
 /* }}} */
 #endif
-xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, char *filename TSRMLS_DC) /* {{{ */
+xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, ZEND_24(const) char *filename TSRMLS_DC) /* {{{ */
 {
 	HashTable *h;
 
