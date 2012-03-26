@@ -410,6 +410,8 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	dnl runtime binding: ADD_TRAIT will deal with it
 	COPYNULL(traits)
 	COPYZERO(num_traits)
+	STRUCT_ARRAY(, zend_trait_alias_ptr, trait_aliases)
+	STRUCT_ARRAY(, zend_trait_precedence_ptr, trait_precedences)
 #	endif
 #else
 	IFRESTORE(`
@@ -425,8 +427,6 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	')
 	PROCESS(zend_uint, num_interfaces)
 #endif
-	STRUCT_ARRAY(, zend_trait_alias_ptr, trait_aliases)
-	STRUCT_ARRAY(, zend_trait_precedence_ptr, trait_precedences)
 
 #	ifdef ZEND_ENGINE_2_4
 	DISABLECHECK(`

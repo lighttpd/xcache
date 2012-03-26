@@ -41,6 +41,11 @@
 #else
 #	define ZESW(v1, v2) v2
 #endif
+#ifdef ZEND_ENGINE_2_4
+#	define ZEND_24(x) x
+#else
+#	define ZEND_24(x)
+#endif
 
 #ifdef do_alloca_with_limit
 #	define my_do_alloca(size, use_heap) do_alloca_with_limit(size, use_heap)
@@ -149,6 +154,14 @@ typedef znode znode_op;
 #ifndef IS_UNICODE
 typedef char *zstr;
 typedef const char *const_zstr;
+#ifdef ZEND_ENGINE_2_4
+typedef const char *const24_zstr;
+typedef const char *const24_str;
+#else
+typedef char *const24_zstr;
+typedef char *const24_str;
+#endif
+
 #	define ZSTR_S(s)     (s)
 #	define ZSTR_U(s)     (s)
 #	define ZSTR_V(s)     (s)
@@ -291,16 +304,16 @@ typedef struct {
 /* {{{ xc_classinfo_t */
 typedef struct {
 #ifdef IS_UNICODE
-	zend_uchar type;
+	zend_uchar   type;
 #endif
-	zstr      key;
-	zend_uint key_size;
-	ulong     h;
-	zend_uint methodinfo_cnt;
+	const24_zstr key;
+	zend_uint    key_size;
+	ulong        h;
+	zend_uint  methodinfo_cnt;
 	xc_op_array_info_t *methodinfos;
-	xc_cest_t cest;
+	xc_cest_t    cest;
 #ifndef ZEND_COMPILE_DELAYED_BINDING
-	int       oplineno;
+	int          oplineno;
 #endif
 } xc_classinfo_t;
 /* }}} */
@@ -308,11 +321,11 @@ typedef struct {
 /* {{{ xc_constinfo_t */
 typedef struct {
 #ifdef IS_UNICODE
-	zend_uchar type;
+	zend_uchar    type;
 #endif
-	zstr      key;
-	zend_uint key_size;
-	ulong     h;
+	const24_zstr  key;
+	zend_uint     key_size;
+	ulong         h;
 	zend_constant constant;
 } xc_constinfo_t;
 /* }}} */
@@ -320,11 +333,11 @@ typedef struct {
 /* {{{ xc_funcinfo_t */
 typedef struct {
 #ifdef IS_UNICODE
-	zend_uchar type;
+	zend_uchar     type;
 #endif
-	zstr      key;
-	zend_uint key_size;
-	ulong     h;
+	const24_zstr   key;
+	zend_uint      key_size;
+	ulong          h;
 	xc_op_array_info_t op_array_info;
 	zend_function func;
 } xc_funcinfo_t;
@@ -333,11 +346,11 @@ typedef struct {
 /* {{{ xc_autoglobal_t */
 typedef struct {
 #ifdef IS_UNICODE
-	zend_uchar type;
+	zend_uchar   type;
 #endif
-	zstr       key;
-	zend_uint  key_len;
-	ulong      h;
+	const24_zstr key;
+	zend_uint    key_len;
+	ulong        h;
 } xc_autoglobal_t;
 /* }}} */
 #endif
@@ -437,7 +450,7 @@ struct _xc_entry_t {
 
 	/* php only */
 	int    filepath_len;
-	char  *filepath;
+	ZEND_24(const) char *filepath;
 	int    dirpath_len;
 	char  *dirpath;
 #ifdef IS_UNICODE
