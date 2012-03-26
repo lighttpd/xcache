@@ -104,7 +104,10 @@ static int op_array_convert_switch(zend_op_array *op_array) /* {{{ */
 				switch (brk_opline->opcode) {
 				case ZEND_SWITCH_FREE:
 				case ZEND_FREE:
-					if (!(brk_opline->extended_value & EXT_TYPE_FREE_ON_RETURN)) {
+#ifdef EXT_TYPE_FREE_ON_RETURN
+					if (!(brk_opline->extended_value & EXT_TYPE_FREE_ON_RETURN))
+#endif
+					{
 						can_convert = 0;
 					}
 					break;

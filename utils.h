@@ -134,8 +134,10 @@ void xc_copy_internal_zend_constants(HashTable *target, HashTable *source);
 #endif
 
 #ifndef ZEND_ENGINE_2_3
-size_t zend_dirname(char *path, size_t len);
-long zend_atol(const char *str, int len);
+size_t xc_dirname(char *path, size_t len);
+#define zend_dirname xc_dirname
+long xc_atol(const char *str, int len);
+#define zend_atol xc_atol
 #endif
 
 typedef struct {
