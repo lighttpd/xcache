@@ -969,14 +969,19 @@ int xc_trace(const char *fmt, ...) /* {{{ */
 /* }}} */
 
 #ifndef ZEND_ENGINE_2_3
-size_t zend_dirname(char *path, size_t len) /* {{{ */
+#include "ext/standard/php_string.h"
+size_t xc_dirname(char *path, size_t len) /* {{{ */
 {
+#ifdef ZEND_ENGINE_2
+	return php_dirname(path, len);
+#else
 	php_dirname(path, len);
 	return strlen(path);
+#endif
 }
 /* }}} */
 
-long zend_atol(const char *str, int str_len) /* {{{ */
+long xc_atol(const char *str, int str_len) /* {{{ */
 {
 	long retval;
 

@@ -3711,7 +3711,7 @@ static ZEND_MODULE_POST_ZEND_DEACTIVATE_D(xcache)
 /* }}} */
 /* {{{ module dependencies */
 #if ZEND_MODULE_API_NO >= 20050922
-static const zend_module_dep xcache_module_deps[] = {
+static zend_module_dep xcache_module_deps[] = {
 	ZEND_MOD_REQUIRED("standard")
 	ZEND_MOD_CONFLICTS("apc")
 	ZEND_MOD_CONFLICTS("eAccelerator")
