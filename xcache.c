@@ -145,7 +145,7 @@ static xc_entry_data_php_t *xc_php_find_dmz(xc_entry_data_php_t *php TSRMLS_DC) 
 {
 	xc_entry_data_php_t *p;
 	for (p = php->cache->phps[php->hvalue]; p; p = p->next) {
-		if (memcmp(&php->md5, &p->md5, sizeof(php->md5)) == 0) {
+		if (memcmp(&php->md5.digest, &p->md5.digest, sizeof(php->md5.digest)) == 0) {
 			p->hits ++;
 			return p;
 		}
@@ -169,7 +169,7 @@ static void xc_php_release_dmz(xc_entry_data_php_t *php) /* {{{ */
 		xc_entry_data_php_t **pp = &(php->cache->phps[php->hvalue]);
 		xc_entry_data_php_t *p;
 		for (p = *pp; p; pp = &(p->next), p = p->next) {
-			if (memcmp(&php->md5, &p->md5, sizeof(php->md5)) == 0) {
+			if (memcmp(&php->md5.digest, &p->md5.digest, sizeof(php->md5.digest)) == 0) {
 				/* unlink */
 				*pp = p->next;
 				xc_php_free_dmz(php);
@@ -1074,7 +1074,7 @@ stat_done:
 /* }}} */
 static inline xc_hash_value_t xc_php_hash_md5(xc_entry_data_php_t *php TSRMLS_DC) /* {{{ */
 {
-	return HASH_STR_S(php->md5.digest, sizeof(php->md5));
+	return HASH_STR_S(php->md5.digest, sizeof(php->md5.digest));
 }
 /* }}} */
 static int xc_entry_init_key_php_md5(xc_entry_data_php_t *php, xc_entry_t *xce TSRMLS_DC) /* {{{ */
@@ -1110,7 +1110,7 @@ static int xc_entry_init_key_php_md5(xc_entry_data_php_t *php, xc_entry_t *xce T
 #ifdef XCACHE_DEBUG
 	{
 		char md5str[33];
-		make_digest(md5str, (unsigned char *) php->md5);
+		make_digest(md5str, (unsigned char *) php->md5.digest);
 		TRACE("md5 %s", md5str);
 	}
 #endif
