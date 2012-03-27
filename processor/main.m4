@@ -252,6 +252,7 @@ EXPORT(`zend_class_entry')
 EXPORT(`xc_classinfo_t')
 EXPORT(`xc_funcinfo_t')
 EXPORT(`xc_entry_t')
+EXPORT(`xc_entry_php_t')
 EXPORT(`xc_entry_data_php_t')
 EXPORT(`zval')
 

@@ -261,8 +261,8 @@ typedef struct {
 	zend_ulong ooms;
 	zend_ulong errors;
 	xc_lock_t  *lck;
-	xc_shm_t   *shm; /* to which shm contains us */
-	xc_mem_t   *mem; /* to which mem contains us */
+	xc_shm_t   *shm; /* which shm contains us */
+	xc_mem_t   *mem; /* which mem contains us */
 
 	xc_entry_t **entries;
 	int entries_count;
@@ -368,14 +368,14 @@ typedef struct {
 /* }}} */
 /* {{{ xc_entry_data_php_t */
 struct _xc_entry_data_php_t {
-	xc_hash_value_t hvalue; /* hash of md5 */
+	xc_hash_value_t      hvalue;
 	xc_entry_data_php_t *next;
-	xc_cache_t *cache;      /* which cache it's on */
+	xc_cache_t          *cache;
 
 	xc_md5sum_t md5;        /* md5sum of the source */
 	zend_ulong  refcount;   /* count of entries referencing to this data */
 
-	size_t sourcesize;
+	size_t     file_size;
 	zend_ulong hits;        /* hits of this php */
 	size_t     size;
 
@@ -419,18 +419,18 @@ typedef struct {
 typedef zvalue_value xc_entry_name_t;
 /* {{{ xc_entry_t */
 struct _xc_entry_t {
-	xc_entry_type_t type;
 	xc_hash_value_t hvalue;
-	xc_entry_t *next;
-	xc_cache_t *cache;      /* which cache it's on */
+	xc_entry_t     *next;
+	xc_cache_t     *cache;
 
-	size_t     size;
-	zend_ulong refcount;    /* count of instances holding this entry */
+	xc_entry_type_t type;
+	size_t          size;
+
+	time_t     ctime;           /* creation ctime of this entry */
+	time_t     atime;           /*   access atime of this entry */
+	time_t     dtime;           /*  deletion time of this entry */
 	zend_ulong hits;
-	time_t     ctime;           /* the ctime of this entry */
-	time_t     atime;           /* the atime of this entry */
-	time_t     dtime;           /* the deletion time of this entry */
-	long       ttl;             /* ttl of time entry, var only */
+	long       ttl;
 
 #ifdef IS_UNICODE
 	zend_uchar name_type;
@@ -439,28 +439,31 @@ struct _xc_entry_t {
 
 	union {
 		xc_entry_data_php_t *php;
-		xc_entry_data_var_t *var;
+		xc_entry_data_var_t var;
 	} data;
+};
 
-	time_t mtime;           /* the mtime of origin source file */
+typedef struct {
+	xc_entry_t entry;
+
+	zend_ulong refcount;    /* count of php instances holding this entry */
+	time_t file_mtime;
 #ifdef HAVE_INODE
-	int device;             /* the filesystem device */
-	int inode;              /* the filesystem inode */
+	int file_device;
+	int file_inode;
 #endif
 
-	/* php only */
 	int    filepath_len;
 	ZEND_24(const) char *filepath;
 	int    dirpath_len;
 	char  *dirpath;
 #ifdef IS_UNICODE
-	UChar *ufilepath;
 	int    ufilepath_len;
-	UChar *udirpath;
+	UChar *ufilepath;
 	int    udirpath_len;
+	UChar *udirpath;
 #endif
-
-};
+} xc_entry_php_t;
 /* }}} */
 
 extern zend_module_entry xcache_module_entry;
@@ -479,6 +482,6 @@ typedef struct {
 } xc_gc_op_array_t;
 /* }}} */
 void xc_gc_add_op_array(xc_gc_op_array_t *gc_op_array TSRMLS_DC);
-void xc_fix_op_array_info(const xc_entry_t *xce, const xc_entry_data_php_t *php, zend_op_array *op_array, int shallow_copy, const xc_op_array_info_t *op_array_info TSRMLS_DC);
+void xc_fix_op_array_info(const xc_entry_php_t *xce, const xc_entry_data_php_t *php, zend_op_array *op_array, int shallow_copy, const xc_op_array_info_t *op_array_info TSRMLS_DC);
 
 #endif /* __XCACHE_H */

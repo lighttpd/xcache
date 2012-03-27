@@ -430,7 +430,7 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 
 #	ifdef ZEND_ENGINE_2_4
 	DISABLECHECK(`
-	IFRESTORE(`dst->info.user.filename = processor->entry_src->filepath;', `PROC_STRING(info.user.filename)')
+	IFRESTORE(`dst->info.user.filename = processor->entry_php_src->filepath;', `PROC_STRING(info.user.filename)')
 	PROCESS(zend_uint, info.user.line_start)
 	PROCESS(zend_uint, info.user.line_end)
 	PROCESS(zend_uint, info.user.doc_comment_len)
@@ -438,7 +438,7 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	')
 	DONE(info)
 #	else
-	IFRESTORE(`dst->filename = processor->entry_src->filepath;DONE(filename)', `PROC_STRING(filename)')
+	IFRESTORE(`dst->filename = processor->entry_php_src->filepath;DONE(filename)', `PROC_STRING(filename)')
 	PROCESS(zend_uint, line_start)
 	PROCESS(zend_uint, line_end)
 #		ifdef ZEND_ENGINE_2_1
@@ -708,7 +708,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		STRUCT_ARRAY(num_args, zend_arg_info, arg_info)
 		gc_arg_info = 1;
 #endif
-		dst->filename = processor->entry_src->filepath;
+		dst->filename = processor->entry_php_src->filepath;
 #ifdef ZEND_ENGINE_2_4
 		if (src->literals /* || op_array_info->literalsinfo_cnt */) {
 			gc_opcodes = 1;
@@ -885,7 +885,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	PROCESS(zend_bool, uses_this)
 #endif
 
-	IFRESTORE(`dst->filename = processor->entry_src->filepath;DONE(filename)', `PROC_STRING(filename)')
+	IFRESTORE(`dst->filename = processor->entry_php_src->filepath;DONE(filename)', `PROC_STRING(filename)')
 #ifdef IS_UNICODE
 	IFRESTORE(`
 		COPY(script_encoding)
@@ -913,7 +913,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	PROCESS(int, last_cache_slot)
 #endif
 	} while (0);
-	IFRESTORE(`xc_fix_op_array_info(processor->entry_src, processor->php_src, dst, shallow_copy, op_array_info TSRMLS_CC);')
+	IFRESTORE(`xc_fix_op_array_info(processor->entry_php_src, processor->php_src, dst, shallow_copy, op_array_info TSRMLS_CC);')
 
 #ifdef ZEND_ENGINE_2
 	dnl mark it as -1 on store, and lookup parent on restore
@@ -1073,7 +1073,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 	PROCESS(xc_md5sum_t, md5)
 	PROCESS(zend_ulong, refcount)
 
-	PROCESS(size_t, sourcesize)
+	PROCESS(size_t, file_size)
 	PROCESS(zend_ulong, hits)
 	PROCESS(size_t, size)
 
@@ -1126,15 +1126,12 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_var_t', , `dnl {{{
 ')
 dnl }}}
 DEF_STRUCT_P_FUNC(`xc_entry_t', , `dnl {{{
-	PROCESS(xc_entry_type_t, type)
-	PROCESS(size_t, size)
-
 	PROCESS(xc_hash_value_t, hvalue)
-	COPY(cache)
 	/* skip */
 	DONE(next)
-
-	IFSTORE(`dst->refcount = 0; DONE(refcount)', `PROCESS(long, refcount)')
+	COPY(cache)
+	PROCESS(xc_entry_type_t, type)
+	PROCESS(size_t, size)
 
 	PROCESS(time_t, ctime)
 	PROCESS(time_t, atime)
@@ -1175,7 +1172,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_t', , `dnl {{{
 			break;
 
 		case XC_TYPE_VAR:
-			STRUCT_P(xc_entry_data_var_t, data.var)
+			STRUCT(xc_entry_data_var_t, data.var)
 			break;
 
 		default:
@@ -1184,13 +1181,19 @@ DEF_STRUCT_P_FUNC(`xc_entry_t', , `dnl {{{
 	')
 	DONE(data)
 	dnl }}}
-	PROCESS(time_t, mtime)
+')
+dnl }}}
+DEF_STRUCT_P_FUNC(`xc_entry_php_t', , `dnl {{{
+	STRUCT(xc_entry_t, entry)
+
+	IFSTORE(`dst->refcount = 0; DONE(refcount)', `PROCESS(long, refcount)')
+	PROCESS(time_t, file_mtime)
 #ifdef HAVE_INODE
-	PROCESS(int, device)
-	PROCESS(int, inode)
+	PROCESS(int, file_device)
+	PROCESS(int, file_inode)
 #endif
 
-	if (src->type == XC_TYPE_PHP) {
+	if (src->entry.type == XC_TYPE_PHP) {
 		PROCESS(int, filepath_len)
 		IFRESTORE(`COPY(filepath)', `PROC_STRING_L(filepath, filepath_len)')
 		PROCESS(int, dirpath_len)

@@ -211,7 +211,7 @@ if ($cachelist) {
 			$refcount = number_format($entry['refcount']);
 			$size     = size($entry['size']);
 			if ($isphp) {
-				$sourcesize  = size($entry['sourcesize']);
+				$file_size   = size($entry['file_size']);
 				$phprefcount = number_format($entry['phprefcount']);
 			}
 
@@ -245,13 +245,13 @@ ENTRY;
 			if ($isphp) {
 				echo <<<ENTRY
 				<td int="{$entry['phprefcount']}">{$phprefcount}</td>
-				<td int="{$entry['sourcesize']}">{$sourcesize}</td>
+				<td int="{$entry['file_size']}">{$file_size}</td>
 				<td int="{$entry['mtime']}">{$mtime}</td>
 ENTRY;
-				if (isset($entry['inode'])) {
+				if (isset($entry['file_inode'])) {
 					echo <<<ENTRY
-					<td int="{$entry['device']}">{$entry['device']}</td>
-					<td int="{$entry['inode']}">{$entry['inode']}</td>
+					<td int="{$entry['file_device']}">{$entry['file_device']}</td>
+					<td int="{$entry['file_inode']}">{$entry['file_inode']}</td>
 ENTRY;
 				}
 			}
