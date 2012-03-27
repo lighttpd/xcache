@@ -81,8 +81,8 @@ struct _xc_processor_t {
 	HashTable zvalptrs;
 	zend_bool reference; /* enable if to deal with reference */
 	zend_bool have_references;
-	const xc_entry_t *entry_src;
-	const xc_entry_t *entry_dst;
+	const xc_entry_php_t *entry_php_src;
+	const xc_entry_php_t *entry_php_dst;
 	const xc_entry_data_php_t *php_src;
 	const xc_entry_data_php_t *php_dst;
 	const xc_cache_t          *cache;
@@ -395,7 +395,7 @@ $1 *xc_processor_store_$1($1 *src TSRMLS_DC) {
 
 	memset(&processor, 0, sizeof(processor));
 	processor.reference = 1;
-	processor.cache = src->cache;
+	processor.cache = src->ifelse(`$1', `xc_entry_php_t', entry.)cache;
 
 	IFASSERT(`xc_stack_init(&processor.allocsizes);')
 
@@ -415,12 +415,11 @@ $1 *xc_processor_store_$1($1 *src TSRMLS_DC) {
 		}
 		zend_hash_destroy(&processor.strings);
 	}
-	src->size = processor.size;
-	ifelse(`$1', `xc_entry_t', `
-		src->data.var->have_references = processor.have_references;
-	', `
-		src->have_references = processor.have_references;
-	')
+	src->ifelse(`$1', `xc_entry_php_t', entry.)size = processor.size;
+	ifelse(
+		`$1', `xc_entry_t', `src->data.var.have_references = processor.have_references;',
+		`$1', `xc_entry_data_php_t', `src->have_references = processor.have_references;'
+	)
 
 	IFASSERT(`xc_stack_reverse(&processor.allocsizes);')
 	/* store {{{ */
@@ -468,19 +467,20 @@ err_alloc:
 /* }}} */
 ')
 DEFINE_STORE_API(`xc_entry_t')
+DEFINE_STORE_API(`xc_entry_php_t')
 DEFINE_STORE_API(`xc_entry_data_php_t')
-/* export: xc_entry_t *xc_processor_restore_xc_entry_t(xc_entry_t *dst, const xc_entry_t *src TSRMLS_DC); :export {{{ */
-xc_entry_t *xc_processor_restore_xc_entry_t(xc_entry_t *dst, const xc_entry_t *src TSRMLS_DC) {
+/* export: xc_entry_php_t *xc_processor_restore_xc_entry_php_t(xc_entry_php_t *dst, const xc_entry_php_t *src TSRMLS_DC); :export {{{ */
+xc_entry_php_t *xc_processor_restore_xc_entry_php_t(xc_entry_php_t *dst, const xc_entry_php_t *src TSRMLS_DC) {
 	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
-	xc_restore_xc_entry_t(&processor, dst, src TSRMLS_CC);
+	xc_restore_xc_entry_php_t(&processor, dst, src TSRMLS_CC);
 
 	return dst;
 }
 /* }}} */
-/* export: xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_t *xce, xc_entry_data_php_t *dst, const xc_entry_data_php_t *src, zend_bool readonly_protection TSRMLS_DC); :export {{{ */
-xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_t *xce, xc_entry_data_php_t *dst, const xc_entry_data_php_t *src, zend_bool readonly_protection TSRMLS_DC) {
+/* export: xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_php_t *xce, xc_entry_data_php_t *dst, const xc_entry_data_php_t *src, zend_bool readonly_protection TSRMLS_DC); :export {{{ */
+xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_php_t *xce, xc_entry_data_php_t *dst, const xc_entry_data_php_t *src, zend_bool readonly_protection TSRMLS_DC) {
 	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
@@ -489,7 +489,7 @@ xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_t *
 	if (src->have_references) {
 		processor.reference = 1;
 	}
-	processor.entry_src = xce;
+	processor.entry_php_src = xce;
 
 	if (processor.reference) {
 		zend_hash_init(&processor.zvalptrs, 0, NULL, NULL, 0);
@@ -498,6 +498,16 @@ xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_t *
 	if (processor.reference) {
 		zend_hash_destroy(&processor.zvalptrs);
 	}
+	return dst;
+}
+/* }}} */
+/* export: xc_entry_t *xc_processor_restore_xc_entry_t(xc_entry_t *dst, const xc_entry_t *src TSRMLS_DC); :export {{{ */
+xc_entry_t *xc_processor_restore_xc_entry_t(xc_entry_t *dst, const xc_entry_t *src TSRMLS_DC) {
+	xc_processor_t processor;
+
+	memset(&processor, 0, sizeof(processor));
+	xc_restore_xc_entry_t(&processor, dst, src TSRMLS_CC);
+
 	return dst;
 }
 /* }}} */
@@ -521,9 +531,9 @@ zval *xc_processor_restore_zval(zval *dst, const zval *src, zend_bool have_refer
 	return dst;
 }
 /* }}} */
-/* export: void xc_dprint(xc_entry_t *src, int indent TSRMLS_DC); :export {{{ */
+/* export: void xc_dprint(xc_entry_php_t *src, int indent TSRMLS_DC); :export {{{ */
 #ifdef HAVE_XCACHE_DPRINT
-void xc_dprint(xc_entry_t *src, int indent TSRMLS_DC) {
+void xc_dprint(xc_entry_php_t *src, int indent TSRMLS_DC) {
 	IFDPRINT(`INDENT()`'fprintf(stderr, "xc_entry_t:src");')
 	xc_dprint_xc_entry_t(src, indent TSRMLS_CC);
 }
