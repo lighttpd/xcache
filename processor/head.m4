@@ -415,7 +415,9 @@ $1 *xc_processor_store_$1(xc_cache_t *cache, $1 *src TSRMLS_DC) {
 		}
 		zend_hash_destroy(&processor.strings);
 	}
-	src->ifelse(`$1', `xc_entry_php_t', entry.)size = processor.size;
+	src->ifelse(
+		`$1', `xc_entry_data_php_t', `',
+		`', `', entry.)size = processor.size;
 	ifelse(
 		`$1', `xc_entry_var_t', `src->have_references = processor.have_references;',
 		`$1', `xc_entry_data_php_t', `src->have_references = processor.have_references;'
@@ -466,7 +468,7 @@ err_alloc:
 }
 /* }}} */
 ')
-DEFINE_STORE_API(`xc_entry_t')
+DEFINE_STORE_API(`xc_entry_var_t')
 DEFINE_STORE_API(`xc_entry_php_t')
 DEFINE_STORE_API(`xc_entry_data_php_t')
 /* export: xc_entry_php_t *xc_processor_restore_xc_entry_php_t(xc_entry_php_t *dst, const xc_entry_php_t *src TSRMLS_DC); :export {{{ */
@@ -501,12 +503,12 @@ xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_php
 	return dst;
 }
 /* }}} */
-/* export: xc_entry_t *xc_processor_restore_xc_entry_t(xc_entry_t *dst, const xc_entry_t *src TSRMLS_DC); :export {{{ */
-xc_entry_t *xc_processor_restore_xc_entry_t(xc_entry_t *dst, const xc_entry_t *src TSRMLS_DC) {
+/* export: xc_entry_var_t *xc_processor_restore_xc_entry_var_t(xc_entry_var_t *dst, const xc_entry_var_t *src TSRMLS_DC); :export {{{ */
+xc_entry_var_t *xc_processor_restore_xc_entry_var_t(xc_entry_var_t *dst, const xc_entry_var_t *src TSRMLS_DC) {
 	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
-	xc_restore_xc_entry_t(&processor, dst, src TSRMLS_CC);
+	xc_restore_xc_entry_var_t(&processor, dst, src TSRMLS_CC);
 
 	return dst;
 }
@@ -534,8 +536,8 @@ zval *xc_processor_restore_zval(zval *dst, const zval *src, zend_bool have_refer
 /* export: void xc_dprint(xc_entry_php_t *src, int indent TSRMLS_DC); :export {{{ */
 #ifdef HAVE_XCACHE_DPRINT
 void xc_dprint(xc_entry_php_t *src, int indent TSRMLS_DC) {
-	IFDPRINT(`INDENT()`'fprintf(stderr, "xc_entry_t:src");')
-	xc_dprint_xc_entry_t(src, indent TSRMLS_CC);
+	IFDPRINT(`INDENT()`'fprintf(stderr, "xc_entry_php_t:src");')
+	xc_dprint_xc_entry_php_t(src, indent TSRMLS_CC);
 }
 #endif
 /* }}} */
