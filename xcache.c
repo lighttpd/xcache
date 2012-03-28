@@ -266,7 +266,7 @@ static xc_entry_t *xc_entry_store_dmz(xc_entry_type_t type, xc_cache_t *cache, x
 	xce->atime = XG(request_time);
 	stored_xce = type == XC_TYPE_PHP
 		? (xc_entry_t *) xc_processor_store_xc_entry_php_t(cache, (xc_entry_php_t *) xce TSRMLS_CC)
-		: xc_processor_store_xc_entry_t(cache, xce TSRMLS_CC);
+		: (xc_entry_t *) xc_processor_store_xc_entry_var_t(cache, (xc_entry_var_t *) xce TSRMLS_CC);
 	if (stored_xce) {
 		xc_entry_add_dmz(cache, entryslotid, stored_xce);
 		return stored_xce;
@@ -280,6 +280,11 @@ static xc_entry_t *xc_entry_store_dmz(xc_entry_type_t type, xc_cache_t *cache, x
 static xc_entry_php_t *xc_entry_php_store_dmz(xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_php_t *xce TSRMLS_DC) /* {{{ */
 {
 	return (xc_entry_php_t *) xc_entry_store_dmz(XC_TYPE_PHP, cache, entryslotid, (xc_entry_t *) xce TSRMLS_CC);
+}
+/* }}} */
+static xc_entry_var_t *xc_entry_var_store_dmz(xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_var_t *xce TSRMLS_DC) /* {{{ */
+{
+	return (xc_entry_var_t *) xc_entry_store_dmz(XC_TYPE_VAR, cache, entryslotid, (xc_entry_t *) xce TSRMLS_CC);
 }
 /* }}} */
 static void xc_entry_free_real_dmz(xc_entry_type_t type, xc_cache_t *cache, volatile xc_entry_t *xce) /* {{{ */
@@ -2753,7 +2758,7 @@ PHP_FUNCTION(xcache_set)
 			xc_entry_remove_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) stored_xce TSRMLS_CC);
 		}
 		xce.value = value;
-		RETVAL_BOOL(xc_entry_store_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &xce TSRMLS_CC) != NULL ? 1 : 0);
+		RETVAL_BOOL(xc_entry_var_store_dmz(cache, entry_hash.entryslotid, &xce TSRMLS_CC) != NULL ? 1 : 0);
 	} LEAVE_LOCK(cache);
 }
 /* }}} */
@@ -2943,7 +2948,7 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 			xce.entry.hits  = stored_xce->entry.hits;
 			xc_entry_remove_dmz(XC_TYPE_VAR, cache, entry_hash.cacheslotid, (xc_entry_t *) stored_xce TSRMLS_CC);
 		}
-		xc_entry_store_dmz(XC_TYPE_VAR, cache, entry_hash.cacheslotid, (xc_entry_t *) &xce TSRMLS_CC);
+		xc_entry_var_store_dmz(cache, entry_hash.cacheslotid, &xce TSRMLS_CC);
 
 	} LEAVE_LOCK(cache);
 }

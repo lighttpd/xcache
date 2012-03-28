@@ -9,7 +9,8 @@ DECL_STRUCT_P_FUNC(`zend_class_entry')
 DECL_STRUCT_P_FUNC(`zend_constant')
 #endif
 DECL_STRUCT_P_FUNC(`zend_function')
-DECL_STRUCT_P_FUNC(`xc_entry_t')
+DECL_STRUCT_P_FUNC(`xc_entry_var_t')
+DECL_STRUCT_P_FUNC(`xc_entry_php_t')
 #ifdef ZEND_ENGINE_2
 DECL_STRUCT_P_FUNC(`zend_property_info')
 #endif
