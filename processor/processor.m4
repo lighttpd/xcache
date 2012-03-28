@@ -1073,7 +1073,6 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 	PROCESS(xc_md5sum_t, md5)
 	PROCESS(zend_ulong, refcount)
 
-	PROCESS(size_t, file_size)
 	PROCESS(zend_ulong, hits)
 	PROCESS(size_t, size)
 
@@ -1161,6 +1160,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_php_t', , `dnl {{{
 
 	IFSTORE(`dst->refcount = 0; DONE(refcount)', `PROCESS(long, refcount)')
 	PROCESS(time_t, file_mtime)
+	PROCESS(size_t, file_size)
 #ifdef HAVE_INODE
 	PROCESS(int, file_device)
 	PROCESS(int, file_inode)
