@@ -337,11 +337,13 @@ static xc_entry_t *xc_entry_find_dmz(xc_entry_type_t type, xc_cache_t *cache, xc
 					xc_entry_php_t *p_php = (xc_entry_php_t *) p;
 					xc_entry_php_t *xce_php = (xc_entry_php_t *) xce;
 					fresh = p_php->file_mtime == xce_php->file_mtime && p_php->php->file_size == xce_php->php->file_size;
-					break;
 				}
+				break;
 
 			case XC_TYPE_VAR:
-				fresh = 1;
+				{
+					fresh = !VAR_ENTRY_EXPIRED(p);
+				}
 				break;
 
 			default:
@@ -2687,7 +2689,6 @@ PHP_FUNCTION(xcache_get)
 	xc_cache_t *cache;
 	xc_entry_var_t xce, *stored_xce;
 	zval *name;
-	int found = 0;
 
 	if (!xc_var_caches) {
 		VAR_DISABLED_WARNING();
@@ -2701,27 +2702,17 @@ PHP_FUNCTION(xcache_get)
 	cache = xc_var_caches[entry_hash.cacheslotid];
 
 	ENTER_LOCK(cache) {
-		stored_xce = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.cacheslotid, (xc_entry_t *) &xce TSRMLS_CC);
+		stored_xce = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &xce TSRMLS_CC);
 		if (stored_xce) {
-			if (!VAR_ENTRY_EXPIRED(&stored_xce->entry)) {
-				found = 1;
-				xc_processor_restore_zval(return_value, stored_xce->value, stored_xce->have_references TSRMLS_CC);
-				/* return */
-				break;
-			}
-			else {
-				xc_entry_remove_dmz(XC_TYPE_VAR, cache, entry_hash.cacheslotid, (xc_entry_t *) stored_xce TSRMLS_CC);
-			}
+			/* return */
+			xc_processor_restore_zval(return_value, stored_xce->value, stored_xce->have_references TSRMLS_CC);
+			xc_cache_hit_dmz(cache TSRMLS_CC);
 		}
-
-		RETVAL_NULL();
+		else {
+			RETVAL_NULL();
+			cache->misses ++;
+		}
 	} LEAVE_LOCK(cache);
-	if (found) {
-		xc_cache_hit_dmz(cache TSRMLS_CC);
-	}
-	else {
-		cache->misses ++;
-	}
 }
 /* }}} */
 /* {{{ proto bool  xcache_set(string name, mixed value [, int ttl])
@@ -2770,7 +2761,6 @@ PHP_FUNCTION(xcache_isset)
 	xc_cache_t *cache;
 	xc_entry_var_t xce, *stored_xce;
 	zval *name;
-	int found = 0;
 
 	if (!xc_var_caches) {
 		VAR_DISABLED_WARNING();
@@ -2786,25 +2776,15 @@ PHP_FUNCTION(xcache_isset)
 	ENTER_LOCK(cache) {
 		stored_xce = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &xce TSRMLS_CC);
 		if (stored_xce) {
-			if (!VAR_ENTRY_EXPIRED(&stored_xce->entry)) {
-				found = 1;
-				RETVAL_TRUE;
-				/* return */
-				break;
-			}
-			else {
-				xc_entry_remove_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) stored_xce TSRMLS_CC);
-			}
+			xc_cache_hit_dmz(cache TSRMLS_CC);
+			RETVAL_TRUE;
+			/* return */
+		}
+		else {
+			RETVAL_FALSE;
 		}
 
-		RETVAL_FALSE;
 	} LEAVE_LOCK(cache);
-	if (found) {
-		xc_cache_hit_dmz(cache TSRMLS_CC);
-	}
-	else {
-		cache->misses ++;
-	}
 }
 /* }}} */
 /* {{{ proto bool  xcache_unset(string name)
@@ -2901,38 +2881,29 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 	cache = xc_var_caches[entry_hash.cacheslotid];
 
 	ENTER_LOCK(cache) {
-		stored_xce = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.cacheslotid, (xc_entry_t *) &xce TSRMLS_CC);
+		stored_xce = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &xce TSRMLS_CC);
 		if (stored_xce) {
 			TRACE("incdec: gotxce %s", xce.entry.name.str.val);
-			/* timeout */
-			if (VAR_ENTRY_EXPIRED(&(stored_xce->entry))) {
-				TRACE("%s", "incdec: expired");
-				xc_entry_remove_dmz(XC_TYPE_VAR, cache, entry_hash.cacheslotid, (xc_entry_t *) stored_xce TSRMLS_CC);
-				stored_xce = NULL;
-			}
-			else {
-				/* do it in place */
-				if (Z_TYPE_P(stored_xce->value) == IS_LONG) {
-					zval *zv;
-					stored_xce->entry.ctime = XG(request_time);
-					stored_xce->entry.ttl   = xce.entry.ttl;
-					TRACE("%s", "incdec: islong");
-					value = Z_LVAL_P(stored_xce->value);
-					value += (inc == 1 ? count : - count);
-					RETVAL_LONG(value);
+			/* do it in place */
+			if (Z_TYPE_P(stored_xce->value) == IS_LONG) {
+				zval *zv;
+				stored_xce->entry.ctime = XG(request_time);
+				stored_xce->entry.ttl   = xce.entry.ttl;
+				TRACE("%s", "incdec: islong");
+				value = Z_LVAL_P(stored_xce->value);
+				value += (inc == 1 ? count : - count);
+				RETVAL_LONG(value);
 
-					zv = (zval *) cache->shm->handlers->to_readwrite(cache->shm, (char *) stored_xce->value);
-					Z_LVAL_P(zv) = value;
-					break; /* leave lock */
-				}
-				else {
-					TRACE("%s", "incdec: notlong");
-					xc_processor_restore_zval(&oldzval, stored_xce->value, stored_xce->have_references TSRMLS_CC);
-					convert_to_long(&oldzval);
-					value = Z_LVAL(oldzval);
-					zval_dtor(&oldzval);
-				}
+				zv = (zval *) cache->shm->handlers->to_readwrite(cache->shm, (char *) stored_xce->value);
+				Z_LVAL_P(zv) = value;
+				break; /* leave lock */
 			}
+
+			TRACE("%s", "incdec: notlong");
+			xc_processor_restore_zval(&oldzval, stored_xce->value, stored_xce->have_references TSRMLS_CC);
+			convert_to_long(&oldzval);
+			value = Z_LVAL(oldzval);
+			zval_dtor(&oldzval);
 		}
 		else {
 			TRACE("incdec: %s not found", xce.entry.name.str.val);
@@ -2940,7 +2911,7 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 
 		value += (inc == 1 ? count : - count);
 		RETVAL_LONG(value);
-		stored_xce->value = return_value;
+		xce.value = return_value;
 
 		if (stored_xce) {
 			xce.entry.atime = stored_xce->entry.atime;
