@@ -354,7 +354,6 @@ typedef struct {
 } xc_autoglobal_t;
 /* }}} */
 #endif
-typedef enum { XC_TYPE_PHP, XC_TYPE_VAR } xc_entry_type_t;
 typedef struct {
 	char digest[16];
 } xc_md5sum_t;
@@ -368,9 +367,8 @@ typedef struct {
 /* }}} */
 /* {{{ xc_entry_data_php_t */
 struct _xc_entry_data_php_t {
-	xc_hash_value_t      hvalue;
 	xc_entry_data_php_t *next;
-	xc_cache_t          *cache;
+	xc_hash_value_t      hvalue;
 
 	xc_md5sum_t md5;        /* md5sum of the source */
 	zend_ulong  refcount;   /* count of entries referencing to this data */
@@ -409,23 +407,12 @@ struct _xc_entry_data_php_t {
 	zend_bool  have_references;
 };
 /* }}} */
-/* {{{ xc_entry_data_var_t */
-typedef struct {
-	zval   *value;
-
-	zend_bool  have_references;
-} xc_entry_data_var_t;
-/* }}} */
 typedef zvalue_value xc_entry_name_t;
 /* {{{ xc_entry_t */
 struct _xc_entry_t {
-	xc_hash_value_t hvalue;
-	xc_entry_t     *next;
-	xc_cache_t     *cache;
+	xc_entry_t *next;
 
-	xc_entry_type_t type;
-	size_t          size;
-
+	size_t     size;
 	time_t     ctime;           /* creation ctime of this entry */
 	time_t     atime;           /*   access atime of this entry */
 	time_t     dtime;           /*  deletion time of this entry */
@@ -436,15 +423,11 @@ struct _xc_entry_t {
 	zend_uchar name_type;
 #endif
 	xc_entry_name_t name;
-
-	union {
-		xc_entry_data_php_t *php;
-		xc_entry_data_var_t var;
-	} data;
 };
 
 typedef struct {
 	xc_entry_t entry;
+	xc_entry_data_php_t *php;
 
 	zend_ulong refcount;    /* count of php instances holding this entry */
 	time_t file_mtime;
@@ -464,6 +447,17 @@ typedef struct {
 	UChar *udirpath;
 #endif
 } xc_entry_php_t;
+/* }}} */
+typedef struct {
+	xc_entry_t entry;
+	zval      *value;
+	zend_bool  have_references;
+} xc_entry_var_t;
+/* }}} */
+typedef struct xc_entry_hash_t { /* {{{ */
+	xc_hash_value_t cacheslotid;
+	xc_hash_value_t entryslotid;
+} xc_entry_hash_t;
 /* }}} */
 
 extern zend_module_entry xcache_module_entry;

@@ -1066,10 +1066,9 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 		processor->php_src = src;
 	')
 
-	PROCESS(xc_hash_value_t, hvalue)
 	/* skip */
 	DONE(next)
-	COPY(cache)
+	PROCESS(xc_hash_value_t, hvalue)
 	PROCESS(xc_md5sum_t, md5)
 	PROCESS(zend_ulong, refcount)
 
@@ -1118,19 +1117,9 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 	PROCESS(zend_bool, have_references)
 ')
 dnl }}}
-DEF_STRUCT_P_FUNC(`xc_entry_data_var_t', , `dnl {{{
-	IFDPRINT(`INDENT()`'fprintf(stderr, "zval:value");')
-	STRUCT_P_EX(zval_ptr, dst->value, src->value, `value', `', `&')
-	PROCESS(zend_bool, have_references)
-	DONE(value)
-')
-dnl }}}
 DEF_STRUCT_P_FUNC(`xc_entry_t', , `dnl {{{
-	PROCESS(xc_hash_value_t, hvalue)
 	/* skip */
 	DONE(next)
-	COPY(cache)
-	PROCESS(xc_entry_type_t, type)
 	PROCESS(size_t, size)
 
 	PROCESS(time_t, ctime)
@@ -1163,28 +1152,11 @@ DEF_STRUCT_P_FUNC(`xc_entry_t', , `dnl {{{
 	')
 	DONE(name)
 	dnl }}}
-
-	dnl {{{ data
-	DISABLECHECK(`
-		switch (src->type) {
-		case XC_TYPE_PHP:
-			IFCALCCOPY(`COPY(data.php)', `STRUCT_P(xc_entry_data_php_t, data.php)')
-			break;
-
-		case XC_TYPE_VAR:
-			STRUCT(xc_entry_data_var_t, data.var)
-			break;
-
-		default:
-			assert(0);
-		}
-	')
-	DONE(data)
-	dnl }}}
 ')
 dnl }}}
 DEF_STRUCT_P_FUNC(`xc_entry_php_t', , `dnl {{{
 	STRUCT(xc_entry_t, entry)
+	IFCALCCOPY(`COPY(php)', `STRUCT_P(xc_entry_data_php_t, php)')
 
 	IFSTORE(`dst->refcount = 0; DONE(refcount)', `PROCESS(long, refcount)')
 	PROCESS(time_t, file_mtime)
@@ -1193,30 +1165,25 @@ DEF_STRUCT_P_FUNC(`xc_entry_php_t', , `dnl {{{
 	PROCESS(int, file_inode)
 #endif
 
-	if (src->entry.type == XC_TYPE_PHP) {
-		PROCESS(int, filepath_len)
-		IFRESTORE(`COPY(filepath)', `PROC_STRING_L(filepath, filepath_len)')
-		PROCESS(int, dirpath_len)
-		IFRESTORE(`COPY(dirpath)', `PROC_STRING_L(dirpath, dirpath_len)')
+	PROCESS(int, filepath_len)
+	IFRESTORE(`COPY(filepath)', `PROC_STRING_L(filepath, filepath_len)')
+	PROCESS(int, dirpath_len)
+	IFRESTORE(`COPY(dirpath)', `PROC_STRING_L(dirpath, dirpath_len)')
 #ifdef IS_UNICODE
-		PROCESS(int, ufilepath_len)
-		IFRESTORE(`COPY(ufilepath)', `PROC_USTRING_L(ufilepath, ufilepath_len)')
-		PROCESS(int, udirpath_len)
-		IFRESTORE(`COPY(udirpath)', `PROC_USTRING_L(udirpath, udirpath_len)')
+	PROCESS(int, ufilepath_len)
+	IFRESTORE(`COPY(ufilepath)', `PROC_USTRING_L(ufilepath, ufilepath_len)')
+	PROCESS(int, udirpath_len)
+	IFRESTORE(`COPY(udirpath)', `PROC_USTRING_L(udirpath, udirpath_len)')
 #endif
-	}
-	else {
-		DONE(filepath_len)
-		DONE(filepath)
-		DONE(dirpath_len)
-		DONE(dirpath)
-#ifdef IS_UNICODE
-		DONE(ufilepath_len)
-		DONE(ufilepath)
-		DONE(udirpath_len)
-		DONE(udirpath)
-#endif
-	}
+')
+dnl }}}
+DEF_STRUCT_P_FUNC(`xc_entry_var_t', , `dnl {{{
+	STRUCT(xc_entry_t, entry)
+
+	IFDPRINT(`INDENT()`'fprintf(stderr, "zval:value");')
+	STRUCT_P_EX(zval_ptr, dst->value, src->value, `value', `', `&')
+	PROCESS(zend_bool, have_references)
+	DONE(value)
 ')
 dnl }}}
 dnl ====================================================
