@@ -447,7 +447,7 @@ typedef struct {
 	UChar *udirpath;
 #endif
 } xc_entry_php_t;
-/* }}} */
+
 typedef struct {
 	xc_entry_t entry;
 	zval      *value;
