@@ -904,7 +904,7 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, xc_install_action_t install TSRMLS_D
 
 	if (install != XC_NoInstall) {
 		CG(in_compilation)    = 1;
-		CG(compiled_filename) = ZEND_24((const char *)) sandbox->filename;
+		CG(compiled_filename) = ZEND_24((char *)) sandbox->filename;
 		CG(zend_lineno)       = 0;
 		xc_sandbox_install(sandbox, install TSRMLS_CC);
 		CG(in_compilation)    = 0;
