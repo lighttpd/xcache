@@ -388,14 +388,14 @@ static int xc_check_names(const char *file, int line, const char *functionName, 
 /* }}} */
 dnl ================ export API
 define(`DEFINE_STORE_API', `
-/* export: $1 *xc_processor_store_$1($1 *src TSRMLS_DC); :export {{{ */
-$1 *xc_processor_store_$1($1 *src TSRMLS_DC) {
+/* export: $1 *xc_processor_store_$1(xc_cache_t *cache, $1 *src TSRMLS_DC); :export {{{ */
+$1 *xc_processor_store_$1(xc_cache_t *cache, $1 *src TSRMLS_DC) {
 	$1 *dst;
 	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
 	processor.reference = 1;
-	processor.cache = src->ifelse(`$1', `xc_entry_php_t', entry.)cache;
+	processor.cache = cache;
 
 	IFASSERT(`xc_stack_init(&processor.allocsizes);')
 
@@ -417,7 +417,7 @@ $1 *xc_processor_store_$1($1 *src TSRMLS_DC) {
 	}
 	src->ifelse(`$1', `xc_entry_php_t', entry.)size = processor.size;
 	ifelse(
-		`$1', `xc_entry_t', `src->data.var.have_references = processor.have_references;',
+		`$1', `xc_entry_var_t', `src->have_references = processor.have_references;',
 		`$1', `xc_entry_data_php_t', `src->have_references = processor.have_references;'
 	)
 
