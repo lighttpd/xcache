@@ -373,7 +373,6 @@ struct _xc_entry_data_php_t {
 	xc_md5sum_t md5;        /* md5sum of the source */
 	zend_ulong  refcount;   /* count of entries referencing to this data */
 
-	size_t     file_size;
 	zend_ulong hits;        /* hits of this php */
 	size_t     size;
 
@@ -431,6 +430,7 @@ typedef struct {
 
 	zend_ulong refcount;    /* count of php instances holding this entry */
 	time_t file_mtime;
+	size_t file_size;
 #ifdef HAVE_INODE
 	int file_device;
 	int file_inode;
@@ -455,9 +455,19 @@ typedef struct {
 } xc_entry_var_t;
 /* }}} */
 typedef struct xc_entry_hash_t { /* {{{ */
-	xc_hash_value_t cacheslotid;
+	xc_hash_value_t cacheid;
 	xc_hash_value_t entryslotid;
 } xc_entry_hash_t;
+/* }}} */
+typedef struct xc_compiler_t { /* {{{ */
+	const char *filename;
+	const char *opened_path;
+	char opened_path_buffer[MAXPATHLEN];
+
+	xc_entry_hash_t entry_hash;
+	xc_entry_php_t new_entry;
+	xc_entry_data_php_t new_php;
+} xc_compiler_t;
 /* }}} */
 
 extern zend_module_entry xcache_module_entry;
