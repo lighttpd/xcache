@@ -1774,7 +1774,7 @@ static zend_op_array *xc_compile_restore(xc_entry_php_t *stored_xce, zend_file_h
 	}
 	CG(in_compilation)    = 0;
 	CG(compiled_filename) = NULL;
-	TRACE("restored  %s", stored_xce->name.str.val);
+	TRACE("restored  %s", stored_xce->entry.name.str.val);
 	return op_array;
 }
 /* }}} */
@@ -1808,12 +1808,12 @@ static zend_op_array *xc_compile_file_ex(xc_entry_hash_t *entry_hash, xc_entry_p
 		if (stored_xce) {
 			xc_cache_hit_dmz(cache TSRMLS_CC);
 
-			TRACE("hit %s, holding", stored_xce->name.str.val);
+			TRACE("hit %s, holding", stored_xce->entry.name.str.val);
 			xc_entry_hold_php_dmz(cache, stored_xce TSRMLS_CC);
 		}
 		else {
 			cache->misses ++;
-			TRACE("miss %s", xce->name.str.val);
+			TRACE("miss %s", xce->entry.name.str.val);
 
 			if (xc_entry_init_key_php_md5(cache, xce->php, xce TSRMLS_CC) != SUCCESS) {
 				gaveup = 1;
@@ -2903,7 +2903,7 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 	ENTER_LOCK(cache) {
 		stored_xce = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.cacheslotid, (xc_entry_t *) &xce TSRMLS_CC);
 		if (stored_xce) {
-			TRACE("incdec: gotxce %s", xce.name.str.val);
+			TRACE("incdec: gotxce %s", xce.entry.name.str.val);
 			/* timeout */
 			if (VAR_ENTRY_EXPIRED(&(stored_xce->entry))) {
 				TRACE("%s", "incdec: expired");
@@ -2935,7 +2935,7 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 			}
 		}
 		else {
-			TRACE("incdec: %s not found", xce.name.str.val);
+			TRACE("incdec: %s not found", xce.entry.name.str.val);
 		}
 
 		value += (inc == 1 ? count : - count);
