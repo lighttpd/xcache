@@ -19,11 +19,9 @@ else
 	php_cgi="`which php-cgi`"
 fi
 
-test -z "$PHP_SRC" && PHP_SRC=`getAbsolutePath ./php-src`
-
 TEST_PHP_EXECUTABLE="$php_cli"
 TEST_PHP_CGI_EXECUTABLE="$php_cgi"
-TEST_PHP_SRCDIR="$PHP_SRC"
+test -z "$TEST_PHP_SRCDIR" && TEST_PHP_SRCDIR=`getAbsolutePath ./php-src`
 
 export TEST_PHP_EXECUTABLE
 export TEST_PHP_CGI_EXECUTABLE
