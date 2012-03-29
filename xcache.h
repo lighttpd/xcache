@@ -42,9 +42,9 @@
 #	define ZESW(v1, v2) v2
 #endif
 #ifdef ZEND_ENGINE_2_4
-#	define ZEND_24(x) x
+#	define ZEND_24(pre24, v24) v24
 #else
-#	define ZEND_24(x)
+#	define ZEND_24(pre24, v24) pre24
 #endif
 
 #ifdef do_alloca_with_limit
@@ -190,22 +190,25 @@ typedef const zstr const_zstr;
 /* {{{ u hash wrapper */
 #ifndef IS_UNICODE
 #	define zend_u_hash_add(ht, type, arKey, nKeyLength, pData, nDataSize, pDest) \
- 	   zend_hash_add(ht, arKey, nKeyLength, pData, nDataSize, pDest)
+ 	   zend_hash_add(ht, ZEND_24((char *), NOTHING) arKey, nKeyLength, pData, nDataSize, pDest)
 
 #	define zend_u_hash_quick_add(ht, type, arKey, nKeyLength, h, pData, nDataSize, pDest) \
- 	   zend_hash_quick_add(ht, arKey, nKeyLength, h, pData, nDataSize, pDest)
+ 	   zend_hash_quick_add(ht, ZEND_24((char *), NOTHING) arKey, nKeyLength, h, pData, nDataSize, pDest)
 
 #	define zend_u_hash_update(ht, type, arKey, nKeyLength, pData, nDataSize, pDest) \
- 	   zend_hash_update(ht, arKey, nKeyLength, pData, nDataSize, pDest)
+ 	   zend_hash_update(ht, ZEND_24((char *), NOTHING) arKey, nKeyLength, pData, nDataSize, pDest)
 
 #	define zend_u_hash_quick_update(ht, type, arKey, nKeyLength, h, pData, nDataSize, pDest) \
- 	   zend_hash_quick_update(ht, arKey, nKeyLength, h, pData, nDataSize, pDest)
+ 	   zend_hash_quick_update(ht, ZEND_24((char *), NOTHING) arKey, nKeyLength, h, pData, nDataSize, pDest)
 
 #	define zend_u_hash_find(ht, type, arKey, nKeyLength, pData) \
- 	   zend_hash_find(ht, arKey, nKeyLength, pData)
+ 	   zend_hash_find(ht, ZEND_24((char *), NOTHING) arKey, nKeyLength, pData)
 
 #	define zend_u_hash_quick_find(ht, type, arKey, nKeyLength, h, pData) \
- 	   zend_hash_quick_find(ht, arKey, nKeyLength, h, pData)
+ 	   zend_hash_quick_find(ht, ZEND_24((char *), NOTHING) arKey, nKeyLength, h, pData)
+
+#	define zend_u_hash_exists(ht, type, arKey, nKeyLength) \
+ 	   zend_hash_exists(ht, ZEND_24((char *), NOTHING) arKey, nKeyLength)
 
 #	define add_u_assoc_zval_ex(arg, type, key, key_len, value) \
 		add_assoc_zval_ex(arg, key, key_len, value)
@@ -437,7 +440,7 @@ typedef struct {
 #endif
 
 	int    filepath_len;
-	ZEND_24(const) char *filepath;
+	ZEND_24(NOTHING, const) char *filepath;
 	int    dirpath_len;
 	char  *dirpath;
 #ifdef IS_UNICODE

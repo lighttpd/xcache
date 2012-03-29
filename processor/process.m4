@@ -14,7 +14,9 @@ define(`PROCESS_SCALAR', `dnl {{{ (1:elm, 2:format=%d, 3:type=)
 ')
 dnl }}}
 define(`PROCESS_xc_ztstring', `dnl {{{ (1:elm)
+	pushdef(`REALPTRTYPE', `zend_class_entry')
 	PROC_STRING(`$1')
+	popdef(`REALPTRTYPE')
 ')
 dnl }}}
 define(`PROCESS_zval_data_type', `dnl {{{ (1:elm)
@@ -73,7 +75,7 @@ define(`PROCESS', `dnl PROCESS(1:type, 2:elm)
 	, `', `', `m4_errprint(`AUTOCHECK ERROR: Unknown type "$1"')define(`EXIT_PENDING', 1)'
 	)
 ')
-define(`PROCESS_ARRAY', `dnl {{{ (1:count, 2:type, 3:elm, [4:force_type])
+define(`PROCESS_ARRAY', `dnl {{{ (1:count, 2:type, 3:elm, [4:real_type])
 	if (src->$3) {
 		int LOOPCOUNTER;
 		IFDASM(`
@@ -86,7 +88,7 @@ define(`PROCESS_ARRAY', `dnl {{{ (1:count, 2:type, 3:elm, [4:force_type])
 					`', `', `LOOPCOUNTER < SRC(`$1')');
 					++LOOPCOUNTER) {
 				pushdef(`dst', `arr')
-				pushdef(`SRC', defn(`SRC') `[LOOPCOUNTER]')
+				pushdef(`SRC', `ifelse(`$4', `', `', `', `', `($2)')' defn(`SRC') `[LOOPCOUNTER]')
 				popdef(`add_assoc_bool_ex', `add_next_index_bool($1, $3)')
 				popdef(`add_assoc_string_ex', `add_next_index_string($1, $3)')
 				popdef(`add_assoc_long_ex', `add_next_index_long($1, $3)')
@@ -124,7 +126,7 @@ define(`PROCESS_ARRAY', `dnl {{{ (1:count, 2:type, 3:elm, [4:force_type])
 					++LOOPCOUNTER) {
 				DISABLECHECK(`
 					pushdef(`DST', defn(`DST') `[LOOPCOUNTER]')
-					pushdef(`SRC', ((const char **) defn(`SRC'))`[LOOPCOUNTER]')
+					pushdef(`SRC', `ifelse(`$4', `', `', `', `', `($2)')' defn(`SRC') `[LOOPCOUNTER]')
 					PROCESS(`$2', `$3')
 					popdef(`SRC')
 					popdef(`DST')
