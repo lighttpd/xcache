@@ -198,50 +198,35 @@ static inline int xc_entry_equal_dmz(xc_entry_type_t type, const xc_entry_t *ent
 				}
 			}
 #endif
+			assert(IS_ABSOLUTE_PATH(entry1->name.str.val, entry1->name.str.len));
+			assert(IS_ABSOLUTE_PATH(entry2->name.str.val, entry2->name.str.len));
 
-#ifdef IS_UNICODE
-			if (entry1->name_type == IS_UNICODE) {
-				assert(IS_ABSOLUTE_PATH(entry1->name.ustr.val, entry1->name.ustr.len));
+			if (entry1->name.str.len != entry2->name.str.len) {
+				return 0;
 			}
-			else
-#endif
-			{
-				assert(IS_ABSOLUTE_PATH(entry1->name.str.val, entry1->name.str.len));
-			}
-
-#ifdef IS_UNICODE
-			if (entry2->name_type == IS_UNICODE) {
-				assert(IS_ABSOLUTE_PATH(entry2->name.ustr.val, entry2->name.ustr.len));
-			}
-			else
-#endif
-			{
-				assert(IS_ABSOLUTE_PATH(entry2->name.str.val, entry2->name.str.len));
-			}
-			/* fall */
+			return memcmp(entry1->name.str.val, entry2->name.str.val, entry1->name.str.len + 1) == 0;
 
 		case XC_TYPE_VAR:
-			do {
 #ifdef IS_UNICODE
-				if (entry1->name_type != entry2->name_type) {
+			if (entry1->name_type != entry2->name_type) {
+				return 0;
+			}
+			else if (entry1->name_type == IS_UNICODE) {
+				if (entry1->name.ustr.len != entry2->name.ustr.len) {
 					return 0;
 				}
-				else if (entry1->name_type == IS_UNICODE) {
-					if (entry1->name.ustr.len != entry2->name.ustr.len) {
-						return 0;
-					}
-					return memcmp(entry1->name.ustr.val, entry2->name.ustr.val, (entry1->name.ustr.len + 1) * sizeof(UChar)) == 0;
-				}
-				else
+				return memcmp(entry1->name.ustr.val, entry2->name.ustr.val, (entry1->name.ustr.len + 1) * sizeof(UChar)) == 0;
+			}
+			else
 #endif
-				{
-					if (entry1->name.str.len != entry2->name.str.len) {
-						return 0;
-					}
-					return memcmp(entry1->name.str.val, entry2->name.str.val, entry1->name.str.len + 1) == 0;
+			{
+				if (entry1->name.str.len != entry2->name.str.len) {
+					return 0;
 				}
+				return memcmp(entry1->name.str.val, entry2->name.str.val, entry1->name.str.len + 1) == 0;
+			}
+			break;
 
-			} while(0);
 		default:
 			assert(0);
 	}
@@ -447,7 +432,7 @@ static void xc_cache_hit_dmz(xc_cache_t *cache TSRMLS_DC) /* {{{ */
 /* }}} */
 
 /* helper function that loop through each entry */
-#define XC_ENTRY_APPLY_FUNC(name) int name(xc_entry_t *entry TSRMLS_DC)
+#define XC_ENTRY_APPLY_FUNC(name) zend_bool name(xc_entry_t *entry TSRMLS_DC)
 typedef XC_ENTRY_APPLY_FUNC((*cache_apply_dmz_func_t));
 static void xc_entry_apply_dmz(xc_entry_type_t type, xc_cache_t *cache, cache_apply_dmz_func_t apply_func TSRMLS_DC) /* {{{ */
 {
@@ -873,59 +858,10 @@ static void xc_entry_unholds(TSRMLS_D) /* {{{ */
 	}
 }
 /* }}} */
-static int xc_stat(const char *filename, const char *include_path, struct stat *pbuf TSRMLS_DC) /* {{{ */
-{
-	char filepath[MAXPATHLEN];
-	char *paths, *path;
-	char *tokbuf;
-	int size = strlen(include_path) + 1;
-	char tokens[] = { DEFAULT_DIR_SEPARATOR, '\0' };
-	int ret;
-	ALLOCA_FLAG(use_heap)
-
-	paths = (char *)my_do_alloca(size, use_heap);
-	memcpy(paths, include_path, size);
-
-	for (path = php_strtok_r(paths, tokens, &tokbuf); path; path = php_strtok_r(NULL, tokens, &tokbuf)) {
-		if (snprintf(filepath, sizeof(filepath), "%s/%s", path, filename) < MAXPATHLEN - 1) {
-			if (VCWD_STAT(filepath, pbuf) == 0) {
-				ret = SUCCESS;
-				goto finish;
-			}
-		}
-	}
-
-	/* fall back to current directory */
-	if (zend_is_executing(TSRMLS_C)) {
-		const char *executed_filename = zend_get_executed_filename(TSRMLS_C);
-		if (executed_filename && executed_filename[0] != '[') {
-			int len = strlen(executed_filename);
-			while ((--len >= 0) && !IS_SLASH(executed_filename[len])) {
-				/* skipped */
-			}
-			if (len > 0 && len + strlen(filename) + 1 < MAXPATHLEN - 1) {
-				strcpy(filepath, executed_filename);
-				strcpy(filepath + len + 1, filename);
-				if (VCWD_STAT(filepath, pbuf) == 0) {
-					ret = SUCCESS;
-					goto finish;
-				}
-			}
-		}
-	}
-
-	ret = FAILURE;
-
-finish:
-	my_free_alloca(paths, use_heap);
-
-	return ret;
-}
-/* }}} */
 
 #define HASH(i) (i)
 #define HASH_ZSTR_L(t, s, l) HASH(zend_u_inline_hash_func((t), (s), ((l) + 1) * sizeof(UChar)))
-#define HASH_STR_S(s, l) HASH(zend_inline_hash_func((s), (l)))
+#define HASH_STR_S(s, l) HASH(zend_inline_hash_func((char *) (s), (l)))
 #define HASH_STR_L(s, l) HASH_STR_S((s), (l) + 1)
 #define HASH_STR(s) HASH_STR_L((s), strlen((s)) + 1)
 #define HASH_NUM(n) HASH(n)
@@ -943,33 +879,6 @@ static inline xc_hash_value_t xc_entry_hash_name(xc_entry_t *entry TSRMLS_DC) /*
 {
 	return UNISW(NOTHING, UG(unicode) ? HASH_ZSTR_L(entry->name_type, entry->name.uni.val, entry->name.uni.len) :)
 		HASH_STR_L(entry->name.str.val, entry->name.str.len);
-}
-/* }}} */
-static inline xc_hash_value_t xc_entry_hash_php_basename(xc_entry_php_t *entry_php TSRMLS_DC) /* {{{ */
-{
-#ifdef IS_UNICODE
-	if (UG(unicode) && entry_php->entry.name_type == IS_UNICODE) {
-		zstr basename;
-		size_t basename_len;
-		php_u_basename(entry_php->entry.name.ustr.val, entry_php->entry.name.ustr.len, NULL, 0, &basename.u, &basename_len TSRMLS_CC);
-		return HASH_ZSTR_L(IS_UNICODE, basename, basename_len);
-	}
-	else
-#endif
-	{
-		char *basename;
-		xc_hash_value_t h;
-		size_t basename_len;
-#ifdef ZEND_ENGINE_2
-		php_basename(entry_php->entry.name.str.val, entry_php->entry.name.str.len, "", 0, &basename, &basename_len TSRMLS_CC);
-#else
-		basename = php_basename(entry_php->entry.name.str.val, entry_php->entry.name.str.len, "", 0);
-		basename_len = strlen(basename);
-#endif
-		h = HASH_STR_L(basename, basename_len);
-		efree(basename);
-		return h;
-	}
 }
 /* }}} */
 #define xc_entry_hash_var xc_entry_hash_name
@@ -990,6 +899,76 @@ static void xc_entry_free_key_php(xc_entry_php_t *entry_php TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
+#define XC_INCLUDE_PATH_XSTAT_FUNC(name) zend_bool name(const char *absolute_path, size_t absolute_path_len, void *data TSRMLS_DC)
+typedef XC_INCLUDE_PATH_XSTAT_FUNC((*include_path_xstat_fun_t));
+static zend_bool include_path_xstat(const char *filepath, char *opened_path_buffer, include_path_xstat_fun_t xstat_func, void *data TSRMLS_DC) /* {{{ */
+{
+	char *paths, *path;
+	char *tokbuf;
+	size_t absolute_path_len;
+	int size = strlen(PG(include_path)) + 1;
+	char tokens[] = { DEFAULT_DIR_SEPARATOR, '\0' };
+	int ret;
+	ALLOCA_FLAG(use_heap)
+
+	paths = (char *)my_do_alloca(size, use_heap);
+	memcpy(paths, PG(include_path), size);
+
+	for (path = php_strtok_r(paths, tokens, &tokbuf); path; path = php_strtok_r(NULL, tokens, &tokbuf)) {
+		absolute_path_len = snprintf(opened_path_buffer, MAXPATHLEN, "%s/%s", path, filepath);
+		if (absolute_path_len < MAXPATHLEN - 1) {
+			if (xstat_func(opened_path_buffer, absolute_path_len, data)) {
+				ret = 1;
+				goto finish;
+			}
+		}
+	}
+
+	/* fall back to current directory */
+	if (zend_is_executing(TSRMLS_C)) {
+		const char *executed_filename = zend_get_executed_filename(TSRMLS_C);
+		if (executed_filename && executed_filename[0] && executed_filename[0] != '[') {
+			size_t filename_len = strlen(filepath);
+			size_t dirname_len;
+
+			for (dirname_len = strlen(executed_filename) - 1; dirname_len > 0; --dirname_len) {
+				if (IS_SLASH(executed_filename[dirname_len])) {
+					if (dirname_len + filename_len < MAXPATHLEN - 1) {
+						++dirname_len; /* include tailing slash */
+						memcpy(opened_path_buffer, executed_filename, dirname_len);
+						memcpy(opened_path_buffer + dirname_len, filepath, filename_len);
+						absolute_path_len = dirname_len + filename_len;
+						if (xstat_func(opened_path_buffer, absolute_path_len, data) == 0) {
+							ret = 1;
+							goto finish;
+						}
+					}
+					break;
+				}
+			}
+		}
+	}
+
+	ret = FAILURE;
+
+finish:
+	my_free_alloca(paths, use_heap);
+
+	return ret;
+}
+/* }}} */
+static XC_INCLUDE_PATH_XSTAT_FUNC(xc_stat_file) /* {{{ */
+{
+	return VCWD_STAT(absolute_path, (struct stat *) data) == 0 ? 1 : 0;
+}
+/* }}} */
+static int xc_stat(const char *filepath, char *opened_path_buffer, struct stat *pbuf TSRMLS_DC) /* {{{ */
+{
+	return include_path_xstat(filepath, opened_path_buffer, xc_stat_file, (void *) pbuf TSRMLS_DC)
+		? SUCCESS
+		: FAILURE;
+}
+/* }}} */
 static int xc_entry_php_resolve_opened_path(xc_compiler_t *compiler TSRMLS_DC) /* {{{ */
 {
 	assert(!compiler->opened_path);
@@ -997,65 +976,76 @@ static int xc_entry_php_resolve_opened_path(xc_compiler_t *compiler TSRMLS_DC) /
 	return SUCCESS;
 }
 /* }}} */
-static int xc_entry_php_init_key(xc_compiler_t *compiler TSRMLS_DC) /* {{{ */
+static int xc_entry_php_quick_resolve_opened_path(xc_compiler_t *compiler, struct stat *statbuf TSRMLS_DC) /* {{{ */
 {
-	if (XG(stat)) {
-		struct stat buf, *pbuf;
-
-		if (strcmp(SG(request_info).path_translated, compiler->filename) == 0) {
-			/* sapi has already done this stat() for us */
-			pbuf = sapi_get_stat(TSRMLS_C);
-			if (pbuf) {
-				goto stat_done;
-			}
-		}
-
-		/* absolute path */
-		pbuf = &buf;
-		if (IS_ABSOLUTE_PATH(compiler->filename, strlen(compiler->filename))) {
-			if (VCWD_STAT(compiler->filename, pbuf) != 0) {
+	if (strcmp(SG(request_info).path_translated, compiler->filename) == 0) {
+		/* sapi has already done this stat() for us */
+		if (statbuf) {
+			struct stat *sapi_stat = sapi_get_stat(TSRMLS_C);
+			if (!sapi_stat) {
 				return FAILURE;
 			}
-			goto stat_done;
+
+			*statbuf = *sapi_stat;
 		}
 
-		/* relative path */
-		if (*compiler->filename == '.' && (IS_SLASH(compiler->filename[1]) || compiler->filename[1] == '.')) {
-			const char *ptr = compiler->filename + 1;
-			if (*ptr == '.') {
-				while (*(++ptr) == '.');
-				if (!IS_SLASH(*ptr)) {
-					goto not_relative_path;
-				}   
-			}
+		compiler->opened_path = expand_filepath(SG(request_info).path_translated, compiler->opened_path_buffer TSRMLS_CC);
+		return SUCCESS;
+	}
 
-			if (VCWD_STAT(compiler->filename, pbuf) != 0) {
+	/* absolute path */
+	if (IS_ABSOLUTE_PATH(compiler->filename, strlen(compiler->filename))) {
+		if (statbuf && VCWD_STAT(compiler->filename, statbuf) != 0) {
+			return FAILURE;
+		}
+		compiler->opened_path = expand_filepath(compiler->filename, compiler->opened_path_buffer TSRMLS_CC);
+		return SUCCESS;
+	}
+
+	/* relative path */
+	if (*compiler->filename == '.' && (IS_SLASH(compiler->filename[1]) || compiler->filename[1] == '.')) {
+		const char *ptr = compiler->filename + 1;
+		if (*ptr == '.') {
+			while (*(++ptr) == '.');
+			if (!IS_SLASH(*ptr)) {
 				return FAILURE;
-			}
-			goto stat_done;
+			}   
 		}
-not_relative_path:
 
-		/* use include_path */
-		if (xc_stat(compiler->filename, PG(include_path), pbuf TSRMLS_CC) != SUCCESS) {
+		if (statbuf && VCWD_STAT(compiler->filename, statbuf) != 0) {
 			return FAILURE;
 		}
 
-		/* fall */
+		compiler->opened_path = expand_filepath(compiler->filename, compiler->opened_path_buffer TSRMLS_CC);
+		return SUCCESS;
+	}
 
-stat_done:
-		{
-			time_t delta = XG(request_time) - pbuf->st_mtime;
-			if (abs(delta) < 2 && !xc_test) {
+	return FAILURE;
+}
+/* }}} */
+static int xc_entry_php_init_key(xc_compiler_t *compiler TSRMLS_DC) /* {{{ */
+{
+	if (XG(stat)) {
+		struct stat buf;
+		time_t delta;
+
+		if (xc_entry_php_quick_resolve_opened_path(compiler, &buf TSRMLS_CC) != SUCCESS) {
+			if (xc_stat(compiler->filename, compiler->opened_path_buffer, &buf TSRMLS_CC) != SUCCESS) {
 				return FAILURE;
 			}
+			compiler->opened_path = compiler->opened_path_buffer;
 		}
 
-		compiler->new_entry.file_mtime   = pbuf->st_mtime;
-		compiler->new_entry.file_size    = pbuf->st_size;
+		delta = XG(request_time) - buf.st_mtime;
+		if (abs(delta) < 2 && !xc_test) {
+			return FAILURE;
+		}
+
+		compiler->new_entry.file_mtime   = buf.st_mtime;
+		compiler->new_entry.file_size    = buf.st_size;
 #ifdef HAVE_INODE
-		compiler->new_entry.file_device  = pbuf->st_dev;
-		compiler->new_entry.file_inode   = pbuf->st_ino;
+		compiler->new_entry.file_device  = buf.st_dev;
+		compiler->new_entry.file_inode   = buf.st_ino;
 #endif
 	}
 	else { /* XG(inode) */
@@ -1073,9 +1063,7 @@ stat_done:
 		}
 	}
 
-	UNISW(NOTHING, compiler->new_entry.entry.name_type = IS_STRING;)
-	compiler->new_entry.entry.name.str.val = (char *) (compiler->opened_path ? compiler->opened_path : compiler->filename);
-	compiler->new_entry.entry.name.str.len = strlen(compiler->new_entry.entry.name.str.val);
+	fprintf(stderr, "-------- %s\n", compiler->opened_path);
 
 	{
 		xc_hash_value_t basename_hash_value;
@@ -1086,7 +1074,17 @@ stat_done:
 #endif
 			)
 		{
-			basename_hash_value = xc_entry_hash_php_basename(&compiler->new_entry TSRMLS_CC);
+			const char *filename_end = compiler->filename + strlen(compiler->filename);
+			const char *basename = filename_end - 1;
+
+			/* scan till out of basename part */
+			while (basename >= compiler->filename && !IS_SLASH(*basename)) {
+				--basename;
+			}
+			/* get back to basename */
+			++basename;
+
+			basename_hash_value = HASH_STR_L(basename, filename_end - basename);
 		}
 
 		compiler->entry_hash.cacheid = xc_php_hcache.size > 1 ? xc_hash_fold(basename_hash_value, &xc_php_hcache) : 0;
@@ -1123,7 +1121,7 @@ static int xc_entry_data_php_init_md5(xc_cache_t *cache, xc_compiler_t *compiler
 	php_stream     *stream;
 	ulong           old_rsid = EG(regular_list).nNextFreeElement;
 
-	stream = php_stream_open_wrapper(compiler->new_entry.entry.name.str.val, "rb", USE_PATH | REPORT_ERRORS | ENFORCE_SAFE_MODE | STREAM_DISABLE_OPEN_BASEDIR, NULL);
+	stream = php_stream_open_wrapper(ZEND_24(NOTHING, (char *)) compiler->filename, "rb", USE_PATH | REPORT_ERRORS | ENFORCE_SAFE_MODE | STREAM_DISABLE_OPEN_BASEDIR, NULL);
 	if (!stream) {
 		return FAILURE;
 	}
@@ -1832,8 +1830,24 @@ static zend_op_array *xc_compile_file_ex(xc_compiler_t *compiler, zend_file_hand
 	/* {{{ entry_lookup/hit/md5_init/php_lookup */
 	stored_entry = NULL;
 	stored_php = NULL;
+
+	if (compiler->opened_path) {
+		compiler->new_entry.entry.name.str.val = (char *) compiler->opened_path;
+		compiler->new_entry.entry.name.str.len = strlen(compiler->new_entry.entry.name.str.val);
+	}
+	else {
+		/* lookup in opened path */
+	}
+
 	ENTER_LOCK_EX(cache) {
-		stored_entry = (xc_entry_php_t *) xc_entry_find_dmz(XC_TYPE_PHP, cache, compiler->entry_hash.entryslotid, (xc_entry_t *) &compiler->new_entry TSRMLS_CC);
+		if (XG(stat)) {
+			stored_entry = (xc_entry_php_t *) xc_entry_find_dmz(XC_TYPE_PHP, cache, compiler->entry_hash.entryslotid, (xc_entry_t *) &compiler->new_entry TSRMLS_CC);
+		}
+		else {
+			compiler->new_entry.entry.name.str.val = (char *) compiler->opened_path;
+			compiler->new_entry.entry.name.str.len = strlen(compiler->new_entry.entry.name.str.val);
+		}
+
 		if (stored_entry) {
 			xc_cache_hit_dmz(cache TSRMLS_CC);
 
@@ -2669,7 +2683,7 @@ static int xc_entry_var_init_key(xc_entry_var_t *entry_var, xc_entry_hash_t *ent
 	}
 
 #ifdef IS_UNICODE
-	entry_var->entry.name_type = name->type;
+	entry_var->name_type = name->type;
 #endif
 	entry_var->entry.name = name->value;
 
