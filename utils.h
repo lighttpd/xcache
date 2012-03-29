@@ -68,10 +68,10 @@ int xc_foreach_early_binding_class(zend_op_array *op_array, void (*callback)(zen
 
 /* installer */
 #ifdef HAVE_XCACHE_CONSTANT
-void xc_install_constant(ZEND_24(const) char *filename, zend_constant *constant, zend_uchar type, const24_zstr key, uint len, ulong h TSRMLS_DC);
+void xc_install_constant(ZEND_24(NOTHING, const) char *filename, zend_constant *constant, zend_uchar type, const24_zstr key, uint len, ulong h TSRMLS_DC);
 #endif
-void xc_install_function(ZEND_24(const) char *filename, zend_function *func, zend_uchar type, const24_zstr key, uint len, ulong h TSRMLS_DC);
-ZESW(xc_cest_t *, void) xc_install_class(ZEND_24(const) char *filename, xc_cest_t *cest, int oplineno, zend_uchar type, const24_zstr key, uint len, ulong h TSRMLS_DC);
+void xc_install_function(ZEND_24(NOTHING, const) char *filename, zend_function *func, zend_uchar type, const24_zstr key, uint len, ulong h TSRMLS_DC);
+ZESW(xc_cest_t *, void) xc_install_class(ZEND_24(NOTHING, const) char *filename, xc_cest_t *cest, int oplineno, zend_uchar type, const24_zstr key, uint len, ulong h TSRMLS_DC);
 
 #if defined(E_STRICT) || defined(E_DEPRECATED)
 #define XCACHE_ERROR_CACHING
@@ -80,7 +80,7 @@ ZESW(xc_cest_t *, void) xc_install_class(ZEND_24(const) char *filename, xc_cest_
 /* sandbox */
 typedef struct {
 	int alloc;
-	ZEND_24(const) char *filename;
+	ZEND_24(NOTHING, const) char *filename;
 
 	HashTable orig_included_files;
 	HashTable *tmp_included_files;
@@ -121,7 +121,7 @@ typedef enum _xc_install_action_t {
 } xc_install_action_t;
 
 void xc_zend_class_add_ref(zend_class_entry ZESW(*ce, **ce));
-xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, ZEND_24(const) char *filename TSRMLS_DC);
+xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, ZEND_24(NOTHING, const) char *filename TSRMLS_DC);
 void xc_sandbox_free(xc_sandbox_t *sandbox, xc_install_action_t install TSRMLS_DC);
 
 typedef zend_bool (*xc_if_func_t)(void *data);

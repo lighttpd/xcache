@@ -1133,9 +1133,9 @@ static int xc_entry_init_key_php_md5(xc_cache_t *cache, xc_compiler_t *compiler 
 	return SUCCESS;
 }
 /* }}} */
-static void xc_entry_init_key_php_entry(xc_entry_php_t *entry_php, ZEND_24(const) char *filepath TSRMLS_DC) /* {{{*/
+static void xc_entry_init_key_php_entry(xc_entry_php_t *entry_php, const char *filepath TSRMLS_DC) /* {{{*/
 {
-	entry_php->filepath     = filepath;
+	entry_php->filepath     = ZEND_24((char *), NOTHING) filepath;
 	entry_php->filepath_len = strlen(entry_php->filepath);
 	entry_php->dirpath      = estrndup(entry_php->filepath, entry_php->filepath_len);
 	entry_php->dirpath_len  = zend_dirname(entry_php->dirpath, entry_php->filepath_len);
@@ -1695,7 +1695,7 @@ static zend_op_array *xc_compile_php(xc_compiler_t *compiler, zend_file_handle *
 	}
 
 	xc_undo_pass_two(compiler->new_php.op_array TSRMLS_CC);
-	xc_foreach_early_binding_class(compiler->new_php.op_array, xc_cache_early_binding_class_cb, (void *) compiler->new_php.SRMLS_CC);
+	xc_foreach_early_binding_class(compiler->new_php.op_array, xc_cache_early_binding_class_cb, (void *) &compiler->new_php TSRMLS_CC);
 	xc_redo_pass_two(compiler->new_php.op_array TSRMLS_CC);
 	/* }}} */
 #endif
@@ -3144,14 +3144,13 @@ PHP_FUNCTION(xcache_coredump)
 /* {{{ proto string xcache_is_autoglobal(string name) */
 PHP_FUNCTION(xcache_is_autoglobal)
 {
-	char *name;
-	int name_len;
+	zval *name;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &name, &name_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &name) == FAILURE) {
 		return;
 	}
 
-	RETURN_BOOL(zend_hash_exists(CG(auto_globals), name, name_len + 1));
+	RETURN_BOOL(zend_u_hash_exists(CG(auto_globals), UG(unicode), Z_STRVAL_P(name), Z_STRLEN_P(name) + 1));
 }
 /* }}} */
 static zend_function_entry xcache_functions[] = /* {{{ */

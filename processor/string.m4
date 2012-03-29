@@ -59,19 +59,19 @@ define(`PROC_STRING_N_EX', `
 			')
 		')
 		IFCALC(`xc_calc_string_n(processor, ISTYPE, SRCSTR, $3 C_RELAYLINE);')
-		IFSTORE(`DSTPTR = ifelse(PTRTYPE,`char',`ZSTR_S',`ZSTR_U')(xc_store_string_n(processor, ISTYPE, SRCSTR, $3 C_RELAYLINE));')
+		IFSTORE(`DSTPTR = ifdef(`REALPTRTYPE', `(REALPTRTYPE() *)') ifelse(PTRTYPE,`char',`ZSTR_S',`ZSTR_U')(xc_store_string_n(processor, ISTYPE, SRCSTR, $3 C_RELAYLINE));')
 		IFRESTORE(`
-			DSTPTR = STRDUP() (SRCPTR, ($3) - 1);
+			DSTPTR = ifdef(`REALPTRTYPE', `(REALPTRTYPE() *)') STRDUP() (SRCPTR, ($3) - 1);
 		')
-		FIXPOINTER_EX(`PTRTYPE', DSTPTR)
+		FIXPOINTER_EX(ifdef(`REALPTRTYPE', `REALPTRTYPE()', `PTRTYPE'), DSTPTR)
 		IFDASM(`
 			ifelse(STRTYPE,zstr_uchar, `
 				add_assoc_unicodel_ex(dst, ZEND_STRS("$4"), ZSTR_U($2), $3-1, 1);
 				', ` dnl else
 				ifelse(STRTYPE,zstr_char, `
-					add_assoc_stringl_ex(dst, ZEND_STRS("$4"), ZSTR_S($2), $3-1, 1);
+					add_assoc_stringl_ex(dst, ZEND_STRS("$4"), (char *) ZSTR_S($2), $3-1, 1);
 					', `
-					add_assoc_stringl_ex(dst, ZEND_STRS("$4"), $2, $3-1, 1);
+					add_assoc_stringl_ex(dst, ZEND_STRS("$4"), (char *) $2, $3-1, 1);
 				')
 			')
 		')

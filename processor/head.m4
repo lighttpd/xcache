@@ -353,7 +353,7 @@ static int xc_check_names(const char *file, int line, const char *functionName, 
 		Bucket *b;
 
 		for (i = 0; i < assert_names_count; ++i) {
-			if (!zend_hash_exists(done_names, assert_names[i], strlen(assert_names[i]) + 1)) {
+			if (!zend_u_hash_exists(done_names, IS_STRING, assert_names[i], strlen(assert_names[i]) + 1)) {
 				fprintf(stderr
 					, "missing field at %s `#'%d %s`' : %s\n"
 					, file, line, functionName

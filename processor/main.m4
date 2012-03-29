@@ -24,11 +24,11 @@ define(`SRC', `src->$1')
 dnl ============
 define(`INDENT', `xc_dprint_indent(indent);')
 dnl }}}
-dnl {{{ ALLOC(1:dst, 2:type, 3:count=1, 4:clean=false, 5:forcetype=$2)
+dnl {{{ ALLOC(1:dst, 2:type, 3:count=1, 4:clean=false, 5:realtype=$2)
 define(`ALLOC', `
 	pushdef(`COUNT', `ifelse(`$3', `', `1', `$3')')
 	pushdef(`SIZE', `sizeof($2)ifelse(`$3', `', `', ` * $3')')
-	pushdef(`FORCETYPE', `ifelse(`$5', , `$2', `$5')')
+	pushdef(`REALTYPE', `ifelse(`$5', , `$2', `$5')')
 	/* allocate */
 	IFCALC(`
 		IFASSERT(`
@@ -55,7 +55,7 @@ define(`ALLOC', `
 		ifdef(`DEBUG_SIZE', ` {
 			void *oldp = processor->p;
 		')
-		$1 = (FORCETYPE *) (processor->p = (char *) ALIGN(processor->p));
+		$1 = (REALTYPE *) (processor->p = (char *) ALIGN(processor->p));
 		ifelse(`$4', `', `
 				IFASSERT(`memsetptr($1, (void *) (unsigned long) __LINE__, SIZE);')
 			', `
@@ -71,18 +71,19 @@ define(`ALLOC', `
 	')
 	IFRESTORE(`ifelse(`$4', `', `
 			ifelse(
-				FORCETYPE*COUNT, `zval*1', `ALLOC_ZVAL($1);',
-				FORCETYPE*COUNT, `HashTable*1', `ALLOC_HASHTABLE($1);',
-				`', `', `$1 = (FORCETYPE *) emalloc(SIZE);')
+				REALTYPE*COUNT, `zval*1', `ALLOC_ZVAL($1);',
+				REALTYPE*COUNT, `HashTable*1', `ALLOC_HASHTABLE($1);',
+				`', `', `$1 = (REALTYPE *) emalloc(SIZE);')
 			IFASSERT(`memsetptr($1, (void *) __LINE__, SIZE);')
 		', `
-			$1 = (FORCETYPE *) ecalloc(COUNT, sizeof($2));
+			$1 = (REALTYPE *) ecalloc(COUNT, sizeof($2));
 		')
 	')
+	popdef(`REALTYPE')
 	popdef(`COUNT')
 	popdef(`SIZE')
 ')
-dnl CALLOC(1:dst, 2:type [, 3:count=1, 4:forcetype=$2 ])
+dnl CALLOC(1:dst, 2:type [, 3:count=1, 4:realtype=$2 ])
 define(`CALLOC', `ALLOC(`$1', `$2', `$3', `1', `$4')')
 dnl }}}
 dnl {{{ PROC_CLASS_ENTRY_P(1:elm)
@@ -95,7 +96,7 @@ define(`PROC_CLASS_ENTRY_P_EX', `
 #ifdef IS_UNICODE
 		IFDASM(`add_assoc_unicodel_ex(dst, ZEND_STRS("$3"), ZSTR_U($2->name), $2->name_length, 1);')
 #else
-		IFDASM(`add_assoc_stringl_ex(dst, ZEND_STRS("$3"), $2->name, $2->name_length, 1);')
+		IFDASM(`add_assoc_stringl_ex(dst, ZEND_STRS("$3"), (char *) $2->name, $2->name_length, 1);')
 #endif
 	}
 	else {
@@ -211,7 +212,7 @@ define(`DONE_SIZE', `IFASSERT(`dnl
 define(`DONE', `
 	define(`ELEMENTS_DONE', defn(`ELEMENTS_DONE')`,"$1"')
 	IFASSERT(`dnl
-		if (zend_hash_exists(&done_names, "$1", sizeof("$1"))) {
+		if (zend_u_hash_exists(&done_names, IS_STRING, "$1", sizeof("$1"))) {
 			fprintf(stderr
 				, "duplicate field at %s `#'%d FUNC_NAME`' : %s\n"
 				, __FILE__, __LINE__
