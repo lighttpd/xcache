@@ -275,27 +275,27 @@ static inline int xc_entry_has_prefix_dmz(xc_entry_type_t type, xc_entry_t *entr
 	return memcmp(entry->name.str.val, Z_STRVAL_P(prefix), Z_STRLEN_P(prefix)) == 0;
 }
 /* }}} */
-static void xc_entry_add_dmz(xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *xce) /* {{{ */
+static void xc_entry_add_dmz(xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *entry) /* {{{ */
 {
 	xc_entry_t **head = &(cache->entries[entryslotid]);
-	xce->next = *head;
-	*head = xce;
+	entry->next = *head;
+	*head = entry;
 	cache->entries_count ++;
 }
 /* }}} */
-static xc_entry_t *xc_entry_store_dmz(xc_entry_type_t type, xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *xce TSRMLS_DC) /* {{{ */
+static xc_entry_t *xc_entry_store_dmz(xc_entry_type_t type, xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *entry TSRMLS_DC) /* {{{ */
 {
-	xc_entry_t *stored_xce;
+	xc_entry_t *stored_entry;
 
-	xce->hits  = 0;
-	xce->ctime = XG(request_time);
-	xce->atime = XG(request_time);
-	stored_xce = type == XC_TYPE_PHP
-		? (xc_entry_t *) xc_processor_store_xc_entry_php_t(cache, (xc_entry_php_t *) xce TSRMLS_CC)
-		: (xc_entry_t *) xc_processor_store_xc_entry_var_t(cache, (xc_entry_var_t *) xce TSRMLS_CC);
-	if (stored_xce) {
-		xc_entry_add_dmz(cache, entryslotid, stored_xce);
-		return stored_xce;
+	entry->hits  = 0;
+	entry->ctime = XG(request_time);
+	entry->atime = XG(request_time);
+	stored_entry = type == XC_TYPE_PHP
+		? (xc_entry_t *) xc_processor_store_xc_entry_php_t(cache, (xc_entry_php_t *) entry TSRMLS_CC)
+		: (xc_entry_t *) xc_processor_store_xc_entry_var_t(cache, (xc_entry_var_t *) entry TSRMLS_CC);
+	if (stored_entry) {
+		xc_entry_add_dmz(cache, entryslotid, stored_entry);
+		return stored_entry;
 	}
 	else {
 		cache->ooms ++;
@@ -303,66 +303,66 @@ static xc_entry_t *xc_entry_store_dmz(xc_entry_type_t type, xc_cache_t *cache, x
 	}
 }
 /* }}} */
-static xc_entry_php_t *xc_entry_php_store_dmz(xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_php_t *xce TSRMLS_DC) /* {{{ */
+static xc_entry_php_t *xc_entry_php_store_dmz(xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_php_t *entry_php TSRMLS_DC) /* {{{ */
 {
-	return (xc_entry_php_t *) xc_entry_store_dmz(XC_TYPE_PHP, cache, entryslotid, (xc_entry_t *) xce TSRMLS_CC);
+	return (xc_entry_php_t *) xc_entry_store_dmz(XC_TYPE_PHP, cache, entryslotid, (xc_entry_t *) entry_php TSRMLS_CC);
 }
 /* }}} */
-static xc_entry_var_t *xc_entry_var_store_dmz(xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_var_t *xce TSRMLS_DC) /* {{{ */
+static xc_entry_var_t *xc_entry_var_store_dmz(xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_var_t *entry_var TSRMLS_DC) /* {{{ */
 {
-	return (xc_entry_var_t *) xc_entry_store_dmz(XC_TYPE_VAR, cache, entryslotid, (xc_entry_t *) xce TSRMLS_CC);
+	return (xc_entry_var_t *) xc_entry_store_dmz(XC_TYPE_VAR, cache, entryslotid, (xc_entry_t *) entry_var TSRMLS_CC);
 }
 /* }}} */
-static void xc_entry_free_real_dmz(xc_entry_type_t type, xc_cache_t *cache, volatile xc_entry_t *xce) /* {{{ */
+static void xc_entry_free_real_dmz(xc_entry_type_t type, xc_cache_t *cache, volatile xc_entry_t *entry) /* {{{ */
 {
 	if (type == XC_TYPE_PHP) {
-		xc_php_release_dmz(cache, ((xc_entry_php_t *) xce)->php);
+		xc_php_release_dmz(cache, ((xc_entry_php_t *) entry)->php);
 	}
-	cache->mem->handlers->free(cache->mem, (xc_entry_t *)xce);
+	cache->mem->handlers->free(cache->mem, (xc_entry_t *)entry);
 }
 /* }}} */
-static void xc_entry_free_dmz(xc_entry_type_t type, xc_cache_t *cache, xc_entry_t *xce TSRMLS_DC) /* {{{ */
+static void xc_entry_free_dmz(xc_entry_type_t type, xc_cache_t *cache, xc_entry_t *entry TSRMLS_DC) /* {{{ */
 {
 	cache->entries_count --;
-	if ((type == XC_TYPE_PHP ? ((xc_entry_php_t *) xce)->refcount : 0) == 0) {
-		xc_entry_free_real_dmz(type, cache, xce);
+	if ((type == XC_TYPE_PHP ? ((xc_entry_php_t *) entry)->refcount : 0) == 0) {
+		xc_entry_free_real_dmz(type, cache, entry);
 	}
 	else {
-		xce->next = cache->deletes;
-		cache->deletes = xce;
-		xce->dtime = XG(request_time);
+		entry->next = cache->deletes;
+		cache->deletes = entry;
+		entry->dtime = XG(request_time);
 		cache->deletes_count ++;
 	}
 	return;
 }
 /* }}} */
-static void xc_entry_remove_dmz(xc_entry_type_t type, xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *xce TSRMLS_DC) /* {{{ */
+static void xc_entry_remove_dmz(xc_entry_type_t type, xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *entry TSRMLS_DC) /* {{{ */
 {
 	xc_entry_t **pp = &(cache->entries[entryslotid]);
 	xc_entry_t *p;
 	for (p = *pp; p; pp = &(p->next), p = p->next) {
-		if (xc_entry_equal_dmz(type, xce, p)) {
+		if (xc_entry_equal_dmz(type, entry, p)) {
 			/* unlink */
 			*pp = p->next;
-			xc_entry_free_dmz(type, cache, xce TSRMLS_CC);
+			xc_entry_free_dmz(type, cache, entry TSRMLS_CC);
 			return;
 		}
 	}
 	assert(0);
 }
 /* }}} */
-static xc_entry_t *xc_entry_find_dmz(xc_entry_type_t type, xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *xce TSRMLS_DC) /* {{{ */
+static xc_entry_t *xc_entry_find_dmz(xc_entry_type_t type, xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *entry TSRMLS_DC) /* {{{ */
 {
 	xc_entry_t *p;
 	for (p = cache->entries[entryslotid]; p; p = p->next) {
-		if (xc_entry_equal_dmz(type, xce, p)) {
+		if (xc_entry_equal_dmz(type, entry, p)) {
 			zend_bool fresh;
 			switch (type) {
 			case XC_TYPE_PHP:
 				{
 					xc_entry_php_t *p_php = (xc_entry_php_t *) p;
-					xc_entry_php_t *xce_php = (xc_entry_php_t *) xce;
-					fresh = p_php->file_mtime == xce_php->file_mtime && p_php->file_size == xce_php->file_size;
+					xc_entry_php_t *entry_php = (xc_entry_php_t *) entry;
+					fresh = p_php->file_mtime == entry_php->file_mtime && p_php->file_size == entry_php->file_size;
 				}
 				break;
 
@@ -396,14 +396,6 @@ static void xc_entry_hold_php_dmz(xc_cache_t *cache, xc_entry_php_t *entry TSRML
 	xc_stack_push(&XG(php_holds)[cache->cacheid], (void *)entry);
 }
 /* }}} */
-#if 0
-static void xc_entry_hold_var_dmz(xc_entry_t *xce TSRMLS_DC) /* {{{ */
-{
-	xce->refcount ++;
-	xc_stack_push(&XG(var_holds)[xce->cache->cacheid], (void *)xce);
-}
-/* }}} */
-#endif
 static inline zend_uint advance_wrapped(zend_uint val, zend_uint count) /* {{{ */
 {
 	if (val + 1 >= count) {
@@ -764,10 +756,10 @@ static void xc_filllist_dmz(xc_entry_type_t type, xc_cache_t *cache, zval *retur
 }
 /* }}} */
 
-static zend_op_array *xc_entry_install(xc_entry_php_t *xce, zend_file_handle *h TSRMLS_DC) /* {{{ */
+static zend_op_array *xc_entry_install(xc_entry_php_t *entry_php, zend_file_handle *h TSRMLS_DC) /* {{{ */
 {
 	zend_uint i;
-	xc_entry_data_php_t *p = xce->php;
+	xc_entry_data_php_t *p = entry_php->php;
 	zend_op_array *old_active_op_array = CG(active_op_array);
 #ifndef ZEND_ENGINE_2
 	ALLOCA_FLAG(use_heap)
@@ -781,7 +773,7 @@ static zend_op_array *xc_entry_install(xc_entry_php_t *xce, zend_file_handle *h 
 	/* install constant */
 	for (i = 0; i < p->constinfo_cnt; i ++) {
 		xc_constinfo_t *ci = &p->constinfos[i];
-		xc_install_constant(xce->entry.name.str.val, &ci->constant,
+		xc_install_constant(entry_php->entry.name.str.val, &ci->constant,
 				UNISW(0, ci->type), ci->key, ci->key_size, ci->h TSRMLS_CC);
 	}
 #endif
@@ -789,7 +781,7 @@ static zend_op_array *xc_entry_install(xc_entry_php_t *xce, zend_file_handle *h 
 	/* install function */
 	for (i = 0; i < p->funcinfo_cnt; i ++) {
 		xc_funcinfo_t  *fi = &p->funcinfos[i];
-		xc_install_function(xce->entry.name.str.val, &fi->func,
+		xc_install_function(entry_php->entry.name.str.val, &fi->func,
 				UNISW(0, fi->type), fi->key, fi->key_size, fi->h TSRMLS_CC);
 	}
 
@@ -807,10 +799,10 @@ static zend_op_array *xc_entry_install(xc_entry_php_t *xce, zend_file_handle *h 
 		new_cest_ptrs[i] =
 #endif
 #ifdef ZEND_COMPILE_DELAYED_BINDING
-		xc_install_class(xce->entry.name.str.val, &ci->cest, -1,
+		xc_install_class(entry_php->entry.name.str.val, &ci->cest, -1,
 				UNISW(0, ci->type), ci->key, ci->key_size, ci->h TSRMLS_CC);
 #else
-		xc_install_class(xce->entry.name.str.val, &ci->cest, ci->oplineno,
+		xc_install_class(entry_php->entry.name.str.val, &ci->cest, ci->oplineno,
 				UNISW(0, ci->type), ci->key, ci->key_size, ci->h TSRMLS_CC);
 #endif
 	}
@@ -833,7 +825,7 @@ static zend_op_array *xc_entry_install(xc_entry_php_t *xce, zend_file_handle *h 
 #endif
 
 	i = 1;
-	zend_hash_add(&EG(included_files), xce->entry.name.str.val, xce->entry.name.str.len+1, (void *)&i, sizeof(int), NULL);
+	zend_hash_add(&EG(included_files), entry_php->entry.name.str.val, entry_php->entry.name.str.len+1, (void *)&i, sizeof(int), NULL);
 	if (h) {
 		zend_llist_add_element(&CG(open_files), h);
 	}
@@ -851,7 +843,7 @@ static inline void xc_entry_unholds_real(xc_stack_t *holds, xc_cache_t **caches,
 	int i;
 	xc_stack_t *s;
 	xc_cache_t *cache;
-	xc_entry_php_t *xce;
+	xc_entry_php_t *entry_php;
 
 	for (i = 0; i < cachecount; i ++) {
 		s = &holds[i];
@@ -860,10 +852,10 @@ static inline void xc_entry_unholds_real(xc_stack_t *holds, xc_cache_t **caches,
 			cache = caches[i];
 			ENTER_LOCK(cache) {
 				while (xc_stack_count(s)) {
-					xce = (xc_entry_php_t *) xc_stack_pop(s);
-					TRACE("unhold %d:%s", xce->file_inode, xce->entry.name.str.val);
-					xce->refcount ++;
-					assert(xce->refcount >= 0);
+					entry_php = (xc_entry_php_t *) xc_stack_pop(s);
+					TRACE("unhold %d:%s", entry_php->file_inode, entry_php->entry.name.str.val);
+					entry_php->refcount ++;
+					assert(entry_php->refcount >= 0);
 				}
 			} LEAVE_LOCK(cache);
 		}
@@ -947,19 +939,19 @@ static inline xc_hash_value_t xc_hash_fold(xc_hash_value_t hvalue, const xc_hash
 	return folded;
 }
 /* }}} */
-static inline xc_hash_value_t xc_entry_hash_name(xc_entry_t *xce TSRMLS_DC) /* {{{ */
+static inline xc_hash_value_t xc_entry_hash_name(xc_entry_t *entry TSRMLS_DC) /* {{{ */
 {
-	return UNISW(NOTHING, UG(unicode) ? HASH_ZSTR_L(xce->name_type, xce->name.uni.val, xce->name.uni.len) :)
-		HASH_STR_L(xce->name.str.val, xce->name.str.len);
+	return UNISW(NOTHING, UG(unicode) ? HASH_ZSTR_L(entry->name_type, entry->name.uni.val, entry->name.uni.len) :)
+		HASH_STR_L(entry->name.str.val, entry->name.str.len);
 }
 /* }}} */
-static inline xc_hash_value_t xc_entry_hash_php_basename(xc_entry_php_t *xce TSRMLS_DC) /* {{{ */
+static inline xc_hash_value_t xc_entry_hash_php_basename(xc_entry_php_t *entry_php TSRMLS_DC) /* {{{ */
 {
 #ifdef IS_UNICODE
-	if (UG(unicode) && xce->entry.name_type == IS_UNICODE) {
+	if (UG(unicode) && entry_php->entry.name_type == IS_UNICODE) {
 		zstr basename;
 		size_t basename_len;
-		php_u_basename(xce->entry.name.ustr.val, xce->entry.name.ustr.len, NULL, 0, &basename.u, &basename_len TSRMLS_CC);
+		php_u_basename(entry_php->entry.name.ustr.val, entry_php->entry.name.ustr.len, NULL, 0, &basename.u, &basename_len TSRMLS_CC);
 		return HASH_ZSTR_L(IS_UNICODE, basename, basename_len);
 	}
 	else
@@ -969,9 +961,9 @@ static inline xc_hash_value_t xc_entry_hash_php_basename(xc_entry_php_t *xce TSR
 		xc_hash_value_t h;
 		size_t basename_len;
 #ifdef ZEND_ENGINE_2
-		php_basename(xce->entry.name.str.val, xce->entry.name.str.len, "", 0, &basename, &basename_len TSRMLS_CC);
+		php_basename(entry_php->entry.name.str.val, entry_php->entry.name.str.len, "", 0, &basename, &basename_len TSRMLS_CC);
 #else
-		basename = php_basename(xce->entry.name.str.val, xce->entry.name.str.len, "", 0);
+		basename = php_basename(entry_php->entry.name.str.val, entry_php->entry.name.str.len, "", 0);
 		basename_len = strlen(basename);
 #endif
 		h = HASH_STR_L(basename, basename_len);
@@ -981,11 +973,11 @@ static inline xc_hash_value_t xc_entry_hash_php_basename(xc_entry_php_t *xce TSR
 }
 /* }}} */
 #define xc_entry_hash_var xc_entry_hash_name
-static void xc_entry_free_key_php(xc_entry_php_t *xce TSRMLS_DC) /* {{{ */
+static void xc_entry_free_key_php(xc_entry_php_t *entry_php TSRMLS_DC) /* {{{ */
 {
 #define X_FREE(var) do {\
-	if (xce->var) { \
-		efree(xce->var); \
+	if (entry_php->var) { \
+		efree(entry_php->var); \
 	} \
 } while (0)
 	X_FREE(dirpath);
@@ -1321,7 +1313,7 @@ static void xc_collect_op_array_info(xc_compiler_t *compiler, xc_const_usage_t *
 	xc_vector_free(xc_op_array_info_detail_t, &details);
 }
 /* }}} */
-void xc_fix_op_array_info(const xc_entry_php_t *xce, const xc_entry_data_php_t *php, zend_op_array *op_array, int shallow_copy, const xc_op_array_info_t *op_array_info TSRMLS_DC) /* {{{ */
+void xc_fix_op_array_info(const xc_entry_php_t *entry_php, const xc_entry_data_php_t *php, zend_op_array *op_array, int shallow_copy, const xc_op_array_info_t *op_array_info TSRMLS_DC) /* {{{ */
 {
 	int i;
 
@@ -1335,14 +1327,14 @@ void xc_fix_op_array_info(const xc_entry_php_t *xce, const xc_entry_data_php_t *
 				efree(Z_STRVAL(literal->constant));
 			}
 			if (Z_TYPE(literal->constant) == IS_STRING) {
-				assert(xce->filepath);
-				ZVAL_STRINGL(&literal->constant, xce->filepath, xce->filepath_len, !shallow_copy);
-				TRACE("restored literal constant: %s", xce->filepath);
+				assert(entry_php->filepath);
+				ZVAL_STRINGL(&literal->constant, entry_php->filepath, entry_php->filepath_len, !shallow_copy);
+				TRACE("restored literal constant: %s", entry_php->filepath);
 			}
 #ifdef IS_UNICODE
 			else if (Z_TYPE(literal->constant) == IS_UNICODE) {
-				assert(xce->ufilepath);
-				ZVAL_UNICODEL(&literal->constant, xce->ufilepath, xce->ufilepath_len, !shallow_copy);
+				assert(entry_php->ufilepath);
+				ZVAL_UNICODEL(&literal->constant, entry_php->ufilepath, entry_php->ufilepath_len, !shallow_copy);
 			}
 #endif
 			else {
@@ -1354,14 +1346,14 @@ void xc_fix_op_array_info(const xc_entry_php_t *xce, const xc_entry_data_php_t *
 				efree(Z_STRVAL(literal->constant));
 			}
 			if (Z_TYPE(literal->constant) == IS_STRING) {
-				assert(xce->dirpath);
-				TRACE("restored literal constant: %s", xce->dirpath);
-				ZVAL_STRINGL(&literal->constant, xce->dirpath, xce->dirpath_len, !shallow_copy);
+				assert(entry_php->dirpath);
+				TRACE("restored literal constant: %s", entry_php->dirpath);
+				ZVAL_STRINGL(&literal->constant, entry_php->dirpath, entry_php->dirpath_len, !shallow_copy);
 			}
 #ifdef IS_UNICODE
 			else if (Z_TYPE(literal->constant) == IS_UNICODE) {
-				assert(!xce->udirpath);
-				ZVAL_UNICODEL(&literal->constant, xce->udirpath, xce->udirpath_len, !shallow_copy);
+				assert(!entry_php->udirpath);
+				ZVAL_UNICODEL(&literal->constant, entry_php->udirpath, entry_php->udirpath_len, !shallow_copy);
 			}
 #endif
 			else {
@@ -1380,14 +1372,14 @@ void xc_fix_op_array_info(const xc_entry_php_t *xce, const xc_entry_data_php_t *
 				efree(Z_STRVAL(Z_OP_CONSTANT(opline->op1)));
 			}
 			if (Z_TYPE(Z_OP_CONSTANT(opline->op1)) == IS_STRING) {
-				assert(xce->filepath);
-				ZVAL_STRINGL(&Z_OP_CONSTANT(opline->op1), xce->filepath, xce->filepath_len, !shallow_copy);
-				TRACE("restored op1 constant: %s", xce->filepath);
+				assert(entry_php->filepath);
+				ZVAL_STRINGL(&Z_OP_CONSTANT(opline->op1), entry_php->filepath, entry_php->filepath_len, !shallow_copy);
+				TRACE("restored op1 constant: %s", entry_php->filepath);
 			}
 #ifdef IS_UNICODE
 			else if (Z_TYPE(Z_OP_CONSTANT(opline->op1)) == IS_UNICODE) {
-				assert(xce->ufilepath);
-				ZVAL_UNICODEL(&Z_OP_CONSTANT(opline->op1), xce->ufilepath, xce->ufilepath_len, !shallow_copy);
+				assert(entry_php->ufilepath);
+				ZVAL_UNICODEL(&Z_OP_CONSTANT(opline->op1), entry_php->ufilepath, entry_php->ufilepath_len, !shallow_copy);
 			}
 #endif
 			else {
@@ -1400,14 +1392,14 @@ void xc_fix_op_array_info(const xc_entry_php_t *xce, const xc_entry_data_php_t *
 				efree(Z_STRVAL(Z_OP_CONSTANT(opline->op1)));
 			}
 			if (Z_TYPE(Z_OP_CONSTANT(opline->op1)) == IS_STRING) {
-				assert(xce->dirpath);
-				TRACE("restored op1 constant: %s", xce->dirpath);
-				ZVAL_STRINGL(&Z_OP_CONSTANT(opline->op1), xce->dirpath, xce->dirpath_len, !shallow_copy);
+				assert(entry_php->dirpath);
+				TRACE("restored op1 constant: %s", entry_php->dirpath);
+				ZVAL_STRINGL(&Z_OP_CONSTANT(opline->op1), entry_php->dirpath, entry_php->dirpath_len, !shallow_copy);
 			}
 #ifdef IS_UNICODE
 			else if (Z_TYPE(Z_OP_CONSTANT(opline->op1)) == IS_UNICODE) {
-				assert(!xce->udirpath);
-				ZVAL_UNICODEL(&Z_OP_CONSTANT(opline->op1), xce->udirpath, xce->udirpath_len, !shallow_copy);
+				assert(!entry_php->udirpath);
+				ZVAL_UNICODEL(&Z_OP_CONSTANT(opline->op1), entry_php->udirpath, entry_php->udirpath_len, !shallow_copy);
 			}
 #endif
 			else {
@@ -1421,14 +1413,14 @@ void xc_fix_op_array_info(const xc_entry_php_t *xce, const xc_entry_data_php_t *
 				efree(Z_STRVAL(Z_OP_CONSTANT(opline->op2)));
 			}
 			if (Z_TYPE(Z_OP_CONSTANT(opline->op2)) == IS_STRING) {
-				assert(xce->filepath);
-				TRACE("restored op2 constant: %s", xce->filepath);
-				ZVAL_STRINGL(&Z_OP_CONSTANT(opline->op2), xce->filepath, xce->filepath_len, !shallow_copy);
+				assert(entry_php->filepath);
+				TRACE("restored op2 constant: %s", entry_php->filepath);
+				ZVAL_STRINGL(&Z_OP_CONSTANT(opline->op2), entry_php->filepath, entry_php->filepath_len, !shallow_copy);
 			}
 #ifdef IS_UNICODE
 			else if (Z_TYPE(Z_OP_CONSTANT(opline->op2)) == IS_UNICODE) {
-				assert(xce->ufilepath);
-				ZVAL_UNICODEL(&Z_OP_CONSTANT(opline->op2), xce->ufilepath, xce->ufilepath_len, !shallow_copy);
+				assert(entry_php->ufilepath);
+				ZVAL_UNICODEL(&Z_OP_CONSTANT(opline->op2), entry_php->ufilepath, entry_php->ufilepath_len, !shallow_copy);
 			}
 #endif
 			else {
@@ -1441,14 +1433,14 @@ void xc_fix_op_array_info(const xc_entry_php_t *xce, const xc_entry_data_php_t *
 				efree(Z_STRVAL(Z_OP_CONSTANT(opline->op2)));
 			}
 			if (Z_TYPE(Z_OP_CONSTANT(opline->op2)) == IS_STRING) {
-				assert(!xce->dirpath);
-				TRACE("restored op2 constant: %s", xce->dirpath);
-				ZVAL_STRINGL(&Z_OP_CONSTANT(opline->op2), xce->dirpath, xce->dirpath_len, !shallow_copy);
+				assert(!entry_php->dirpath);
+				TRACE("restored op2 constant: %s", entry_php->dirpath);
+				ZVAL_STRINGL(&Z_OP_CONSTANT(opline->op2), entry_php->dirpath, entry_php->dirpath_len, !shallow_copy);
 			}
 #ifdef IS_UNICODE
 			else if (Z_TYPE(Z_OP_CONSTANT(opline->op2)) == IS_UNICODE) {
-				assert(!xce->udirpath);
-				ZVAL_UNICODEL(&Z_OP_CONSTANT(opline->op2), xce->udirpath, xce->udirpath_len, !shallow_copy);
+				assert(!entry_php->udirpath);
+				ZVAL_UNICODEL(&Z_OP_CONSTANT(opline->op2), entry_php->udirpath, entry_php->udirpath_len, !shallow_copy);
 			}
 #endif
 			else {
@@ -2659,7 +2651,7 @@ PHP_FUNCTION(xcache_clear_cache)
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "xcache.var_size is either 0 or too small to enable var data caching"); \
 } while (0)
 
-static int xc_entry_init_key_var(xc_entry_hash_t *entry_hash, xc_entry_var_t *xce, zval *name TSRMLS_DC) /* {{{ */
+static int xc_entry_var_init_key(xc_entry_var_t *entry_var, xc_entry_hash_t *entry_hash, zval *name TSRMLS_DC) /* {{{ */
 {
 	xc_hash_value_t hv;
 
@@ -2677,11 +2669,11 @@ static int xc_entry_init_key_var(xc_entry_hash_t *entry_hash, xc_entry_var_t *xc
 	}
 
 #ifdef IS_UNICODE
-	xce->entry.name_type = name->type;
+	entry_var->entry.name_type = name->type;
 #endif
-	xce->entry.name = name->value;
+	entry_var->entry.name = name->value;
 
-	hv = xc_entry_hash_var((xc_entry_t *) xce TSRMLS_CC);
+	hv = xc_entry_hash_var((xc_entry_t *) entry_var TSRMLS_CC);
 
 	entry_hash->cacheid = (hv & xc_var_hcache.mask);
 	hv >>= xc_var_hcache.bits;
@@ -2695,7 +2687,7 @@ PHP_FUNCTION(xcache_get)
 {
 	xc_entry_hash_t entry_hash;
 	xc_cache_t *cache;
-	xc_entry_var_t xce, *stored_xce;
+	xc_entry_var_t entry_var, *stored_entry_var;
 	zval *name;
 
 	if (!xc_var_caches) {
@@ -2706,14 +2698,14 @@ PHP_FUNCTION(xcache_get)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &name) == FAILURE) {
 		return;
 	}
-	xc_entry_init_key_var(&entry_hash, &xce, name TSRMLS_CC);
+	xc_entry_var_init_key(&entry_var, &entry_hash, name TSRMLS_CC);
 	cache = xc_var_caches[entry_hash.cacheid];
 
 	ENTER_LOCK(cache) {
-		stored_xce = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &xce TSRMLS_CC);
-		if (stored_xce) {
+		stored_entry_var = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
+		if (stored_entry_var) {
 			/* return */
-			xc_processor_restore_zval(return_value, stored_xce->value, stored_xce->have_references TSRMLS_CC);
+			xc_processor_restore_zval(return_value, stored_entry_var->value, stored_entry_var->have_references TSRMLS_CC);
 			xc_cache_hit_dmz(cache TSRMLS_CC);
 		}
 		else {
@@ -2729,7 +2721,7 @@ PHP_FUNCTION(xcache_set)
 {
 	xc_entry_hash_t entry_hash;
 	xc_cache_t *cache;
-	xc_entry_var_t xce, *stored_xce;
+	xc_entry_var_t entry_var, *stored_entry_var;
 	zval *name;
 	zval *value;
 
@@ -2738,26 +2730,26 @@ PHP_FUNCTION(xcache_set)
 		RETURN_NULL();
 	}
 
-	xce.entry.ttl = XG(var_ttl);
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zz|l", &name, &value, &xce.entry.ttl) == FAILURE) {
+	entry_var.entry.ttl = XG(var_ttl);
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zz|l", &name, &value, &entry_var.entry.ttl) == FAILURE) {
 		return;
 	}
 
 	/* max ttl */
-	if (xc_var_maxttl && (!xce.entry.ttl || xce.entry.ttl > xc_var_maxttl)) {
-		xce.entry.ttl = xc_var_maxttl;
+	if (xc_var_maxttl && (!entry_var.entry.ttl || entry_var.entry.ttl > xc_var_maxttl)) {
+		entry_var.entry.ttl = xc_var_maxttl;
 	}
 
-	xc_entry_init_key_var(&entry_hash, &xce, name TSRMLS_CC);
+	xc_entry_var_init_key(&entry_var, &entry_hash, name TSRMLS_CC);
 	cache = xc_var_caches[entry_hash.cacheid];
 
 	ENTER_LOCK(cache) {
-		stored_xce = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &xce TSRMLS_CC);
-		if (stored_xce) {
-			xc_entry_remove_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) stored_xce TSRMLS_CC);
+		stored_entry_var = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
+		if (stored_entry_var) {
+			xc_entry_remove_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) stored_entry_var TSRMLS_CC);
 		}
-		xce.value = value;
-		RETVAL_BOOL(xc_entry_var_store_dmz(cache, entry_hash.entryslotid, &xce TSRMLS_CC) != NULL ? 1 : 0);
+		entry_var.value = value;
+		RETVAL_BOOL(xc_entry_var_store_dmz(cache, entry_hash.entryslotid, &entry_var TSRMLS_CC) != NULL ? 1 : 0);
 	} LEAVE_LOCK(cache);
 }
 /* }}} */
@@ -2767,7 +2759,7 @@ PHP_FUNCTION(xcache_isset)
 {
 	xc_entry_hash_t entry_hash;
 	xc_cache_t *cache;
-	xc_entry_var_t xce, *stored_xce;
+	xc_entry_var_t entry_var, *stored_entry_var;
 	zval *name;
 
 	if (!xc_var_caches) {
@@ -2778,12 +2770,12 @@ PHP_FUNCTION(xcache_isset)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &name) == FAILURE) {
 		return;
 	}
-	xc_entry_init_key_var(&entry_hash, &xce, name TSRMLS_CC);
+	xc_entry_var_init_key(&entry_var, &entry_hash, name TSRMLS_CC);
 	cache = xc_var_caches[entry_hash.cacheid];
 
 	ENTER_LOCK(cache) {
-		stored_xce = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &xce TSRMLS_CC);
-		if (stored_xce) {
+		stored_entry_var = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
+		if (stored_entry_var) {
 			xc_cache_hit_dmz(cache TSRMLS_CC);
 			RETVAL_TRUE;
 			/* return */
@@ -2801,7 +2793,7 @@ PHP_FUNCTION(xcache_unset)
 {
 	xc_entry_hash_t entry_hash;
 	xc_cache_t *cache;
-	xc_entry_var_t xce, *stored_xce;
+	xc_entry_var_t entry_var, *stored_entry_var;
 	zval *name;
 
 	if (!xc_var_caches) {
@@ -2812,13 +2804,13 @@ PHP_FUNCTION(xcache_unset)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &name) == FAILURE) {
 		return;
 	}
-	xc_entry_init_key_var(&entry_hash, &xce, name TSRMLS_CC);
+	xc_entry_var_init_key(&entry_var, &entry_hash, name TSRMLS_CC);
 	cache = xc_var_caches[entry_hash.cacheid];
 
 	ENTER_LOCK(cache) {
-		stored_xce = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &xce TSRMLS_CC);
-		if (stored_xce) {
-			xc_entry_remove_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) stored_xce TSRMLS_CC);
+		stored_entry_var = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
+		if (stored_entry_var) {
+			xc_entry_remove_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) stored_entry_var TSRMLS_CC);
 			RETVAL_TRUE;
 		}
 		else {
@@ -2864,7 +2856,7 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 {
 	xc_entry_hash_t entry_hash;
 	xc_cache_t *cache;
-	xc_entry_var_t xce, *stored_xce;
+	xc_entry_var_t entry_var, *stored_entry_var;
 	zval *name;
 	long count = 1;
 	long value = 0;
@@ -2875,60 +2867,59 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 		RETURN_NULL();
 	}
 
-	xce.entry.ttl = XG(var_ttl);
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|ll", &name, &count, &xce.entry.ttl) == FAILURE) {
+	entry_var.entry.ttl = XG(var_ttl);
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|ll", &name, &count, &entry_var.entry.ttl) == FAILURE) {
 		return;
 	}
 
 	/* max ttl */
-	if (xc_var_maxttl && (!xce.entry.ttl || xce.entry.ttl > xc_var_maxttl)) {
-		xce.entry.ttl = xc_var_maxttl;
+	if (xc_var_maxttl && (!entry_var.entry.ttl || entry_var.entry.ttl > xc_var_maxttl)) {
+		entry_var.entry.ttl = xc_var_maxttl;
 	}
 
-	xc_entry_init_key_var(&entry_hash, &xce, name TSRMLS_CC);
+	xc_entry_var_init_key(&entry_var, &entry_hash, name TSRMLS_CC);
 	cache = xc_var_caches[entry_hash.cacheid];
 
 	ENTER_LOCK(cache) {
-		stored_xce = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &xce TSRMLS_CC);
-		if (stored_xce) {
-			TRACE("incdec: gotxce %s", xce.entry.name.str.val);
+		stored_entry_var = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
+		if (stored_entry_var) {
+			TRACE("incdec: got entry_var %s", entry_var.entry.name.str.val);
 			/* do it in place */
-			if (Z_TYPE_P(stored_xce->value) == IS_LONG) {
+			if (Z_TYPE_P(stored_entry_var->value) == IS_LONG) {
 				zval *zv;
-				stored_xce->entry.ctime = XG(request_time);
-				stored_xce->entry.ttl   = xce.entry.ttl;
+				stored_entry_var->entry.ctime = XG(request_time);
+				stored_entry_var->entry.ttl   = entry_var.entry.ttl;
 				TRACE("%s", "incdec: islong");
-				value = Z_LVAL_P(stored_xce->value);
+				value = Z_LVAL_P(stored_entry_var->value);
 				value += (inc == 1 ? count : - count);
 				RETVAL_LONG(value);
 
-				zv = (zval *) cache->shm->handlers->to_readwrite(cache->shm, (char *) stored_xce->value);
+				zv = (zval *) cache->shm->handlers->to_readwrite(cache->shm, (char *) stored_entry_var->value);
 				Z_LVAL_P(zv) = value;
 				break; /* leave lock */
 			}
 
 			TRACE("%s", "incdec: notlong");
-			xc_processor_restore_zval(&oldzval, stored_xce->value, stored_xce->have_references TSRMLS_CC);
+			xc_processor_restore_zval(&oldzval, stored_entry_var->value, stored_entry_var->have_references TSRMLS_CC);
 			convert_to_long(&oldzval);
 			value = Z_LVAL(oldzval);
 			zval_dtor(&oldzval);
 		}
 		else {
-			TRACE("incdec: %s not found", xce.entry.name.str.val);
+			TRACE("incdec: %s not found", entry_var.entry.name.str.val);
 		}
 
 		value += (inc == 1 ? count : - count);
 		RETVAL_LONG(value);
-		xce.value = return_value;
+		entry_var.value = return_value;
 
-		if (stored_xce) {
-			xce.entry.atime = stored_xce->entry.atime;
-			xce.entry.ctime = stored_xce->entry.ctime;
-			xce.entry.hits  = stored_xce->entry.hits;
-			xc_entry_remove_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) stored_xce TSRMLS_CC);
+		if (stored_entry_var) {
+			entry_var.entry.atime = stored_entry_var->entry.atime;
+			entry_var.entry.ctime = stored_entry_var->entry.ctime;
+			entry_var.entry.hits  = stored_entry_var->entry.hits;
+			xc_entry_remove_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) stored_entry_var TSRMLS_CC);
 		}
-		xc_entry_var_store_dmz(cache, entry_hash.entryslotid, &xce TSRMLS_CC);
-
+		xc_entry_var_store_dmz(cache, entry_hash.entryslotid, &entry_var TSRMLS_CC);
 	} LEAVE_LOCK(cache);
 }
 /* }}} */

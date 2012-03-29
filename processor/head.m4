@@ -481,8 +481,8 @@ xc_entry_php_t *xc_processor_restore_xc_entry_php_t(xc_entry_php_t *dst, const x
 	return dst;
 }
 /* }}} */
-/* export: xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_php_t *xce, xc_entry_data_php_t *dst, const xc_entry_data_php_t *src, zend_bool readonly_protection TSRMLS_DC); :export {{{ */
-xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_php_t *xce, xc_entry_data_php_t *dst, const xc_entry_data_php_t *src, zend_bool readonly_protection TSRMLS_DC) {
+/* export: xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_php_t *entry_php, xc_entry_data_php_t *dst, const xc_entry_data_php_t *src, zend_bool readonly_protection TSRMLS_DC); :export {{{ */
+xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_php_t *entry_php, xc_entry_data_php_t *dst, const xc_entry_data_php_t *src, zend_bool readonly_protection TSRMLS_DC) {
 	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
@@ -491,7 +491,7 @@ xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_php
 	if (src->have_references) {
 		processor.reference = 1;
 	}
-	processor.entry_php_src = xce;
+	processor.entry_php_src = entry_php;
 
 	if (processor.reference) {
 		zend_hash_init(&processor.zvalptrs, 0, NULL, NULL, 0);
