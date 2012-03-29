@@ -154,26 +154,7 @@ if ($cachelist) {
 	<form action="" method="post">
 	<table cellspacing="0" cellpadding="4" class="cycles entries" width="100%">
 		<caption><?php echo _T("{$cachelist['type_name']} $listname"); ?></caption>
-		<col />
-		<col />
-		<col />
-		<col align="right" />
-		<col align="right" />
-		<col align="right" />
-		<col align="right" />
-		<col align="right" />
-		<col align="right" />
 		<?php
-		if ($listname == 'Deleted') {
-			echo '<col align="right" />';
-		}
-		if ($isphp) {
-			echo '<col align="right" />';
-			echo '<col align="right" />';
-			echo '<col align="right" />';
-			echo '<col align="right" />';
-		}
-
 		echo "
 		<tr ", $a->next(), ">";
 		?>
@@ -216,7 +197,7 @@ if ($cachelist) {
 			}
 
 			if ($isphp) {
-				$mtime = age($entry['mtime']);
+				$file_mtime = age($entry['file_mtime']);
 			}
 			$ctime = age($entry['ctime']);
 			$atime = age($entry['atime']);
@@ -238,31 +219,31 @@ ENTRY;
 			echo <<<ENTRY
 			<td>{$entry['cache_name']} {$i}</td>
 			<td>{$namelink}</td>
-			<td int="{$entry['hits']}">{$entry['hits']}</td>
-			<td int="{$entry['refcount']}">{$entry['refcount']}</td>
-			<td int="{$entry['size']}">{$size}</td>
+			<td align="right" int="{$entry['hits']}">{$entry['hits']}</td>
+			<td align="right" int="{$entry['refcount']}">{$entry['refcount']}</td>
+			<td align="right" int="{$entry['size']}">{$size}</td>
 ENTRY;
 			if ($isphp) {
 				echo <<<ENTRY
-				<td int="{$entry['phprefcount']}">{$phprefcount}</td>
-				<td int="{$entry['file_size']}">{$file_size}</td>
-				<td int="{$entry['mtime']}">{$mtime}</td>
+				<td align="right" int="{$entry['phprefcount']}">{$phprefcount}</td>
+				<td align="right" int="{$entry['file_size']}">{$file_size}</td>
+				<td align="right" int="{$entry['file_mtime']}">{$file_mtime}</td>
 ENTRY;
 				if (isset($entry['file_inode'])) {
 					echo <<<ENTRY
-					<td int="{$entry['file_device']}">{$entry['file_device']}</td>
-					<td int="{$entry['file_inode']}">{$entry['file_inode']}</td>
+					<td align="right" int="{$entry['file_device']}">{$entry['file_device']}</td>
+					<td align="right" int="{$entry['file_inode']}">{$entry['file_inode']}</td>
 ENTRY;
 				}
 			}
 			echo <<<ENTRY
-			<td int="{$entry['hvalue']}">{$entry['hvalue']}</td>
-			<td int="{$entry['atime']}">{$atime}</td>
-			<td int="{$entry['ctime']}">{$ctime}</td>
+			<td align="right" int="{$entry['hvalue']}">{$entry['hvalue']}</td>
+			<td align="right" int="{$entry['atime']}">{$atime}</td>
+			<td align="right" int="{$entry['ctime']}">{$ctime}</td>
 ENTRY;
 			if ($listname == 'Deleted') {
 			echo <<<ENTRY
-				<td int="{$entry['dtime']}">{$dtime}</td>
+				<td align="right" int="{$entry['dtime']}">{$dtime}</td>
 ENTRY;
 			}
 
