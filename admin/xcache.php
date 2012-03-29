@@ -331,14 +331,16 @@ case XC_TYPE_VAR:
 		$inodes = array();
 		$haveinode = false;
 		foreach ($cachelist['cache_list'] as $e) {
-			if (isset($e['inode'])) {
+			if (isset($e['file_inode'])) {
 				$haveinode = true;
+				break;
 			}
 		}
 		if (!$haveinode) {
 			foreach ($cachelist['deleted_list'] as $e) {
-				if (isset($e['inode'])) {
+				if (isset($e['file_inode'])) {
 					$haveinode = true;
+					break;
 				}
 			}
 		}
