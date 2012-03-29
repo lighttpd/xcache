@@ -1127,35 +1127,18 @@ DEF_STRUCT_P_FUNC(`xc_entry_t', , `dnl {{{
 	PROCESS(time_t, dtime)
 	PROCESS(long, ttl)
 	PROCESS(zend_ulong, hits)
-#ifdef IS_UNICODE
-	PROCESS(zend_uchar, name_type)
-#endif
-	dnl {{{ name
-	DISABLECHECK(`
-#ifdef IS_UNICODE
-		if (src->name_type == IS_UNICODE) {
-			PROCESS(int32_t, name.ustr.len)
-		}
-		else {
-			PROCESS(int, name.str.len)
-		}
-#else
-		PROCESS(int, name.str.len)
-#endif
-		IFRESTORE(`COPY(name.str.val)', `
-#ifdef IS_UNICODE
-			PROC_ZSTRING_L(name_type, name.uni.val, name.uni.len)
-#else
-			PROC_STRING_L(name.str.val, name.str.len)
-#endif
-		')
-	')
-	DONE(name)
-	dnl }}}
+	DONE(name) dnl handle in xc_entry_php_t and xc_entry_var_t
 ')
 dnl }}}
 DEF_STRUCT_P_FUNC(`xc_entry_php_t', , `dnl {{{
 	STRUCT(xc_entry_t, entry)
+	DISABLECHECK(`
+		PROCESS(int, entry.name.str.len)
+		IFRESTORE(`COPY(entry.name.str.val)', `
+			PROC_STRING_L(entry.name.str.val, entry.name.str.len)
+		')
+	')
+
 	IFCALCCOPY(`COPY(php)', `STRUCT_P(xc_entry_data_php_t, php)')
 
 	IFSTORE(`dst->refcount = 0; DONE(refcount)', `PROCESS(long, refcount)')
@@ -1180,6 +1163,31 @@ DEF_STRUCT_P_FUNC(`xc_entry_php_t', , `dnl {{{
 dnl }}}
 DEF_STRUCT_P_FUNC(`xc_entry_var_t', , `dnl {{{
 	STRUCT(xc_entry_t, entry)
+
+#ifdef IS_UNICODE
+	PROCESS(zend_uchar, name_type)
+#endif
+	dnl {{{ entry.name
+	DISABLECHECK(`
+#ifdef IS_UNICODE
+		if (src->name_type == IS_UNICODE) {
+			PROCESS(int32_t, entry.name.ustr.len)
+		}
+		else {
+			PROCESS(int, entry.name.str.len)
+		}
+#else
+		PROCESS(int, entry.name.str.len)
+#endif
+		IFRESTORE(`COPY(entry.name.str.val)', `
+#ifdef IS_UNICODE
+			PROC_ZSTRING_L(name_type, entry.name.uni.val, entry.name.uni.len)
+#else
+			PROC_STRING_L(entry.name.str.val, entry.name.str.len)
+#endif
+		')
+	')
+	dnl }}}
 
 	IFDPRINT(`INDENT()`'fprintf(stderr, "zval:value");')
 	STRUCT_P_EX(zval_ptr, dst->value, src->value, `value', `', `&')

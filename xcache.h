@@ -421,9 +421,6 @@ struct _xc_entry_t {
 	zend_ulong hits;
 	long       ttl;
 
-#ifdef IS_UNICODE
-	zend_uchar name_type;
-#endif
 	xc_entry_name_t name;
 };
 
@@ -453,6 +450,9 @@ typedef struct {
 
 typedef struct {
 	xc_entry_t entry;
+#ifdef IS_UNICODE
+	zend_uchar name_type;
+#endif
 	zval      *value;
 	zend_bool  have_references;
 } xc_entry_var_t;
