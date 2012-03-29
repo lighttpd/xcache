@@ -2630,19 +2630,12 @@ static int xc_entry_init_key_var(xc_entry_hash_t *entry_hash, xc_entry_var_t *xc
 {
 	xc_hash_value_t hv;
 
-	switch (Z_TYPE_P(name)) {
 #ifdef IS_UNICODE
-		case IS_UNICODE:
-#endif
-		case IS_STRING:
-			break;
-		default:
-#ifdef IS_UNICODE
-			convert_to_unicode(name);
+	convert_to_unicode(name);
 #else
-			convert_to_string(name);
+	convert_to_string(name);
 #endif
-	}
+
 #ifdef IS_UNICODE
 	xce->entry.name_type = name->type;
 #endif
@@ -3146,9 +3139,15 @@ PHP_FUNCTION(xcache_is_autoglobal)
 {
 	zval *name;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &name) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &name) == FAILURE) {
 		return;
 	}
+
+#ifdef IS_UNICODE
+	convert_to_unicode(name);
+#else
+	convert_to_string(name);
+#endif
 
 	RETURN_BOOL(zend_u_hash_exists(CG(auto_globals), UG(unicode), Z_STRVAL_P(name), Z_STRLEN_P(name) + 1));
 }
