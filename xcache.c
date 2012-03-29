@@ -899,9 +899,9 @@ static void xc_entry_free_key_php(xc_entry_php_t *entry_php TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
-#define XC_INCLUDE_PATH_XSTAT_FUNC(name) zend_bool name(const char *absolute_path, size_t absolute_path_len, void *data TSRMLS_DC)
+#define XC_INCLUDE_PATH_XSTAT_FUNC(name) zend_bool name(const char *filepath, size_t absolute_path_len, void *data TSRMLS_DC)
 typedef XC_INCLUDE_PATH_XSTAT_FUNC((*include_path_xstat_func_t));
-static zend_bool xc_include_path_apply(const char *filepath, char *opened_path_buffer, include_path_xstat_func_t xstat_func, void *data TSRMLS_DC) /* {{{ */
+static zend_bool xc_include_path_apply(const char *filepath, char *path_buffer, include_path_xstat_func_t xstat_func, void *data TSRMLS_DC) /* {{{ */
 {
 	char *paths, *path;
 	char *tokbuf;
@@ -915,9 +915,9 @@ static zend_bool xc_include_path_apply(const char *filepath, char *opened_path_b
 	memcpy(paths, PG(include_path), size);
 
 	for (path = php_strtok_r(paths, tokens, &tokbuf); path; path = php_strtok_r(NULL, tokens, &tokbuf)) {
-		absolute_path_len = snprintf(opened_path_buffer, MAXPATHLEN, "%s/%s", path, filepath);
+		absolute_path_len = snprintf(path_buffer, MAXPATHLEN, "%s/%s", path, filepath);
 		if (absolute_path_len < MAXPATHLEN - 1) {
-			if (xstat_func(opened_path_buffer, absolute_path_len, data)) {
+			if (xstat_func(path_buffer, absolute_path_len, data)) {
 				ret = 1;
 				goto finish;
 			}
@@ -935,10 +935,10 @@ static zend_bool xc_include_path_apply(const char *filepath, char *opened_path_b
 				if (IS_SLASH(executed_filename[dirname_len])) {
 					if (dirname_len + filename_len < MAXPATHLEN - 1) {
 						++dirname_len; /* include tailing slash */
-						memcpy(opened_path_buffer, executed_filename, dirname_len);
-						memcpy(opened_path_buffer + dirname_len, filepath, filename_len);
+						memcpy(path_buffer, executed_filename, dirname_len);
+						memcpy(path_buffer + dirname_len, filepath, filename_len);
 						absolute_path_len = dirname_len + filename_len;
-						if (xstat_func(opened_path_buffer, absolute_path_len, data) == 0) {
+						if (xstat_func(path_buffer, absolute_path_len, data) == 0) {
 							ret = 1;
 							goto finish;
 						}
@@ -959,12 +959,12 @@ finish:
 /* }}} */
 static XC_INCLUDE_PATH_XSTAT_FUNC(xc_stat_file) /* {{{ */
 {
-	return VCWD_STAT(absolute_path, (struct stat *) data) == 0 ? 1 : 0;
+	return VCWD_STAT(filepath, (struct stat *) data) == 0 ? 1 : 0;
 }
 /* }}} */
-static int xc_include_path_stat(const char *filepath, char *opened_path_buffer, struct stat *pbuf TSRMLS_DC) /* {{{ */
+static int xc_include_path_stat(const char *filepath, char *path_buffer, struct stat *pbuf TSRMLS_DC) /* {{{ */
 {
-	return xc_include_path_apply(filepath, opened_path_buffer, xc_stat_file, (void *) pbuf TSRMLS_DC)
+	return xc_include_path_apply(filepath, path_buffer, xc_stat_file, (void *) pbuf TSRMLS_DC)
 		? SUCCESS
 		: FAILURE;
 }
@@ -979,7 +979,7 @@ static XC_INCLUDE_PATH_XSTAT_FUNC(xc_entry_find_include_path_func_dmz) /* {{{ */
 	xc_entry_find_include_path_data_t *entry_find_include_path_data = (xc_entry_find_include_path_data_t *) data;
 	xc_compiler_t *compiler = entry_find_include_path_data->compiler;
 
-	compiler->new_entry.entry.name.str.val = absolute_path;
+	compiler->new_entry.entry.name.str.val = expand_filepath(filepath, compiler->opened_path_buffer TSRMLS_CC);
 	compiler->new_entry.entry.name.str.len = strlen(compiler->new_entry.entry.name.str.val);
 
 	*entry_find_include_path_data->stored_entry = (xc_entry_php_t *) xc_entry_find_dmz(
@@ -992,13 +992,14 @@ static XC_INCLUDE_PATH_XSTAT_FUNC(xc_entry_find_include_path_func_dmz) /* {{{ */
 	return *entry_find_include_path_data->stored_entry ? 1 : 0;
 }
 /* }}} */
-static int xc_entry_find_include_path_dmz(xc_compiler_t *compiler, const char *filepath, char *opened_path_buffer, xc_entry_php_t **stored_entry TSRMLS_DC) /* {{{ */
+static int xc_entry_find_include_path_dmz(xc_compiler_t *compiler, const char *filepath, xc_entry_php_t **stored_entry TSRMLS_DC) /* {{{ */
 {
+	char path_buffer[MAXPATHLEN];
 	xc_entry_find_include_path_data_t entry_find_include_path_data;
 	entry_find_include_path_data.compiler = compiler;
 	entry_find_include_path_data.stored_entry = stored_entry;
 
-	return xc_include_path_apply(filepath, opened_path_buffer, xc_entry_find_include_path_func_dmz, (void *) &entry_find_include_path_data TSRMLS_DC)
+	return xc_include_path_apply(filepath, path_buffer, xc_entry_find_include_path_func_dmz, (void *) &entry_find_include_path_data TSRMLS_DC)
 		? SUCCESS
 		: FAILURE;
 }
@@ -1057,10 +1058,11 @@ static int xc_entry_php_init_key(xc_compiler_t *compiler TSRMLS_DC) /* {{{ */
 		time_t delta;
 
 		if (xc_entry_php_quick_resolve_opened_path(compiler, &buf TSRMLS_CC) != SUCCESS) {
-			if (xc_include_path_stat(compiler->filename, compiler->opened_path_buffer, &buf TSRMLS_CC) != SUCCESS) {
+			char path_buffer[MAXPATHLEN];
+			if (xc_include_path_stat(compiler->filename, path_buffer, &buf TSRMLS_CC) != SUCCESS) {
 				return FAILURE;
 			}
-			compiler->opened_path = compiler->opened_path_buffer;
+			compiler->opened_path = expand_filepath(path_buffer, compiler->opened_path_buffer TSRMLS_CC);
 		}
 
 		delta = XG(request_time) - buf.st_mtime;
@@ -1854,7 +1856,7 @@ static zend_op_array *xc_compile_file_ex(xc_compiler_t *compiler, zend_file_hand
 	stored_php = NULL;
 
 	ENTER_LOCK_EX(cache) {
-		if (!compiler->opened_path && xc_entry_find_include_path_dmz(compiler, compiler->filename, compiler->opened_path_buffer, &stored_entry TSRMLS_CC) == SUCCESS) {
+		if (!compiler->opened_path && xc_entry_find_include_path_dmz(compiler, compiler->filename, &stored_entry TSRMLS_CC) == SUCCESS) {
 			compiler->opened_path = compiler->opened_path_buffer;
 		}
 		else {
@@ -1863,12 +1865,15 @@ static zend_op_array *xc_compile_file_ex(xc_compiler_t *compiler, zend_file_hand
 					/* opened_path resolved */
 				}
 				/* fall back to real stat call */
-				else if (xc_include_path_stat(compiler->filename, compiler->opened_path_buffer, &statbuf TSRMLS_CC) == SUCCESS) {
-					compiler->opened_path = compiler->opened_path_buffer;
-				}
 				else {
-					gaveup = 1;
-					break;
+					char path_buffer[MAXPATHLEN];
+					if (xc_include_path_stat(compiler->filename, path_buffer, &statbuf TSRMLS_CC) == SUCCESS) {
+						compiler->opened_path = expand_filepath(path_buffer, compiler->opened_path_buffer TSRMLS_CC);
+					}
+					else {
+						gaveup = 1;
+						break;
+					}
 				}
 			}
 
