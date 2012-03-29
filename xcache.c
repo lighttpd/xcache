@@ -198,22 +198,48 @@ static inline int xc_entry_equal_dmz(xc_entry_type_t type, const xc_entry_t *ent
 				}
 			}
 #endif
+
+#ifdef IS_UNICODE
+			if (entry1->name_type == IS_UNICODE) {
+				assert(IS_ABSOLUTE_PATH(entry1->name.ustr.val, entry1->name.ustr.len));
+			}
+			else
+#endif
+			{
+				assert(IS_ABSOLUTE_PATH(entry1->name.str.val, entry1->name.str.len));
+			}
+
+#ifdef IS_UNICODE
+			if (entry2->name_type == IS_UNICODE) {
+				assert(IS_ABSOLUTE_PATH(entry2->name.ustr.val, entry2->name.ustr.len));
+			}
+			else
+#endif
+			{
+				assert(IS_ABSOLUTE_PATH(entry2->name.str.val, entry2->name.str.len));
+			}
 			/* fall */
 
 		case XC_TYPE_VAR:
 			do {
 #ifdef IS_UNICODE
-				if (entry1->name_type == IS_UNICODE) {
+				if (entry1->name_type != entry2->name_type) {
+					return 0;
+				}
+				else if (entry1->name_type == IS_UNICODE) {
 					if (entry1->name.ustr.len != entry2->name.ustr.len) {
 						return 0;
 					}
 					return memcmp(entry1->name.ustr.val, entry2->name.ustr.val, (entry1->name.ustr.len + 1) * sizeof(UChar)) == 0;
 				}
+				else
 #endif
-				if (entry1->name.str.len != entry2->name.str.len) {
-					return 0;
+				{
+					if (entry1->name.str.len != entry2->name.str.len) {
+						return 0;
+					}
+					return memcmp(entry1->name.str.val, entry2->name.str.val, entry1->name.str.len + 1) == 0;
 				}
-				return memcmp(entry1->name.str.val, entry2->name.str.val, entry1->name.str.len + 1) == 0;
 
 			} while(0);
 		default:
@@ -972,16 +998,15 @@ static void xc_entry_free_key_php(xc_entry_php_t *xce TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
-static int xc_entry_init_key_php(xc_compiler_t *compiler TSRMLS_DC) /* {{{ */
+static int xc_entry_php_resolve_opened_path(xc_compiler_t *compiler TSRMLS_DC) /* {{{ */
 {
-	if (!compiler->filename || !SG(request_info).path_translated) {
-		return FAILURE;
-	}
-
-	if (strstr(compiler->filename, "://") != NULL) {
-		return FAILURE;
-	}
-
+	assert(!compiler->opened_path);
+	compiler->opened_path = expand_filepath(compiler->filename, compiler->opened_path_buffer TSRMLS_CC);
+	return SUCCESS;
+}
+/* }}} */
+static int xc_entry_php_init_key(xc_compiler_t *compiler TSRMLS_DC) /* {{{ */
+{
 	if (XG(stat)) {
 		struct stat buf, *pbuf;
 
@@ -1048,7 +1073,12 @@ stat_done:
 		compiler->new_entry.file_device  = 0;
 		compiler->new_entry.file_inode   = 0;
 #endif
-		compiler->opened_path = expand_filepath(compiler->filename, compiler->opened_path_buffer TSRMLS_CC);
+	}
+
+	if (!compiler->new_entry.file_inode) {
+		if (!compiler->opened_path) {
+			xc_entry_php_resolve_opened_path(compiler TSRMLS_CC);
+		}
 	}
 
 	UNISW(NOTHING, compiler->new_entry.entry.name_type = IS_STRING;)
@@ -1093,7 +1123,7 @@ static inline xc_hash_value_t xc_php_hash_md5(xc_entry_data_php_t *php TSRMLS_DC
 	return HASH_STR_S(php->md5.digest, sizeof(php->md5.digest));
 }
 /* }}} */
-static int xc_entry_init_key_php_md5(xc_cache_t *cache, xc_compiler_t *compiler TSRMLS_DC) /* {{{ */
+static int xc_entry_data_php_init_md5(xc_cache_t *cache, xc_compiler_t *compiler TSRMLS_DC) /* {{{ */
 {
 	unsigned char   buf[1024];
 	PHP_MD5_CTX     context;
@@ -1133,7 +1163,7 @@ static int xc_entry_init_key_php_md5(xc_cache_t *cache, xc_compiler_t *compiler 
 	return SUCCESS;
 }
 /* }}} */
-static void xc_entry_init_key_php_entry(xc_entry_php_t *entry_php, const char *filepath TSRMLS_DC) /* {{{*/
+static void xc_entry_php_init(xc_entry_php_t *entry_php, const char *filepath TSRMLS_DC) /* {{{*/
 {
 	entry_php->filepath     = ZEND_24((char *), NOTHING) filepath;
 	entry_php->filepath_len = strlen(entry_php->filepath);
@@ -1634,7 +1664,7 @@ static zend_op_array *xc_compile_php(xc_compiler_t *compiler, zend_file_handle *
 		xc_const_usage_t const_usage;
 		unsigned int i;
 
-		xc_entry_init_key_php_entry(&compiler->new_entry, zend_get_compiled_filename(TSRMLS_C) TSRMLS_CC);
+		xc_entry_php_init(&compiler->new_entry, zend_get_compiled_filename(TSRMLS_C) TSRMLS_CC);
 		memset(&const_usage, 0, sizeof(const_usage));
 
 		for (i = 0; i < compiler->new_php.classinfo_cnt; i ++) {
@@ -1824,21 +1854,20 @@ static zend_op_array *xc_compile_file_ex(xc_compiler_t *compiler, zend_file_hand
 		cache->misses ++;
 		TRACE("miss entry %d:%s", compiler->new_entry.file_inode, compiler->new_entry.entry.name.str.val);
 
-		if (xc_entry_init_key_php_md5(cache, compiler TSRMLS_CC) != SUCCESS) {
+		if (xc_entry_data_php_init_md5(cache, compiler TSRMLS_CC) != SUCCESS) {
 			gaveup = 1;
 			break;
 		}
 
 		stored_php = xc_php_find_dmz(cache, &compiler->new_php TSRMLS_CC);
 
-		/* miss but compiling */
 		if (stored_php) {
 			compiler->new_entry.php = stored_php;
 			xc_php_addref_dmz(stored_php);
 			if (!compiler->opened_path) {
-				compiler->opened_path = expand_filepath(compiler->filename, compiler->opened_path_buffer TSRMLS_CC);
+				xc_entry_php_resolve_opened_path(compiler TSRMLS_CC);
 			}
-			xc_entry_init_key_php_entry(&compiler->new_entry, compiler->opened_path TSRMLS_CC);
+			xc_entry_php_init(&compiler->new_entry, compiler->opened_path TSRMLS_CC);
 			stored_entry = xc_entry_php_store_dmz(cache, compiler->entry_hash.entryslotid, &compiler->new_entry TSRMLS_CC);
 			TRACE(" cached %d:%s, holding", compiler->new_entry.file_inode, stored_entry->entry.name.str.val);
 			xc_entry_hold_php_dmz(cache, stored_entry TSRMLS_CC);
@@ -1977,7 +2006,11 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	assert(xc_initized);
 
 	TRACE("xc_compile_file: type=%d name=%s", h->type, h->filename ? h->filename : "NULL");
-	if (!XG(cacher)) {
+
+	if (!XG(cacher)
+	 || !h->filename
+	 || !SG(request_info).path_translated
+	 || strstr(h->filename, "://") != NULL) {
 		op_array = old_compile_file(h, type TSRMLS_CC);
 		TRACE("%s", "cacher not enabled");
 		return op_array;
@@ -1986,7 +2019,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	/* {{{ entry_init_key */
 	compiler.opened_path = h->opened_path;
 	compiler.filename = compiler.opened_path ? compiler.opened_path : h->filename;
-	if (xc_entry_init_key_php(&compiler TSRMLS_CC) != SUCCESS) {
+	if (xc_entry_php_init_key(&compiler TSRMLS_CC) != SUCCESS) {
 		TRACE("failed to init key for %s", compiler.filename);
 		return old_compile_file(h, type TSRMLS_CC);
 	}
@@ -2630,11 +2663,18 @@ static int xc_entry_init_key_var(xc_entry_hash_t *entry_hash, xc_entry_var_t *xc
 {
 	xc_hash_value_t hv;
 
+	switch (name->type) {
 #ifdef IS_UNICODE
-	convert_to_unicode(name);
-#else
-	convert_to_string(name);
+		case IS_UNICODE:
+		case IS_STRING:
 #endif
+		default:
+#ifdef IS_UNICODE
+			convert_to_unicode(name);
+#else
+			convert_to_string(name);
+#endif
+	}
 
 #ifdef IS_UNICODE
 	xce->entry.name_type = name->type;
