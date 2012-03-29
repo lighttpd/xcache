@@ -3,7 +3,7 @@
 #define XCACHE_DEBUG
 #endif
 
-#if 1
+#if 0
 #define SHOW_DPRINT
 #endif
 
