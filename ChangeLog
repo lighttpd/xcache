@@ -1,11 +1,13 @@
-2.0.0 2012-?-?
+2.0.0 2012-04-?
 Ini Settings Changes
 ========
  * new: xcache.experimental = Off
 
 ChangeLog
 ========
- * PHP_6: initial catch up with php 6 literals and trait
+ * support for PHP_5_4
+ * reduce memory usage by caching 1 for multiple same content files
+ * correct __FILE__ __DIR__ supported for hardlinked files
  * fixed #102: segv when var cacher is too small
  * fixed #55: segv php tokenizer on certain special situation
  * compiler errors: all compiler warning (E_STRICT only currently) is now cached and is supported for user handler

@@ -1,5 +1,7 @@
-2.0.0 2012-?-?
- * Cache 1 copy for all files with same content
+2.0.0 2012-04-?
+ * support for PHP_5_4
+ * reduce memory usage by caching 1 for multiple same content files
+ * correct __FILE__ __DIR__ supported for hardlinked files
 
 1.3.2 2012-?-?
 ========
