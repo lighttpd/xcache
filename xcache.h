@@ -464,6 +464,7 @@ typedef struct xc_entry_hash_t { /* {{{ */
 /* }}} */
 typedef struct xc_compiler_t { /* {{{ */
 	const char *filename;
+	size_t filename_len;
 	const char *opened_path;
 	char opened_path_buffer[MAXPATHLEN];
 
