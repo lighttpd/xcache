@@ -636,6 +636,8 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 	PROCESS(zend_uchar, result_type)
 #endif
 	IFCOPY(`
+		assert(processor->active_op_array_src);
+		assert(processor->active_op_array_dst);
 #ifdef ZEND_ENGINE_2_4
 		pushdef(`UNION_znode_op_literal', `
 			if (src->$1_type == IS_CONST) {
@@ -652,9 +654,9 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 			case ZEND_GOTO:
 #endif
 			case ZEND_JMP:
-				assert(Z_OP(src->op1).jmp_addr >= processor->active_opcodes_src && Z_OP(src->op1).jmp_addr - processor->active_opcodes_src < processor->active_op_array_src->last);
-				Z_OP(dst->op1).jmp_addr = processor->active_opcodes_dst + (Z_OP(src->op1).jmp_addr - processor->active_opcodes_src);
-				assert(Z_OP(dst->op1).jmp_addr >= processor->active_opcodes_dst && Z_OP(dst->op1).jmp_addr - processor->active_opcodes_dst < processor->active_op_array_dst->last);
+				assert(Z_OP(src->op1).jmp_addr >= processor->active_op_array_src->opcodes && Z_OP(src->op1).jmp_addr - processor->active_op_array_src->opcodes < processor->active_op_array_src->last);
+				Z_OP(dst->op1).jmp_addr = processor->active_op_array_dst->opcodes + (Z_OP(src->op1).jmp_addr - processor->active_op_array_src->opcodes);
+				assert(Z_OP(dst->op1).jmp_addr >= processor->active_op_array_dst->opcodes && Z_OP(dst->op1).jmp_addr - processor->active_op_array_dst->opcodes < processor->active_op_array_dst->last);
 				break;
 
 			case ZEND_JMPZ:
@@ -664,9 +666,9 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 #ifdef ZEND_JMP_SET
 			case ZEND_JMP_SET:
 #endif
-				assert(Z_OP(src->op2).jmp_addr >= processor->active_opcodes_src && Z_OP(src->op2).jmp_addr - processor->active_opcodes_src < processor->active_op_array_src->last);
-				Z_OP(dst->op2).jmp_addr = processor->active_opcodes_dst + (Z_OP(src->op2).jmp_addr - processor->active_opcodes_src);
-				assert(Z_OP(dst->op2).jmp_addr >= processor->active_opcodes_dst && Z_OP(dst->op2).jmp_addr - processor->active_opcodes_dst < processor->active_op_array_dst->last);
+				assert(Z_OP(src->op2).jmp_addr >= processor->active_op_array_src->opcodes && Z_OP(src->op2).jmp_addr - processor->active_op_array_src->opcodes < processor->active_op_array_src->last);
+				Z_OP(dst->op2).jmp_addr = processor->active_op_array_dst->opcodes + (Z_OP(src->op2).jmp_addr - processor->active_op_array_src->opcodes);
+				assert(Z_OP(dst->op2).jmp_addr >= processor->active_op_array_dst->opcodes && Z_OP(dst->op2).jmp_addr - processor->active_op_array_dst->opcodes < processor->active_op_array_dst->last);
 				break;
 
 			default:
@@ -686,6 +688,11 @@ DEF_STRUCT_P_FUNC(`zend_literal', , `dnl {{{
 dnl }}}
 #endif
 DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
+	IFCOPY(`
+		processor->active_op_array_dst = dst;
+		processor->active_op_array_src = src;
+	')
+	{
 	IFRESTORE(`
 	const xc_op_array_info_t *op_array_info = &processor->active_op_array_infos_src[processor->active_op_array_index++];
 	dnl shadow copy must NOT meet:
@@ -819,21 +826,13 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	IFSTORE(`dst->refcount[0] = 1;')
 
 #ifdef ZEND_ENGINE_2_4
-	dnl before copying opcodes
+	dnl used when copying opcodes
 	STRUCT_ARRAY(last_literal, zend_literal, literals)
 	PROCESS(int, last_literal)
 #endif
 
-	pushdef(`AFTER_ALLOC', `IFCOPY(`
-#ifndef NDEBUG
-		processor->active_op_array_dst = dst;
-		processor->active_op_array_src = src;
-#endif
-		processor->active_opcodes_dst = dst->opcodes;
-		processor->active_opcodes_src = src->opcodes;
-	')')
+	dnl uses literals
 	STRUCT_ARRAY(last, zend_op, opcodes)
-	popdef(`AFTER_ALLOC')
 	PROCESS(zend_uint, last)
 #ifndef ZEND_ENGINE_2_4
 	IFCOPY(`dst->size = src->last;DONE(size)', `PROCESS(zend_uint, size)')
@@ -960,6 +959,11 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		if (xc_have_op_array_ctor) {
 			zend_llist_apply_with_argument(&zend_extensions, (llist_apply_with_arg_func_t) xc_zend_extension_op_array_ctor_handler, dst TSRMLS_CC);
 		}
+	')
+	}
+	IFCOPY(`
+		processor->active_op_array_dst = NULL;
+		processor->active_op_array_src = NULL;
 	')
 ')
 dnl }}}
