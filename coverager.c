@@ -342,19 +342,19 @@ void xc_coverager_request_shutdown(TSRMLS_D) /* {{{ */
 /* }}} */
 
 /* helper func to store hits into coverages */
-static coverager_t xc_coverager_get(char *filename TSRMLS_DC) /* {{{ */
+static coverager_t xc_coverager_get(const char *filename TSRMLS_DC) /* {{{ */
 {
 	int len = strlen(filename) + 1;
 	coverager_t cov, *pcov;
 
-	if (zend_hash_find(XG(coverages), filename, len, (void **) &pcov) == SUCCESS) {
+	if (zend_u_hash_find(XG(coverages), IS_STRING, filename, len, (void **) &pcov) == SUCCESS) {
 		TRACE("got coverage %s %p", filename, *pcov);
 		return *pcov;
 	}
 	else {
 		cov = emalloc(sizeof(HashTable));
 		zend_hash_init(cov, 0, NULL, NULL, 0);
-		zend_hash_add(XG(coverages), filename, len, (void **) &cov, sizeof(cov), NULL);
+		zend_u_hash_add(XG(coverages), IS_STRING, filename, len, (void **) &cov, sizeof(cov), NULL);
 		TRACE("new coverage %s %p", filename, cov);
 		return cov;
 	}
