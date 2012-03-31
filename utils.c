@@ -175,6 +175,9 @@ int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 #ifdef ZEND_JMP_SET
 			case ZEND_JMP_SET:
 #endif
+#ifdef ZEND_JMP_SET_VAR
+			case ZEND_JMP_SET_VAR:
+#endif
 				assert(Z_OP(opline->op2).jmp_addr >= op_array->opcodes && Z_OP(opline->op2).jmp_addr - op_array->opcodes < op_array->last);
 				Z_OP(opline->op2).opline_num = Z_OP(opline->op2).jmp_addr - op_array->opcodes;
 				break;
