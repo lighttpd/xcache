@@ -213,8 +213,6 @@ define(`STRUCT_ARRAY', `
 			ALLOC(`dst->$3', `$2', `ARRAY_ELEMENT_COUNT')
 			popdef(`ARRAY_ELEMENT_COUNT')
 
-			ifdef(`AFTER_ALLOC', AFTER_ALLOC)
-
 			for (LOOPCOUNTER = 0;
 					ifelse(`$1', `', `SRC(`$3[LOOPCOUNTER]')',
 					`', `', `LOOPCOUNTER < SRC(`$1')');
@@ -232,7 +230,6 @@ define(`STRUCT_ARRAY', `
 	}
 	else {
 		COPYNULL(`$3')
-		ifdef(`AFTER_ALLOC', AFTER_ALLOC)
 	}
 ')
 dnl }}}
