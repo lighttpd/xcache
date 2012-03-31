@@ -911,13 +911,13 @@ static char *xc_expand_url(const char *filepath, char *real_path TSRMLS_DC) /* {
 }
 /* }}} */
 
-#define XC_INCLUDE_PATH_XSTAT_FUNC(name) zend_bool name(const char *filepath, size_t absolute_path_len, void *data TSRMLS_DC)
+#define XC_INCLUDE_PATH_XSTAT_FUNC(name) zend_bool name(const char *filepath, size_t filepath_len, void *data TSRMLS_DC)
 typedef XC_INCLUDE_PATH_XSTAT_FUNC((*include_path_xstat_func_t));
 static zend_bool xc_include_path_apply(const char *filepath, char *path_buffer, include_path_xstat_func_t xstat_func, void *data TSRMLS_DC) /* {{{ */
 {
 	char *paths, *path;
 	char *tokbuf;
-	size_t absolute_path_len;
+	size_t path_buffer_len;
 	int size = strlen(PG(include_path)) + 1;
 	char tokens[] = { DEFAULT_DIR_SEPARATOR, '\0' };
 	int ret;
@@ -927,9 +927,9 @@ static zend_bool xc_include_path_apply(const char *filepath, char *path_buffer, 
 	memcpy(paths, PG(include_path), size);
 
 	for (path = php_strtok_r(paths, tokens, &tokbuf); path; path = php_strtok_r(NULL, tokens, &tokbuf)) {
-		absolute_path_len = snprintf(path_buffer, MAXPATHLEN, "%s/%s", path, filepath);
-		if (absolute_path_len < MAXPATHLEN - 1) {
-			if (xstat_func(path_buffer, absolute_path_len, data)) {
+		path_buffer_len = snprintf(path_buffer, MAXPATHLEN, "%s/%s", path, filepath);
+		if (path_buffer_len < MAXPATHLEN - 1) {
+			if (xstat_func(path_buffer, path_buffer_len, data)) {
 				ret = 1;
 				goto finish;
 			}
@@ -949,8 +949,9 @@ static zend_bool xc_include_path_apply(const char *filepath, char *path_buffer, 
 						++dirname_len; /* include tailing slash */
 						memcpy(path_buffer, executed_filename, dirname_len);
 						memcpy(path_buffer + dirname_len, filepath, filename_len);
-						absolute_path_len = dirname_len + filename_len;
-						if (xstat_func(path_buffer, absolute_path_len, data) == 0) {
+						path_buffer_len = dirname_len + filename_len;
+						path_buffer[path_buffer_len] = '\0';
+						if (xstat_func(path_buffer, path_buffer_len, data) == 0) {
 							ret = 1;
 							goto finish;
 						}
