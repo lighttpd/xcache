@@ -116,9 +116,9 @@ ZEND_DECLARE_MODULE_GLOBALS(xcache);
 typedef enum { XC_TYPE_PHP, XC_TYPE_VAR } xc_entry_type_t;
 /* }}} */
 
-/* any function in *_dmz is only safe be called within locked(single thread) area */
+/* any function in *_unlocked is only safe be called within locked (single thread access) area */
 
-static void xc_php_add_dmz(xc_cache_t *cache, xc_entry_data_php_t *php) /* {{{ */
+static void xc_php_add_unlocked(xc_cache_t *cache, xc_entry_data_php_t *php) /* {{{ */
 {
 	xc_entry_data_php_t **head = &(cache->phps[php->hvalue]);
 	php->next = *head;
@@ -126,7 +126,7 @@ static void xc_php_add_dmz(xc_cache_t *cache, xc_entry_data_php_t *php) /* {{{ *
 	cache->phps_count ++;
 }
 /* }}} */
-static xc_entry_data_php_t *xc_php_store_dmz(xc_cache_t *cache, xc_entry_data_php_t *php TSRMLS_DC) /* {{{ */
+static xc_entry_data_php_t *xc_php_store_unlocked(xc_cache_t *cache, xc_entry_data_php_t *php TSRMLS_DC) /* {{{ */
 {
 	xc_entry_data_php_t *stored_php;
 
@@ -134,7 +134,7 @@ static xc_entry_data_php_t *xc_php_store_dmz(xc_cache_t *cache, xc_entry_data_ph
 	php->refcount = 0;
 	stored_php = xc_processor_store_xc_entry_data_php_t(cache, php TSRMLS_CC);
 	if (stored_php) {
-		xc_php_add_dmz(cache, stored_php);
+		xc_php_add_unlocked(cache, stored_php);
 		return stored_php;
 	}
 	else {
@@ -143,7 +143,7 @@ static xc_entry_data_php_t *xc_php_store_dmz(xc_cache_t *cache, xc_entry_data_ph
 	}
 }
 /* }}} */
-static xc_entry_data_php_t *xc_php_find_dmz(xc_cache_t *cache, xc_entry_data_php_t *php TSRMLS_DC) /* {{{ */
+static xc_entry_data_php_t *xc_php_find_unlocked(xc_cache_t *cache, xc_entry_data_php_t *php TSRMLS_DC) /* {{{ */
 {
 	xc_entry_data_php_t *p;
 	for (p = cache->phps[php->hvalue]; p; p = (xc_entry_data_php_t *) p->next) {
@@ -155,17 +155,17 @@ static xc_entry_data_php_t *xc_php_find_dmz(xc_cache_t *cache, xc_entry_data_php
 	return NULL;
 }
 /* }}} */
-static void xc_php_free_dmz(xc_cache_t *cache, xc_entry_data_php_t *php) /* {{{ */
+static void xc_php_free_unlocked(xc_cache_t *cache, xc_entry_data_php_t *php) /* {{{ */
 {
 	cache->mem->handlers->free(cache->mem, (xc_entry_data_php_t *)php);
 }
 /* }}} */
-static void xc_php_addref_dmz(xc_entry_data_php_t *php) /* {{{ */
+static void xc_php_addref_unlocked(xc_entry_data_php_t *php) /* {{{ */
 {
 	php->refcount ++;
 }
 /* }}} */
-static void xc_php_release_dmz(xc_cache_t *cache, xc_entry_data_php_t *php) /* {{{ */
+static void xc_php_release_unlocked(xc_cache_t *cache, xc_entry_data_php_t *php) /* {{{ */
 {
 	if (-- php->refcount == 0) {
 		xc_entry_data_php_t **pp = &(cache->phps[php->hvalue]);
@@ -174,7 +174,7 @@ static void xc_php_release_dmz(xc_cache_t *cache, xc_entry_data_php_t *php) /* {
 			if (memcmp(&php->md5.digest, &p->md5.digest, sizeof(php->md5.digest)) == 0) {
 				/* unlink */
 				*pp = p->next;
-				xc_php_free_dmz(cache, php);
+				xc_php_free_unlocked(cache, php);
 				return;
 			}
 		}
@@ -183,7 +183,7 @@ static void xc_php_release_dmz(xc_cache_t *cache, xc_entry_data_php_t *php) /* {
 }
 /* }}} */
 
-static inline int xc_entry_equal_dmz(xc_entry_type_t type, const xc_entry_t *entry1, const xc_entry_t *entry2) /* {{{ */
+static inline int xc_entry_equal_unlocked(xc_entry_type_t type, const xc_entry_t *entry1, const xc_entry_t *entry2) /* {{{ */
 {
 	/* this function isn't required but can be in dmz */
 	switch (type) {
@@ -233,7 +233,7 @@ static inline int xc_entry_equal_dmz(xc_entry_type_t type, const xc_entry_t *ent
 	return 0;
 }
 /* }}} */
-static inline int xc_entry_has_prefix_dmz(xc_entry_type_t type, xc_entry_t *entry, zval *prefix) /* {{{ */
+static inline int xc_entry_has_prefix_unlocked(xc_entry_type_t type, xc_entry_t *entry, zval *prefix) /* {{{ */
 {
 	/* this function isn't required but can be in dmz */
 
@@ -260,7 +260,7 @@ static inline int xc_entry_has_prefix_dmz(xc_entry_type_t type, xc_entry_t *entr
 	return memcmp(entry->name.str.val, Z_STRVAL_P(prefix), Z_STRLEN_P(prefix)) == 0;
 }
 /* }}} */
-static void xc_entry_add_dmz(xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *entry) /* {{{ */
+static void xc_entry_add_unlocked(xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *entry) /* {{{ */
 {
 	xc_entry_t **head = &(cache->entries[entryslotid]);
 	entry->next = *head;
@@ -268,7 +268,7 @@ static void xc_entry_add_dmz(xc_cache_t *cache, xc_hash_value_t entryslotid, xc_
 	cache->entries_count ++;
 }
 /* }}} */
-static xc_entry_t *xc_entry_store_dmz(xc_entry_type_t type, xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *entry TSRMLS_DC) /* {{{ */
+static xc_entry_t *xc_entry_store_unlocked(xc_entry_type_t type, xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *entry TSRMLS_DC) /* {{{ */
 {
 	xc_entry_t *stored_entry;
 
@@ -279,7 +279,7 @@ static xc_entry_t *xc_entry_store_dmz(xc_entry_type_t type, xc_cache_t *cache, x
 		? (xc_entry_t *) xc_processor_store_xc_entry_php_t(cache, (xc_entry_php_t *) entry TSRMLS_CC)
 		: (xc_entry_t *) xc_processor_store_xc_entry_var_t(cache, (xc_entry_var_t *) entry TSRMLS_CC);
 	if (stored_entry) {
-		xc_entry_add_dmz(cache, entryslotid, stored_entry);
+		xc_entry_add_unlocked(cache, entryslotid, stored_entry);
 		return stored_entry;
 	}
 	else {
@@ -288,29 +288,29 @@ static xc_entry_t *xc_entry_store_dmz(xc_entry_type_t type, xc_cache_t *cache, x
 	}
 }
 /* }}} */
-static xc_entry_php_t *xc_entry_php_store_dmz(xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_php_t *entry_php TSRMLS_DC) /* {{{ */
+static xc_entry_php_t *xc_entry_php_store_unlocked(xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_php_t *entry_php TSRMLS_DC) /* {{{ */
 {
-	return (xc_entry_php_t *) xc_entry_store_dmz(XC_TYPE_PHP, cache, entryslotid, (xc_entry_t *) entry_php TSRMLS_CC);
+	return (xc_entry_php_t *) xc_entry_store_unlocked(XC_TYPE_PHP, cache, entryslotid, (xc_entry_t *) entry_php TSRMLS_CC);
 }
 /* }}} */
-static xc_entry_var_t *xc_entry_var_store_dmz(xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_var_t *entry_var TSRMLS_DC) /* {{{ */
+static xc_entry_var_t *xc_entry_var_store_unlocked(xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_var_t *entry_var TSRMLS_DC) /* {{{ */
 {
-	return (xc_entry_var_t *) xc_entry_store_dmz(XC_TYPE_VAR, cache, entryslotid, (xc_entry_t *) entry_var TSRMLS_CC);
+	return (xc_entry_var_t *) xc_entry_store_unlocked(XC_TYPE_VAR, cache, entryslotid, (xc_entry_t *) entry_var TSRMLS_CC);
 }
 /* }}} */
-static void xc_entry_free_real_dmz(xc_entry_type_t type, xc_cache_t *cache, volatile xc_entry_t *entry) /* {{{ */
+static void xc_entry_free_real_unlocked(xc_entry_type_t type, xc_cache_t *cache, volatile xc_entry_t *entry) /* {{{ */
 {
 	if (type == XC_TYPE_PHP) {
-		xc_php_release_dmz(cache, ((xc_entry_php_t *) entry)->php);
+		xc_php_release_unlocked(cache, ((xc_entry_php_t *) entry)->php);
 	}
 	cache->mem->handlers->free(cache->mem, (xc_entry_t *)entry);
 }
 /* }}} */
-static void xc_entry_free_dmz(xc_entry_type_t type, xc_cache_t *cache, xc_entry_t *entry TSRMLS_DC) /* {{{ */
+static void xc_entry_free_unlocked(xc_entry_type_t type, xc_cache_t *cache, xc_entry_t *entry TSRMLS_DC) /* {{{ */
 {
 	cache->entries_count --;
 	if ((type == XC_TYPE_PHP ? ((xc_entry_php_t *) entry)->refcount : 0) == 0) {
-		xc_entry_free_real_dmz(type, cache, entry);
+		xc_entry_free_real_unlocked(type, cache, entry);
 	}
 	else {
 		entry->next = cache->deletes;
@@ -321,26 +321,26 @@ static void xc_entry_free_dmz(xc_entry_type_t type, xc_cache_t *cache, xc_entry_
 	return;
 }
 /* }}} */
-static void xc_entry_remove_dmz(xc_entry_type_t type, xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *entry TSRMLS_DC) /* {{{ */
+static void xc_entry_remove_unlocked(xc_entry_type_t type, xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *entry TSRMLS_DC) /* {{{ */
 {
 	xc_entry_t **pp = &(cache->entries[entryslotid]);
 	xc_entry_t *p;
 	for (p = *pp; p; pp = &(p->next), p = p->next) {
-		if (xc_entry_equal_dmz(type, entry, p)) {
+		if (xc_entry_equal_unlocked(type, entry, p)) {
 			/* unlink */
 			*pp = p->next;
-			xc_entry_free_dmz(type, cache, entry TSRMLS_CC);
+			xc_entry_free_unlocked(type, cache, entry TSRMLS_CC);
 			return;
 		}
 	}
 	assert(0);
 }
 /* }}} */
-static xc_entry_t *xc_entry_find_dmz(xc_entry_type_t type, xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *entry TSRMLS_DC) /* {{{ */
+static xc_entry_t *xc_entry_find_unlocked(xc_entry_type_t type, xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *entry TSRMLS_DC) /* {{{ */
 {
 	xc_entry_t *p;
 	for (p = cache->entries[entryslotid]; p; p = p->next) {
-		if (xc_entry_equal_dmz(type, entry, p)) {
+		if (xc_entry_equal_unlocked(type, entry, p)) {
 			zend_bool fresh;
 			switch (type) {
 			case XC_TYPE_PHP:
@@ -367,14 +367,14 @@ static xc_entry_t *xc_entry_find_dmz(xc_entry_type_t type, xc_cache_t *cache, xc
 				return p;
 			}
 
-			xc_entry_remove_dmz(type, cache, entryslotid, p TSRMLS_CC);
+			xc_entry_remove_unlocked(type, cache, entryslotid, p TSRMLS_CC);
 			return NULL;
 		}
 	}
 	return NULL;
 }
 /* }}} */
-static void xc_entry_hold_php_dmz(xc_cache_t *cache, xc_entry_php_t *entry TSRMLS_DC) /* {{{ */
+static void xc_entry_hold_php_unlocked(xc_cache_t *cache, xc_entry_php_t *entry TSRMLS_DC) /* {{{ */
 {
 	TRACE("hold %d:%s", entry->file_inode, entry->entry.name.str.val);
 	entry->refcount ++;
@@ -412,7 +412,7 @@ static void xc_counters_inc(time_t *curtime, zend_uint *curslot, time_t period, 
 	counters[*curslot] ++;
 }
 /* }}} */
-static void xc_cache_hit_dmz(xc_cache_t *cache TSRMLS_DC) /* {{{ */
+static void xc_cache_hit_unlocked(xc_cache_t *cache TSRMLS_DC) /* {{{ */
 {
 	cache->hits ++;
 
@@ -433,8 +433,8 @@ static void xc_cache_hit_dmz(xc_cache_t *cache TSRMLS_DC) /* {{{ */
 
 /* helper function that loop through each entry */
 #define XC_ENTRY_APPLY_FUNC(name) zend_bool name(xc_entry_t *entry TSRMLS_DC)
-typedef XC_ENTRY_APPLY_FUNC((*cache_apply_dmz_func_t));
-static void xc_entry_apply_dmz(xc_entry_type_t type, xc_cache_t *cache, cache_apply_dmz_func_t apply_func TSRMLS_DC) /* {{{ */
+typedef XC_ENTRY_APPLY_FUNC((*cache_apply_unlocked_func_t));
+static void xc_entry_apply_unlocked(xc_entry_type_t type, xc_cache_t *cache, cache_apply_dmz_func_t apply_func TSRMLS_DC) /* {{{ */
 {
 	xc_entry_t *p, **pp;
 	int i, c;
@@ -445,7 +445,7 @@ static void xc_entry_apply_dmz(xc_entry_type_t type, xc_cache_t *cache, cache_ap
 			if (apply_func(p TSRMLS_CC)) {
 				/* unlink */
 				*pp = p->next;
-				xc_entry_free_dmz(type, cache, p TSRMLS_CC);
+				xc_entry_free_unlocked(type, cache, p TSRMLS_CC);
 			}
 			else {
 				pp = &(p->next);
@@ -457,10 +457,10 @@ static void xc_entry_apply_dmz(xc_entry_type_t type, xc_cache_t *cache, cache_ap
 
 #define XC_CACHE_APPLY_FUNC(name) void name(xc_cache_t *cache TSRMLS_DC)
 /* call graph:
- * xc_gc_expires_php -> xc_gc_expires_one -> xc_entry_apply_dmz -> xc_gc_expires_php_entry_dmz
- * xc_gc_expires_var -> xc_gc_expires_one -> xc_entry_apply_dmz -> xc_gc_expires_var_entry_dmz
+ * xc_gc_expires_php -> xc_gc_expires_one -> xc_entry_apply_unlocked -> xc_gc_expires_php_entry_dmz
+ * xc_gc_expires_var -> xc_gc_expires_one -> xc_entry_apply_unlocked -> xc_gc_expires_var_entry_dmz
  */
-static XC_ENTRY_APPLY_FUNC(xc_gc_expires_php_entry_dmz) /* {{{ */
+static XC_ENTRY_APPLY_FUNC(xc_gc_expires_php_entry_unlocked) /* {{{ */
 {
 	TRACE("ttl %lu, %lu %lu", (zend_ulong) XG(request_time), (zend_ulong) entry->atime, xc_php_ttl);
 	if (XG(request_time) > entry->atime + xc_php_ttl) {
@@ -469,7 +469,7 @@ static XC_ENTRY_APPLY_FUNC(xc_gc_expires_php_entry_dmz) /* {{{ */
 	return 0;
 }
 /* }}} */
-static XC_ENTRY_APPLY_FUNC(xc_gc_expires_var_entry_dmz) /* {{{ */
+static XC_ENTRY_APPLY_FUNC(xc_gc_expires_var_entry_unlocked) /* {{{ */
 {
 	if (VAR_ENTRY_EXPIRED(entry)) {
 		return 1;
@@ -477,14 +477,14 @@ static XC_ENTRY_APPLY_FUNC(xc_gc_expires_var_entry_dmz) /* {{{ */
 	return 0;
 }
 /* }}} */
-static void xc_gc_expires_one(xc_entry_type_t type, xc_cache_t *cache, zend_ulong gc_interval, cache_apply_dmz_func_t apply_func TSRMLS_DC) /* {{{ */
+static void xc_gc_expires_one(xc_entry_type_t type, xc_cache_t *cache, zend_ulong gc_interval, cache_apply_unlocked_func_t apply_func TSRMLS_DC) /* {{{ */
 {
 	TRACE("interval %lu, %lu %lu", (zend_ulong) XG(request_time), (zend_ulong) cache->last_gc_expires, gc_interval);
 	if (XG(request_time) - cache->last_gc_expires >= gc_interval) {
 		ENTER_LOCK(cache) {
 			if (XG(request_time) - cache->last_gc_expires >= gc_interval) {
 				cache->last_gc_expires = XG(request_time);
-				xc_entry_apply_dmz(type, cache, apply_func TSRMLS_CC);
+				xc_entry_apply_unlocked(type, cache, apply_func TSRMLS_CC);
 			}
 		} LEAVE_LOCK(cache);
 	}
@@ -499,7 +499,7 @@ static void xc_gc_expires_php(TSRMLS_D) /* {{{ */
 	}
 
 	for (i = 0, c = xc_php_hcache.size; i < c; i ++) {
-		xc_gc_expires_one(XC_TYPE_PHP, xc_php_caches[i], xc_php_gc_interval, xc_gc_expires_php_entry_dmz TSRMLS_CC);
+		xc_gc_expires_one(XC_TYPE_PHP, xc_php_caches[i], xc_php_gc_interval, xc_gc_expires_php_entry_unlocked TSRMLS_CC);
 	}
 }
 /* }}} */
@@ -512,12 +512,12 @@ static void xc_gc_expires_var(TSRMLS_D) /* {{{ */
 	}
 
 	for (i = 0, c = xc_var_hcache.size; i < c; i ++) {
-		xc_gc_expires_one(XC_TYPE_VAR, xc_var_caches[i], xc_var_gc_interval, xc_gc_expires_var_entry_dmz TSRMLS_CC);
+		xc_gc_expires_one(XC_TYPE_VAR, xc_var_caches[i], xc_var_gc_interval, xc_gc_expires_var_entry_unlocked TSRMLS_CC);
 	}
 }
 /* }}} */
 
-static XC_CACHE_APPLY_FUNC(xc_gc_delete_dmz) /* {{{ */
+static XC_CACHE_APPLY_FUNC(xc_gc_delete_unlocked) /* {{{ */
 {
 	xc_entry_t *p, **pp;
 
@@ -532,7 +532,7 @@ static XC_CACHE_APPLY_FUNC(xc_gc_delete_dmz) /* {{{ */
 			/* unlink */
 			*pp = p->next;
 			cache->deletes_count --;
-			xc_entry_free_real_dmz(XC_TYPE_PHP, cache, p);
+			xc_entry_free_real_unlocked(XC_TYPE_PHP, cache, p);
 		}
 		else {
 			pp = &(p->next);
@@ -546,7 +546,7 @@ static XC_CACHE_APPLY_FUNC(xc_gc_deletes_one) /* {{{ */
 		ENTER_LOCK(cache) {
 			if (cache->deletes && XG(request_time) - cache->last_gc_deletes > xc_deletes_gc_interval) {
 				cache->last_gc_deletes = XG(request_time);
-				xc_gc_delete_dmz(cache TSRMLS_CC);
+				xc_gc_delete_unlocked(cache TSRMLS_CC);
 			}
 		} LEAVE_LOCK(cache);
 	}
@@ -571,7 +571,7 @@ static void xc_gc_deletes(TSRMLS_D) /* {{{ */
 /* }}} */
 
 /* helper functions for user functions */
-static void xc_fillinfo_dmz(int cachetype, xc_cache_t *cache, zval *return_value TSRMLS_DC) /* {{{ */
+static void xc_fillinfo_unlocked(int cachetype, xc_cache_t *cache, zval *return_value TSRMLS_DC) /* {{{ */
 {
 	zval *blocks, *hits;
 	int i;
@@ -646,7 +646,7 @@ static void xc_fillinfo_dmz(int cachetype, xc_cache_t *cache, zval *return_value
 #endif
 }
 /* }}} */
-static void xc_fillentry_dmz(xc_entry_type_t type, const xc_entry_t *entry, xc_hash_value_t entryslotid, int del, zval *list TSRMLS_DC) /* {{{ */
+static void xc_fillentry_unlocked(xc_entry_type_t type, const xc_entry_t *entry, xc_hash_value_t entryslotid, int del, zval *list TSRMLS_DC) /* {{{ */
 {
 	zval* ei;
 	const xc_entry_data_php_t *php;
@@ -716,7 +716,7 @@ static void xc_fillentry_dmz(xc_entry_type_t type, const xc_entry_t *entry, xc_h
 	add_next_index_zval(list, ei);
 }
 /* }}} */
-static void xc_filllist_dmz(xc_entry_type_t type, xc_cache_t *cache, zval *return_value TSRMLS_DC) /* {{{ */
+static void xc_filllist_unlocked(xc_entry_type_t type, xc_cache_t *cache, zval *return_value TSRMLS_DC) /* {{{ */
 {
 	zval* list;
 	int i, c;
@@ -727,7 +727,7 @@ static void xc_filllist_dmz(xc_entry_type_t type, xc_cache_t *cache, zval *retur
 
 	for (i = 0, c = cache->hentry->size; i < c; i ++) {
 		for (e = cache->entries[i]; e; e = e->next) {
-			xc_fillentry_dmz(type, e, i, 0, list TSRMLS_CC);
+			xc_fillentry_unlocked(type, e, i, 0, list TSRMLS_CC);
 		}
 	}
 	add_assoc_zval(return_value, "cache_list", list);
@@ -735,7 +735,7 @@ static void xc_filllist_dmz(xc_entry_type_t type, xc_cache_t *cache, zval *retur
 	ALLOC_INIT_ZVAL(list);
 	array_init(list);
 	for (e = cache->deletes; e; e = e->next) {
-		xc_fillentry_dmz(XC_TYPE_PHP, e, 0, 1, list TSRMLS_CC);
+		xc_fillentry_unlocked(XC_TYPE_PHP, e, 0, 1, list TSRMLS_CC);
 	}
 	add_assoc_zval(return_value, "deleted_list", list);
 }
@@ -989,7 +989,7 @@ typedef struct xc_entry_find_include_path_data_t { /* {{{ */
 	xc_entry_php_t **stored_entry;
 } xc_entry_find_include_path_data_t;
 /* }}} */
-static XC_INCLUDE_PATH_XSTAT_FUNC(xc_entry_find_include_path_func_dmz) /* {{{ */
+static XC_INCLUDE_PATH_XSTAT_FUNC(xc_entry_find_include_path_func_unlocked) /* {{{ */
 {
 	xc_entry_find_include_path_data_t *entry_find_include_path_data = (xc_entry_find_include_path_data_t *) data;
 	xc_compiler_t *compiler = entry_find_include_path_data->compiler;
@@ -997,7 +997,7 @@ static XC_INCLUDE_PATH_XSTAT_FUNC(xc_entry_find_include_path_func_dmz) /* {{{ */
 	compiler->new_entry.entry.name.str.val = xc_expand_url(filepath, compiler->opened_path_buffer TSRMLS_CC);
 	compiler->new_entry.entry.name.str.len = strlen(compiler->new_entry.entry.name.str.val);
 
-	*entry_find_include_path_data->stored_entry = (xc_entry_php_t *) xc_entry_find_dmz(
+	*entry_find_include_path_data->stored_entry = (xc_entry_php_t *) xc_entry_find_unlocked(
 			XC_TYPE_PHP
 			, xc_php_caches[compiler->entry_hash.cacheid]
 			, compiler->entry_hash.entryslotid
@@ -1007,14 +1007,14 @@ static XC_INCLUDE_PATH_XSTAT_FUNC(xc_entry_find_include_path_func_dmz) /* {{{ */
 	return *entry_find_include_path_data->stored_entry ? 1 : 0;
 }
 /* }}} */
-static int xc_entry_find_include_path_dmz(xc_compiler_t *compiler, const char *filepath, xc_entry_php_t **stored_entry TSRMLS_DC) /* {{{ */
+static int xc_entry_find_include_path_unlocked(xc_compiler_t *compiler, const char *filepath, xc_entry_php_t **stored_entry TSRMLS_DC) /* {{{ */
 {
 	char path_buffer[MAXPATHLEN];
 	xc_entry_find_include_path_data_t entry_find_include_path_data;
 	entry_find_include_path_data.compiler = compiler;
 	entry_find_include_path_data.stored_entry = stored_entry;
 
-	return xc_include_path_apply(filepath, path_buffer, xc_entry_find_include_path_func_dmz, (void *) &entry_find_include_path_data TSRMLS_DC)
+	return xc_include_path_apply(filepath, path_buffer, xc_entry_find_include_path_func_unlocked, (void *) &entry_find_include_path_data TSRMLS_DC)
 		? SUCCESS
 		: FAILURE;
 }
@@ -1902,7 +1902,7 @@ static zend_op_array *xc_compile_file_ex(xc_compiler_t *compiler, zend_file_hand
 	stored_php = NULL;
 
 	ENTER_LOCK_EX(cache) {
-		if (!compiler->opened_path && xc_entry_find_include_path_dmz(compiler, compiler->filename, &stored_entry TSRMLS_CC) == SUCCESS) {
+		if (!compiler->opened_path && xc_entry_find_include_path_unlocked(compiler, compiler->filename, &stored_entry TSRMLS_CC) == SUCCESS) {
 			compiler->opened_path = compiler->new_entry.entry.name.str.val;
 		}
 		else {
@@ -1915,14 +1915,14 @@ static zend_op_array *xc_compile_file_ex(xc_compiler_t *compiler, zend_file_hand
 			compiler->new_entry.entry.name.str.val = (char *) compiler->opened_path;
 			compiler->new_entry.entry.name.str.len = strlen(compiler->new_entry.entry.name.str.val);
 
-			stored_entry = (xc_entry_php_t *) xc_entry_find_dmz(XC_TYPE_PHP, cache, compiler->entry_hash.entryslotid, (xc_entry_t *) &compiler->new_entry TSRMLS_CC);
+			stored_entry = (xc_entry_php_t *) xc_entry_find_unlocked(XC_TYPE_PHP, cache, compiler->entry_hash.entryslotid, (xc_entry_t *) &compiler->new_entry TSRMLS_CC);
 		}
 
 		if (stored_entry) {
-			xc_cache_hit_dmz(cache TSRMLS_CC);
+			xc_cache_hit_unlocked(cache TSRMLS_CC);
 
 			TRACE(" hit %d:%s, holding", compiler->new_entry.file_inode, stored_entry->entry.name.str.val);
-			xc_entry_hold_php_dmz(cache, stored_entry TSRMLS_CC);
+			xc_entry_hold_php_unlocked(cache, stored_entry TSRMLS_CC);
 			stored_php = stored_entry->php;
 			break;
 		}
@@ -1935,15 +1935,15 @@ static zend_op_array *xc_compile_file_ex(xc_compiler_t *compiler, zend_file_hand
 			break;
 		}
 
-		stored_php = xc_php_find_dmz(cache, &compiler->new_php TSRMLS_CC);
+		stored_php = xc_php_find_unlocked(cache, &compiler->new_php TSRMLS_CC);
 
 		if (stored_php) {
 			compiler->new_entry.php = stored_php;
-			xc_php_addref_dmz(stored_php);
+			xc_php_addref_unlocked(stored_php);
 			xc_entry_php_init(&compiler->new_entry, compiler->opened_path TSRMLS_CC);
-			stored_entry = xc_entry_php_store_dmz(cache, compiler->entry_hash.entryslotid, &compiler->new_entry TSRMLS_CC);
+			stored_entry = xc_entry_php_store_unlocked(cache, compiler->entry_hash.entryslotid, &compiler->new_entry TSRMLS_CC);
 			TRACE(" cached %d:%s, holding", compiler->new_entry.file_inode, stored_entry->entry.name.str.val);
-			xc_entry_hold_php_dmz(cache, stored_entry TSRMLS_CC);
+			xc_entry_hold_php_unlocked(cache, stored_entry TSRMLS_CC);
 			break;
 		}
 
@@ -2014,17 +2014,17 @@ static zend_op_array *xc_compile_file_ex(xc_compiler_t *compiler, zend_file_hand
 #endif
 	ENTER_LOCK_EX(cache) { /* {{{ php_store/entry_store */
 		/* php_store */
-		stored_php = xc_php_store_dmz(cache, &compiler->new_php TSRMLS_CC);
+		stored_php = xc_php_store_unlocked(cache, &compiler->new_php TSRMLS_CC);
 		if (!stored_php) {
 			/* error */
 			break;
 		}
 		/* entry_store */
 		compiler->new_entry.php = stored_php;
-		xc_php_addref_dmz(stored_php);
-		stored_entry = xc_entry_php_store_dmz(cache, compiler->entry_hash.entryslotid, &compiler->new_entry TSRMLS_CC);
+		xc_php_addref_unlocked(stored_php);
+		stored_entry = xc_entry_php_store_unlocked(cache, compiler->entry_hash.entryslotid, &compiler->new_entry TSRMLS_CC);
 		if (!stored_entry) {
-			xc_php_release_dmz(cache, stored_php);
+			xc_php_release_unlocked(cache, stored_php);
 		}
 	} LEAVE_LOCK_EX(cache);
 	/* }}} */
@@ -2671,10 +2671,10 @@ static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAME
 			cache = caches[id];
 			ENTER_LOCK(cache) {
 				if (optype == XC_OP_INFO) {
-					xc_fillinfo_dmz(type, cache, return_value TSRMLS_CC);
+					xc_fillinfo_unlocked(type, cache, return_value TSRMLS_CC);
 				}
 				else {
-					xc_filllist_dmz(type, cache, return_value TSRMLS_CC);
+					xc_filllist_unlocked(type, cache, return_value TSRMLS_CC);
 				}
 			} LEAVE_LOCK(cache);
 			break;
@@ -2693,7 +2693,7 @@ static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAME
 					for (entryslotid = 0, c = cache->hentry->size; entryslotid < c; entryslotid ++) {
 						for (e = cache->entries[entryslotid]; e; e = next) {
 							next = e->next;
-							xc_entry_remove_dmz(type, cache, entryslotid, e TSRMLS_CC);
+							xc_entry_remove_unlocked(type, cache, entryslotid, e TSRMLS_CC);
 						}
 						cache->entries[entryslotid] = NULL;
 					}
@@ -2791,11 +2791,11 @@ PHP_FUNCTION(xcache_get)
 	cache = xc_var_caches[entry_hash.cacheid];
 
 	ENTER_LOCK(cache) {
-		stored_entry_var = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
+		stored_entry_var = (xc_entry_var_t *) xc_entry_find_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
 		if (stored_entry_var) {
 			/* return */
 			xc_processor_restore_zval(return_value, stored_entry_var->value, stored_entry_var->have_references TSRMLS_CC);
-			xc_cache_hit_dmz(cache TSRMLS_CC);
+			xc_cache_hit_unlocked(cache TSRMLS_CC);
 		}
 		else {
 			RETVAL_NULL();
@@ -2833,12 +2833,12 @@ PHP_FUNCTION(xcache_set)
 	cache = xc_var_caches[entry_hash.cacheid];
 
 	ENTER_LOCK(cache) {
-		stored_entry_var = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
+		stored_entry_var = (xc_entry_var_t *) xc_entry_find_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
 		if (stored_entry_var) {
-			xc_entry_remove_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) stored_entry_var TSRMLS_CC);
+			xc_entry_remove_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) stored_entry_var TSRMLS_CC);
 		}
 		entry_var.value = value;
-		RETVAL_BOOL(xc_entry_var_store_dmz(cache, entry_hash.entryslotid, &entry_var TSRMLS_CC) != NULL ? 1 : 0);
+		RETVAL_BOOL(xc_entry_var_store_unlocked(cache, entry_hash.entryslotid, &entry_var TSRMLS_CC) != NULL ? 1 : 0);
 	} LEAVE_LOCK(cache);
 }
 /* }}} */
@@ -2863,9 +2863,9 @@ PHP_FUNCTION(xcache_isset)
 	cache = xc_var_caches[entry_hash.cacheid];
 
 	ENTER_LOCK(cache) {
-		stored_entry_var = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
+		stored_entry_var = (xc_entry_var_t *) xc_entry_find_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
 		if (stored_entry_var) {
-			xc_cache_hit_dmz(cache TSRMLS_CC);
+			xc_cache_hit_unlocked(cache TSRMLS_CC);
 			RETVAL_TRUE;
 			/* return */
 		}
@@ -2897,9 +2897,9 @@ PHP_FUNCTION(xcache_unset)
 	cache = xc_var_caches[entry_hash.cacheid];
 
 	ENTER_LOCK(cache) {
-		stored_entry_var = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
+		stored_entry_var = (xc_entry_var_t *) xc_entry_find_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
 		if (stored_entry_var) {
-			xc_entry_remove_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) stored_entry_var TSRMLS_CC);
+			xc_entry_remove_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) stored_entry_var TSRMLS_CC);
 			RETVAL_TRUE;
 		}
 		else {
@@ -2932,8 +2932,8 @@ PHP_FUNCTION(xcache_unset_by_prefix)
 				xc_entry_t *entry, *next;
 				for (entry = cache->entries[entryslotid]; entry; entry = next) {
 					next = entry->next;
-					if (xc_entry_has_prefix_dmz(XC_TYPE_VAR, entry, prefix)) {
-						xc_entry_remove_dmz(XC_TYPE_VAR, cache, entryslotid, entry TSRMLS_CC);
+					if (xc_entry_has_prefix_unlocked(XC_TYPE_VAR, entry, prefix)) {
+						xc_entry_remove_unlocked(XC_TYPE_VAR, cache, entryslotid, entry TSRMLS_CC);
 					}
 				}
 			}
@@ -2970,7 +2970,7 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 	cache = xc_var_caches[entry_hash.cacheid];
 
 	ENTER_LOCK(cache) {
-		stored_entry_var = (xc_entry_var_t *) xc_entry_find_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
+		stored_entry_var = (xc_entry_var_t *) xc_entry_find_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
 		if (stored_entry_var) {
 			TRACE("incdec: got entry_var %s", entry_var.entry.name.str.val);
 			/* do it in place */
@@ -3006,9 +3006,9 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 			entry_var.entry.atime = stored_entry_var->entry.atime;
 			entry_var.entry.ctime = stored_entry_var->entry.ctime;
 			entry_var.entry.hits  = stored_entry_var->entry.hits;
-			xc_entry_remove_dmz(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) stored_entry_var TSRMLS_CC);
+			xc_entry_remove_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) stored_entry_var TSRMLS_CC);
 		}
-		xc_entry_var_store_dmz(cache, entry_hash.entryslotid, &entry_var TSRMLS_CC);
+		xc_entry_var_store_unlocked(cache, entry_hash.entryslotid, &entry_var TSRMLS_CC);
 	} LEAVE_LOCK(cache);
 }
 /* }}} */
