@@ -1,5 +1,5 @@
 define(`pushdefFUNC_NAME', `
-	pushdef(`FUNC_NAME', `xc_`'KIND`'_`'ifelse(`$2', `', `$1', `$2')')
+	pushdef(`FUNC_NAME', `xc_`'PROCESSOR_TYPE`'_`'ifelse(`$2', `', `$1', `$2')')
 ')
 dnl {{{ DECL_STRUCT_P_FUNC(1:type, 2:name, 3:comma=;)
 define(`DECL_STRUCT_P_FUNC', `translit(
@@ -29,7 +29,7 @@ define(`DEF_STRUCT_P_FUNC', `
 DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 	{
 		pushdef(`ELEMENTS_DONE')
-		IFASSERT(`
+		IFAUTOCHECK(`
 			/* {{{ init assert */
 			ifdef(`SIZEOF_$1', , `m4_errprint(`missing SIZEOF_$1, safe to ignore')')
 			ifdef(`COUNTOF_$1', , `m4_errprint(`missing COUNTOF_$1, safe to ignore')')
@@ -44,11 +44,12 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 			', `
 				define(`COUNTOF_$1', 0)
 			')
-			int assert_size = SIZEOF_$1, assert_count = COUNTOF_$1;
-			int done_size = 0, done_count = 0;
-			const char *assert_names[] = { ifdef(`ELEMENTSOF_$1', `ELEMENTSOF_$1') };
-			HashTable done_names;
-			zend_hash_init(&done_names, 0, NULL, NULL, 0);
+			int xc_autocheck_assert_size = SIZEOF_$1, assert_count = COUNTOF_$1;
+			int xc_autocheck_done_size = 0, xc_autocheck_done_count = 0;
+			const char *xc_autocheck_assert_names[] = { ifdef(`ELEMENTSOF_$1', `ELEMENTSOF_$1') };
+			zend_bool xc_autocheck_skip = 0;
+			HashTable xc_autocheck_done_names;
+			zend_hash_init(&xc_autocheck_done_names, 0, NULL, NULL, 0);
 			/* }}} */
 			IFRESTORE(`assert(xc_is_shm(src));')
 			IFCALCSTORE(`assert(!xc_is_shm(src));')
@@ -70,51 +71,44 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 			indent --;
 			INDENT()fprintf(stderr, "}\n");
 		')
-		ifdef(`SKIPASSERT_ONCE', `
-			undefine(`SKIPASSERT_ONCE')
-			IFASSERT(`
-				zend_hash_destroy(&done_names);
-			')
-		', `
-			IFASSERT(`
-			/* {{{ check assert */ do {
-				int name_check_errors = xc_check_names(__FILE__, __LINE__, "FUNC_NAME", assert_names, sizeof(assert_names) / sizeof(assert_names[0]), &done_names);
-				zend_hash_destroy(&done_names);
+		IFAUTOCHECK(`
+		/* {{{ autocheck */ if (!xc_autocheck_skip) {
+			int name_check_errors = xc_check_names(__FILE__, __LINE__, "FUNC_NAME", xc_autocheck_assert_names, sizeof(xc_autocheck_assert_names) / sizeof(xc_autocheck_assert_names[0]), &xc_autocheck_done_names);
+			zend_hash_destroy(&xc_autocheck_done_names);
 
-				if (done_count != assert_count) {
-					fprintf(stderr
-						, "count assertion failed at %s `#'%d FUNC_NAME`' : unexpected:%d - expecting:%d = %d != 0\n"
-						, __FILE__, __LINE__
-						, done_count, assert_count, done_count - assert_count
-						);
-				}
-				if (done_size != assert_size) {
-					fprintf(stderr
-						, "size assertion failed at %s `#'%d FUNC_NAME`' : unexpected:%d - expecting:%d = %d != 0\n"
-						, __FILE__, __LINE__
-						, done_size, assert_size, done_size - assert_size
-						);
-				}
-				if (name_check_errors || done_count != assert_count || done_size != assert_size) {
-					assert(0);
-				}
-			} while (0); /* }}} */
+			if (xc_autocheck_done_count != assert_count) {
+				fprintf(stderr
+					, "count assertion failed at %s `#'%d FUNC_NAME`' : unexpected:%d - expecting:%d = %d != 0\n"
+					, __FILE__, __LINE__
+					, xc_autocheck_done_count, assert_count, xc_autocheck_done_count - assert_count
+					);
+			}
+			if (xc_autocheck_done_size != xc_autocheck_assert_size) {
+				fprintf(stderr
+					, "size assertion failed at %s `#'%d FUNC_NAME`' : unexpected:%d - expecting:%d = %d != 0\n"
+					, __FILE__, __LINE__
+					, xc_autocheck_done_size, xc_autocheck_assert_size, xc_autocheck_done_size - xc_autocheck_assert_size
+					);
+			}
+			if (name_check_errors || xc_autocheck_done_count != assert_count || xc_autocheck_done_size != xc_autocheck_assert_size) {
+				assert(0);
+			}
+		} while (0); /* }}} */
+		')
+		ifdef(`ELEMENTSOF_$1', `
+			pushdef(`ELEMENTS_UNDONE', LIST_DIFF(defn(`ELEMENTSOF_$1'), defn(`ELEMENTS_DONE')))
+			ifelse(defn(`ELEMENTS_UNDONE'), , `m4_errprint(`AUTOCHECK INFO: $1: processor looks good')', `
+				m4_errprint(`AUTOCHECK ERROR: ====' PROCESSOR_TYPE `$1 =================')
+				m4_errprint(`AUTOCHECK expected:' defn(`ELEMENTSOF_$1'))
+				m4_errprint(`AUTOCHECK missing :' defn(`ELEMENTS_UNDONE'))
+				define(`EXIT_PENDING', 1)
 			')
-			ifdef(`ELEMENTSOF_$1', `
-				pushdef(`ELEMENTS_UNDONE', LIST_DIFF(defn(`ELEMENTSOF_$1'), defn(`ELEMENTS_DONE')))
-				ifelse(defn(`ELEMENTS_UNDONE'), , `m4_errprint(`AUTOCHECK INFO: $1: processor looks good')', `
-					m4_errprint(`AUTOCHECK ERROR: ====' KIND `$1 =================')
-					m4_errprint(`AUTOCHECK expected:' defn(`ELEMENTSOF_$1'))
-					m4_errprint(`AUTOCHECK missing :' defn(`ELEMENTS_UNDONE'))
-					define(`EXIT_PENDING', 1)
-				')
-				popdef(`ELEMENTS_UNDONE')
-			')
+			popdef(`ELEMENTS_UNDONE')
 		')
 		ifdef(`USEMEMCPY', `IFCOPY(`
 			} while (0);
 		')')
-		IFASSERT(`
+		IFAUTOCHECK(`
 			} while (0);
 		')
 		popdef(`ELEMENTS_DONE')

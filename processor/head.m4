@@ -98,11 +98,11 @@ struct _xc_processor_t {
 	const xc_op_array_info_t *active_op_array_infos_src;
 
 	zend_bool readonly_protection; /* wheather it's present */
-IFASSERT(xc_stack_t allocsizes;)
+IFAUTOCHECK(xc_stack_t allocsizes;)
 };
 /* }}} */
 /* {{{ memsetptr */
-IFASSERT(`dnl
+IFAUTOCHECK(`dnl
 static void *memsetptr(void *mem, void *content, size_t n)
 {
 	void **p = (void **) mem;
@@ -170,11 +170,11 @@ static inline int xc_zstrlen(int type, const_zstr s)
 REDEF(`KIND', `calc')
 #undef C_RELAYLINE
 #define C_RELAYLINE
-IFASSERT(`
+IFAUTOCHECK(`
 #undef C_RELAYLINE
 #define C_RELAYLINE , __LINE__
 ')
-static inline void xc_calc_string_n(xc_processor_t *processor, zend_uchar type, const_zstr str, long size IFASSERT(`, int relayline')) {
+static inline void xc_calc_string_n(xc_processor_t *processor, zend_uchar type, const_zstr str, long size IFAUTOCHECK(`, int relayline')) {
 	pushdef(`__LINE__', `relayline')
 	int realsize = UNISW(size, (type == IS_UNICODE) ? UBYTES(size) : size);
 	long dummy = 1;
@@ -186,7 +186,7 @@ static inline void xc_calc_string_n(xc_processor_t *processor, zend_uchar type, 
 		/* new string */
 		ALLOC(, char, realsize)
 	} 
-	IFASSERT(`
+	IFAUTOCHECK(`
 		else {
 			dnl fprintf(stderr, "dupstr %s\n", ZSTR_S(str));
 		}
@@ -196,7 +196,7 @@ static inline void xc_calc_string_n(xc_processor_t *processor, zend_uchar type, 
 /* }}} */
 /* {{{ xc_store_string_n */
 REDEF(`KIND', `store')
-static inline zstr xc_store_string_n(xc_processor_t *processor, zend_uchar type, const_zstr str, long size IFASSERT(`, int relayline')) {
+static inline zstr xc_store_string_n(xc_processor_t *processor, zend_uchar type, const_zstr str, long size IFAUTOCHECK(`, int relayline')) {
 	pushdef(`__LINE__', `relayline')
 	int realsize = UNISW(size, (type == IS_UNICODE) ? UBYTES(size) : size);
 	zstr ret, *pret;
@@ -340,7 +340,7 @@ static void xc_zend_extension_op_array_ctor_handler(zend_extension *extension, z
 }
 /* }}} */
 /* {{{ field name checker */
-IFASSERT(`dnl
+IFAUTOCHECK(`dnl
 static int xc_check_names(const char *file, int line, const char *functionName, const char **assert_names, int assert_names_count, HashTable *done_names)
 {
 	int errors = 0;
@@ -393,7 +393,7 @@ $1 *xc_processor_store_$1(xc_cache_t *cache, $1 *src TSRMLS_DC) {
 	processor.reference = 1;
 	processor.cache = cache;
 
-	IFASSERT(`xc_stack_init(&processor.allocsizes);')
+	IFAUTOCHECK(`xc_stack_init(&processor.allocsizes);')
 
 	/* calc size */ {
 		zend_hash_init(&processor.strings, 0, NULL, NULL, 0);
@@ -419,10 +419,10 @@ $1 *xc_processor_store_$1(xc_cache_t *cache, $1 *src TSRMLS_DC) {
 		`$1', `xc_entry_data_php_t', `src->have_references = processor.have_references;'
 	)
 
-	IFASSERT(`xc_stack_reverse(&processor.allocsizes);')
+	IFAUTOCHECK(`xc_stack_reverse(&processor.allocsizes);')
 	/* store {{{ */
 	{
-		IFASSERT(`char *oldp;')
+		IFAUTOCHECK(`char *oldp;')
 		zend_hash_init(&processor.strings, 0, NULL, NULL, 0);
 		if (processor.reference) {
 			zend_hash_init(&processor.zvalptrs, 0, NULL, NULL, 0);
@@ -434,7 +434,7 @@ $1 *xc_processor_store_$1(xc_cache_t *cache, $1 *src TSRMLS_DC) {
 			dst = NULL;
 			goto err_alloc;
 		}
-		IFASSERT(`oldp = processor.p;')
+		IFAUTOCHECK(`oldp = processor.p;')
 		assert(processor.p == (char *) ALIGN(processor.p));
 
 		/* allocate */
@@ -442,7 +442,7 @@ $1 *xc_processor_store_$1(xc_cache_t *cache, $1 *src TSRMLS_DC) {
 		processor.p = (char *) ALIGN(processor.p + sizeof(dst[0]));
 
 		xc_store_$1(&processor, dst, src TSRMLS_CC);
-		IFASSERT(` {
+		IFAUTOCHECK(` {
 			int real = processor.p - oldp;
 			int should = processor.size;
 			if (real != processor.size) {
@@ -458,7 +458,7 @@ err_alloc:
 	}
 	/* }}} */
 
-	IFASSERT(`xc_stack_destroy(&processor.allocsizes);')
+	IFAUTOCHECK(`xc_stack_destroy(&processor.allocsizes);')
 
 	return dst;
 }

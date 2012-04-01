@@ -28,7 +28,7 @@
 
 typedef int bbid_t;
 enum {
-	BBID_INVALID = -1,
+	BBID_INVALID = -1
 };
 /* {{{ basic block */
 typedef struct _bb_t {
