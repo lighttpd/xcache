@@ -72,9 +72,9 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 			INDENT()fprintf(stderr, "}\n");
 		')
 		IFAUTOCHECK(`
-		/* {{{ autocheck */ if (!xc_autocheck_skip) {
+		/* {{{ autocheck */
+		if (!xc_autocheck_skip) {
 			int name_check_errors = xc_check_names(__FILE__, __LINE__, "FUNC_NAME", xc_autocheck_assert_names, sizeof(xc_autocheck_assert_names) / sizeof(xc_autocheck_assert_names[0]), &xc_autocheck_done_names);
-			zend_hash_destroy(&xc_autocheck_done_names);
 
 			if (xc_autocheck_done_count != assert_count) {
 				fprintf(stderr
@@ -93,7 +93,9 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 			if (name_check_errors || xc_autocheck_done_count != assert_count || xc_autocheck_done_size != xc_autocheck_assert_size) {
 				assert(0);
 			}
-		} while (0); /* }}} */
+		}
+		zend_hash_destroy(&xc_autocheck_done_names);
+		/* }}} */
 		')
 		ifdef(`ELEMENTSOF_$1', `
 			pushdef(`ELEMENTS_UNDONE', LIST_DIFF(defn(`ELEMENTSOF_$1'), defn(`ELEMENTS_DONE')))
