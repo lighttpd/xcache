@@ -185,7 +185,7 @@ static void xc_php_release_unlocked(xc_cache_t *cache, xc_entry_data_php_t *php)
 
 static inline int xc_entry_equal_unlocked(xc_entry_type_t type, const xc_entry_t *entry1, const xc_entry_t *entry2) /* {{{ */
 {
-	/* this function isn't required but can be in dmz */
+	/* this function isn't required but can be in unlocked */
 	switch (type) {
 		case XC_TYPE_PHP:
 #ifdef HAVE_INODE
@@ -235,7 +235,7 @@ static inline int xc_entry_equal_unlocked(xc_entry_type_t type, const xc_entry_t
 /* }}} */
 static inline int xc_entry_has_prefix_unlocked(xc_entry_type_t type, xc_entry_t *entry, zval *prefix) /* {{{ */
 {
-	/* this function isn't required but can be in dmz */
+	/* this function isn't required but can be in unlocked */
 
 #ifdef IS_UNICODE
 	if (entry->name_type != prefix->type) {
@@ -434,7 +434,7 @@ static void xc_cache_hit_unlocked(xc_cache_t *cache TSRMLS_DC) /* {{{ */
 /* helper function that loop through each entry */
 #define XC_ENTRY_APPLY_FUNC(name) zend_bool name(xc_entry_t *entry TSRMLS_DC)
 typedef XC_ENTRY_APPLY_FUNC((*cache_apply_unlocked_func_t));
-static void xc_entry_apply_unlocked(xc_entry_type_t type, xc_cache_t *cache, cache_apply_dmz_func_t apply_func TSRMLS_DC) /* {{{ */
+static void xc_entry_apply_unlocked(xc_entry_type_t type, xc_cache_t *cache, cache_apply_unlocked_func_t apply_func TSRMLS_DC) /* {{{ */
 {
 	xc_entry_t *p, **pp;
 	int i, c;
@@ -457,8 +457,8 @@ static void xc_entry_apply_unlocked(xc_entry_type_t type, xc_cache_t *cache, cac
 
 #define XC_CACHE_APPLY_FUNC(name) void name(xc_cache_t *cache TSRMLS_DC)
 /* call graph:
- * xc_gc_expires_php -> xc_gc_expires_one -> xc_entry_apply_unlocked -> xc_gc_expires_php_entry_dmz
- * xc_gc_expires_var -> xc_gc_expires_one -> xc_entry_apply_unlocked -> xc_gc_expires_var_entry_dmz
+ * xc_gc_expires_php -> xc_gc_expires_one -> xc_entry_apply_unlocked -> xc_gc_expires_php_entry_unlocked
+ * xc_gc_expires_var -> xc_gc_expires_one -> xc_entry_apply_unlocked -> xc_gc_expires_var_entry_unlocked
  */
 static XC_ENTRY_APPLY_FUNC(xc_gc_expires_php_entry_unlocked) /* {{{ */
 {
