@@ -31,7 +31,7 @@ define(`ALLOC', `
 	pushdef(`REALTYPE', `ifelse(`$5', , `$2', `$5')')
 	/* allocate */
 	IFCALC(`
-		IFASSERT(`
+		IFAUTOCHECK(`
 			xc_stack_push(&processor->allocsizes, (void *) (long) (SIZE));
 			xc_stack_push(&processor->allocsizes, (void *) (long) (__LINE__));
 		')
@@ -39,7 +39,7 @@ define(`ALLOC', `
 		processor->size += SIZE;
 	')
 	IFSTORE(`
-		IFASSERT(`{
+		IFAUTOCHECK(`{
 			if (!xc_stack_count(&processor->allocsizes)) {
 				fprintf(stderr, "mismatch `$@' at line %d\n", __LINE__);
 			}
@@ -57,7 +57,7 @@ define(`ALLOC', `
 		')
 		$1 = (REALTYPE *) (processor->p = (char *) ALIGN(processor->p));
 		ifelse(`$4', `', `
-				IFASSERT(`memsetptr($1, (void *) (unsigned long) __LINE__, SIZE);')
+				IFAUTOCHECK(`memsetptr($1, (void *) (unsigned long) __LINE__, SIZE);')
 			', `
 				memset($1, 0, SIZE);
 		')
@@ -74,7 +74,7 @@ define(`ALLOC', `
 				REALTYPE*COUNT, `zval*1', `ALLOC_ZVAL($1);',
 				REALTYPE*COUNT, `HashTable*1', `ALLOC_HASHTABLE($1);',
 				`', `', `$1 = (REALTYPE *) emalloc(SIZE);')
-			IFASSERT(`memsetptr($1, (void *) __LINE__, SIZE);')
+			IFAUTOCHECK(`memsetptr($1, (void *) __LINE__, SIZE);')
 		', `
 			$1 = (REALTYPE *) ecalloc(COUNT, sizeof($2));
 		')
@@ -104,11 +104,11 @@ define(`PROC_CLASS_ENTRY_P_EX', `
 	}
 ')
 dnl }}}
-dnl {{{ IFASSERTEX
-define(`IFASSERTEX', `ifdef(`XCACHE_ENABLE_TEST', `$1', `$2')')
+dnl {{{ IFAUTOCHECKEX
+define(`IFAUTOCHECKEX', `ifdef(`XCACHE_ENABLE_TEST', `$1', `$2')')
 dnl }}}
-dnl {{{ IFASSERT
-define(`IFASSERT', `IFASSERTEX(`
+dnl {{{ IFAUTOCHECK
+define(`IFAUTOCHECK', `IFAUTOCHECKEX(`
 #ifndef NDEBUG
 		$1
 #endif
@@ -205,14 +205,14 @@ foreach(`i', `($1)', `popdef(`item_'defn(`i'))')dnl
 ')
 dnl }}}
 dnl {{{ DONE_*
-define(`DONE_SIZE', `IFASSERT(`dnl
-	done_size += $1`';
-	done_count ++;
+define(`DONE_SIZE', `IFAUTOCHECK(`dnl
+	xc_autocheck_done_size += $1`';
+	xc_autocheck_done_count ++;
 ')')
 define(`DONE', `
 	define(`ELEMENTS_DONE', defn(`ELEMENTS_DONE')`,"$1"')
-	IFASSERT(`dnl
-		if (zend_u_hash_exists(&done_names, IS_STRING, "$1", sizeof("$1"))) {
+	IFAUTOCHECK(`dnl
+		if (zend_u_hash_exists(&xc_autocheck_done_names, IS_STRING, "$1", sizeof("$1"))) {
 			fprintf(stderr
 				, "duplicate field at %s `#'%d FUNC_NAME`' : %s\n"
 				, __FILE__, __LINE__
@@ -221,7 +221,7 @@ define(`DONE', `
 		}
 		else {
 			zend_uchar b = 1;
-			zend_hash_add(&done_names, "$1", sizeof("$1"), (void*)&b, sizeof(b), NULL);
+			zend_hash_add(&xc_autocheck_done_names, "$1", sizeof("$1"), (void*)&b, sizeof(b), NULL);
 		}
 	')
 	DONE_SIZE(`sizeof(SRC(`$1'))')
@@ -235,15 +235,15 @@ $1
 ')
 dnl }}}
 dnl {{{ IF**
-define(`IFCALC', `ifelse(KIND, `calc', `$1', `$2')')
-define(`IFSTORE', `ifelse(KIND, `store', `$1', `$2')')
+define(`IFCALC', `ifelse(PROCESSOR_TYPE, `calc', `$1', `$2')')
+define(`IFSTORE', `ifelse(PROCESSOR_TYPE, `store', `$1', `$2')')
 define(`IFCALCSTORE', `IFSTORE(`$1', `IFCALC(`$1', `$2')')')
-define(`IFRESTORE', `ifelse(KIND, `restore', `$1', `$2')')
+define(`IFRESTORE', `ifelse(PROCESSOR_TYPE, `restore', `$1', `$2')')
 define(`IFCOPY', `IFSTORE(`$1', `IFRESTORE(`$1', `$2')')')
 define(`IFCALCCOPY', `IFCALC(`$1', `IFCOPY(`$1', `$2')')')
-define(`IFDPRINT', `ifelse(KIND, `dprint', `$1', `$2')')
-define(`IFASM', `ifelse(KIND, `asm', `$1', `$2')')
-define(`IFDASM', `ifelse(KIND, `dasm', `$1', `$2')')
+define(`IFDPRINT', `ifelse(PROCESSOR_TYPE, `dprint', `$1', `$2')')
+define(`IFASM', `ifelse(PROCESSOR_TYPE, `asm', `$1', `$2')')
+define(`IFDASM', `ifelse(PROCESSOR_TYPE, `dasm', `$1', `$2')')
 dnl }}}
 EXPORT(`zend_op')
 EXPORT(`zend_op_array')
@@ -264,23 +264,23 @@ include(srcdir`/processor/process.m4')
 include(srcdir`/processor/head.m4')
 
 define(`IFNOTMEMCPY', `ifdef(`USEMEMCPY', `', `$1')')
-REDEF(`KIND', `calc') include(srcdir`/processor/processor.m4')
+REDEF(`PROCESSOR_TYPE', `calc') include(srcdir`/processor/processor.m4')
 pushdef(`xc_get_class_num', ``xc_get_class_num'($@)')
-REDEF(`KIND', `store') include(srcdir`/processor/processor.m4')
+REDEF(`PROCESSOR_TYPE', `store') include(srcdir`/processor/processor.m4')
 popdef(`xc_get_class_num')
 pushdef(`xc_get_class', ``xc_get_class'($@)')
-REDEF(`KIND', `restore') include(srcdir`/processor/processor.m4')
+REDEF(`PROCESSOR_TYPE', `restore') include(srcdir`/processor/processor.m4')
 popdef(`xc_get_class')
 
 REDEF(`IFNOTMEMCPY', `$1')
 #ifdef HAVE_XCACHE_DPRINT
-REDEF(`KIND', `dprint') include(srcdir`/processor/processor.m4')
+REDEF(`PROCESSOR_TYPE', `dprint') include(srcdir`/processor/processor.m4')
 #endif /* HAVE_XCACHE_DPRINT */
 #ifdef HAVE_XCACHE_DISASSEMBLER
-REDEF(`KIND', `dasm') include(srcdir`/processor/processor.m4')
+REDEF(`PROCESSOR_TYPE', `dasm') include(srcdir`/processor/processor.m4')
 #endif /* HAVE_XCACHE_DISASSEMBLER */
 #ifdef HAVE_XCACHE_ASSEMBLER
-REDEF(`KIND', `asm') include(srcdir`/processor/processor.m4')
+REDEF(`PROCESSOR_TYPE', `asm') include(srcdir`/processor/processor.m4')
 #endif /* HAVE_XCACHE_ASSEMBLER */
 
 ifdef(`EXIT_PENDING', `m4exit(EXIT_PENDING)')

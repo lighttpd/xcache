@@ -61,7 +61,6 @@ DEF_STRUCT_P_FUNC(`zend_brk_cont_element', , `dnl {{{
 ')
 dnl }}}
 DEF_HASH_TABLE_FUNC(`HashTable_zval_ptr',           `zval_ptr')
-DEF_HASH_TABLE_FUNC(`HashTable_zval_ptr_nullable',  `zval_ptr_nullable')
 DEF_HASH_TABLE_FUNC(`HashTable_zend_function',      `zend_function')
 #ifdef ZEND_ENGINE_2
 DEF_HASH_TABLE_FUNC(`HashTable_zend_property_info', `zend_property_info')
@@ -172,7 +171,7 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 						IFCOPY(`
 							dst[0] = *ppzv;
 							/* *dst is updated */
-							dnl fprintf(stderr, "*dst is set to %p, KIND is_shm %d\n", dst[0], xc_is_shm(dst[0]));
+							dnl fprintf(stderr, "*dst is set to %p, PROCESSOR_TYPE is_shm %d\n", dst[0], xc_is_shm(dst[0]));
 						')
 						IFCALCSTORE(`processor->have_references = 1;')
 						IFSTORE(`assert(xc_is_shm(dst[0]));')
@@ -781,7 +780,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 			gc_op_array.opcodes  = gc_opcodes ? dst->opcodes : NULL;
 			xc_gc_add_op_array(&gc_op_array TSRMLS_CC);
 		}
-		define(`SKIPASSERT_ONCE')
+		xc_autocheck_skip = 1;
 	}
 	else
 	')
@@ -988,6 +987,7 @@ DEF_STRUCT_P_FUNC(`xc_constinfo_t', , `dnl {{{
 ')
 dnl }}}
 #endif
+IFRESTORE(`', `
 DEF_STRUCT_P_FUNC(`xc_op_array_info_detail_t', , `dnl {{{
 	PROCESS(zend_uint, index)
 	PROCESS(zend_uint, info)
@@ -1003,6 +1003,7 @@ DEF_STRUCT_P_FUNC(`xc_op_array_info_t', , `dnl {{{
 #endif
 ')
 dnl }}}
+')
 DEF_STRUCT_P_FUNC(`xc_funcinfo_t', , `dnl {{{
 	PROCESS(zend_uint, key_size)
 #ifdef IS_UNICODE
@@ -1049,6 +1050,7 @@ DEF_STRUCT_P_FUNC(`xc_classinfo_t', , `dnl {{{
 #endif
 ')
 dnl }}}
+IFRESTORE(`', `
 #ifdef ZEND_ENGINE_2_1
 DEF_STRUCT_P_FUNC(`xc_autoglobal_t', , `dnl {{{
 	PROCESS(zend_uint, key_len)
@@ -1062,6 +1064,8 @@ DEF_STRUCT_P_FUNC(`xc_autoglobal_t', , `dnl {{{
 ')
 dnl }}}
 #endif
+')
+IFRESTORE(`', `
 #ifdef E_STRICT
 DEF_STRUCT_P_FUNC(`xc_compilererror_t', , `dnl {{{
 	PROCESS(int, type)
@@ -1071,6 +1075,7 @@ DEF_STRUCT_P_FUNC(`xc_compilererror_t', , `dnl {{{
 ')
 dnl }}}
 #endif
+')
 DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 	IFCOPY(`
 		processor->php_dst = dst;
