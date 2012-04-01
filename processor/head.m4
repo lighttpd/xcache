@@ -167,7 +167,7 @@ static inline int xc_zstrlen(int type, const_zstr s)
 /* }}} */
 #endif
 /* {{{ xc_calc_string_n */
-REDEF(`KIND', `calc')
+REDEF(`PROCESSOR_TYPE', `calc')
 #undef C_RELAYLINE
 #define C_RELAYLINE
 IFAUTOCHECK(`
@@ -195,7 +195,7 @@ static inline void xc_calc_string_n(xc_processor_t *processor, zend_uchar type, 
 }
 /* }}} */
 /* {{{ xc_store_string_n */
-REDEF(`KIND', `store')
+REDEF(`PROCESSOR_TYPE', `store')
 static inline zstr xc_store_string_n(xc_processor_t *processor, zend_uchar type, const_zstr str, long size IFAUTOCHECK(`, int relayline')) {
 	pushdef(`__LINE__', `relayline')
 	int realsize = UNISW(size, (type == IS_UNICODE) ? UBYTES(size) : size);
