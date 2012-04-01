@@ -970,6 +970,7 @@ finish:
 	return ret;
 }
 /* }}} */
+#ifndef ZEND_ENGINE_2_3
 static XC_INCLUDE_PATH_XSTAT_FUNC(xc_stat_file) /* {{{ */
 {
 	return VCWD_STAT(filepath, (struct stat *) data) == 0 ? 1 : 0;
@@ -982,6 +983,7 @@ static int xc_include_path_stat(const char *filepath, char *path_buffer, struct 
 		: FAILURE;
 }
 /* }}} */
+#endif
 typedef struct xc_entry_find_include_path_data_t { /* {{{ */
 	xc_compiler_t *compiler;
 	xc_entry_php_t **stored_entry;
@@ -1888,7 +1890,6 @@ static zend_op_array *xc_compile_file_ex(xc_compiler_t *compiler, zend_file_hand
 	zend_bool catched = 0;
 	xc_sandbox_t sandbox;
 	xc_cache_t *cache = xc_php_caches[compiler->entry_hash.cacheid];
-	struct stat statbuf;
 
 	/* stale clogs precheck */
 	if (XG(request_time) - cache->compiling < 30) {
@@ -2085,7 +2086,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	 || strstr(h->filename, "://") != NULL
 #ifdef ZEND_ENGINE_2_3
 	 /* supported by php_resolve_path */
-	 || !XG(stat) && strstr(PG(include_path), "://") != NULL
+	 || (!XG(stat) && strstr(PG(include_path), "://") != NULL)
 #else
 	 || strstr(PG(include_path), "://") != NULL
 #endif
