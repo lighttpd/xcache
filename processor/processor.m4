@@ -780,7 +780,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 			gc_op_array.opcodes  = gc_opcodes ? dst->opcodes : NULL;
 			xc_gc_add_op_array(&gc_op_array TSRMLS_CC);
 		}
-		xc_autocheck_skip = 1;
+		IFAUTOCHECK(`xc_autocheck_skip = 1;')
 	}
 	else
 	')
