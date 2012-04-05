@@ -929,7 +929,7 @@ static zend_bool xc_include_path_apply(const char *filepath, char *path_buffer, 
 	for (path = php_strtok_r(paths, tokens, &tokbuf); path; path = php_strtok_r(NULL, tokens, &tokbuf)) {
 		path_buffer_len = snprintf(path_buffer, MAXPATHLEN, "%s/%s", path, filepath);
 		if (path_buffer_len < MAXPATHLEN - 1) {
-			if (xstat_func(path_buffer, path_buffer_len, data)) {
+			if (xstat_func(path_buffer, path_buffer_len, data TSRMLS_CC)) {
 				ret = 1;
 				goto finish;
 			}
@@ -951,7 +951,7 @@ static zend_bool xc_include_path_apply(const char *filepath, char *path_buffer, 
 						memcpy(path_buffer + dirname_len, filepath, filename_len);
 						path_buffer_len = dirname_len + filename_len;
 						path_buffer[path_buffer_len] = '\0';
-						if (xstat_func(path_buffer, path_buffer_len, data) == 0) {
+						if (xstat_func(path_buffer, path_buffer_len, data TSRMLS_CC) == 0) {
 							ret = 1;
 							goto finish;
 						}
@@ -978,7 +978,7 @@ static XC_INCLUDE_PATH_XSTAT_FUNC(xc_stat_file) /* {{{ */
 /* }}} */
 static int xc_include_path_stat(const char *filepath, char *path_buffer, struct stat *pbuf TSRMLS_DC) /* {{{ */
 {
-	return xc_include_path_apply(filepath, path_buffer, xc_stat_file, (void *) pbuf TSRMLS_DC)
+	return xc_include_path_apply(filepath, path_buffer, xc_stat_file, (void *) pbuf TSRMLS_CC)
 		? SUCCESS
 		: FAILURE;
 }
@@ -1014,7 +1014,7 @@ static int xc_entry_find_include_path_unlocked(xc_compiler_t *compiler, const ch
 	entry_find_include_path_data.compiler = compiler;
 	entry_find_include_path_data.stored_entry = stored_entry;
 
-	return xc_include_path_apply(filepath, path_buffer, xc_entry_find_include_path_func_unlocked, (void *) &entry_find_include_path_data TSRMLS_DC)
+	return xc_include_path_apply(filepath, path_buffer, xc_entry_find_include_path_func_unlocked, (void *) &entry_find_include_path_data TSRMLS_CC)
 		? SUCCESS
 		: FAILURE;
 }
@@ -1075,7 +1075,7 @@ static int xc_entry_php_resolve_opened_path(xc_compiler_t *compiler, struct stat
 	/* fall back to real stat call */
 	else {
 #ifdef ZEND_ENGINE_2_3
-		char *opened_path = php_resolve_path(compiler->filename, compiler->filename_len, PG(include_path));
+		char *opened_path = php_resolve_path(compiler->filename, compiler->filename_len, PG(include_path) TSRMLS_CC);
 		if (opened_path) {
 			strcpy(compiler->opened_path_buffer, opened_path);
 			efree(opened_path);
