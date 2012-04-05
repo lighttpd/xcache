@@ -3,7 +3,7 @@
 #define XCACHE_NAME       "XCache"
 #define XCACHE_VERSION    "1.3.3-dev"
 #define XCACHE_AUTHOR     "mOo"
-#define XCACHE_COPYRIGHT  "Copyright (c) 2005-2011"
+#define XCACHE_COPYRIGHT  "Copyright (c) 2005-2012"
 #define XCACHE_URL        "http://xcache.lighttpd.net"
 #define XCACHE_WIKI_URL   XCACHE_URL "/wiki"
 
@@ -21,7 +21,7 @@
 #include "lock.h"
 
 #define HAVE_INODE
-#if !defined(ZEND_ENGINE_2_4) && (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION == 3 && PHP_RELEASE_VERSION >= 99 || PHP_MAJOR_VERSION > 5)
+#if !defined(ZEND_ENGINE_2_4) && (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 4 || PHP_MAJOR_VERSION > 5)
 #	define ZEND_ENGINE_2_4
 #endif
 #if !defined(ZEND_ENGINE_2_3) && (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION == 3 || defined(ZEND_ENGINE_2_4))
