@@ -8,6 +8,7 @@ ChangeLog
  * support for PHP_5_4
  * reduce memory usage by caching 1 for multiple same content files
  * correct __FILE__ __DIR__ supported for hardlinked files
+ * fixed #275: one line struct definition was confusing struct parser
  * fixed #102: segv when var cacher is too small
  * fixed #55: segv php tokenizer on certain special situation
  * compiler errors: all compiler warning (E_STRICT only currently) is now cached and is supported for user handler
