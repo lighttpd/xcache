@@ -10,6 +10,20 @@ function printstruct(structname) {
 	printf "define(`COUNTOF_%s', `%s')\n", structname, COUNTOF[structname];
 	printf "define(`SIZEOF_%s', `(  %s  )')\n", structname, SIZEOF[structname];
 }
+function countBrace(text,  len, i, char, braceCount) {
+	len = length(text);
+	braceCount = 0;
+	for (i = 1; i <= len; ++i) {
+		char = substr(text, i, 1);
+		if (char == "{") {
+			braceCount = braceCount + 1;
+		}
+		else if (char == "}") {
+			braceCount = braceCount - 1;
+		}
+	}
+	return braceCount;
+}
 
 # multiline comment handling
 {
@@ -75,11 +89,8 @@ incomment {
 	next;
 }
 
-/.\{/ {
-	brace = brace + 1;
-}
-/.}/ {
-	brace = brace - 1;
+/.[{}]/ {
+	brace += countBrace($0);
 }
 
 {
@@ -169,13 +180,33 @@ incomment {
 	next;
 }
 /^typedef struct .*\{[^}]*$/ {
-	brace = 1;
-	instruct = 1;
+	brace = countBrace($0);
+	if (brace > 0) {
+		instruct = 1;
+	}
+	else {
+		brace = 0;
+		instruct = 0;
+	}
+
+	for (i in buffer) {
+		delete buffer[i];
+	}
 	next;
 }
 
-/^struct .*\{/ {
-	instruct = $2;
-	brace = 1;
+/^struct .*\{.*/ {
+	brace = countBrace($0);
+	if (brace > 0) {
+		instruct = $2;
+	}
+	else {
+		brace = 0;
+		instruct = 0;
+	}
+
+	for (i in buffer) {
+		delete buffer[i];
+	}
 	next;
 }
