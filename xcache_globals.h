@@ -16,6 +16,7 @@ ZEND_BEGIN_MODULE_GLOBALS(xcache)
 	xc_stack_t *var_holds;
 	time_t request_time;
 	long   var_ttl;
+	zend_bool auth_enabled;
 
 	zend_llist gc_op_arrays;
 
