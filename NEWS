@@ -1,4 +1,4 @@
-2.0.0 2012-04-?
+2.0.0 2012-04-20
  * support for PHP_5_4
  * reduce memory usage by caching 1 for multiple same content files
  * correct __FILE__ __DIR__ supported for hardlinked files
