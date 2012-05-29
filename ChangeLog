@@ -2,6 +2,7 @@
 ChangeLog
 ========
  * fixed #279: segv when cache is full (since 2.0)
+ * admin/ config changed. please update accordingly
 
 2.0.0 2012-04-20
 Ini Settings Changes

@@ -32,7 +32,7 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		<th><?php echo _T('Slots'); ?></th>
 		<th><?php echo _T('Size'); ?></th>
 		<th><?php echo _T('Avail'); ?></th>
-		<th><?php echo _T(isset($free_graph_width) ? '% Free' : '% Used'); ?></th>
+		<th><?php echo _T($config['percent_graph_type'] == 'free' ? '% Free' : '% Used'); ?></th>
 		<th><?php echo _T('Clear'); ?></th>
 		<th><?php echo _T('Compiling'); ?></th>
 		<th><?php echo _T('Hits'); ?></th>
@@ -57,14 +57,14 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		<tr ", $a->next(), ">";
 		$pvalue = (int) ($ci['avail'] / $ci['size'] * 100);
 		$pempty = 100 - $pvalue;
-		if (!isset($free_graph_width)) {
+		if ($config['percent_graph_type'] == 'used') {
 			// swap
 			$tmp = $pvalue;
 			$pvalue = $pempty;
 			$pempty = $tmp;
 		}
 
-		$w = $graph_width;
+		$w = $config['percent_graph_width'];
 		if (empty($ci['istotal'])) {
 			$graph = freeblock_to_graph($ci['free_blocks'], $ci['size']);
 			$blocksgraph = "<div class=\"blocksgraph\" style=\"width: {$w}px\">{$graph}</div>";
@@ -134,9 +134,9 @@ EOS;
 <div class="blockarea legends">
 	<div class="legendtitle"><?php echo _T('Legends:'); ?></div>
 	<div class="legend pvalue">&nbsp;&nbsp;</div>
-	<div class="legendtitle"><?php echo _T(isset($free_graph_width) ? '% Free' : '% Used'); ?></div>
+	<div class="legendtitle"><?php echo _T($config['percent_graph_type'] == 'free' ? '% Free' : '% Used'); ?></div>
 	<div class="legend" style="background: rgb(0,0,255)">&nbsp;&nbsp;</div>
-	<div class="legendtitle"><?php echo _T(isset($free_graph_width) ? 'Free Blocks' : 'Used Blocks'); ?></div>
+	<div class="legendtitle"><?php echo _T($config['percent_graph_type'] == 'free' ? 'Free Blocks' : 'Used Blocks'); ?></div>
 	<div class="legend" style="background: rgb(255,0,0)">&nbsp;&nbsp;</div>
 	<div class="legendtitle"><?php echo _T('Hits'); ?></div>
 </div>
@@ -144,9 +144,7 @@ EOS;
 
 if ($cachelist) {
 	$isphp = $cachelist['type'] == $type_php;
-	if (function_exists("ob_filter_path_nicer")) {
-		ob_start("ob_filter_path_nicer");
-	}
+	ob_start($config['path_nicer']);
 	foreach (array('Cached' => $cachelist['cache_list'], 'Deleted' => $cachelist['deleted_list']) as $listname => $entries) {
 		$a->reset();
 		?>
@@ -260,9 +258,7 @@ ENTRY;
 	</form>
 <?php
 	}
-	if (function_exists("ob_filter_path_nicer")) {
-		ob_end_flush();
-	}
+	ob_end_flush();
 }
 if ($moduleinfo) {
 	$t_moduleinfo = _T("Module Info");
