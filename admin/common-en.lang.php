@@ -1,5 +1,5 @@
 <?php
 
-$GLOBALS['show_todo_strings'] = false;
+$GLOBALS['config']['show_todo_strings'] = false;
 
 ?>

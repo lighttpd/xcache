@@ -6,9 +6,9 @@ include("./common.php");
 <head>
 <?php
 echo <<<HEAD
-	<meta http-equiv="Content-Type" content="text/html; charset=$charset" />
-	<meta http-equiv="Content-Language" content="$lang" />
-	<script type="text/javascript" src="tablesort.js" charset="$charset"></script>
+	<meta http-equiv="Content-Type" content="text/html; charset=$config[charset]" />
+	<meta http-equiv="Content-Language" content="$config[lang]" />
+	<script type="text/javascript" src="tablesort.js" charset="$config[charset]"></script>
 HEAD;
 ?>
 

@@ -76,17 +76,17 @@ function age($time)
 
 function freeblock_to_graph($freeblocks, $size)
 {
-	global $graph_width, $usage_graph_width, $free_graph_width;
+	global $config;
 
 	// cached in static variable
 	static $graph_initial;
 	if (!isset($graph_initial)) {
-		$graph_initial = array_fill(0, $graph_width, 0);
+		$graph_initial = array_fill(0, $config['percent_graph_width'], 0);
 	}
 	$graph = $graph_initial;
 	foreach ($freeblocks as $b) {
-		$begin = $b['offset'] / $size * $graph_width;
-		$end = ($b['offset'] + $b['size']) / $size * $graph_width;
+		$begin = $b['offset'] / $size * $config['percent_graph_width'];
+		$end = ($b['offset'] + $b['size']) / $size * $config['percent_graph_width'];
 
 		if ((int) $begin == (int) $end) {
 			$v = $end - $begin;
@@ -103,7 +103,7 @@ function freeblock_to_graph($freeblocks, $size)
 	$html = array();
 	$c = 255;
 	foreach ($graph as $k => $v) {
-		if (!isset($free_graph_width)) {
+		if ($config['percent_graph_type'] != 'free') {
 			$v = 1 - $v;
 		}
 		$v = (int) ($v * $c);
