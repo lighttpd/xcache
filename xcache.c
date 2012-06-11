@@ -3734,6 +3734,7 @@ static PHP_MINIT_FUNCTION(xcache)
 #endif
 	}
 
+	xc_util_init(module_number TSRMLS_CC);
 #ifdef HAVE_XCACHE_COVERAGER
 	xc_coverager_init(module_number TSRMLS_CC);
 #endif
@@ -3762,6 +3763,7 @@ static PHP_MSHUTDOWN_FUNCTION(xcache)
 #ifdef HAVE_XCACHE_COVERAGER
 	xc_coverager_destroy();
 #endif
+	xc_util_destroy();
 
 	if (xc_coredump_dir && xc_coredump_dir[0]) {
 		xcache_restore_signal_handler();

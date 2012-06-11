@@ -40,6 +40,9 @@ static inline int TRACE_DUMMY(const char *fmt, ...)
 #endif /* XCACHE_DEBUG */
 #include <assert.h>
 
+int xc_util_init(int module_number TSRMLS_DC);
+void xc_util_destroy();
+
 typedef struct {
 	int alloc;
 	zend_op_array *op_array;
@@ -103,7 +106,6 @@ typedef struct {
 
 #ifdef XCACHE_ERROR_CACHING
 	int orig_user_error_handler_error_reporting;
-	void (*orig_zend_error_cb)(int type, const char *error_filename, const uint error_lineno, const char *format, va_list args);
 	zend_uint compilererror_cnt;
 	zend_uint compilererror_size;
 	xc_compilererror_t *compilererrors;
