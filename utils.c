@@ -26,6 +26,16 @@
 		zval_dtor(&Z_OP_CONSTANT(op)); \
 	} while(0)
 #endif
+
+static void (*old_zend_error_cb)(int type, const char *error_filename, const uint error_lineno, const char *format, va_list args) = NULL;
+static void call_old_zend_error_cb(int type, const char *error_filename, const uint error_lineno, const char *format, ...) /* {{{ */
+{
+	va_list args;
+	va_start(args, format);
+	old_zend_error_cb(type, error_filename, error_lineno, format, args);
+}
+/* }}} */
+
 xc_compile_result_t *xc_compile_result_init(xc_compile_result_t *cr, /* {{{ */
 		zend_op_array *op_array,
 		HashTable *function_table,
@@ -586,7 +596,11 @@ static void xc_sandbox_error_cb(int type, const char *error_filename, const uint
 	TSRMLS_FETCH();
 
 	sandbox = (xc_sandbox_t *) XG(sandbox);
-	assert(sandbox != NULL);
+	if (!sandbox) {
+		old_zend_error_cb(type, error_filename, error_lineno, format, args);
+		return;
+	}
+
 	switch (type) {
 #ifdef E_STRICT
 	case E_STRICT:
@@ -613,18 +627,23 @@ static void xc_sandbox_error_cb(int type, const char *error_filename, const uint
 	default: {
 		/* give up, and user handler is not supported in this case */
 		zend_uint i;
-		zend_uint orig_lineno = CG(zend_lineno);
-		zend_error_cb = sandbox->orig_zend_error_cb;
+		zend_uint old_lineno = CG(zend_lineno);
 
 		for (i = 0; i < sandbox->compilererror_cnt; i ++) {
 			compilererror = &sandbox->compilererrors[i];
 			CG(zend_lineno) = compilererror->lineno;
-			zend_error(compilererror->type, "%s", compilererror->error);
+			call_old_zend_error_cb(compilererror->type, error_filename, error_lineno, "%s", compilererror->error);
+			efree(compilererror->error);
 		}
-		CG(zend_lineno) = orig_lineno;
-		sandbox->compilererror_cnt = 0;
+		if (sandbox->compilererrors) {
+			efree(sandbox->compilererrors);
+			sandbox->compilererrors = NULL;
+		}
+		sandbox->compilererror_cnt  = 0;
+		sandbox->compilererror_size = 0;
 
-		sandbox->orig_zend_error_cb(type, error_filename, error_lineno, format, args);
+		CG(zend_lineno) = old_lineno;
+		old_zend_error_cb(type, error_filename, error_lineno, format, args);
 		break;
 	}
 	}
@@ -790,8 +809,6 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, ZEND_24(NOTHING, const) cha
 
 	sandbox->compilererror_cnt  = 0;
 	sandbox->compilererror_size = 0;
-	sandbox->orig_zend_error_cb = zend_error_cb;
-	zend_error_cb = xc_sandbox_error_cb;
 #endif
 
 #ifdef ZEND_COMPILE_IGNORE_INTERNAL_CLASSES
@@ -891,7 +908,6 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, xc_install_action_t install TSRMLS_D
 	XG(sandbox) = NULL;
 #ifdef XCACHE_ERROR_CACHING
 	EG(user_error_handler_error_reporting) = sandbox->orig_user_error_handler_error_reporting;
-	zend_error_cb = sandbox->orig_zend_error_cb;
 #endif
 
 	/* restore first first install function/class */
@@ -1015,3 +1031,25 @@ long xc_atol(const char *str, int str_len) /* {{{ */
 /* }}} */
 
 #endif
+
+/* init/destroy */
+int xc_util_init(int module_number TSRMLS_DC) /* {{{ */
+{
+#ifdef XCACHE_ERROR_CACHING
+	old_zend_error_cb = zend_error_cb;
+	zend_error_cb = xc_sandbox_error_cb;
+#endif
+
+	return SUCCESS;
+}
+/* }}} */
+void xc_util_destroy() /* {{{ */
+{
+#ifdef XCACHE_ERROR_CACHING
+	if (zend_error_cb == xc_sandbox_error_cb) {
+		zend_error_cb = old_zend_error_cb;
+	}
+#endif
+}
+/* }}} */
+
