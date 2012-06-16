@@ -21,10 +21,6 @@ ChangeLog
  * compiler errors: all compiler warning (E_STRICT only currently) is now cached and is supported for user handler
  * tests/bug52160.phpt: report multiple error correctly
 
-1.3.3 2012-?-?
-========
- * fix constant name handling (possible SIGSEGV)
-
 1.3.2 2011-06-04
 ========
  * avoid possible filename injection in admin page
