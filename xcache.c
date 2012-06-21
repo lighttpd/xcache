@@ -3335,6 +3335,106 @@ static zend_function_entry xcache_functions[] = /* {{{ */
 };
 /* }}} */
 
+#ifdef ZEND_WIN32
+#include "dbghelp.h"
+typedef BOOL (WINAPI *MINIDUMPWRITEDUMP)(HANDLE hProcess, DWORD dwPid, HANDLE hFile, MINIDUMP_TYPE DumpType,
+		CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam,
+		CONST PMINIDUMP_USER_STREAM_INFORMATION UserStreamParam,
+		CONST PMINIDUMP_CALLBACK_INFORMATION CallbackParam
+		);
+
+static PTOP_LEVEL_EXCEPTION_FILTER oldFilter;
+static HMODULE dbghelpModule = NULL;
+static char crash_dumpPath[_MAX_PATH];
+static MINIDUMPWRITEDUMP dbghelp_MiniDumpWriteDump;
+
+static LONG WINAPI miniDumperFilter(struct _EXCEPTION_POINTERS *pExceptionInfo) /* {{{ */
+{
+	HANDLE fileHandle;
+
+	SetUnhandledExceptionFilter(oldFilter);
+
+	/* create the file */
+	fileHandle = CreateFile(crash_dumpPath, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+	if (fileHandle != INVALID_HANDLE_VALUE) {
+		MINIDUMP_EXCEPTION_INFORMATION exceptionInformation;
+		BOOL ok;
+
+		exceptionInformation.ThreadId = GetCurrentThreadId();
+		exceptionInformation.ExceptionPointers = pExceptionInfo;
+		exceptionInformation.ClientPointers = FALSE;
+
+		/* write the dump */
+		ok = dbghelp_MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), fileHandle, MiniDumpNormal, &exceptionInformation, NULL, NULL);
+		CloseHandle(fileHandle);
+		if (ok) {
+			zend_error(E_ERROR, "Saved dump file to '%s'", crash_dumpPath);
+			return EXCEPTION_EXECUTE_HANDLER;
+		}
+		else {
+			zend_error(E_ERROR, "Failed to save dump file to '%s' (error %d)", crash_dumpPath, GetLastError());
+		}
+	}
+	else {
+		zend_error(E_ERROR, "Failed to create dump file '%s' (error %d)", crash_dumpPath, GetLastError());
+	}
+
+	return EXCEPTION_CONTINUE_SEARCH;
+}
+/* }}} */
+
+static void xcache_restore_crash_handler() /* {{{ */
+{
+	if (oldFilter) {
+		SetUnhandledExceptionFilter(oldFilter);
+		oldFilter = NULL;
+	}
+}
+/* }}} */
+static void xcache_init_crash_handler() /* {{{ */
+{
+	/* firstly see if dbghelp.dll is around and has the function we need
+	   look next to the EXE first, as the one in System32 might be old
+	   (e.g. Windows 2000) */
+	char dbghelpPath[_MAX_PATH];
+
+	if (GetModuleFileName(NULL, dbghelpPath, _MAX_PATH)) {
+		char *slash = strchr(dbghelpPath, '\\');
+		if (slash) {
+			strcpy(slash + 1, "DBGHELP.DLL");
+			dbghelpModule = LoadLibrary(dbghelpPath);
+		}
+	}
+
+	if (!dbghelpModule) {
+		/* load any version we can */
+		dbghelpModule = LoadLibrary("DBGHELP.DLL");
+		if (!dbghelpModule) {
+			zend_error(E_ERROR, "Unable to enable crash dump saver: %s", "DBGHELP.DLL not found");
+			return;
+		}
+	}
+
+	dbghelp_MiniDumpWriteDump = (MINIDUMPWRITEDUMP)GetProcAddress(dbghelpModule, "MiniDumpWriteDump");
+	if (dbghelp_MiniDumpWriteDump) {
+		zend_error(E_ERROR, "Unable to enable crash dump saver: %s", "DBGHELP.DLL too old");
+		return;
+	}
+
+	/* work out a good place for the dump file */
+	{
+		char tmpPath[_MAX_PATH];
+		if (!GetTempPath(_MAX_PATH, tmpPath)) {
+			strcpy(tmpPath, "c:\\temp");
+		}
+		sprintf(crash_dumpPath, "%s\\php-%s-xcache-%s-%lu.dmp", PHP_VERSION, XCACHE_VERSION, (unsigned long) GetCurrentProcessId());
+	}
+
+	oldFilter = SetUnhandledExceptionFilter(&miniDumperFilter);
+}
+/* }}} */
+#else
 /* old signal handlers {{{ */
 typedef void (*xc_sighandler_t)(int);
 #define FOREACH_SIG(sig) static xc_sighandler_t old_##sig##_handler = NULL
@@ -3342,7 +3442,7 @@ typedef void (*xc_sighandler_t)(int);
 #undef FOREACH_SIG
 /* }}} */
 static void xcache_signal_handler(int sig);
-static void xcache_restore_signal_handler() /* {{{ */
+static void xcache_restore_crash_handler() /* {{{ */
 {
 #define FOREACH_SIG(sig) do { \
 	if (old_##sig##_handler != xcache_signal_handler) { \
@@ -3356,7 +3456,7 @@ static void xcache_restore_signal_handler() /* {{{ */
 #undef FOREACH_SIG
 }
 /* }}} */
-static void xcache_init_signal_handler() /* {{{ */
+static void xcache_init_crash_handler() /* {{{ */
 {
 #define FOREACH_SIG(sig) \
 	old_##sig##_handler = signal(sig, xcache_signal_handler)
@@ -3366,7 +3466,7 @@ static void xcache_init_signal_handler() /* {{{ */
 /* }}} */
 static void xcache_signal_handler(int sig) /* {{{ */
 {
-	xcache_restore_signal_handler();
+	xcache_restore_crash_handler();
 	if (xc_coredump_dir && xc_coredump_dir[0]) {
 		if (chdir(xc_coredump_dir) != 0) {
 			/* error, but nothing can do about it
@@ -3376,6 +3476,7 @@ static void xcache_signal_handler(int sig) /* {{{ */
 	raise(sig);
 }
 /* }}} */
+#endif
 
 /* {{{ PHP_INI */
 
@@ -3711,7 +3812,7 @@ static PHP_MINIT_FUNCTION(xcache)
 	}
 
 	if (xc_coredump_dir && xc_coredump_dir[0]) {
-		xcache_init_signal_handler();
+		xcache_init_crash_handler();
 	}
 
 	xc_init_constant(module_number TSRMLS_CC);
@@ -3766,7 +3867,7 @@ static PHP_MSHUTDOWN_FUNCTION(xcache)
 	xc_util_destroy();
 
 	if (xc_coredump_dir && xc_coredump_dir[0]) {
-		xcache_restore_signal_handler();
+		xcache_restore_crash_handler();
 	}
 	if (xc_coredump_dir) {
 		pefree(xc_coredump_dir, 1);
