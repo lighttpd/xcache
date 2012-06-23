@@ -3425,8 +3425,8 @@ static void xcache_init_crash_handler() /* {{{ */
 	}
 
 	dbghelp_MiniDumpWriteDump = (MINIDUMPWRITEDUMP)GetProcAddress(dbghelpModule, "MiniDumpWriteDump");
-	if (dbghelp_MiniDumpWriteDump) {
-		zend_error(E_ERROR, "Unable to enable crash dump saver: %s", "DBGHELP.DLL too old");
+	if (!dbghelp_MiniDumpWriteDump) {
+		zend_error(E_ERROR, "Unable to enable crash dump saver: %s", "DBGHELP.DLL too old. Get updated dll and put it aside of php_xcache.dll");
 		return;
 	}
 
