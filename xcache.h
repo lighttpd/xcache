@@ -226,9 +226,9 @@ typedef const zstr const_zstr;
 
 typedef ulong xc_hash_value_t;
 typedef struct {
-	int bits;
-	int size;
-	int mask;
+	size_t bits;
+	size_t size;
+	xc_hash_value_t mask;
 } xc_hash_t;
 
 /* the class entry type to be stored in class_table */
@@ -419,7 +419,7 @@ struct _xc_entry_t {
 	time_t     atime;           /*   access atime of this entry */
 	time_t     dtime;           /*  deletion time of this entry */
 	zend_ulong hits;
-	long       ttl;
+	zend_ulong ttl;
 
 	xc_entry_name_t name;
 };
