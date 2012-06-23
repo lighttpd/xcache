@@ -70,10 +70,10 @@ static char *xc_shm_scheme = NULL;
 static char *xc_mmap_path = NULL;
 static char *xc_coredump_dir = NULL;
 
-static xc_hash_t xc_php_hcache = {0};
-static xc_hash_t xc_php_hentry = {0};
-static xc_hash_t xc_var_hcache = {0};
-static xc_hash_t xc_var_hentry = {0};
+static xc_hash_t xc_php_hcache = { 0 };
+static xc_hash_t xc_php_hentry = { 0 };
+static xc_hash_t xc_var_hcache = { 0 };
+static xc_hash_t xc_var_hentry = { 0 };
 
 static zend_ulong xc_php_ttl    = 0;
 static zend_ulong xc_var_maxttl = 0;
@@ -3343,10 +3343,10 @@ typedef BOOL (WINAPI *MINIDUMPWRITEDUMP)(HANDLE hProcess, DWORD dwPid, HANDLE hF
 		CONST PMINIDUMP_CALLBACK_INFORMATION CallbackParam
 		);
 
-static PTOP_LEVEL_EXCEPTION_FILTER oldFilter;
+static PTOP_LEVEL_EXCEPTION_FILTER oldFilter = NULL;
 static HMODULE dbghelpModule = NULL;
-static char crash_dumpPath[_MAX_PATH];
-static MINIDUMPWRITEDUMP dbghelp_MiniDumpWriteDump;
+static char crash_dumpPath[_MAX_PATH] = { 0 };
+static MINIDUMPWRITEDUMP dbghelp_MiniDumpWriteDump = NULL;
 
 static LONG WINAPI miniDumperFilter(struct _EXCEPTION_POINTERS *pExceptionInfo) /* {{{ */
 {
