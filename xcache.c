@@ -3422,14 +3422,7 @@ static void xcache_init_crash_handler() /* {{{ */
 		return;
 	}
 
-	/* work out a good place for the dump file */
-	{
-		char tmpPath[_MAX_PATH];
-		if (!GetTempPath(_MAX_PATH, tmpPath)) {
-			strcpy(tmpPath, "c:\\temp");
-		}
-		sprintf(crash_dumpPath, "%s\\php-%s-xcache-%s-%lu.dmp", PHP_VERSION, XCACHE_VERSION, (unsigned long) GetCurrentProcessId());
-	}
+	sprintf(crash_dumpPath, "%s\\php-%s-xcache-%s-%lu.dmp", xc_coredump_dir, PHP_VERSION, XCACHE_VERSION, (unsigned long) GetCurrentProcessId());
 
 	oldFilter = SetUnhandledExceptionFilter(&miniDumperFilter);
 }
