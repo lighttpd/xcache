@@ -3374,7 +3374,7 @@ static LONG WINAPI miniDumperFilter(struct _EXCEPTION_POINTERS *pExceptionInfo) 
 		exceptionInformation.ClientPointers = FALSE;
 
 		/* write the dump */
-		ok = dbghelp_MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), fileHandle, MiniDumpNormal, &exceptionInformation, NULL, NULL);
+		ok = dbghelp_MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), fileHandle, MiniDumpNormal|MiniDumpWithDataSegs|MiniDumpFilterMemory, &exceptionInformation, NULL, NULL);
 		CloseHandle(fileHandle);
 		if (ok) {
 			zend_error(E_ERROR, "Saved dump file to '%s'", crash_dumpPath);
@@ -3438,7 +3438,7 @@ static void xcache_init_crash_handler() /* {{{ */
 			phpVersion = "unknown";
 		}
 	}
-	sprintf(crash_dumpPath, "%s\\php-%s-xcache-%s-%lu.dmp", xc_coredump_dir, phpVersion, XCACHE_VERSION, (unsigned long) GetCurrentProcessId());
+	sprintf(crash_dumpPath, "%s\\php-%s-xcache-%s-%lu-%lu.dmp", xc_coredump_dir, phpVersion, XCACHE_VERSION, (unsigned long) time(NULL), (unsigned long) GetCurrentProcessId());
 
 	oldFilter = SetUnhandledExceptionFilter(&miniDumperFilter);
 }
