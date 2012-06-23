@@ -140,7 +140,7 @@ proc_unicode:
 		')
 dnl }}}
 		DONE(value)
-		PROCESS(xc_zval_data_type, type)
+		PROCESS(xc_zval_type_t, type)
 #ifdef ZEND_ENGINE_2_3
 		PROCESS(zend_uchar, is_ref__gc)
 #else
@@ -379,9 +379,9 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 #endif
 
 #ifdef ZEND_ENGINE_2_4
-	STRUCT_ARRAY(default_properties_count, zval_ptr_nullable, default_properties_table)
+	STRUCT_ARRAY(int, default_properties_count, zval_ptr_nullable, default_properties_table)
 	PROCESS(int, default_properties_count)
-	STRUCT_ARRAY(default_static_members_count, zval_ptr_nullable, default_static_members_table)
+	STRUCT_ARRAY(int, default_static_members_count, zval_ptr_nullable, default_static_members_table)
 	PROCESS(int, default_static_members_count)
 	IFCOPY(`dst->static_members_table = dst->default_static_members_table;')
 	DONE(static_members_table)
@@ -410,8 +410,8 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	dnl runtime binding: ADD_TRAIT will deal with it
 	COPYNULL(traits)
 	COPYZERO(num_traits)
-	STRUCT_ARRAY(, zend_trait_alias_ptr, trait_aliases)
-	STRUCT_ARRAY(, zend_trait_precedence_ptr, trait_precedences)
+	STRUCT_ARRAY(, , zend_trait_alias_ptr, trait_aliases)
+	STRUCT_ARRAY(, , zend_trait_precedence_ptr, trait_precedences)
 #	endif
 #else
 	IFRESTORE(`
@@ -715,7 +715,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		/* deep */
 		STRUCT_P(HashTable, static_variables, HashTable_zval_ptr)
 #ifdef ZEND_ENGINE_2
-		STRUCT_ARRAY(num_args, zend_arg_info, arg_info)
+		STRUCT_ARRAY(zend_uint, num_args, zend_arg_info, arg_info)
 		gc_arg_info = 1;
 #endif
 		dst->filename = processor->entry_php_src->filepath;
@@ -792,7 +792,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	PROC_ZSTRING(, function_name)
 #ifdef ZEND_ENGINE_2
 	PROCESS(zend_uint, fn_flags)
-	STRUCT_ARRAY(num_args, zend_arg_info, arg_info)
+	STRUCT_ARRAY(zend_uint, num_args, zend_arg_info, arg_info)
 	PROCESS(zend_uint, num_args)
 	PROCESS(zend_uint, required_num_args)
 #	ifndef ZEND_ENGINE_2_4
@@ -832,19 +832,19 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 
 #ifdef ZEND_ENGINE_2_4
 	dnl used when copying opcodes
-	STRUCT_ARRAY(last_literal, zend_literal, literals)
+	STRUCT_ARRAY(int, last_literal, zend_literal, literals)
 	PROCESS(int, last_literal)
 #endif
 
 	dnl uses literals
-	STRUCT_ARRAY(last, zend_op, opcodes)
+	STRUCT_ARRAY(zend_uint, last, zend_op, opcodes)
 	PROCESS(zend_uint, last)
 #ifndef ZEND_ENGINE_2_4
 	IFCOPY(`dst->size = src->last;DONE(size)', `PROCESS(zend_uint, size)')
 #endif
 
 #ifdef IS_CV
-	STRUCT_ARRAY(last_var, zend_compiled_variable, vars)
+	STRUCT_ARRAY(int, last_var, zend_compiled_variable, vars)
 	PROCESS(int, last_var)
 #	ifndef ZEND_ENGINE_2_4
 	IFCOPY(`dst->size_var = src->last_var;DONE(size_var)', `PROCESS(zend_uint, size_var)')
@@ -858,8 +858,8 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 
 	PROCESS(zend_uint, T)
 
-	STRUCT_ARRAY(last_brk_cont, zend_brk_cont_element, brk_cont_array)
-	PROCESS(zend_uint, last_brk_cont)
+	STRUCT_ARRAY(last_brk_cont_t, last_brk_cont, zend_brk_cont_element, brk_cont_array)
+	PROCESS(last_brk_cont_t, last_brk_cont)
 #ifndef ZEND_ENGINE_2_4
 	PROCESS(zend_uint, current_brk_cont)
 #endif
@@ -868,7 +868,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 #endif
 
 #ifdef ZEND_ENGINE_2
-	STRUCT_ARRAY(last_try_catch, zend_try_catch_element, try_catch_array)
+	STRUCT_ARRAY(int, last_try_catch, zend_try_catch_element, try_catch_array)
 	PROCESS(int, last_try_catch)
 #endif
 
@@ -996,10 +996,10 @@ dnl }}}
 DEF_STRUCT_P_FUNC(`xc_op_array_info_t', , `dnl {{{
 #ifdef ZEND_ENGINE_2_4
 	PROCESS(zend_uint, literalinfo_cnt)
-	STRUCT_ARRAY(literalinfo_cnt, xc_op_array_info_detail_t, literalinfos)
+	STRUCT_ARRAY(zend_uint, literalinfo_cnt, xc_op_array_info_detail_t, literalinfos)
 #else
 	PROCESS(zend_uint, oplineinfo_cnt)
-	STRUCT_ARRAY(oplineinfo_cnt, xc_op_array_info_detail_t, oplineinfos)
+	STRUCT_ARRAY(zend_uint, oplineinfo_cnt, xc_op_array_info_detail_t, oplineinfos)
 #endif
 ')
 dnl }}}
@@ -1034,7 +1034,7 @@ DEF_STRUCT_P_FUNC(`xc_classinfo_t', , `dnl {{{
 	PROCESS(ulong, h)
 	PROCESS(zend_uint, methodinfo_cnt)
 	IFRESTORE(`COPY(methodinfos)', `
-		STRUCT_ARRAY(methodinfo_cnt, xc_op_array_info_t, methodinfos)
+		STRUCT_ARRAY(zend_uint, methodinfo_cnt, xc_op_array_info_t, methodinfos)
 	')
 	IFRESTORE(`
 		processor->active_op_array_infos_src = src->methodinfos;
@@ -1102,20 +1102,20 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 
 #ifdef HAVE_XCACHE_CONSTANT
 	PROCESS(zend_uint, constinfo_cnt)
-	STRUCT_ARRAY(constinfo_cnt, xc_constinfo_t, constinfos)
+	STRUCT_ARRAY(zend_uint, constinfo_cnt, xc_constinfo_t, constinfos)
 #endif
 
 	PROCESS(zend_uint, funcinfo_cnt)
-	STRUCT_ARRAY(funcinfo_cnt, xc_funcinfo_t, funcinfos)
+	STRUCT_ARRAY(zend_uint, funcinfo_cnt, xc_funcinfo_t, funcinfos)
 
 	PROCESS(zend_uint, classinfo_cnt)
-	STRUCT_ARRAY(classinfo_cnt, xc_classinfo_t, classinfos, , IFRESTORE(`processor->active_class_index'))
+	STRUCT_ARRAY(zend_uint, classinfo_cnt, xc_classinfo_t, classinfos, , IFRESTORE(`processor->active_class_index'))
 #ifdef ZEND_ENGINE_2_1
 	PROCESS(zend_uint, autoglobal_cnt)
 	IFRESTORE(`
 		COPY(autoglobals)
 	', `
-		STRUCT_ARRAY(autoglobal_cnt, xc_autoglobal_t, autoglobals)
+		STRUCT_ARRAY(zend_uint, autoglobal_cnt, xc_autoglobal_t, autoglobals)
 	')
 #endif
 #ifdef E_STRICT
@@ -1123,7 +1123,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 	IFRESTORE(`
 		COPY(compilererrors)
 	', `
-		STRUCT_ARRAY(compilererror_cnt, xc_compilererror_t, compilererrors)
+		STRUCT_ARRAY(zend_uint, compilererror_cnt, xc_compilererror_t, compilererrors)
 	')
 #endif
 #ifndef ZEND_COMPILE_DELAYED_BINDING

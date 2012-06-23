@@ -171,61 +171,61 @@ define(`STRUCT', `
 	DONE(`$2')
 ')
 dnl }}}
-dnl {{{ STRUCT_ARRAY(1:count, 2:type, 3:elm, 4:name=type, 5:loopcounter)
+dnl {{{ STRUCT_ARRAY(1:count_type, 2:count, 3:type, 4:elm, 5:name=type, 6:loopcounter)
 define(`STRUCT_ARRAY', `
-	if (SRC(`$3')) {
+	if (SRC(`$4')) {
 		ifelse(
-			`$5', `', `int i; pushdef(`LOOPCOUNTER', `i')',
-			`', `', `pushdef(`LOOPCOUNTER', `$5')')
-		pushdefFUNC_NAME(`$2', `$4')
+			`$6', `', `ifelse(`$1', `', `size_t', `$1') i; pushdef(`LOOPCOUNTER', `i')',
+			`', `', `pushdef(`LOOPCOUNTER', `$6')')
+		pushdefFUNC_NAME(`$3', `$5')
 		IFDASM(`
 			zval *arr;
 			ALLOC_INIT_ZVAL(arr);
 			array_init(arr);
 
 			for (LOOPCOUNTER = 0;
-					ifelse(`$1', `', `SRC(`$3[LOOPCOUNTER]')',
-					`', `', `LOOPCOUNTER < SRC(`$1')');
+					ifelse(`$2', `', `SRC(`$4[LOOPCOUNTER]')',
+					`', `', `LOOPCOUNTER < SRC(`$2')');
 					++LOOPCOUNTER) {
 				zval *zv;
 
 				ALLOC_INIT_ZVAL(zv);
 				array_init(zv);
-				FUNC_NAME (zv, &(SRC(`$3[LOOPCOUNTER]')) TSRMLS_CC);
+				FUNC_NAME (zv, &(SRC(`$4[LOOPCOUNTER]')) TSRMLS_CC);
 				add_next_index_zval(arr, zv);
 			}
-			add_assoc_zval_ex(dst, ZEND_STRS("$3"), arr);
+			add_assoc_zval_ex(dst, ZEND_STRS("$4"), arr);
 		', `
 			dnl find count with NULL
-			ifelse(`$1', `', `
+			ifelse(`$2', `', `
 				size_t count = 0;
-				while (SRC(`$3[count]')) {
+				while (SRC(`$4[count]')) {
 					++count;
 				}
 				++count;
 				pushdef(`ARRAY_ELEMENT_COUNT', `count')
 			',
-			`', `', `pushdef(`ARRAY_ELEMENT_COUNT', `SRC(`$1')')')
-			ALLOC(`dst->$3', `$2', `ARRAY_ELEMENT_COUNT')
+			`', `', `pushdef(`ARRAY_ELEMENT_COUNT', `SRC(`$2')')')
+			ALLOC(`dst->$4', `$3', `ARRAY_ELEMENT_COUNT')
 			popdef(`ARRAY_ELEMENT_COUNT')
 
 			for (LOOPCOUNTER = 0;
-					ifelse(`$1', `', `SRC(`$3[LOOPCOUNTER]')',
-					`', `', `LOOPCOUNTER < SRC(`$1')');
+					ifelse(`$2', `', `SRC(`$4[LOOPCOUNTER]')',
+					`', `', `LOOPCOUNTER < SRC(`$2')');
 					++LOOPCOUNTER) {
 				DISABLECHECK(`
-					STRUCT(`$2', `$3[LOOPCOUNTER]', `$4')
+					STRUCT(`$3', `$4[LOOPCOUNTER]', `$5')
 				')
 			}
 			dnl the end marker
-			ifelse(`$1', `', `IFCOPY(`DST(`$3[LOOPCOUNTER]') = NULL;')')
+			ifelse(`$2', `', `IFCOPY(`DST(`$4[LOOPCOUNTER]') = NULL;')')
 		')dnl IFDASM
-		DONE(`$3')
+		DONE(`$4')
 		popdef(`FUNC_NAME')
 		popdef(`LOOPCOUNTER')
 	}
 	else {
-		COPYNULL(`$3')
+		COPYNULL(`$4')
 	}
 ')
 dnl }}}

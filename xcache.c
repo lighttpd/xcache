@@ -37,7 +37,7 @@
 #include "opcode_spec.h"
 #include "utils.h"
 
-#define VAR_ENTRY_EXPIRED(pentry) ((pentry)->ttl && XG(request_time) > (pentry)->ctime + (pentry)->ttl)
+#define VAR_ENTRY_EXPIRED(pentry) ((pentry)->ttl && XG(request_time) > (pentry)->ctime + (time_t) (pentry)->ttl)
 #define CHECK(x, e) do { if ((x) == NULL) { zend_error(E_ERROR, "XCache: " e); goto err; } } while (0)
 #define LOCK(x) xc_lock((x)->lck)
 #define UNLOCK(x) xc_unlock((x)->lck)
@@ -463,7 +463,7 @@ static void xc_entry_apply_unlocked(xc_entry_type_t type, xc_cache_t *cache, cac
 static XC_ENTRY_APPLY_FUNC(xc_gc_expires_php_entry_unlocked) /* {{{ */
 {
 	TRACE("ttl %lu, %lu %lu", (zend_ulong) XG(request_time), (zend_ulong) entry->atime, xc_php_ttl);
-	if (XG(request_time) > entry->atime + xc_php_ttl) {
+	if (XG(request_time) > entry->atime + (time_t) xc_php_ttl) {
 		return 1;
 	}
 	return 0;
@@ -480,9 +480,9 @@ static XC_ENTRY_APPLY_FUNC(xc_gc_expires_var_entry_unlocked) /* {{{ */
 static void xc_gc_expires_one(xc_entry_type_t type, xc_cache_t *cache, zend_ulong gc_interval, cache_apply_unlocked_func_t apply_func TSRMLS_DC) /* {{{ */
 {
 	TRACE("interval %lu, %lu %lu", (zend_ulong) XG(request_time), (zend_ulong) cache->last_gc_expires, gc_interval);
-	if (XG(request_time) - cache->last_gc_expires >= gc_interval) {
+	if (XG(request_time) >= cache->last_gc_expires + (time_t) gc_interval) {
 		ENTER_LOCK(cache) {
-			if (XG(request_time) - cache->last_gc_expires >= gc_interval) {
+			if (XG(request_time) >= cache->last_gc_expires + (time_t) gc_interval) {
 				cache->last_gc_expires = XG(request_time);
 				xc_entry_apply_unlocked(type, cache, apply_func TSRMLS_CC);
 			}
@@ -1191,7 +1191,7 @@ static int xc_entry_data_php_init_md5(xc_cache_t *cache, xc_compiler_t *compiler
 	php_stream     *stream;
 	ulong           old_rsid = EG(regular_list).nNextFreeElement;
 
-	stream = php_stream_open_wrapper(ZEND_24(NOTHING, (char *)) compiler->filename, "rb", USE_PATH | REPORT_ERRORS | ENFORCE_SAFE_MODE | STREAM_DISABLE_OPEN_BASEDIR, NULL);
+	stream = php_stream_open_wrapper((char *) compiler->filename, "rb", USE_PATH | REPORT_ERRORS | ENFORCE_SAFE_MODE | STREAM_DISABLE_OPEN_BASEDIR, NULL);
 	if (!stream) {
 		return FAILURE;
 	}
@@ -1239,7 +1239,8 @@ static void xc_entry_php_init(xc_entry_php_t *entry_php, const char *filepath TS
 static void xc_cache_early_binding_class_cb(zend_op *opline, int oplineno, void *data TSRMLS_DC) /* {{{ */
 {
 	char *class_name;
-	int i, class_len;
+	zend_uint i;
+	int class_len;
 	xc_cest_t cest;
 	xc_entry_data_php_t *php = (xc_entry_data_php_t *) data;
 
@@ -1284,7 +1285,11 @@ typedef struct {
 /* }}} */
 static void xc_collect_op_array_info(xc_compiler_t *compiler, xc_const_usage_t *usage, xc_op_array_info_t *op_array_info, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
-	int i;
+#ifdef ZEND_ENGINE_2_4
+	int literalindex;
+#else
+	zend_uint oplinenum;
+#endif
 	xc_vector_t details;
 
 	xc_vector_init(xc_op_array_info_detail_t, &details);
@@ -1314,8 +1319,8 @@ static void xc_collect_op_array_info(xc_compiler_t *compiler, xc_const_usage_t *
 	}
 
 #ifdef ZEND_ENGINE_2_4
-	for (i = 0; i < op_array->last_literal; i++) {
-		zend_literal *literal = &op_array->literals[i];
+	for (literalindex = 0; literalindex < op_array->last_literal; literalindex++) {
+		zend_literal *literal = &op_array->literals[literalindex];
 		zend_uint literalinfo = 0;
 		if (Z_TYPE(literal->constant) == IS_STRING) {
 			XCACHE_ANALYZE_LITERAL(file)
@@ -1329,7 +1334,7 @@ static void xc_collect_op_array_info(xc_compiler_t *compiler, xc_const_usage_t *
 #endif
 		if (literalinfo) {
 			xc_op_array_info_detail_t detail;
-			detail.index = i;
+			detail.index = literalindex;
 			detail.info  = literalinfo;
 			xc_vector_add(xc_op_array_info_detail_t, &details, detail);
 		}
@@ -1338,8 +1343,8 @@ static void xc_collect_op_array_info(xc_compiler_t *compiler, xc_const_usage_t *
 	op_array_info->literalinfo_cnt = details.cnt;
 	op_array_info->literalinfos    = xc_vector_detach(xc_op_array_info_detail_t, &details);
 #else /* ZEND_ENGINE_2_4 */
-	for (i = 0; i < op_array->last; i++) {
-		zend_op *opline = &op_array->opcodes[i];
+	for (oplinenum = 0; oplinenum < op_array->last; oplinenum++) {
+		zend_op *opline = &op_array->opcodes[oplinenum];
 		zend_uint oplineinfo = 0;
 		if (Z_OP_TYPE(opline->op1) == IS_CONST) {
 			if (Z_TYPE(Z_OP_CONSTANT(opline->op1)) == IS_STRING) {
@@ -1369,7 +1374,7 @@ static void xc_collect_op_array_info(xc_compiler_t *compiler, xc_const_usage_t *
 
 		if (oplineinfo) {
 			xc_op_array_info_detail_t detail;
-			detail.index = i;
+			detail.index = oplinenum;
 			detail.info  = oplineinfo;
 			xc_vector_add(xc_op_array_info_detail_t, &details, detail);
 		}
@@ -1383,12 +1388,12 @@ static void xc_collect_op_array_info(xc_compiler_t *compiler, xc_const_usage_t *
 /* }}} */
 void xc_fix_op_array_info(const xc_entry_php_t *entry_php, const xc_entry_data_php_t *php, zend_op_array *op_array, int shallow_copy, const xc_op_array_info_t *op_array_info TSRMLS_DC) /* {{{ */
 {
-	int i;
-
 #ifdef ZEND_ENGINE_2_4
-	for (i = 0; i < op_array_info->literalinfo_cnt; ++i) {
-		int index = op_array_info->literalinfos[i].index;
-		int literalinfo = op_array_info->literalinfos[i].info;
+	int linteralindex;
+
+	for (linteralindex = 0; linteralindex < op_array_info->literalinfo_cnt; ++linteralindex) {
+		int index = op_array_info->literalinfos[linteralindex].index;
+		int literalinfo = op_array_info->literalinfos[linteralindex].info;
 		zend_literal *literal = &op_array->literals[index];
 		if ((literalinfo & xcache_literal_is_file)) {
 			if (!shallow_copy) {
@@ -1429,10 +1434,12 @@ void xc_fix_op_array_info(const xc_entry_php_t *entry_php, const xc_entry_data_p
 			}
 		}
 	}
-#else
-	for (i = 0; i < op_array_info->oplineinfo_cnt; ++i) {
-		int oplineno = op_array_info->oplineinfos[i].index;
-		int oplineinfo = op_array_info->oplineinfos[i].info;
+#else /* ZEND_ENGINE_2_4 */
+	zend_uint oplinenum;
+
+	for (oplinenum = 0; oplinenum < op_array_info->oplineinfo_cnt; ++oplinenum) {
+		int oplineno = op_array_info->oplineinfos[oplinenum].index;
+		int oplineinfo = op_array_info->oplineinfos[oplinenum].info;
 		zend_op *opline = &op_array->opcodes[oplineno];
 		if ((oplineinfo & xcache_op1_is_file)) {
 			assert(Z_OP_TYPE(opline->op1) == IS_CONST);
@@ -1516,7 +1523,7 @@ void xc_fix_op_array_info(const xc_entry_php_t *entry_php, const xc_entry_data_p
 			}
 		}
 	}
-#endif
+#endif /* ZEND_ENGINE_2_4 */
 }
 /* }}} */
 static void xc_free_op_array_info(xc_op_array_info_t *op_array_info TSRMLS_DC) /* {{{ */
@@ -1534,11 +1541,12 @@ static void xc_free_op_array_info(xc_op_array_info_t *op_array_info TSRMLS_DC) /
 /* }}} */
 static void xc_free_php(xc_entry_data_php_t *php TSRMLS_DC) /* {{{ */
 {
-	int i;
+	zend_uint i;
 	if (php->classinfos) {
 		for (i = 0; i < php->classinfo_cnt; i ++) {
 			xc_classinfo_t *classinfo = &php->classinfos[i];
-			int j;
+			zend_uint j;
+
 			for (j = 0; j < classinfo->methodinfo_cnt; j ++) {
 				xc_free_op_array_info(&classinfo->methodinfos[j] TSRMLS_CC);
 			}
@@ -1575,7 +1583,7 @@ static void xc_free_php(xc_entry_data_php_t *php TSRMLS_DC) /* {{{ */
 static zend_op_array *xc_compile_php(xc_compiler_t *compiler, zend_file_handle *h, int type TSRMLS_DC) /* {{{ */
 {
 	zend_op_array *op_array;
-	int old_constinfo_cnt, old_funcinfo_cnt, old_classinfo_cnt;
+	zend_uint old_constinfo_cnt, old_funcinfo_cnt, old_classinfo_cnt;
 	zend_bool catched = 0;
 
 	/* {{{ compile */
@@ -1656,8 +1664,8 @@ static zend_op_array *xc_compile_php(xc_compiler_t *compiler, zend_file_handle *
 
 	/* {{{ shallow copy, pointers only */ {
 		Bucket *b;
-		unsigned int i;
-		unsigned int j;
+		zend_uint i;
+		zend_uint j;
 
 #define COPY_H(vartype, var, cnt, name, datatype) do {        \
 	for (i = 0, j = 0; b; i ++, b = b->pListNext) {           \
@@ -1778,7 +1786,7 @@ static zend_op_array *xc_compile_php(xc_compiler_t *compiler, zend_file_handle *
 	/* {{{ find inherited classes that should be early-binding */
 	compiler->new_php.have_early_binding = 0;
 	{
-		int i;
+		zend_uint i;
 		for (i = 0; i < compiler->new_php.classinfo_cnt; i ++) {
 			compiler->new_php.classinfos[i].oplineno = -1;
 		}
@@ -2124,7 +2132,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 int xc_is_rw(const void *p) /* {{{ */
 {
 	xc_shm_t *shm;
-	int i;
+	size_t i;
 
 	if (xc_php_caches) {
 		for (i = 0; i < xc_php_hcache.size; i ++) {
@@ -2149,7 +2157,7 @@ int xc_is_rw(const void *p) /* {{{ */
 int xc_is_ro(const void *p) /* {{{ */
 {
 	xc_shm_t *shm;
-	int i;
+	size_t i;
 
 	if (xc_php_caches) {
 		for (i = 0; i < xc_php_hcache.size; i ++) {
@@ -2248,7 +2256,7 @@ static int xc_init_constant(int module_number TSRMLS_DC) /* {{{ */
 /* }}} */
 static xc_shm_t *xc_cache_destroy(xc_cache_t **caches, xc_hash_t *hcache) /* {{{ */
 {
-	int i;
+	size_t i;
 	xc_cache_t *cache;
 	xc_shm_t *shm;
 
@@ -2281,7 +2289,7 @@ static xc_cache_t **xc_cache_init(xc_shm_t *shm, xc_hash_t *hcache, xc_hash_t *h
 	xc_cache_t **caches = NULL, *cache;
 	xc_mem_t *mem;
 	time_t now = time(NULL);
-	int i;
+	size_t i;
 	xc_memsize_t memsize;
 
 	memsize = shmsize / hcache->size;
@@ -2404,7 +2412,7 @@ err:
 /* }}} */
 static void xc_request_init(TSRMLS_D) /* {{{ */
 {
-	int i;
+	size_t i;
 
 	if (!XG(internal_table_copied)) {
 		zend_function tmp_func;
@@ -2498,7 +2506,7 @@ PHP_GSHUTDOWN_FUNCTION(xcache)
 void xc_shutdown_globals(zend_xcache_globals* xcache_globals TSRMLS_DC)
 #endif
 {
-	int i;
+	size_t i;
 
 	if (xcache_globals->php_holds != NULL) {
 		for (i = 0; i < xc_php_hcache.size; i ++) {
@@ -3714,7 +3722,7 @@ static int xc_zend_remove_extension(zend_extension *extension) /* {{{ */
 /* }}} */
 static int xc_config_hash(xc_hash_t *p, char *name, char *default_value) /* {{{ */
 {
-	int bits, size;
+	size_t bits, size;
 	char *value;
 
 	if (cfg_get_string(name, &value) != SUCCESS) {

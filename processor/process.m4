@@ -19,7 +19,7 @@ define(`PROCESS_xc_ztstring', `dnl {{{ (1:elm)
 	popdef(`REALPTRTYPE')
 ')
 dnl }}}
-define(`PROCESS_zval_data_type', `dnl {{{ (1:elm)
+define(`PROCESS_xc_zval_type_t', `dnl {{{ (1:elm)
 	IFDPRINT(`
 		INDENT()
 		fprintf(stderr, ":$1:\t%d %s\n", SRC(`$1'), xc_get_data_type(SRC(`$1')));
@@ -27,7 +27,7 @@ define(`PROCESS_zval_data_type', `dnl {{{ (1:elm)
 	', `PROCESS_SCALAR(`$1')')
 ')
 dnl }}}
-define(`PROCESS_op_type', `dnl {{{ (1:elm)
+define(`PROCESS_xc_op_type', `dnl {{{ (1:elm)
 	IFDPRINT(`
 		INDENT()
 		fprintf(stderr, ":$1:\t%d %s\n", SRC(`$1'), xc_get_op_type(SRC(`$1')));
@@ -35,7 +35,7 @@ define(`PROCESS_op_type', `dnl {{{ (1:elm)
 	', `PROCESS_SCALAR(`$1')')
 ')
 dnl }}}
-define(`PROCESS_opcode', `dnl {{{ (1:elm)
+define(`PROCESS_xc_opcode', `dnl {{{ (1:elm)
 	IFDPRINT(`
 		INDENT()
 		fprintf(stderr, ":$1:\t%u %s\n", SRC(`$1'), xc_get_opcode(SRC(`$1')));
@@ -65,11 +65,12 @@ define(`PROCESS', `dnl PROCESS(1:type, 2:elm)
 	, `$1', `double',           `PROCESS_SCALAR(`$2', `f',  `$1')'
 	, `$1', `xc_entry_type_t',  `PROCESS_SCALAR(`$2', `d',  `$1')'
 	, `$1', `xc_hash_value_t',  `PROCESS_SCALAR(`$2', `lu', `$1')'
+	, `$1', `last_brk_cont_t',  `PROCESS_SCALAR(`$2', `d', `$1')'
 
 	, `$1', `xc_ztstring',       `PROCESS_xc_ztstring(`$2')'
-	, `$1', `xc_zval_data_type', `PROCESS_zval_data_type(`$2')'
-	, `$1', `xc_op_type',        `PROCESS_op_type(`$2')'
-	, `$1', `xc_opcode',         `PROCESS_opcode(`$2')'
+	, `$1', `xc_zval_type_t',    `PROCESS_xc_zval_type_t(`$2')'
+	, `$1', `xc_op_type',        `PROCESS_xc_op_type(`$2')'
+	, `$1', `xc_opcode',         `PROCESS_xc_opcode(`$2')'
 	, `$1', `opcode_handler_t',  `/* is copying enough? */COPY(`$2')'
 	, `$1', `xc_md5sum_t',       `COPY(`$2')'
 	, `', `', `m4_errprint(`AUTOCHECK ERROR: Unknown type "$1"')define(`EXIT_PENDING', 1)'
