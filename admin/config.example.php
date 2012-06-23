@@ -1,6 +1,7 @@
 <?php
 
-// DO NOT modify this file
+// this is example config
+// DO NOT rename/delete/modify this file
 // if you want to customize config, copy this file and name it as config.php
 // upgrading your config.php when config.example.php were upgraded
 
