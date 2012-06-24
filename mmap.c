@@ -44,12 +44,13 @@ struct _xc_mmap_shm_t {
 	void *ptr_ro;
 	long  diff;
 	xc_shmsize_t size;
-	char *name;
-	int newfile;
 	xc_shmsize_t memoffset;
+	char *name;
 #ifdef ZEND_WIN32
 	HANDLE hmap;
 	HANDLE hmap_ro;
+#else
+	int newfile;
 #endif
 };
 
@@ -119,10 +120,12 @@ static XC_SHM_DESTROY(xc_mmap_destroy) /* {{{ */
 #endif
 
 	if (shm->name) {
-#ifdef __CYGWIN__
+#ifndef ZEND_WIN32
+#	ifdef __CYGWIN__
 		if (shm->newfile) {
 			unlink(shm->name);
 		}
+#	endif
 #endif
 		free(shm->name);
 	}
@@ -141,9 +144,9 @@ static XC_SHM_INIT(xc_mmap_init) /* {{{ */
 #	define TMP_PATH "XCache"
 #else
 #	define TMP_PATH "/tmp/XCache"
+	int fd = -1;
 #endif
 	xc_shm_t *shm = NULL;
-	int fd = -1;
 	int ro_ok;
 	volatile void *romem;
 	char tmpname[sizeof(TMP_PATH) - 1 + 100];
@@ -259,19 +262,24 @@ static XC_SHM_INIT(xc_mmap_init) /* {{{ */
 
 	/* }}} */
 
+#ifndef ZEND_WIN32
 	close(fd);
-#ifndef __CYGWIN__
+
+#	ifndef __CYGWIN__
 	if (shm->newfile) {
 		unlink(shm->name);
 	}
+#	endif
 #endif
 
 	return shm;
 
 err:
+#ifndef ZEND_WIN32
 	if (fd != -1) {
 		close(fd);
 	}
+#endif
 	if (shm) {
 		xc_mmap_destroy(shm);
 	}
