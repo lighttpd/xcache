@@ -1,7 +1,9 @@
 #ifndef __XCACHE_H
 #define __XCACHE_H
 #define XCACHE_NAME       "XCache"
-#define XCACHE_VERSION    "2.0.0"
+#ifndef XCACHE_VERSION
+#	define XCACHE_VERSION "2.0.1-dev"
+#endif
 #define XCACHE_AUTHOR     "mOo"
 #define XCACHE_COPYRIGHT  "Copyright (c) 2005-2012"
 #define XCACHE_URL        "http://xcache.lighttpd.net"
