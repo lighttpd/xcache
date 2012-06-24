@@ -3406,7 +3406,6 @@ static void xcache_init_crash_handler() /* {{{ */
 	   look next to the EXE first, as the one in System32 might be old
 	   (e.g. Windows 2000) */
 	char dbghelpPath[_MAX_PATH];
-	const char *phpVersion;
 
 	if (GetModuleFileName(NULL, dbghelpPath, _MAX_PATH)) {
 		char *slash = strchr(dbghelpPath, '\\');
@@ -3431,14 +3430,13 @@ static void xcache_init_crash_handler() /* {{{ */
 		return;
 	}
 
-	phpVersion = zend_get_module_version("core");
-	if (!phpVersion) {
-		phpVersion = zend_get_module_version("standard");
-		if (!phpVersion) {
-			phpVersion = "unknown";
-		}
-	}
-	sprintf(crash_dumpPath, "%s\\php-%s-xcache-%s-%lu-%lu.dmp", xc_coredump_dir, phpVersion, XCACHE_VERSION, (unsigned long) time(NULL), (unsigned long) GetCurrentProcessId());
+#ifdef XCACHE_VERSION_REVISION
+#define REVISION "r" XCACHE_VERSION_REVISION
+#else
+#define REVISION ""
+#endif
+	sprintf(crash_dumpPath, "%s\\php-%s-xcache-%s%s-%lu-%lu.dmp", xc_coredump_dir, zend_get_module_version("standard"), XCACHE_VERSION, REVISION , (unsigned long) time(NULL), (unsigned long) GetCurrentProcessId());
+#undef REVISION
 
 	oldFilter = SetUnhandledExceptionFilter(&miniDumperFilter);
 }
@@ -3582,6 +3580,9 @@ static PHP_MINFO_FUNCTION(xcache)
 	php_info_print_table_start();
 	php_info_print_table_header(2, "XCache Support", "enabled");
 	php_info_print_table_row(2, "Version", XCACHE_VERSION);
+#ifdef XCACHE_VERSION_REVISION
+	php_info_print_table_row(2, "Revision", "r" XCACHE_VERSION_REVISION);
+#endif
 	php_info_print_table_row(2, "Modules Built", XCACHE_MODULES);
 	php_info_print_table_row(2, "Readonly Protection", xc_readonly_protection ? "enabled" : "N/A");
 #ifdef ZEND_ENGINE_2_1
