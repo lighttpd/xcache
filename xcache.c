@@ -1389,7 +1389,7 @@ static void xc_collect_op_array_info(xc_compiler_t *compiler, xc_const_usage_t *
 void xc_fix_op_array_info(const xc_entry_php_t *entry_php, const xc_entry_data_php_t *php, zend_op_array *op_array, int shallow_copy, const xc_op_array_info_t *op_array_info TSRMLS_DC) /* {{{ */
 {
 #ifdef ZEND_ENGINE_2_4
-	int linteralindex;
+	zend_uint linteralindex;
 
 	for (linteralindex = 0; linteralindex < op_array_info->literalinfo_cnt; ++linteralindex) {
 		int index = op_array_info->literalinfos[linteralindex].index;
