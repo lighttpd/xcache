@@ -99,6 +99,9 @@ function ob_filter_path_nicer_default($list_html)
 {
 	$sep = DIRECTORY_SEPARATOR;
 	$docRoot = $_SERVER['DOCUMENT_ROOT'];
+	if ($sep != '/') {
+		$docRoot = str_replace('/', $sep, $docRoot);
+	}
 	$list_html = str_replace($docRoot,  "{DOCROOT}" . (substr($docRoot, -1) == $sep ? $sep : ""), $list_html);
 	$xcachedir = realpath(dirname(__FILE__) . "$sep..$sep");
 	$list_html = str_replace($xcachedir . $sep, "{XCache}$sep", $list_html);
