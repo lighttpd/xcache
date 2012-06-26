@@ -239,7 +239,14 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	opline = op_array->opcodes;
 	end = opline + op_array->last;
 	while (opline < end) {
-#ifndef ZEND_ENGINE_2_4
+#ifdef ZEND_ENGINE_2_4
+		if (opline->op1_type == IS_CONST) {
+			opline->op1.literal = op_array->literals + opline->op1.constant;
+		}
+		if (opline->op2_type == IS_CONST) {
+			opline->op2.literal = op_array->literals + opline->op2.constant;
+		}
+#else
 		if (Z_OP_TYPE(opline->op1) == IS_CONST) {
 			Z_SET_ISREF(Z_OP_CONSTANT(opline->op1));
 			Z_SET_REFCOUNT(Z_OP_CONSTANT(opline->op1), 2); /* Make sure is_ref won't be reset */

@@ -11,7 +11,7 @@ define(`DECL_STRUCT_P_FUNC', `translit(
 		IFCALC(   `xc_processor_t *processor, const $1 * const src')
 		IFSTORE(  `xc_processor_t *processor, $1 *dst, const $1 * const src')
 		IFRESTORE(`xc_processor_t *processor, $1 *dst, const $1 * const src')
-		IFDASM(   `zval *dst, const $1 * const src')
+		IFDASM(   `xc_dasm_t *dasm, zval *dst, const $1 * const src')
 		IFASM(    `$1 *dst, const $1 * const src')
 		TSRMLS_DC
 	)ifelse(`$3', `', `;')
@@ -136,7 +136,7 @@ define(`STRUCT_P_EX', `
 		IFCALC(   `processor, $6 $3')
 		IFSTORE(  `processor, $6 $2, $6 $3')
 		IFRESTORE(`processor, $6 $2, $6 $3')
-		IFDASM(   `zv, $6 $3')
+		IFDASM(   `dasm, zv, $6 $3')
 		IFASM(    `$6 $2, $6 $3')
 		TSRMLS_CC
 	);
@@ -191,7 +191,7 @@ define(`STRUCT_ARRAY', `
 
 				ALLOC_INIT_ZVAL(zv);
 				array_init(zv);
-				FUNC_NAME (zv, &(SRC(`$4[LOOPCOUNTER]')) TSRMLS_CC);
+				FUNC_NAME (dasm, zv, &(SRC(`$4[LOOPCOUNTER]')) TSRMLS_CC);
 				add_next_index_zval(arr, zv);
 			}
 			add_assoc_zval_ex(dst, ZEND_STRS("$4"), arr);

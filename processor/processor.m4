@@ -160,7 +160,7 @@ dnl }}}
 DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 	IFDASM(`
 		pushdefFUNC_NAME(`zval')
-		FUNC_NAME (dst, src[0] TSRMLS_CC);
+		FUNC_NAME (dasm, dst, src[0] TSRMLS_CC);
 		popdef(`FUNC_NAME')
 	', `
 		do {
@@ -320,7 +320,7 @@ dnl }}}
 DEF_STRUCT_P_FUNC(`zend_trait_alias_ptr', , `dnl {{{
 	IFDASM(`
 		pushdefFUNC_NAME(`zend_trait_alias')
-		FUNC_NAME (dst, src[0] TSRMLS_CC);
+		FUNC_NAME (dasm, dst, src[0] TSRMLS_CC);
 		popdef(`FUNC_NAME')
 	', `
 		ALLOC(dst[0], zend_trait_alias)
@@ -333,7 +333,7 @@ dnl }}}
 DEF_STRUCT_P_FUNC(`zend_trait_precedence_ptr', , `dnl {{{
 	IFDASM(`
 		pushdefFUNC_NAME(`zend_trait_precedence')
-		FUNC_NAME (dst, src[0] TSRMLS_CC);
+		FUNC_NAME (dasm, dst, src[0] TSRMLS_CC);
 		popdef(`FUNC_NAME')
 	', `
 		ALLOC(dst[0], zend_trait_precedence)
@@ -522,7 +522,7 @@ define(`UNION_znode_op', `dnl {{{
 				IFDASM(`{
 					zval *zv;
 					ALLOC_INIT_ZVAL(zv);
-					*zv = src->$1.literal->constant;
+					*zv = dasm->active_op_array_src->literals[src->$1.constant].constant;
 					zval_copy_ctor(zv);
 					add_assoc_zval_ex(dst, ZEND_STRS("$1.constant"), zv);
 				}
@@ -694,6 +694,9 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		processor->active_op_array_dst = dst;
 		processor->active_op_array_src = src;
 	')
+	IFDASM(`
+		dasm->active_op_array_src = src;
+	')
 	{
 	IFRESTORE(`
 	const xc_op_array_info_t *op_array_info = &processor->active_op_array_infos_src[processor->active_op_array_index++];
@@ -736,8 +739,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 #ifdef ZEND_ENGINE_2_4
 				pushdef(`UNION_znode_op_literal', `
 					if (opline->$1_type == IS_CONST) {
-						opline->$1.constant = opline->$1.literal - src->literals;
-						opline->$1.literal = &dst->literals[opline->$1.constant];
+						opline->$1.literal = &dst->literals[opline->$1.literal - src->literals];
 					}
 				')
 				UNION_znode_op_literal(op1)
@@ -750,7 +752,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 					case ZEND_GOTO:
 #endif
 					case ZEND_JMP:
-						Z_OP(opline->op1).jmp_addr = dst->opcodes + (Z_OP(opline->op1).jmp_addr - src->opcodes);
+						Z_OP(opline->op1).jmp_addr = &dst->opcodes[Z_OP(opline->op1).jmp_addr - src->opcodes];
 						break;
 
 					case ZEND_JMPZ:
@@ -763,7 +765,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 #ifdef ZEND_JMP_SET_VAR
 			case ZEND_JMP_SET_VAR:
 #endif
-						Z_OP(opline->op2).jmp_addr = dst->opcodes + (Z_OP(opline->op2).jmp_addr - src->opcodes);
+						Z_OP(opline->op2).jmp_addr = &dst->opcodes[Z_OP(opline->op2).jmp_addr - src->opcodes];
 						break;
 
 					default:
@@ -969,6 +971,9 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	IFCOPY(`
 		processor->active_op_array_dst = NULL;
 		processor->active_op_array_src = NULL;
+	')
+	IFDASM(`
+		dasm->active_op_array_src = NULL;
 	')
 ')
 dnl }}}
