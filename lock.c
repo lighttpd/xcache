@@ -8,7 +8,15 @@ typedef int HANDLE;
 #	ifndef INVALID_HANDLE_VALUE
 #		define INVALID_HANDLE_VALUE -1
 #	endif
-#	define CloseHandle(h) close(h)
+#else
+#	define close(h) CloseHandle(h)
+#	define open(filename, mode, permission) CreateFile(filename, \
+		GENERIC_READ | GENERIC_WRITE, \
+		FILE_SHARE_READ | FILE_SHARE_WRITE, \
+		NULL, \
+		OPEN_ALWAYS, \
+		FILE_ATTRIBUTE_NORMAL, \
+		NULL)
 #endif
 #include "lock.h"
 
@@ -49,9 +57,8 @@ static inline int dolock(xc_lock_t *lck, int type) /* {{{ */
 #	include <fcntl.h>
 #	include <sys/types.h>
 #	include <sys/stat.h>
-#	ifndef errno
-#		define errno GetLastError()
-#	endif
+#	undef errno
+#	define errno GetLastError()
 #	define getuid() 0
 #	define LCK_WR LOCKFILE_EXCLUSIVE_LOCK
 #	define LCK_RD 0
@@ -99,7 +106,7 @@ xc_lock_t *xc_fcntl_init(const char *pathname) /* {{{ */
 		myname = NULL;
 	}
 
-	fd = (HANDLE) open(pathname, O_RDWR|O_CREAT, 0666);
+	fd = open(pathname, O_RDWR|O_CREAT, 0666);
 
 	if (fd != INVALID_HANDLE_VALUE) {
 		lck = malloc(sizeof(lck[0]));
@@ -113,7 +120,7 @@ xc_lock_t *xc_fcntl_init(const char *pathname) /* {{{ */
 		memcpy(lck->pathname, pathname, size);
 	}
 	else {
-		fprintf(stderr, "xc_fcntl_create: open(%s, O_RDWR|O_CREAT, 0666) failed:", pathname);
+		zend_error(E_ERROR, "xc_fcntl_create: open(%s, O_RDWR|O_CREAT, 0666) failed:", pathname);
 		lck = NULL;
 	}
 
@@ -126,7 +133,7 @@ xc_lock_t *xc_fcntl_init(const char *pathname) /* {{{ */
 /* }}} */
 void xc_fcntl_destroy(xc_lock_t *lck) /* {{{ */
 {   
-	CloseHandle(lck->fd);
+	close(lck->fd);
 #ifdef __CYGWIN__
 	unlink(lck->pathname);
 #endif
@@ -137,21 +144,21 @@ void xc_fcntl_destroy(xc_lock_t *lck) /* {{{ */
 void xc_fcntl_lock(xc_lock_t *lck) /* {{{ */
 {   
 	if (dolock(lck, LCK_WR) < 0) {
-		fprintf(stderr, "xc_fcntl_lock failed errno:%d", errno);
+		zend_error(E_ERROR, "xc_fcntl_lock failed errno:%d", errno);
 	}
 }
 /* }}} */
 void xc_fcntl_rdlock(xc_lock_t *lck) /* {{{ */
 {   
 	if (dolock(lck, LCK_RD) < 0) {
-		fprintf(stderr, "xc_fcntl_lock failed errno:%d", errno);
+		zend_error(E_ERROR, "xc_fcntl_lock failed errno:%d", errno);
 	}
 }
 /* }}} */
 void xc_fcntl_unlock(xc_lock_t *lck) /* {{{ */
 {   
 	if (dolock(lck, LCK_UN) < 0) {
-		fprintf(stderr, "xc_fcntl_unlock failed errno:%d", errno);
+		zend_error(E_ERROR, "xc_fcntl_unlock failed errno:%d", errno);
 	}
 }
 /* }}} */
