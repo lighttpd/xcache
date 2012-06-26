@@ -650,12 +650,10 @@ static void xc_fillentry_unlocked(xc_entry_type_t type, const xc_entry_t *entry,
 {
 	zval* ei;
 	const xc_entry_data_php_t *php;
-	xc_entry_php_t *entry_php = (xc_entry_php_t *) entry;
 
 	ALLOC_INIT_ZVAL(ei);
 	array_init(ei);
 
-	add_assoc_long_ex(ei, ZEND_STRS("refcount"), entry_php->refcount);
 	add_assoc_long_ex(ei, ZEND_STRS("hits"),     entry->hits);
 	add_assoc_long_ex(ei, ZEND_STRS("ctime"),    entry->ctime);
 	add_assoc_long_ex(ei, ZEND_STRS("atime"),    entry->atime);
@@ -669,7 +667,7 @@ static void xc_fillentry_unlocked(xc_entry_type_t type, const xc_entry_t *entry,
 		ALLOC_INIT_ZVAL(zv);
 		switch (entry->name_type) {
 			case IS_UNICODE:
-					ZVAL_UNICODEL(zv, entry->name.ustr.val, entry->name.ustr.len, 1);
+				ZVAL_UNICODEL(zv, entry->name.ustr.val, entry->name.ustr.len, 1);
 				break;
 			case IS_STRING:
 				ZVAL_STRINGL(zv, entry->name.str.val, entry->name.str.len, 1);
@@ -684,9 +682,11 @@ static void xc_fillentry_unlocked(xc_entry_type_t type, const xc_entry_t *entry,
 	add_assoc_stringl_ex(ei, ZEND_STRS("name"), entry->name.str.val, entry->name.str.len, 1);
 #endif
 	switch (type) {
-		case XC_TYPE_PHP:
+		case XC_TYPE_PHP: {
+			xc_entry_php_t *entry_php = (xc_entry_php_t *) entry;
 			php = entry_php->php;
 			add_assoc_long_ex(ei, ZEND_STRS("size"),          entry->size + php->size);
+			add_assoc_long_ex(ei, ZEND_STRS("refcount"),      entry_php->refcount);
 			add_assoc_long_ex(ei, ZEND_STRS("phprefcount"),   php->refcount);
 			add_assoc_long_ex(ei, ZEND_STRS("file_mtime"),    entry_php->file_mtime);
 			add_assoc_long_ex(ei, ZEND_STRS("file_size"),     entry_php->file_size);
@@ -704,6 +704,7 @@ static void xc_fillentry_unlocked(xc_entry_type_t type, const xc_entry_t *entry,
 			add_assoc_long_ex(ei, ZEND_STRS("autoglobal_cnt"),php->autoglobal_cnt);
 #endif
 			break;
+		}
 
 		case XC_TYPE_VAR:
 			add_assoc_long_ex(ei, ZEND_STRS("size"),          entry->size);

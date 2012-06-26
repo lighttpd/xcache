@@ -163,9 +163,9 @@ if ($cachelist) {
 			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Cache'); ?></a></th>
 			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('entry'); ?></a></th>
 			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Hits'); ?></a></th>
-			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Refcount'); ?></a></th>
 			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Size'); ?></a></th>
 			<?php if ($isphp) { ?>
+			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Refcount'); ?></a></th>
 			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('PhpShared'); ?></a></th>
 			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('SrcSize'); ?></a></th>
 			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Modify'); ?></a></th>
@@ -187,7 +187,6 @@ if ($cachelist) {
 			<tr ", $a->next(), ">";
 			$name     = htmlspecialchars($entry['name']);
 			$hits     = number_format($entry['hits']);
-			$refcount = number_format($entry['refcount']);
 			$size     = size($entry['size']);
 			if ($isphp) {
 				$file_size   = size($entry['file_size']);
@@ -218,11 +217,12 @@ ENTRY;
 			<td>{$entry['cache_name']} {$i}</td>
 			<td>{$namelink}</td>
 			<td align="right" int="{$entry['hits']}">{$entry['hits']}</td>
-			<td align="right" int="{$entry['refcount']}">{$entry['refcount']}</td>
 			<td align="right" int="{$entry['size']}">{$size}</td>
 ENTRY;
 			if ($isphp) {
+				$refcount = number_format($entry['refcount']);
 				echo <<<ENTRY
+				<td align="right" int="{$entry['refcount']}">{$entry['refcount']}</td>
 				<td align="right" int="{$entry['phprefcount']}">{$phprefcount}</td>
 				<td align="right" int="{$entry['file_size']}">{$file_size}</td>
 				<td align="right" int="{$entry['file_mtime']}">{$file_mtime}</td>
