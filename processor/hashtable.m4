@@ -36,7 +36,7 @@ define(`DEF_HASH_TABLE_FUNC', `
 			for (b = src->pListHead; b != NULL; b = b->pListNext) {
 				ALLOC_INIT_ZVAL(zv);
 				array_init(zv);
-				FUNC_NAME (zv, (($2*)b->pData) TSRMLS_CC);
+				FUNC_NAME (dasm, zv, (($2*)b->pData) TSRMLS_CC);
 				keysize = BUCKET_KEY_SIZE(b) + 2;
 				if (keysize > bufsize) {
 					do {

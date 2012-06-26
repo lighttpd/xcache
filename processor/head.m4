@@ -106,6 +106,8 @@ struct _xc_processor_t {
 IFAUTOCHECK(xc_stack_t allocsizes;)
 };
 /* }}} */
+/* export: typedef struct _xc_dasm_t { const zend_op_array *active_op_array_src; } xc_dasm_t; :export {{{ */
+/* }}} */
 /* {{{ memsetptr */
 IFAUTOCHECK(`dnl
 static void *memsetptr(void *mem, void *content, size_t n)

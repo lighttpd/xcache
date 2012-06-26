@@ -22,6 +22,7 @@ static void xc_dasm(xc_sandbox_t *sandbox, zval *dst, zend_op_array *op_array TS
 	xc_compile_result_t cr;
 	int bufsize = 2;
 	char *buf;
+	xc_dasm_t dasm;
 
 	xc_compile_result_init_cur(&cr, op_array TSRMLS_CC);
 
@@ -33,7 +34,7 @@ static void xc_dasm(xc_sandbox_t *sandbox, zval *dst, zend_op_array *op_array TS
 
 	ALLOC_INIT_ZVAL(zv);
 	array_init(zv);
-	xc_dasm_zend_op_array(zv, op_array TSRMLS_CC);
+	xc_dasm_zend_op_array(&dasm, zv, op_array TSRMLS_CC);
 	add_assoc_zval_ex(dst, ZEND_STRS("op_array"), zv);
 
 	buf = emalloc(bufsize);
@@ -46,7 +47,7 @@ static void xc_dasm(xc_sandbox_t *sandbox, zval *dst, zend_op_array *op_array TS
 
 		ALLOC_INIT_ZVAL(zv);
 		array_init(zv);
-		xc_dasm_zend_function(zv, b->pData TSRMLS_CC);
+		xc_dasm_zend_function(&dasm, zv, b->pData TSRMLS_CC);
 
 		keysize = BUCKET_KEY_SIZE(b) + 2;
 		if (keysize > bufsize) {
@@ -83,7 +84,7 @@ static void xc_dasm(xc_sandbox_t *sandbox, zval *dst, zend_op_array *op_array TS
 
 		ALLOC_INIT_ZVAL(zv);
 		array_init(zv);
-		xc_dasm_zend_class_entry(zv, CestToCePtr(*(xc_cest_t *)b->pData) TSRMLS_CC);
+		xc_dasm_zend_class_entry(&dasm, zv, CestToCePtr(*(xc_cest_t *)b->pData) TSRMLS_CC);
 
 		keysize = BUCKET_KEY_SIZE(b) + 2;
 		if (keysize > bufsize) {
