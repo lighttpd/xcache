@@ -4,7 +4,7 @@ define(`DEF_HASH_TABLE_FUNC', `
 		pushdefFUNC_NAME(`$2', `$3')
 		dnl {{{ dasm
 		IFDASM(`
-			Bucket *b;
+			const Bucket *srcBucket;
 			zval *zv;
 			int bufsize = 2;
 			char *buf = emalloc(bufsize);
@@ -33,22 +33,22 @@ define(`DEF_HASH_TABLE_FUNC', `
 #endif
 
 			DISABLECHECK(`
-			for (b = src->pListHead; b != NULL; b = b->pListNext) {
+			for (srcBucket = src->pListHead; srcBucket != NULL; srcBucket = srcBucket->pListNext) {
 				ALLOC_INIT_ZVAL(zv);
 				array_init(zv);
-				FUNC_NAME (dasm, zv, (($2*)b->pData) TSRMLS_CC);
-				keysize = BUCKET_KEY_SIZE(b) + 2;
+				FUNC_NAME (dasm, zv, (($2*)srcBucket->pData) TSRMLS_CC);
+				keysize = BUCKET_KEY_SIZE(srcBucket) + 2;
 				if (keysize > bufsize) {
 					do {
 						bufsize *= 2;
 					} while (keysize > bufsize);
 					buf = erealloc(buf, bufsize);
 				}
-				memcpy(buf, BUCKET_KEY_S(b), keysize);
+				memcpy(buf, BUCKET_KEY_S(srcBucket), keysize);
 				buf[keysize - 2] = buf[keysize - 1] = ""[0];
-				keysize = b->nKeyLength;
+				keysize = srcBucket->nKeyLength;
 #ifdef IS_UNICODE
-				if (BUCKET_KEY_TYPE(b) == IS_UNICODE) {
+				if (BUCKET_KEY_TYPE(srcBucket) == IS_UNICODE) {
 					if (buf[0] == ""[0] && buf[1] == ""[0]) {
 						keysize ++;
 					}
@@ -59,14 +59,15 @@ define(`DEF_HASH_TABLE_FUNC', `
 						keysize ++;
 					}
 				}
-				add_u_assoc_zval_ex(dst, BUCKET_KEY_TYPE(b), ZSTR(buf), keysize, zv);
+				add_u_assoc_zval_ex(dst, BUCKET_KEY_TYPE(srcBucket), ZSTR(buf), keysize, zv);
 			}
 			')
 
 			efree(buf);
 		', `
 		dnl }}}
-		Bucket *b, *pnew = NULL, *prev = NULL;
+		Bucket *srcBucket;
+		Bucket *pnew = NULL, *prev = NULL;
 		zend_bool first = 1;
 		dnl only used for copy
 		IFCOPY(`uint n;')
@@ -93,9 +94,9 @@ define(`DEF_HASH_TABLE_FUNC', `
 		CALLOC(dst->arBuckets, Bucket*, src->nTableSize)
 		DONE(arBuckets)
 		DISABLECHECK(`
-		for (b = src->pListHead; b != NULL; b = b->pListNext) {
+		for (srcBucket = src->pListHead; srcBucket != NULL; srcBucket = srcBucket->pListNext) {
 			ifelse($4, `', `', `
-				pushdef(`BUCKET', `b')
+				pushdef(`BUCKET', `srcBucket')
 				if ($4 == ZEND_HASH_APPLY_REMOVE) {
 					IFCOPY(`dst->nNumOfElements --;')
 					continue;
@@ -103,19 +104,24 @@ define(`DEF_HASH_TABLE_FUNC', `
 				popdef(`BUCKET')
 			')
 
-			IFCALCCOPY(`bucketsize = BUCKET_SIZE(b);')
+			IFCALCCOPY(`bucketsize = BUCKET_SIZE(srcBucket);')
 			ALLOC(pnew, char, bucketsize, , Bucket)
 			IFCOPY(`
 #ifdef ZEND_ENGINE_2_4
-			memcpy(pnew, b, BUCKET_HEAD_SIZE(Bucket));
-			memcpy((char *) (pnew + 1), b->arKey, BUCKET_KEY_SIZE(b));
-			pnew->arKey = (const char *) (pnew + 1);
+			memcpy(pnew, srcBucket, BUCKET_HEAD_SIZE(Bucket));
+			if (BUCKET_KEY_SIZE(srcBucket)) {
+				memcpy((char *) (pnew + 1), srcBucket->arKey, BUCKET_KEY_SIZE(srcBucket));
+				pnew->arKey = (const char *) (pnew + 1);
+			}
+			else {
+				pnew->arKey = NULL;
+			}
 #else
-			memcpy(pnew, b, bucketsize);
-	#endif
+			memcpy(pnew, srcBucket, bucketsize);
+#endif
 			')
 			IFCOPY(`
-				n = b->h & src->nTableMask;
+				n = srcBucket->h & src->nTableMask;
 				/* pnew into hash node chain */
 				pnew->pLast = NULL;
 				pnew->pNext = dst->arBuckets[n];
@@ -127,16 +133,16 @@ define(`DEF_HASH_TABLE_FUNC', `
 			IFDPRINT(`
 				INDENT()
 				fprintf(stderr, "$2:\"");
-				xc_dprint_str_len(BUCKET_KEY_S(b), BUCKET_KEY_SIZE(b));
-				fprintf(stderr, "\" %d:h=%lu ", BUCKET_KEY_SIZE(b), b->h);
+				xc_dprint_str_len(BUCKET_KEY_S(srcBucket), BUCKET_KEY_SIZE(srcBucket));
+				fprintf(stderr, "\" %d:h=%lu ", BUCKET_KEY_SIZE(srcBucket), srcBucket->h);
 			')
 			if (sizeof(void *) == sizeof($2)) {
 				IFCOPY(`pnew->pData = &pnew->pDataPtr;')
 				dnl no alloc
-				STRUCT_P_EX(`$2', pnew->pData, (($2*)b->pData), `', `$3', ` ')
+				STRUCT_P_EX(`$2', pnew->pData, (($2*)srcBucket->pData), `', `$3', ` ')
 			}
 			else {
-				STRUCT_P_EX(`$2', pnew->pData, (($2*)b->pData), `', `$3')
+				STRUCT_P_EX(`$2', pnew->pData, (($2*)srcBucket->pData), `', `$3')
 				IFCOPY(`pnew->pDataPtr = NULL;')
 			}
 
