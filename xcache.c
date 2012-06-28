@@ -1809,8 +1809,8 @@ static void xc_compile_php(xc_compiler_t *compiler, zend_file_handle *h, int typ
 	}
 	/* }}} */
 #ifdef XCACHE_ERROR_CACHING
-	compiler->new_php.compilererrors = xc_sandbox_compilererrors();
-	compiler->new_php.compilererror_cnt = xc_sandbox_compilererror_cnt();
+	compiler->new_php.compilererrors = xc_sandbox_compilererrors(TSRMLS_C);
+	compiler->new_php.compilererror_cnt = xc_sandbox_compilererror_cnt(TSRMLS_C);
 #endif
 #ifndef ZEND_COMPILE_DELAYED_BINDING
 	/* {{{ find inherited classes that should be early-binding */
