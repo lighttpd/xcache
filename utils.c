@@ -764,7 +764,7 @@ void xc_copy_internal_zend_constants(HashTable *target, HashTable *source) /* {{
 /* }}} */
 #endif
 
-xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, ZEND_24(NOTHING, const) char *filename TSRMLS_DC) /* {{{ */
+static xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, ZEND_24(NOTHING, const) char *filename TSRMLS_DC) /* {{{ */
 {
 	HashTable *h;
 
@@ -929,7 +929,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 	zend_hash_add(&OG(included_files), sandbox->filename, strlen(sandbox->filename) + 1, (void *)&i, sizeof(int), NULL);
 }
 /* }}} */
-void xc_sandbox_free(xc_sandbox_t *sandbox, zend_op_array *op_array TSRMLS_DC) /* {{{ */
+static void xc_sandbox_free(xc_sandbox_t *sandbox, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
 	XG(sandbox) = NULL;
 #ifdef XCACHE_ERROR_CACHING
@@ -997,33 +997,57 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, zend_op_array *op_array TSRMLS_DC) /
 #endif
 }
 /* }}} */
-const Bucket *xc_sandbox_user_function_begin() /* {{{ */
+zend_op_array *xc_sandbox(xc_sandboxed_func_t sandboxed_func, void *data, ZEND_24(NOTHING, const) char *filename TSRMLS_DC) /* {{{ */
+{
+	xc_sandbox_t sandbox;
+	zend_op_array *op_array = NULL;
+	zend_bool catched = 0;
+
+	memset(&sandbox, 0, sizeof(sandbox));
+	zend_try {
+		xc_sandbox_init(&sandbox, filename TSRMLS_CC);
+		op_array = sandboxed_func(data TSRMLS_CC);
+	} zend_catch {
+		catched = 1;
+	} zend_end_try();
+
+	xc_sandbox_free(&sandbox, op_array TSRMLS_CC);
+	if (catched) {
+		zend_bailout();
+	}
+	return op_array;
+}
+/* {{{ */
+const Bucket *xc_sandbox_user_function_begin(TSRMLS_D) /* {{{ */
 {
 	xc_sandbox_t *sandbox = (xc_sandbox_t *) XG(sandbox);
 	assert(sandbox);
 	return TG(internal_function_tail) ? TG(internal_function_tail)->pListNext : TG(function_table).pListHead;
-} /* {{{ */
-const Bucket *xc_sandbox_user_class_begin() /* {{{ */
+}
+/* {{{ */
+const Bucket *xc_sandbox_user_class_begin(TSRMLS_D) /* {{{ */
 {
 	xc_sandbox_t *sandbox = (xc_sandbox_t *) XG(sandbox);
 	assert(sandbox);
 	return TG(internal_class_tail) ? TG(internal_class_tail)->pListNext : TG(class_table).pListHead;
-} /* {{{ */
+}
+/* {{{ */
 #ifdef XCACHE_ERROR_CACHING
-xc_compilererror_t *xc_sandbox_compilererrors() /* {{{ */
+xc_compilererror_t *xc_sandbox_compilererrors(TSRMLS_D) /* {{{ */
 {
 	xc_sandbox_t *sandbox = (xc_sandbox_t *) XG(sandbox);
 	assert(sandbox);
 	return sandbox->compilererrors;
-} /* }}} */
-zend_uint xc_sandbox_compilererror_cnt() /* {{{ */
+}
+/* }}} */
+zend_uint xc_sandbox_compilererror_cnt(TSRMLS_D) /* {{{ */
 {
 	xc_sandbox_t *sandbox = (xc_sandbox_t *) XG(sandbox);
 	assert(sandbox);
 	return sandbox->compilererror_cnt;
-} /* }}} */
+}
+/* }}} */
 #endif
-
 
 int xc_vtrace(const char *fmt, va_list args) /* {{{ */
 {

@@ -32,7 +32,7 @@ static void xc_dasm(zval *output, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 
 	ALLOC_INIT_ZVAL(list);
 	array_init(list);
-	for (b = xc_sandbox_user_function_begin(); b; b = b->pListNext) {
+	for (b = xc_sandbox_user_function_begin(TSRMLS_C); b; b = b->pListNext) {
 		int keysize, keyLength;
 
 		ALLOC_INIT_ZVAL(zv);
@@ -68,7 +68,7 @@ static void xc_dasm(zval *output, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	
 	ALLOC_INIT_ZVAL(list);
 	array_init(list);
-	for (b = xc_sandbox_user_class_begin(); b; b = b->pListNext) {
+	for (b = xc_sandbox_user_class_begin(TSRMLS_C); b; b = b->pListNext) {
 		int keysize, keyLength;
 
 		ALLOC_INIT_ZVAL(zv);
