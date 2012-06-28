@@ -189,7 +189,7 @@ function switcher($name, $options)
 	foreach ($options as $k => $v) {
 		$html[] = sprintf('<a href="?%s=%s"%s>%s</a>', $name, $k, $k == $n ? ' class="active"' : '', $v);
 	}
-	return implode(' ', $html);
+	return implode('', $html);
 }
 
 if (!extension_loaded('XCache')) {
