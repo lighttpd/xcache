@@ -36,6 +36,7 @@ else {
 	}
 }
 
+$php_version = phpversion();
 $xcache_version = XCACHE_VERSION;
 $xcache_modules = XCACHE_MODULES;
 

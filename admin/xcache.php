@@ -367,6 +367,7 @@ default:
 $type_php = XC_TYPE_PHP;
 $type_var = XC_TYPE_VAR;
 $types = array($type_none => _T('Statistics'), $type_php => _T('List PHP'), $type_var => _T('List Var Data'));
+$php_version = phpversion();
 $xcache_version = XCACHE_VERSION;
 $xcache_modules = XCACHE_MODULES;
 
