@@ -260,7 +260,7 @@ typedef struct {
 	xc_hash_t  *hcache; /* hash to cacheid */
 
 	time_t     compiling;
-	zend_ulong misses;
+	zend_ulong updates;
 	zend_ulong hits;
 	zend_ulong clogs;
 	zend_ulong ooms;

@@ -10,7 +10,7 @@
 <dt><?php echo _T('Hits/H'); ?>: </dt><dd>Average Hits per Hour. Only last 24 hours is logged</dd>
 <dt><?php echo _T('Hits 24H'); ?>: </dt><dd>Hits 24 Hours. Hits graph of last 24 hours</dd>
 <dt><?php echo _T('Hits/S'); ?>: </dt><dd>Average Hits per Second. Only last 5 seconds is logged</dd>
-<dt><?php echo _T('Misses'); ?>: </dt><dd>Cache Misses, miss=a var/php is requested but not in the cache</dd>
+<dt><?php echo _T('Updates'); ?>: </dt><dd>Cache Updates, miss=a var/php is requested but not in the cache</dd>
 <dt><?php echo _T('Clogs'); ?>: </dt><dd>Compiling Clogs, clog=compiling is needed but avoided to wait(be blocked) when the cache is busy compiling already</dd>
 <dt><?php echo _T('OOMs'); ?>: </dt><dd>Out Of Memory, how many times a new item should be stored but there isn't enough memory in the cache, think of increasing the xcache.size or xcache.var_size</dd>
 <dt><?php echo _T('Errors'); ?>: </dt><dd>Compiler errors, how many times your script is compiled but failed. You should really check what is happening if you see this value increase. See <a href="http://www.php.net/manual/en/ref.errorfunc.php#ini.error-log">ini.error-log</a> and <a href="http://cn2.php.net/manual/en/ref.errorfunc.php#ini.display-errors">ini.display-errors</a></dd>
