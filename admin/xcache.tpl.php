@@ -39,7 +39,7 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		<th><?php echo _T('Hits/H'); ?></th>
 		<th><?php echo _T('Hits 24H'); ?></th>
 		<th><?php echo _T('Hits/S'); ?></th>
-		<th><?php echo _T('Misses'); ?></th>
+		<th><?php echo _T('Updates'); ?></th>
 		<th><?php echo _T('Clogs'); ?></th>
 		<th><?php echo _T('OOMs'); ?></th>
 		<th><?php echo _T('Errors'); ?></th>
@@ -49,7 +49,7 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		<th><?php echo _T('GC'); ?></th>
 	</tr>
 	<?php
-	$numkeys = explode(',', 'slots,size,avail,hits,misses,clogs,ooms,errors,cached,deleted');
+	$numkeys = explode(',', 'slots,size,avail,hits,updates,clogs,ooms,errors,cached,deleted');
 	$l_clear = _T('Clear');
 	$l_clear_confirm = _T('Sure to clear?');
 	foreach ($cacheinfos as $i => $ci) {
@@ -116,7 +116,7 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		<td>{$hits_avg_h}</td>
 		<td><div class="hitsgraph" style="width: {$hits_graph_h_w}px">{$hits_graph_h}</div></td>
 		<td>{$hits_avg_s}</td>
-		<td>{$ci['misses']}</td>
+		<td>{$ci['updates']}</td>
 		<td>{$ci['clogs']}</td>
 		<td>{$ci['ooms']}</td>
 		<td>{$ci['errors']}</td>

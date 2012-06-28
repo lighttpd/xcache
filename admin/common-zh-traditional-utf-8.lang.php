@@ -35,8 +35,8 @@ $strings = array(
 		=> '命中/H',
 		'Hits/S'
 		=> '命中/S',
-		'Misses'
-		=> '錯過',
+		'Updates'
+		=> '更新',
 		'Clogs'
 		=> '阻塞',
 		'OOMs'

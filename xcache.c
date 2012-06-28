@@ -280,6 +280,7 @@ static xc_entry_t *xc_entry_store_unlocked(xc_entry_type_t type, xc_cache_t *cac
 		: (xc_entry_t *) xc_processor_store_xc_entry_var_t(cache, (xc_entry_var_t *) entry TSRMLS_CC);
 	if (stored_entry) {
 		xc_entry_add_unlocked(cache, entryslotid, stored_entry);
+		++cache->updates;
 		return stored_entry;
 	}
 	else {
@@ -591,7 +592,8 @@ static void xc_fillinfo_unlocked(int cachetype, xc_cache_t *cache, zval *return_
 
 	add_assoc_long_ex(return_value, ZEND_STRS("slots"),     cache->hentry->size);
 	add_assoc_long_ex(return_value, ZEND_STRS("compiling"), cache->compiling);
-	add_assoc_long_ex(return_value, ZEND_STRS("misses"),    cache->misses);
+	add_assoc_long_ex(return_value, ZEND_STRS("updates"),   cache->updates);
+	add_assoc_long_ex(return_value, ZEND_STRS("misses"),    cache->updates); /* deprecated */
 	add_assoc_long_ex(return_value, ZEND_STRS("hits"),      cache->hits);
 	add_assoc_long_ex(return_value, ZEND_STRS("clogs"),     cache->clogs);
 	add_assoc_long_ex(return_value, ZEND_STRS("ooms"),      cache->ooms);
@@ -1600,9 +1602,8 @@ static void xc_free_php(xc_entry_data_php_t *php TSRMLS_DC) /* {{{ */
 #undef X_FREE
 }
 /* }}} */
-static zend_op_array *xc_compile_php(xc_compiler_t *compiler, zend_file_handle *h, int type TSRMLS_DC) /* {{{ */
+static void xc_compile_php(xc_compiler_t *compiler, zend_file_handle *h, int type TSRMLS_DC) /* {{{ */
 {
-	zend_op_array *op_array;
 	zend_uint old_constinfo_cnt, old_funcinfo_cnt, old_classinfo_cnt;
 	zend_bool catched = 0;
 
@@ -1613,10 +1614,8 @@ static zend_op_array *xc_compile_php(xc_compiler_t *compiler, zend_file_handle *
 	old_funcinfo_cnt  = zend_hash_num_elements(CG(function_table));
 	old_constinfo_cnt = zend_hash_num_elements(EG(zend_constants));
 
-	compiler->new_php.op_array = NULL;
-	XG(initial_compile_file_called) = 0;
 	zend_try {
-		op_array = old_compile_file(h, type TSRMLS_CC);
+		compiler->new_php.op_array = old_compile_file(h, type TSRMLS_CC);
 	} zend_catch {
 		catched = 1;
 	} zend_end_try();
@@ -1625,18 +1624,17 @@ static zend_op_array *xc_compile_php(xc_compiler_t *compiler, zend_file_handle *
 		goto err_bailout;
 	}
 
-	if (op_array == NULL) {
+	if (compiler->new_php.op_array == NULL) {
 		goto err_op_array;
 	}
 
 	if (!XG(initial_compile_file_called)) {
-		return op_array;
+		return;
 	}
 
 	/* }}} */
 	/* {{{ prepare */
 	zend_restore_compiled_filename(h->opened_path ? h->opened_path : (char *) h->filename TSRMLS_CC);
-	compiler->new_php.op_array = op_array;
 
 #ifdef HAVE_XCACHE_CONSTANT
 	compiler->new_php.constinfo_cnt  = zend_hash_num_elements(EG(zend_constants)) - old_constinfo_cnt;
@@ -1818,7 +1816,7 @@ static zend_op_array *xc_compile_php(xc_compiler_t *compiler, zend_file_handle *
 	/* }}} */
 #endif
 
-	return op_array;
+	return;
 
 err_alloc:
 	xc_free_php(&compiler->new_php TSRMLS_CC);
@@ -1829,8 +1827,6 @@ err_op_array:
 	if (catched) {
 		zend_bailout();
 	}
-
-	return op_array;
 }
 /* }}} */
 static zend_op_array *xc_compile_restore(xc_entry_php_t *stored_entry, xc_entry_data_php_t *stored_php, zend_file_handle *h TSRMLS_DC) /* {{{ */
@@ -1911,7 +1907,6 @@ static zend_op_array *xc_compile_file_ex(xc_compiler_t *compiler, zend_file_hand
 	}
 	*/
 
-	zend_op_array *op_array;
 	xc_entry_php_t *stored_entry;
 	xc_entry_data_php_t *stored_php;
 	zend_bool gaveup = 0;
@@ -1955,7 +1950,6 @@ static zend_op_array *xc_compile_file_ex(xc_compiler_t *compiler, zend_file_hand
 			break;
 		}
 
-		cache->misses ++;
 		TRACE("miss entry %d:%s", compiler->new_entry.file_inode, compiler->new_entry.entry.name.str.val);
 
 		if (xc_entry_data_php_init_md5(cache, compiler TSRMLS_CC) != SUCCESS) {
@@ -2007,10 +2001,8 @@ static zend_op_array *xc_compile_file_ex(xc_compiler_t *compiler, zend_file_hand
 	}
 	/* }}} */
 
-	op_array = NULL;
 	/* {{{ compile */
 	/* make compile inside sandbox */
-	xc_sandbox_init(&sandbox, h->opened_path ? h->opened_path : h->filename TSRMLS_CC);
 
 #ifdef HAVE_XCACHE_CONSTANT
 	compiler->new_php.constinfos  = NULL;
@@ -2022,24 +2014,21 @@ static zend_op_array *xc_compile_file_ex(xc_compiler_t *compiler, zend_file_hand
 #endif
 	memset(&compiler->new_php.op_array_info, 0, sizeof(compiler->new_php.op_array_info));
 
+	XG(initial_compile_file_called) = 0;
 	zend_try {
-		op_array = xc_compile_php(compiler, h, type TSRMLS_CC);
+		xc_sandbox_init(&sandbox, h->opened_path ? h->opened_path : h->filename TSRMLS_CC);
+		compiler->new_php.op_array = NULL;
+		xc_compile_php(compiler, h, type TSRMLS_CC);
 	} zend_catch {
 		catched = 1;
 	} zend_end_try();
 
-	if (catched || !op_array) {
+	if (catched
+	 || !compiler->new_php.op_array /* possible ? */
+	 || !XG(initial_compile_file_called)) {
 		goto err_aftersandbox;
 	}
 
-	/* not cachable */
-	if (!compiler->new_php.op_array) {
-		cache->compiling = 0;
-		/* it's not cachable, but don't scare the users with high misses */
-		cache->misses --;
-		xc_sandbox_free(&sandbox, XC_InstallNoBinding TSRMLS_CC);
-		return op_array;
-	}
 	/* }}} */
 #ifdef SHOW_DPRINT
 	compiler->new_entry.php = &compiler->new_php;
@@ -2064,21 +2053,22 @@ static zend_op_array *xc_compile_file_ex(xc_compiler_t *compiler, zend_file_hand
 	/* }}} */
 	TRACE("%s", stored_entry ? "stored" : "store failed");
 
-	cache->compiling = 0;
-	if (catched) {
+	if (catched || !stored_php) {
 		goto err_aftersandbox;
 	}
 
+	cache->compiling = 0;
 	xc_free_php(&compiler->new_php TSRMLS_CC);
 
 	if (stored_entry) {
-		if (op_array) {
+		if (compiler->new_php.op_array) {
 #ifdef ZEND_ENGINE_2
-			destroy_op_array(op_array TSRMLS_CC);
+			destroy_op_array(compiler->new_php.op_array TSRMLS_CC);
 #else
-			destroy_op_array(op_array);
+			destroy_op_array(compiler->new_php.op_array);
 #endif
-			efree(op_array);
+			efree(compiler->new_php.op_array);
+			compiler->new_php.op_array = NULL;
 			h = NULL;
 		}
 		xc_sandbox_free(&sandbox, XC_NoInstall TSRMLS_CC);
@@ -2087,22 +2077,22 @@ static zend_op_array *xc_compile_file_ex(xc_compiler_t *compiler, zend_file_hand
 	else {
 		zend_op_array *old_active_op_array = CG(active_op_array);
 		/* install it */
-		CG(active_op_array) = op_array;
+		CG(active_op_array) = compiler->new_php.op_array;
 		xc_sandbox_free(&sandbox, XC_Install TSRMLS_CC);
 		CG(active_op_array) = old_active_op_array;
 	}
-	return op_array;
+	return compiler->new_php.op_array;
 
 err_aftersandbox:
 	xc_free_php(&compiler->new_php TSRMLS_CC);
 	xc_sandbox_free(&sandbox, XC_NoInstall TSRMLS_CC);
 
+	cache->compiling = 0;
 	if (catched) {
-		cache->compiling = 0;
 		cache->errors ++;
 		zend_bailout();
 	}
-	return op_array;
+	return compiler->new_php.op_array;
 }
 /* }}} */
 static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /* {{{ */
@@ -2838,7 +2828,6 @@ PHP_FUNCTION(xcache_get)
 		}
 		else {
 			RETVAL_NULL();
-			cache->misses ++;
 		}
 	} LEAVE_LOCK(cache);
 }
@@ -3024,6 +3013,7 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 
 				zv = (zval *) cache->shm->handlers->to_readwrite(cache->shm, (char *) stored_entry_var->value);
 				Z_LVAL_P(zv) = value;
+				++cache->updates;
 				break; /* leave lock */
 			}
 

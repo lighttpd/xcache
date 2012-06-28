@@ -7,7 +7,7 @@
 <dt><?php echo _T('Clear'); ?>: </dt><dd>清除按鈕，點擊按鈕清除對應共享記憶體區的資料</dd>
 <dt><?php echo _T('Compiling'); ?>: </dt><dd>編譯標記，當共享記憶體區正在編譯 php 指令時標記為 "yes"</dd>
 <dt><?php echo _T('Hits'); ?>: </dt><dd>共享記憶體命中次數，命中=從該共享記憶體載入php或者變數</dd>
-<dt><?php echo _T('Misses'); ?>: </dt><dd>共享記憶體錯過次數，錯過=請求的php或者變數並不在該共享記憶體內</dd>
+<dt><?php echo _T('Updates'); ?>: </dt><dd>共享記憶更新過次數</dd>
 <dt><?php echo _T('Clogs'); ?>: </dt><dd>編譯阻塞跳過，阻塞=當需該共享記憶體區負責編譯時，其他程序/現成無法存取此共享記憶體. 跳過=XCache 自動判斷阻塞的共享記憶體區自動跳過阻塞等待，直接使用非共享記憶體方式繼續處理請求</dd>
 <dt><?php echo _T('OOMs'); ?>: </dt><dd>記憶體不足次數，顯示需要儲存新資料但是共享記憶體區記憶體不足的次數. 如果出現太頻繁請考慮加大配置中的 xcache.size 或者 xcache.var_size</dd>
 <dt><?php echo _T('Errors'); ?>: </dt><dd>编译错误, 显示您的脚本被编译时出错的次数. 如果您发现这个数字不断增长, 您应该检查什么脚本产生错误. 参考 <a href="http://www.php.net/manual/en/ref.errorfunc.php#ini.error-log">ini.error-log</a> and <a href="http://cn2.php.net/manual/en/ref.errorfunc.php#ini.display-errors">ini.display-errors</a></dd>
