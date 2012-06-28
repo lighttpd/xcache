@@ -79,50 +79,18 @@ ZESW(xc_cest_t *, void) xc_install_class(ZEND_24(NOTHING, const) char *filename,
 #define XCACHE_ERROR_CACHING
 #endif
 
-/* sandbox */
-typedef struct {
-	ZEND_24(NOTHING, const) char *filename;
-
-	HashTable orig_included_files;
-	HashTable *tmp_included_files;
-
-#ifdef HAVE_XCACHE_CONSTANT
-	HashTable *orig_zend_constants;
-	HashTable tmp_zend_constants;
-#endif
-	HashTable *orig_function_table;
-	HashTable *orig_class_table;
-	HashTable *orig_auto_globals;
-	HashTable tmp_function_table;
-	HashTable tmp_class_table;
-	HashTable tmp_auto_globals;
-#ifdef HAVE_XCACHE_CONSTANT
-	Bucket    *tmp_internal_constant_tail;
-#endif
-	Bucket    *tmp_internal_function_tail;
-	Bucket    *tmp_internal_class_tail;
-
+/* return op_array to install */
+typedef zend_op_array *(*xc_sandboxed_func_t)(void *data TSRMLS_DC);
+zend_op_array *xc_sandbox(xc_sandboxed_func_t sandboxed_func, void *data, ZEND_24(NOTHING, const) char *filename TSRMLS_DC);
+const Bucket *xc_sandbox_user_function_begin();
+const Bucket *xc_sandbox_user_class_begin();
+zend_uint xc_sandbox_compilererror_cnt();
 #ifdef XCACHE_ERROR_CACHING
-	int orig_user_error_handler_error_reporting;
-	zend_uint compilererror_cnt;
-	zend_uint compilererror_size;
-	xc_compilererror_t *compilererrors;
+xc_compilererror_t *xc_sandbox_compilererrors();
+zend_uint xc_sandbox_compilererror_cnt();
 #endif
-
-#ifdef ZEND_COMPILE_IGNORE_INTERNAL_CLASSES
-	zend_uint orig_compiler_options;
-#endif
-} xc_sandbox_t;
-
-typedef enum _xc_install_action_t {
-    XC_NoInstall,
-    XC_Install,
-    XC_InstallNoBinding
-} xc_install_action_t;
 
 void xc_zend_class_add_ref(zend_class_entry ZESW(*ce, **ce));
-xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, ZEND_24(NOTHING, const) char *filename TSRMLS_DC);
-void xc_sandbox_free(xc_sandbox_t *sandbox, xc_install_action_t install TSRMLS_DC);
 
 typedef zend_bool (*xc_if_func_t)(void *data);
 

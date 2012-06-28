@@ -3,21 +3,12 @@
 #include "utils.h"
 #include "processor.h"
 
-#define return_value dst
-
-/* sandbox {{{ */
-#undef TG
-#undef OG
-#define TG(x) (sandbox->tmp_##x)
-#define OG(x) (sandbox->orig_##x)
-/* }}} */
-
 #ifndef HAVE_XCACHE_OPCODE_SPEC_DEF
 #error disassembler cannot be built without xcache/opcode_spec_def.h
 #endif
-static void xc_dasm(xc_sandbox_t *sandbox, zval *dst, zend_op_array *op_array TSRMLS_DC) /* {{{ */
+static void xc_dasm(zval *output, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
-	Bucket *b;
+	const Bucket *b;
 	zval *zv, *list;
 	xc_compile_result_t cr;
 	int bufsize = 2;
@@ -30,19 +21,18 @@ static void xc_dasm(xc_sandbox_t *sandbox, zval *dst, zend_op_array *op_array TS
 	xc_apply_op_array(&cr, (apply_func_t) xc_fix_opcode TSRMLS_CC);
 
 	/* go */
-	array_init(dst);
+	array_init(output);
 
 	ALLOC_INIT_ZVAL(zv);
 	array_init(zv);
 	xc_dasm_zend_op_array(&dasm, zv, op_array TSRMLS_CC);
-	add_assoc_zval_ex(dst, ZEND_STRS("op_array"), zv);
+	add_assoc_zval_ex(output, ZEND_STRS("op_array"), zv);
 
 	buf = emalloc(bufsize);
 
 	ALLOC_INIT_ZVAL(list);
 	array_init(list);
-	b = TG(internal_function_tail) ? TG(internal_function_tail)->pListNext : TG(function_table).pListHead;
-	for (; b; b = b->pListNext) {
+	for (b = xc_sandbox_user_function_begin(); b; b = b->pListNext) {
 		int keysize, keyLength;
 
 		ALLOC_INIT_ZVAL(zv);
@@ -74,12 +64,11 @@ static void xc_dasm(xc_sandbox_t *sandbox, zval *dst, zend_op_array *op_array TS
 
 		add_u_assoc_zval_ex(list, BUCKET_KEY_TYPE(b), ZSTR(buf), keyLength, zv);
 	}
-	add_assoc_zval_ex(dst, ZEND_STRS("function_table"), list);
+	add_assoc_zval_ex(output, ZEND_STRS("function_table"), list);
 	
 	ALLOC_INIT_ZVAL(list);
 	array_init(list);
-	b = TG(internal_class_tail) ? TG(internal_class_tail)->pListNext : TG(class_table).pListHead;
-	for (; b; b = b->pListNext) {
+	for (b = xc_sandbox_user_class_begin(); b; b = b->pListNext) {
 		int keysize, keyLength;
 
 		ALLOC_INIT_ZVAL(zv);
@@ -111,98 +100,93 @@ static void xc_dasm(xc_sandbox_t *sandbox, zval *dst, zend_op_array *op_array TS
 		add_u_assoc_zval_ex(list, BUCKET_KEY_TYPE(b), ZSTR(buf), keyLength, zv);
 	}
 	efree(buf);
-	add_assoc_zval_ex(dst, ZEND_STRS("class_table"), list);
+	add_assoc_zval_ex(output, ZEND_STRS("class_table"), list);
 
 	/*xc_apply_op_array(&cr, (apply_func_t) xc_redo_pass_two TSRMLS_CC);*/
 	xc_compile_result_free(&cr);
-
-	return;
 }
 /* }}} */
-void xc_dasm_string(zval *dst, zval *source TSRMLS_DC) /* {{{ */
+typedef struct xc_dasm_sandboxed_t { /* {{{ */
+	enum Type {
+		xc_dasm_file_t
+		, xc_dasm_string_t
+	} type;
+	union {
+		zval *zfilename;
+		struct {
+			zval *source;
+			char *eval_name;
+		} compile_string;
+	} input;
+
+	zval *output;
+} xc_dasm_sandboxed_t; /* {{{ */
+
+zend_op_array *xc_dasm_sandboxed(void *data TSRMLS_DC)
 {
-	int catched;
+	zend_bool catched = 0;
 	zend_op_array *op_array = NULL;
-	xc_sandbox_t sandbox;
-	char *eval_name = zend_make_compiled_string_description("runtime-created function" TSRMLS_CC);
+	xc_dasm_sandboxed_t *sandboxed_dasm = (xc_dasm_sandboxed_t *) data;
 
-	xc_sandbox_init(&sandbox, eval_name TSRMLS_CC);
-
-	catched = 0;
 	zend_try {
-		op_array = compile_string(source, eval_name TSRMLS_CC);
+		if (sandboxed_dasm->type == xc_dasm_file_t) {
+			op_array = compile_filename(ZEND_REQUIRE, sandboxed_dasm->input.zfilename TSRMLS_CC);
+		}
+		else {
+			op_array = compile_string(sandboxed_dasm->input.compile_string.source, sandboxed_dasm->input.compile_string.eval_name TSRMLS_CC);
+		}
 	} zend_catch {
 		catched = 1;
 	} zend_end_try();
 
 	if (catched || !op_array) {
-		goto err_compile;
+#define return_value sandboxed_dasm->output
+		RETVAL_FALSE;
+#undef return_value
+		return NULL;
 	}
 
-	xc_dasm(&sandbox, dst, op_array TSRMLS_CC);
+	xc_dasm(sandboxed_dasm->output, op_array TSRMLS_CC);
 
 	/* free */
-	efree(eval_name);
 #ifdef ZEND_ENGINE_2
 	destroy_op_array(op_array TSRMLS_CC);
 #else
 	destroy_op_array(op_array);
 #endif
 	efree(op_array);
-	xc_sandbox_free(&sandbox, 0 TSRMLS_CC);
-	return;
 
-err_compile:
+	return NULL;
+} /* }}} */
+void xc_dasm_string(zval *output, zval *source TSRMLS_DC) /* {{{ */
+{
+	xc_dasm_sandboxed_t sandboxed_dasm;
+	char *eval_name = zend_make_compiled_string_description("runtime-created function" TSRMLS_CC);
+
+	sandboxed_dasm.output = output;
+	sandboxed_dasm.type = xc_dasm_string_t;
+	sandboxed_dasm.input.compile_string.source = source;
+	sandboxed_dasm.input.compile_string.eval_name = eval_name;
+	xc_sandbox(&xc_dasm_sandboxed, (void *) &sandboxed_dasm, eval_name TSRMLS_CC);
 	efree(eval_name);
-	xc_sandbox_free(&sandbox, 0 TSRMLS_CC);
-
-	RETURN_FALSE;
 }
 /* }}} */
-void xc_dasm_file(zval *dst, const char *filename TSRMLS_DC) /* {{{ */
+void xc_dasm_file(zval *output, const char *filename TSRMLS_DC) /* {{{ */
 {
-	int catched;
-	zend_op_array *op_array = NULL;
-	xc_sandbox_t sandbox;
 	zval *zfilename;
+	xc_dasm_sandboxed_t sandboxed_dasm;
 
 	MAKE_STD_ZVAL(zfilename);
 	zfilename->value.str.val = estrdup(filename);
 	zfilename->value.str.len = strlen(filename);
 	zfilename->type = IS_STRING;
 
-	xc_sandbox_init(&sandbox, zfilename->value.str.val TSRMLS_CC);
-
-	catched = 0;
-	zend_try {
-		op_array = compile_filename(ZEND_REQUIRE, zfilename TSRMLS_CC);
-	} zend_catch {
-		catched = 1;
-	} zend_end_try();
-
-	if (catched || !op_array) {
-		goto err_compile;
-	}
-
-	xc_dasm(&sandbox, dst, op_array TSRMLS_CC);
-
-	/* free */
-#ifdef ZEND_ENGINE_2
-	destroy_op_array(op_array TSRMLS_CC);
-#else
-	destroy_op_array(op_array);
-#endif
-	efree(op_array);
-	xc_sandbox_free(&sandbox, 0 TSRMLS_CC);
-	zval_dtor(zfilename);
-	FREE_ZVAL(zfilename);
-	return;
-
-err_compile:
-	xc_sandbox_free(&sandbox, 0 TSRMLS_CC);
+	sandboxed_dasm.output = output;
+	sandboxed_dasm.type = xc_dasm_file_t;
+	sandboxed_dasm.input.zfilename = zfilename;
+	xc_sandbox(&xc_dasm_sandboxed, (void *) &sandboxed_dasm, zfilename->value.str.val TSRMLS_CC);
 
 	zval_dtor(zfilename);
 	FREE_ZVAL(zfilename);
-	RETURN_FALSE;
 }
 /* }}} */

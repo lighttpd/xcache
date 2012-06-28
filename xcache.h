@@ -464,17 +464,6 @@ typedef struct xc_entry_hash_t { /* {{{ */
 	xc_hash_value_t entryslotid;
 } xc_entry_hash_t;
 /* }}} */
-typedef struct xc_compiler_t { /* {{{ */
-	const char *filename;
-	size_t filename_len;
-	const char *opened_path;
-	char opened_path_buffer[MAXPATHLEN];
-
-	xc_entry_hash_t entry_hash;
-	xc_entry_php_t new_entry;
-	xc_entry_data_php_t new_php;
-} xc_compiler_t;
-/* }}} */
 
 extern zend_module_entry xcache_module_entry;
 #define phpext_xcache_ptr &xcache_module_entry
