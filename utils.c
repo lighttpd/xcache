@@ -41,13 +41,7 @@ xc_compile_result_t *xc_compile_result_init(xc_compile_result_t *cr, /* {{{ */
 		HashTable *function_table,
 		HashTable *class_table)
 {
-	if (cr) {
-		cr->alloc = 0;
-	}
-	else {
-		cr = emalloc(sizeof(xc_compile_result_t));
-		cr->alloc = 1;
-	}
+	assert(cr);
 	cr->op_array       = op_array;
 	cr->function_table = function_table;
 	cr->class_table    = class_table;
@@ -56,14 +50,12 @@ xc_compile_result_t *xc_compile_result_init(xc_compile_result_t *cr, /* {{{ */
 /* }}} */
 xc_compile_result_t *xc_compile_result_init_cur(xc_compile_result_t *cr, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
+	assert(cr);
 	return xc_compile_result_init(cr, op_array, CG(function_table), CG(class_table));
 }
 /* }}} */
 void xc_compile_result_free(xc_compile_result_t *cr) /* {{{ */
 {
-	if (cr->alloc) {
-		efree(cr);
-	}
 }
 /* }}} */
 
@@ -742,13 +734,8 @@ xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, ZEND_24(NOTHING, const) cha
 {
 	HashTable *h;
 
-	if (sandbox) {
-		memset(sandbox, 0, sizeof(sandbox[0]));
-	}
-	else {
-		ECALLOC_ONE(sandbox);
-		sandbox->alloc = 1;
-	}
+	assert(sandbox);
+	memset(sandbox, 0, sizeof(sandbox[0]));
 
 	memcpy(&OG(included_files), &EG(included_files), sizeof(EG(included_files)));
 
@@ -971,10 +958,6 @@ void xc_sandbox_free(xc_sandbox_t *sandbox, xc_install_action_t install TSRMLS_D
 #ifdef ZEND_COMPILE_IGNORE_INTERNAL_CLASSES
 	CG(compiler_options) = sandbox->orig_compiler_options;
 #endif
-
-	if (sandbox->alloc) {
-		efree(sandbox);
-	}
 }
 /* }}} */
 int xc_vtrace(const char *fmt, va_list args) /* {{{ */
