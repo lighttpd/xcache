@@ -44,7 +44,6 @@ int xc_util_init(int module_number TSRMLS_DC);
 void xc_util_destroy();
 
 typedef struct {
-	int alloc;
 	zend_op_array *op_array;
 	HashTable *function_table;
 	HashTable *class_table;
@@ -82,7 +81,6 @@ ZESW(xc_cest_t *, void) xc_install_class(ZEND_24(NOTHING, const) char *filename,
 
 /* sandbox */
 typedef struct {
-	int alloc;
 	ZEND_24(NOTHING, const) char *filename;
 
 	HashTable orig_included_files;
