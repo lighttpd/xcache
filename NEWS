@@ -2,6 +2,7 @@
 ========
  * improve stability
  * admin/ config changed. please update accordingly
+ * PHP 5.3.14 is unstable. Please upgrade to new version. You have been warned
 
 2.0.0 2012-04-20
 ========
