@@ -4,6 +4,7 @@ ChangeLog
  * fixed #279: segv when cache is full (since 2.0)
  * fixed #281: subsequenc request segv when timeout happens during compiling
  * admin/ config changed. please update accordingly
+ * WIN32: kill invalidate CRT parameters on shutdown
 
 2.0.0 2012-04-20
 Ini Settings Changes
