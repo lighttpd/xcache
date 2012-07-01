@@ -709,6 +709,7 @@ static void xc_fillentry_unlocked(xc_entry_type_t type, const xc_entry_t *entry,
 		}
 
 		case XC_TYPE_VAR:
+			add_assoc_long_ex(ei, ZEND_STRS("refcount"),      0); /* for BC only */
 			add_assoc_long_ex(ei, ZEND_STRS("size"),          entry->size);
 			break;
 
