@@ -1112,7 +1112,7 @@ static int xc_entry_php_resolve_opened_path(xc_compiler_t *compiler, struct stat
 			strcpy(compiler->opened_path_buffer, opened_path);
 			efree(opened_path);
 			compiler->opened_path = compiler->opened_path_buffer;
-			if (!statbuf || VCWD_STAT(compiler->filename, statbuf) == 0) {
+			if (!statbuf || VCWD_STAT(compiler->opened_path, statbuf) == 0) {
 				return SUCCESS;
 			}
 		}
