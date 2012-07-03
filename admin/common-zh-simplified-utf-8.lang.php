@@ -118,6 +118,8 @@ $strings = array(
 		=> '删除所选',
 		'Editing Variable %s'
 		=> '正在编辑变量 %s',
+		'Set %s in config to enable'
+		=> '请在配置文件中设置 %s 启用本功能',
 		''
 		=> '',
 		);
