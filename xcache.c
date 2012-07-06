@@ -976,7 +976,7 @@ static zend_bool xc_resolve_path(const char *filepath, char *path_buffer, xc_res
 						memcpy(path_buffer + dirname_len, filepath, filename_len);
 						path_buffer_len = dirname_len + filename_len;
 						path_buffer[path_buffer_len] = '\0';
-						if (checker_func(path_buffer, path_buffer_len, data TSRMLS_CC) == 0) {
+						if (checker_func(path_buffer, path_buffer_len, data TSRMLS_CC)) {
 							ret = 1;
 							goto finish;
 						}
@@ -987,7 +987,7 @@ static zend_bool xc_resolve_path(const char *filepath, char *path_buffer, xc_res
 		}
 	}
 
-	ret = FAILURE;
+	ret = 0;
 
 finish:
 	my_free_alloca(paths, use_heap);
