@@ -5,6 +5,7 @@ ChangeLog
  * fixed #281: subsequenc request segv when timeout happens during compiling
  * admin/ config changed. please update accordingly
  * WIN32: kill invalidate CRT parameters on shutdown
+ * fixed: <=PHP_5_2 duplicate error message failed to include file
 
 2.0.0 2012-04-20
 Ini Settings Changes
