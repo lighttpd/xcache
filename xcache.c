@@ -745,7 +745,7 @@ static void xc_filllist_unlocked(xc_entry_type_t type, xc_cache_t *cache, zval *
 }
 /* }}} */
 
-static zend_op_array *xc_entry_install(xc_entry_php_t *entry_php TSRMLS_DC) /* {{{ */
+static zend_op_array *xc_entry_install(xc_entry_php_t *entry_php, zend_file_handle *h TSRMLS_DC) /* {{{ */
 {
 	zend_uint i;
 	xc_entry_data_php_t *p = entry_php->php;
@@ -814,7 +814,12 @@ static zend_op_array *xc_entry_install(xc_entry_php_t *entry_php TSRMLS_DC) /* {
 #endif
 
 	i = 1;
+#ifndef ZEND_ENGINE_2_2
 	zend_hash_add(&EG(included_files), entry_php->entry.name.str.val, entry_php->entry.name.str.len+1, (void *)&i, sizeof(int), NULL);
+#endif
+	if (h) {
+		zend_llist_add_element(&CG(open_files), h);
+	}
 
 #ifndef ZEND_ENGINE_2
 	my_free_alloca(new_cest_ptrs, use_heap);
@@ -1839,7 +1844,7 @@ err_op_array:
 	}
 }
 /* }}} */
-static zend_op_array *xc_compile_restore(xc_entry_php_t *stored_entry, xc_entry_data_php_t *stored_php TSRMLS_DC) /* {{{ */
+static zend_op_array *xc_compile_restore(xc_entry_php_t *stored_entry, xc_entry_data_php_t *stored_php, zend_file_handle *h TSRMLS_DC) /* {{{ */
 {
 	zend_op_array *op_array;
 	xc_entry_php_t restored_entry;
@@ -1859,7 +1864,7 @@ static zend_op_array *xc_compile_restore(xc_entry_php_t *stored_entry, xc_entry_
 
 	catched = 0;
 	zend_try {
-		op_array = xc_entry_install(&restored_entry TSRMLS_CC);
+		op_array = xc_entry_install(&restored_entry, h TSRMLS_CC);
 	} zend_catch {
 		catched = 1;
 	} zend_end_try();
@@ -2117,7 +2122,7 @@ static zend_op_array *xc_compile_file_cached(xc_compiler_t *compiler, zend_file_
 
 	/* found entry */
 	if (stored_entry && stored_php) {
-		return xc_compile_restore(stored_entry, stored_php TSRMLS_CC);
+		return xc_compile_restore(stored_entry, stored_php, NULL /* h */ TSRMLS_CC);
 	}
 
 	/* gaveup */
@@ -2133,7 +2138,7 @@ static zend_op_array *xc_compile_file_cached(xc_compiler_t *compiler, zend_file_
 	sandboxed_compiler.stored_entry = NULL;
 	op_array = xc_sandbox(xc_compile_file_sandboxed, (void *) &sandboxed_compiler, h->opened_path ? h->opened_path : h->filename TSRMLS_CC);
 	if (sandboxed_compiler.stored_entry) {
-		return xc_compile_restore(sandboxed_compiler.stored_entry, sandboxed_compiler.stored_php TSRMLS_CC);
+		return xc_compile_restore(sandboxed_compiler.stored_entry, sandboxed_compiler.stored_php, sandboxed_compiler.h TSRMLS_CC);
 	}
 	else {
 		return op_array;
