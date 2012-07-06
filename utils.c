@@ -584,8 +584,10 @@ ZESW(xc_cest_t *, void) xc_install_class(ZEND_24(NOTHING, const) char *filename,
 typedef struct { /* sandbox {{{ */
 	ZEND_24(NOTHING, const) char *filename;
 
+#ifndef ZEND_ENGINE_2_2
 	HashTable orig_included_files;
 	HashTable *tmp_included_files;
+#endif
 
 #ifdef HAVE_XCACHE_CONSTANT
 	HashTable *orig_zend_constants;
@@ -771,7 +773,9 @@ static xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, ZEND_24(NOTHING, con
 	assert(sandbox);
 	memset(sandbox, 0, sizeof(sandbox[0]));
 
+#ifndef ZEND_ENGINE_2_2
 	memcpy(&OG(included_files), &EG(included_files), sizeof(EG(included_files)));
+#endif
 
 #ifdef HAVE_XCACHE_CONSTANT
 	OG(zend_constants) = EG(zend_constants);
@@ -790,9 +794,13 @@ static xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, ZEND_24(NOTHING, con
 	CG(auto_globals) = &TG(auto_globals);
 #endif
 
+#ifndef ZEND_ENGINE_2_2
 	TG(included_files) = &EG(included_files);
+#endif
 
+#ifndef ZEND_ENGINE_2_2
 	zend_hash_init_ex(TG(included_files), 5, NULL, NULL, 0, 1);
+#endif
 #ifdef HAVE_XCACHE_CONSTANT
 	h = OG(zend_constants);
 	zend_hash_init_ex(&TG(zend_constants),  20, NULL, (dtor_func_t) xc_free_zend_constant, h->persistent, h->bApplyProtection);
@@ -925,8 +933,10 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 	CG(zend_lineno) = 0;
 #endif
 
+#ifndef ZEND_ENGINE_2_2
 	i = 1;
 	zend_hash_add(&OG(included_files), sandbox->filename, strlen(sandbox->filename) + 1, (void *)&i, sizeof(int), NULL);
+#endif
 }
 /* }}} */
 static void xc_sandbox_free(xc_sandbox_t *sandbox, zend_op_array *op_array TSRMLS_DC) /* {{{ */
@@ -977,10 +987,14 @@ static void xc_sandbox_free(xc_sandbox_t *sandbox, zend_op_array *op_array TSRML
 #ifdef ZEND_ENGINE_2_1
 	zend_hash_destroy(&TG(auto_globals));
 #endif
+#ifndef ZEND_ENGINE_2_2
 	zend_hash_destroy(TG(included_files));
+#endif
 
+#ifndef ZEND_ENGINE_2_2
 	/* restore orig here, as EG/CG holded tmp before */
 	memcpy(&EG(included_files), &OG(included_files), sizeof(EG(included_files)));
+#endif
 
 #ifdef XCACHE_ERROR_CACHING
 	if (sandbox->compilererrors) {
