@@ -1545,13 +1545,13 @@ void xc_fix_op_array_info(const xc_entry_php_t *entry_php, const xc_entry_data_p
 				efree(Z_STRVAL(Z_OP_CONSTANT(opline->op2)));
 			}
 			if (Z_TYPE(Z_OP_CONSTANT(opline->op2)) == IS_STRING) {
-				assert(!entry_php->dirpath);
+				assert(entry_php->dirpath);
 				TRACE("restored op2 constant: %s", entry_php->dirpath);
 				ZVAL_STRINGL(&Z_OP_CONSTANT(opline->op2), entry_php->dirpath, entry_php->dirpath_len, !shallow_copy);
 			}
 #ifdef IS_UNICODE
 			else if (Z_TYPE(Z_OP_CONSTANT(opline->op2)) == IS_UNICODE) {
-				assert(!entry_php->udirpath);
+				assert(entry_php->udirpath);
 				ZVAL_UNICODEL(&Z_OP_CONSTANT(opline->op2), entry_php->udirpath, entry_php->udirpath_len, !shallow_copy);
 			}
 #endif
