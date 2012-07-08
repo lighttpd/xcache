@@ -2,7 +2,7 @@
 #define __XCACHE_H
 #define XCACHE_NAME       "XCache"
 #ifndef XCACHE_VERSION
-#	define XCACHE_VERSION "2.0.1-rc2"
+#	define XCACHE_VERSION "2.0.1-rc3"
 #endif
 #define XCACHE_AUTHOR     "mOo"
 #define XCACHE_COPYRIGHT  "Copyright (c) 2005-2012"
