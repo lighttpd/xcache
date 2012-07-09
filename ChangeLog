@@ -6,6 +6,7 @@ ChangeLog
  * admin/ config changed. please update accordingly
  * WIN32: kill invalidate CRT parameters on shutdown
  * fixed: <=PHP_5_2 duplicate error message failed to include file
+ * fixed #283: XCache admin APIs (admin page) cause SEGV if XCache failed to initize
 
 2.0.0 2012-04-20
 Ini Settings Changes
