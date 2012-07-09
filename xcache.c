@@ -2730,12 +2730,12 @@ static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAME
 
 	switch (optype) {
 		case XC_OP_COUNT:
-			RETURN_LONG(size)
+			RETURN_LONG(caches ? size : 0)
 			break;
 
 		case XC_OP_INFO:
 		case XC_OP_LIST:
-			if (id < 0 || id >= size) {
+			if (!caches || id < 0 || id >= size) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "Cache not exists");
 				RETURN_FALSE;
 			}
@@ -2757,7 +2757,7 @@ static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAME
 				xc_entry_t *e, *next;
 				int entryslotid, c;
 
-				if (id < 0 || id >= size) {
+				if (!caches || id < 0 || id >= size) {
 					php_error_docref(NULL TSRMLS_CC, E_WARNING, "Cache not exists");
 					RETURN_FALSE;
 				}
@@ -2811,7 +2811,7 @@ PHP_FUNCTION(xcache_clear_cache)
 /* }}} */
 
 #define VAR_DISABLED_WARNING() do { \
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "xcache.var_size is either 0 or too small to enable var data caching"); \
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "XCache var cache was not initialized properly. Check php log for actual reason"); \
 } while (0)
 
 static int xc_entry_var_init_key(xc_entry_var_t *entry_var, xc_entry_hash_t *entry_hash, zval *name TSRMLS_DC) /* {{{ */
