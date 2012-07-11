@@ -1847,6 +1847,11 @@ static zend_op_array *xc_compile_restore(xc_entry_php_t *stored_entry, xc_entry_
 	xc_entry_php_t restored_entry;
 	xc_entry_data_php_t restored_php;
 	zend_bool catched;
+	zend_uint i;
+
+	/* still needed because in zend_language_scanner.l, require()/include() check file_handle.handle.stream.handle */
+	i = 1;
+	zend_hash_add(&EG(included_files), stored_entry->entry.name.str.val, stored_entry->entry.name.str.len + 1, (void *)&i, sizeof(int), NULL);
 
 	CG(in_compilation)    = 1;
 	CG(compiled_filename) = stored_entry->entry.name.str.val;
