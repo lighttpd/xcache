@@ -188,43 +188,46 @@ static inline int xc_entry_equal_unlocked(xc_entry_type_t type, const xc_entry_t
 	/* this function isn't required but can be in unlocked */
 	switch (type) {
 		case XC_TYPE_PHP:
-#ifdef HAVE_INODE
 			{
 				const xc_entry_php_t *php_entry1 = (const xc_entry_php_t *) entry1;
 				const xc_entry_php_t *php_entry2 = (const xc_entry_php_t *) entry2;
-				if (php_entry1->file_inode) {
-					return php_entry1->file_inode == php_entry2->file_inode
-						&& php_entry1->file_device == php_entry2->file_device;
+				if (php_entry1->file_inode && php_entry2->file_inode) {
+					zend_bool inodeIsSame = php_entry1->file_inode == php_entry2->file_inode
+						                 && php_entry1->file_device == php_entry2->file_device;
+					if (XG(experimental)) {
+						/* new experimental behavior: quick check by inode, first */
+						if (!inodeIsSame) {
+							return 0;
+						}
+
+						/* and then opened_path compare */
+					}
+					else {
+						/* old behavior: inode check only */
+						return inodeIsSame;
+					}
 				}
 			}
-#endif
+
 			assert(IS_ABSOLUTE_PATH(entry1->name.str.val, entry1->name.str.len));
 			assert(IS_ABSOLUTE_PATH(entry2->name.str.val, entry2->name.str.len));
 
-			if (entry1->name.str.len != entry2->name.str.len) {
-				return 0;
-			}
-			return memcmp(entry1->name.str.val, entry2->name.str.val, entry1->name.str.len + 1) == 0;
+			return entry1->name.str.len == entry2->name.str.len
+				&& memcmp(entry1->name.str.val, entry2->name.str.val, entry1->name.str.len + 1) == 0;
 
 		case XC_TYPE_VAR:
 #ifdef IS_UNICODE
 			if (entry1->name_type != entry2->name_type) {
 				return 0;
 			}
-			else if (entry1->name_type == IS_UNICODE) {
-				if (entry1->name.ustr.len != entry2->name.ustr.len) {
-					return 0;
-				}
-				return memcmp(entry1->name.ustr.val, entry2->name.ustr.val, (entry1->name.ustr.len + 1) * sizeof(UChar)) == 0;
+
+			if (entry1->name_type == IS_UNICODE) {
+				return entry1->name.ustr.len == entry2->name.ustr.len
+				    && memcmp(entry1->name.ustr.val, entry2->name.ustr.val, (entry1->name.ustr.len + 1) * sizeof(UChar)) == 0;
 			}
-			else
 #endif
-			{
-				if (entry1->name.str.len != entry2->name.str.len) {
-					return 0;
-				}
-				return memcmp(entry1->name.str.val, entry2->name.str.val, entry1->name.str.len + 1) == 0;
-			}
+			return entry1->name.str.len == entry2->name.str.len
+			    && memcmp(entry1->name.str.val, entry2->name.str.val, entry1->name.str.len + 1) == 0;
 			break;
 
 		default:
@@ -692,10 +695,8 @@ static void xc_fillentry_unlocked(xc_entry_type_t type, const xc_entry_t *entry,
 			add_assoc_long_ex(ei, ZEND_STRS("phprefcount"),   php->refcount);
 			add_assoc_long_ex(ei, ZEND_STRS("file_mtime"),    entry_php->file_mtime);
 			add_assoc_long_ex(ei, ZEND_STRS("file_size"),     entry_php->file_size);
-#ifdef HAVE_INODE
 			add_assoc_long_ex(ei, ZEND_STRS("file_device"),   entry_php->file_device);
 			add_assoc_long_ex(ei, ZEND_STRS("file_inode"),    entry_php->file_inode);
-#endif
 
 #ifdef HAVE_XCACHE_CONSTANT
 			add_assoc_long_ex(ei, ZEND_STRS("constinfo_cnt"), php->constinfo_cnt);
@@ -1153,31 +1154,22 @@ static int xc_entry_php_init_key(xc_compiler_t *compiler TSRMLS_DC) /* {{{ */
 
 		compiler->new_entry.file_mtime   = buf.st_mtime;
 		compiler->new_entry.file_size    = buf.st_size;
-#ifdef HAVE_INODE
 		compiler->new_entry.file_device  = buf.st_dev;
 		compiler->new_entry.file_inode   = buf.st_ino;
-#endif
 	}
 	else {
 		xc_entry_php_quick_resolve_opened_path(compiler, NULL TSRMLS_CC);
 
 		compiler->new_entry.file_mtime   = 0;
 		compiler->new_entry.file_size    = 0;
-#ifdef HAVE_INODE
 		compiler->new_entry.file_device  = 0;
 		compiler->new_entry.file_inode   = 0;
-#endif
 	}
 
 	{
 		xc_hash_value_t basename_hash_value;
-		if (
-			xc_php_hcache.size > 1
-#ifdef HAVE_INODE
-			|| !compiler->new_entry.file_inode
-#endif
-			)
-		{
+		if (xc_php_hcache.size > 1
+		 || !compiler->new_entry.file_inode) {
 			const char *filename_end = compiler->filename + compiler->filename_len;
 			const char *basename = filename_end - 1;
 
@@ -1193,12 +1185,9 @@ static int xc_entry_php_init_key(xc_compiler_t *compiler TSRMLS_DC) /* {{{ */
 
 		compiler->entry_hash.cacheid = xc_php_hcache.size > 1 ? xc_hash_fold(basename_hash_value, &xc_php_hcache) : 0;
 		compiler->entry_hash.entryslotid = xc_hash_fold(
-#ifdef HAVE_INODE
 				compiler->new_entry.file_inode
 				? HASH(compiler->new_entry.file_device + compiler->new_entry.file_inode)
-				:
-#endif
-				basename_hash_value
+				: basename_hash_value
 				, &xc_php_hentry);
 	}
 

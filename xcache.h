@@ -22,7 +22,6 @@
 #include "xc_shm.h"
 #include "lock.h"
 
-#define HAVE_INODE
 #if !defined(ZEND_ENGINE_2_4) && (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 4 || PHP_MAJOR_VERSION > 5)
 #	define ZEND_ENGINE_2_4
 #endif
@@ -433,10 +432,8 @@ typedef struct {
 	zend_ulong refcount;    /* count of php instances holding this entry */
 	time_t file_mtime;
 	size_t file_size;
-#ifdef HAVE_INODE
 	int file_device;
 	int file_inode;
-#endif
 
 	int    filepath_len;
 	ZEND_24(NOTHING, const) char *filepath;

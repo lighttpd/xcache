@@ -1164,10 +1164,8 @@ DEF_STRUCT_P_FUNC(`xc_entry_php_t', , `dnl {{{
 	IFSTORE(`dst->refcount = 0; DONE(refcount)', `PROCESS(long, refcount)')
 	PROCESS(time_t, file_mtime)
 	PROCESS(size_t, file_size)
-#ifdef HAVE_INODE
 	PROCESS(int, file_device)
 	PROCESS(int, file_inode)
-#endif
 
 	PROCESS(int, filepath_len)
 	IFRESTORE(`COPY(filepath)', `PROC_STRING_L(filepath, filepath_len)')
