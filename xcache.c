@@ -183,7 +183,7 @@ static void xc_php_release_unlocked(xc_cache_t *cache, xc_entry_data_php_t *php)
 }
 /* }}} */
 
-static inline int xc_entry_equal_unlocked(xc_entry_type_t type, const xc_entry_t *entry1, const xc_entry_t *entry2) /* {{{ */
+static inline int xc_entry_equal_unlocked(xc_entry_type_t type, const xc_entry_t *entry1, const xc_entry_t *entry2 TSRMLS_DC) /* {{{ */
 {
 	/* this function isn't required but can be in unlocked */
 	switch (type) {
@@ -330,7 +330,7 @@ static void xc_entry_remove_unlocked(xc_entry_type_t type, xc_cache_t *cache, xc
 	xc_entry_t **pp = &(cache->entries[entryslotid]);
 	xc_entry_t *p;
 	for (p = *pp; p; pp = &(p->next), p = p->next) {
-		if (xc_entry_equal_unlocked(type, entry, p)) {
+		if (xc_entry_equal_unlocked(type, entry, p TSRMLS_CC)) {
 			/* unlink */
 			*pp = p->next;
 			xc_entry_free_unlocked(type, cache, entry TSRMLS_CC);
@@ -344,7 +344,7 @@ static xc_entry_t *xc_entry_find_unlocked(xc_entry_type_t type, xc_cache_t *cach
 {
 	xc_entry_t *p;
 	for (p = cache->entries[entryslotid]; p; p = p->next) {
-		if (xc_entry_equal_unlocked(type, entry, p)) {
+		if (xc_entry_equal_unlocked(type, entry, p TSRMLS_CC)) {
 			zend_bool fresh;
 			switch (type) {
 			case XC_TYPE_PHP:
