@@ -8,6 +8,7 @@ ChangeLog
  * fixed: <=PHP_5_2 duplicate error message failed to include file
  * fixed #283: XCache admin APIs (admin page) cause SEGV if XCache failed to initize
  * fixed possible re-include a file by mixing include/include_once
+ * fixed #264, #284: __FILE__ __DIR__ handling for moved/hardlinked files (set "xcache.experimental = on" to eanble this fix)
 
 2.0.0 2012-04-20
 Ini Settings Changes
