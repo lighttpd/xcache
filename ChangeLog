@@ -1,4 +1,4 @@
-2.0.1 2012-??-??
+2.0.1 2012-07-14
 ChangeLog
 ========
  * fixed #279: segv when cache is full (since 2.0)
