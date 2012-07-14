@@ -1,3 +1,6 @@
+2.1.0 2012-??-??
+ * fixes #972: warning/error when XCache is loaded incorrectly
+
 2.0.1 2012-07-14
 ChangeLog
 ========
