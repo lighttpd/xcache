@@ -3824,6 +3824,7 @@ static PHP_MINIT_FUNCTION(xcache)
 
 	xc_module_gotup = 1;
 	if (!xc_zend_extension_gotup) {
+		zend_error(E_WARNING, "XCache is designed to be loaded as zend_extension not extension");
 		xc_zend_extension_register(&zend_extension_entry, 0);
 		xc_zend_extension_startup(&zend_extension_entry);
 		xc_zend_extension_faked = 1;
@@ -4039,6 +4040,10 @@ ZEND_GET_MODULE(xcache)
 static startup_func_t xc_last_ext_startup;
 static int xc_zend_startup_last(zend_extension *extension) /* {{{ */
 {
+	zend_extension *ext = zend_get_extension(XCACHE_NAME);
+	if (ext) {
+		zend_error(E_WARNING, "Module '" XCACHE_NAME "' already loaded");
+	}
 	/* restore */
 	extension->startup = xc_last_ext_startup;
 	if (extension->startup) {
@@ -4068,6 +4073,10 @@ ZEND_DLEXPORT int xcache_zend_startup(zend_extension *extension) /* {{{ */
 		zend_extension *ext;
 
 		xc_llist_zend_extension = xc_llist_get_element_by_zend_extension(&zend_extensions, XCACHE_NAME);
+		if (xc_llist_zend_extension != zend_extensions.head) {
+			zend_error(E_WARNING, "XCache must be loaded as the first zend_extension for maximum compatibility");
+		}
+		/* hide myself */
 		xc_llist_unlink(&zend_extensions, xc_llist_zend_extension);
 
 		ext = (zend_extension *) zend_llist_get_last_ex(&zend_extensions, &lpos);
