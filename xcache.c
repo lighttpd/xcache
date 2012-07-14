@@ -2891,6 +2891,11 @@ PHP_FUNCTION(xcache_set)
 		return;
 	}
 
+	if (Z_TYPE_P(value) == IS_OBJECT) {
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Objects cannot be stored in the variable cache. Use serialize before xcache_set");
+		RETURN_NULL();
+	}
+
 	/* max ttl */
 	if (xc_var_maxttl && (!entry_var.entry.ttl || entry_var.entry.ttl > xc_var_maxttl)) {
 		entry_var.entry.ttl = xc_var_maxttl;
