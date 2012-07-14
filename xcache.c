@@ -2682,6 +2682,21 @@ static int xcache_admin_auth_check(TSRMLS_D) /* {{{ */
 	return 0;
 }
 /* }}} */
+static void xc_clear(long type, xc_cache_t *cache TSRMLS_DC) /* {{{ */
+{
+	xc_entry_t *e, *next;
+	int entryslotid, c;
+
+	ENTER_LOCK(cache) {
+		for (entryslotid = 0, c = cache->hentry->size; entryslotid < c; entryslotid ++) {
+			for (e = cache->entries[entryslotid]; e; e = next) {
+				next = e->next;
+				xc_entry_remove_unlocked(type, cache, entryslotid, e TSRMLS_CC);
+			}
+			cache->entries[entryslotid] = NULL;
+		}
+	} LEAVE_LOCK(cache);
+} /* }}} */
 /* {{{ xcache_admin_operate */
 typedef enum { XC_OP_COUNT, XC_OP_INFO, XC_OP_LIST, XC_OP_CLEAR } xcache_op_type;
 static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAMETERS)
@@ -2697,13 +2712,22 @@ static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAME
 		RETURN_NULL();
 	}
 
-	if (optype == XC_OP_COUNT) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &type) == FAILURE) {
-			return;
-		}
-	}
-	else if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ll", &type, &id) == FAILURE) {
-		return;
+	switch (optype) {
+		case XC_OP_COUNT:
+			if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &type) == FAILURE) {
+				return;
+			}
+			break;
+		case XC_OP_CLEAR:
+			id = -1;
+			if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l|l", &type, &id) == FAILURE) {
+				return;
+			}
+			break;
+		default:
+			if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ll", &type, &id) == FAILURE) {
+				return;
+			}
 	}
 
 	switch (type) {
@@ -2746,28 +2770,23 @@ static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAME
 				}
 			} LEAVE_LOCK(cache);
 			break;
+
 		case XC_OP_CLEAR:
-			{
-				xc_entry_t *e, *next;
-				int entryslotid, c;
-
-				if (!caches || id < 0 || id >= size) {
-					php_error_docref(NULL TSRMLS_CC, E_WARNING, "Cache not exists");
-					RETURN_FALSE;
-				}
-
-				cache = caches[id];
-				ENTER_LOCK(cache) {
-					for (entryslotid = 0, c = cache->hentry->size; entryslotid < c; entryslotid ++) {
-						for (e = cache->entries[entryslotid]; e; e = next) {
-							next = e->next;
-							xc_entry_remove_unlocked(type, cache, entryslotid, e TSRMLS_CC);
-						}
-						cache->entries[entryslotid] = NULL;
-					}
-				} LEAVE_LOCK(cache);
-				xc_gc_deletes(TSRMLS_C);
+			if (!caches || id < -1 || id >= size) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "Cache not exists");
+				RETURN_FALSE;
 			}
+
+			if (id == -1) {
+				for (id = 0; id < size; ++id) {
+					xc_clear(type, caches[id] TSRMLS_CC);
+				}
+			}
+			else {
+				xc_clear(type, caches[id] TSRMLS_CC);
+			}
+
+			xc_gc_deletes(TSRMLS_C);
 			break;
 
 		default:
@@ -2796,7 +2815,7 @@ PHP_FUNCTION(xcache_list)
 	xcache_admin_operate(XC_OP_LIST, INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 /* }}} */
-/* {{{ proto array xcache_clear_cache(int type, int id)
+/* {{{ proto array xcache_clear_cache(int type, [ int id = -1 ])
    Clear cache by id on specified cache type */
 PHP_FUNCTION(xcache_clear_cache)
 {

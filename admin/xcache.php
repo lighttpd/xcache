@@ -238,13 +238,13 @@ function processClear()
 		$cacheid = (int) (isset($_POST['cacheid']) ? $_POST['cacheid'] : 0);
 		if (isset($_POST['clearcache'])) {
 			$count = xcache_count($type);
-			if ($cacheid == $count) {
+			if ($cacheid >= 0) {
 				for ($cacheid = 0; $cacheid < $count; $cacheid ++) {
 					xcache_clear_cache($type, $cacheid);
 				}
 			}
 			else {
-				xcache_clear_cache($type, $cacheid);
+				xcache_clear_cache($type);
 			}
 		}
 	}
@@ -271,7 +271,7 @@ for ($i = 0; $i < $pcnt; $i ++) {
 if ($pcnt >= 2) {
 	$total['type'] = XC_TYPE_PHP;
 	$total['cache_name'] = _T('Total');
-	$total['cacheid'] = $pcnt;
+	$total['cacheid'] = -1;
 	$total['gc'] = null;
 	$total['istotal'] = true;
 	$cacheinfos[] = $total;
@@ -295,7 +295,7 @@ for ($i = 0; $i < $vcnt; $i ++) {
 if ($vcnt >= 2) {
 	$total['type'] = XC_TYPE_VAR;
 	$total['cache_name'] = _T('Total');
-	$total['cacheid'] = $vcnt;
+	$total['cacheid'] = -1;
 	$total['gc'] = null;
 	$total['istotal'] = true;
 	$cacheinfos[] = $total;
