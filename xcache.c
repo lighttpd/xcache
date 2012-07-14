@@ -3851,6 +3851,12 @@ static PHP_MINIT_FUNCTION(xcache)
 #endif
 	REGISTER_INI_ENTRIES();
 
+	if (strcmp(sapi_module.name, "cgi-fcgi") == 0) {
+		if ((getenv("PHP_FCGI_CHILDREN") == NULL) || (atoi(getenv("PHP_FCGI_CHILDREN")) < 1)) {
+			zend_error(E_ERROR, "PHP_FCGI_CHILDREN should be >= 1 and use 1 group of parent/childs model. See " XCACHE_WIKI_URL "/Faq");
+		}
+	}
+
 	xc_config_long(&xc_php_size,       "xcache.size",        "0");
 	xc_config_hash(&xc_php_hcache,     "xcache.count",       "1");
 	xc_config_hash(&xc_php_hentry,     "xcache.slots",      "8K");
