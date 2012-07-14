@@ -3851,9 +3851,9 @@ static PHP_MINIT_FUNCTION(xcache)
 #endif
 	REGISTER_INI_ENTRIES();
 
-	if (strcmp(sapi_module.name, "cgi-fcgi") == 0) {
+	if (strcmp(sapi_module.name, "cgi-fcgi") == 0 && !sapi_module.additional_functions && !getenv("XCACHE_SKIP_FCGI_WARNING") && !getenv("GATEWAY_INTERFACE")) {
 		if ((getenv("PHP_FCGI_CHILDREN") == NULL) || (atoi(getenv("PHP_FCGI_CHILDREN")) < 1)) {
-			zend_error(E_ERROR, "PHP_FCGI_CHILDREN should be >= 1 and use 1 group of parent/childs model. See " XCACHE_WIKI_URL "/Faq");
+			zend_error(E_WARNING, "PHP_FCGI_CHILDREN should be >= 1 and use 1 group of parent/childs model. Set XCACHE_SKIP_FCGI_WARNING=1 to skip this warning. See " XCACHE_WIKI_URL "/Faq");
 		}
 	}
 
