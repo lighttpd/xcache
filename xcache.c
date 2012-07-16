@@ -69,6 +69,7 @@
 static char *xc_shm_scheme = NULL;
 static char *xc_mmap_path = NULL;
 static char *xc_coredump_dir = NULL;
+static zend_bool xc_disable_on_crash = 0;
 
 static xc_hash_t xc_php_hcache = { 0 };
 static xc_hash_t xc_php_hentry = { 0 };
@@ -86,6 +87,7 @@ static zend_ulong xc_var_gc_interval = 0;
 static zend_ulong xc_php_size  = 0;
 static zend_ulong xc_var_size  = 0;
 
+static xc_shm_t *xc_shm = NULL;
 static xc_cache_t **xc_php_caches = NULL;
 static xc_cache_t **xc_var_caches = NULL;
 
@@ -2154,6 +2156,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 #else
 	 || strstr(PG(include_path), "://") != NULL
 #endif
+	 || xc_shm || xc_shm->disabled
 	 ) {
 		TRACE("%s", "cacher not enabled");
 		return old_compile_file(h, type TSRMLS_CC);
@@ -2303,16 +2306,15 @@ static int xc_init_constant(int module_number TSRMLS_DC) /* {{{ */
 	return 0;
 }
 /* }}} */
-static xc_shm_t *xc_cache_destroy(xc_cache_t **caches, xc_hash_t *hcache) /* {{{ */
+static void xc_cache_destroy(xc_cache_t **caches, xc_hash_t *hcache) /* {{{ */
 {
 	size_t i;
 	xc_cache_t *cache;
-	xc_shm_t *shm;
 
 	if (!caches) {
-		return NULL;
+		return;
 	}
-	shm = NULL;
+
 	for (i = 0; i < hcache->size; i ++) {
 		cache = caches[i];
 		if (cache) {
@@ -2325,12 +2327,10 @@ static xc_shm_t *xc_cache_destroy(xc_cache_t **caches, xc_hash_t *hcache) /* {{{
 			}
 			cache->mem->handlers->free(cache->mem, cache);
 			*/
-			shm = cache->shm;
-			shm->handlers->memdestroy(cache->mem);
+			cache->shm->handlers->memdestroy(cache->mem);
 		}
 	}
 	free(caches);
-	return shm;
 }
 /* }}} */
 static xc_cache_t **xc_cache_init(xc_shm_t *shm, xc_hash_t *hcache, xc_hash_t *hentry, xc_hash_t *hphp, xc_shmsize_t shmsize) /* {{{ */
@@ -2386,8 +2386,6 @@ err:
 /* }}} */
 static void xc_destroy() /* {{{ */
 {
-	xc_shm_t *shm = NULL;
-
 	if (old_compile_file) {
 		zend_compile_file = old_compile_file;
 		old_compile_file = NULL;
@@ -2399,17 +2397,18 @@ static void xc_destroy() /* {{{ */
 	}
 
 	if (xc_php_caches) {
-		shm = xc_cache_destroy(xc_php_caches, &xc_php_hcache);
+		xc_cache_destroy(xc_php_caches, &xc_php_hcache);
 		xc_php_caches = NULL;
 	}
 
 	if (xc_var_caches) {
-		shm = xc_cache_destroy(xc_var_caches, &xc_var_hcache);
+		xc_cache_destroy(xc_var_caches, &xc_var_hcache);
 		xc_var_caches = NULL;
 	}
 
-	if (shm) {
-		xc_shm_destroy(shm);
+	if (xc_shm) {
+		xc_shm_destroy(xc_shm);
+		xc_shm = NULL;
 	}
 
 	xc_initized = 0;
@@ -2417,11 +2416,10 @@ static void xc_destroy() /* {{{ */
 /* }}} */
 static int xc_init(int module_number TSRMLS_DC) /* {{{ */
 {
-	xc_shm_t *shm;
 	xc_shmsize_t shmsize = ALIGN(xc_php_size) + ALIGN(xc_var_size);
 
 	xc_php_caches = xc_var_caches = NULL;
-	shm = NULL;
+	xc_shm = NULL;
 
 	if (shmsize < (size_t) xc_php_size || shmsize < (size_t) xc_var_size) {
 		zend_error(E_ERROR, "XCache: neither xcache.size nor xcache.var_size can be negative");
@@ -2429,8 +2427,8 @@ static int xc_init(int module_number TSRMLS_DC) /* {{{ */
 	}
 
 	if (xc_php_size || xc_var_size) {
-		CHECK(shm = xc_shm_init(xc_shm_scheme, shmsize, xc_readonly_protection, xc_mmap_path, NULL), "Cannot create shm");
-		if (!shm->handlers->can_readonly(shm)) {
+		CHECK(xc_shm = xc_shm_init(xc_shm_scheme, shmsize, xc_readonly_protection, xc_mmap_path, NULL), "Cannot create shm");
+		if (!xc_shm->handlers->can_readonly(xc_shm)) {
 			xc_readonly_protection = 0;
 		}
 
@@ -2438,11 +2436,11 @@ static int xc_init(int module_number TSRMLS_DC) /* {{{ */
 			old_compile_file = zend_compile_file;
 			zend_compile_file = xc_compile_file;
 
-			CHECK(xc_php_caches = xc_cache_init(shm, &xc_php_hcache, &xc_php_hentry, &xc_php_hentry, xc_php_size), "failed init opcode cache");
+			CHECK(xc_php_caches = xc_cache_init(xc_shm, &xc_php_hcache, &xc_php_hentry, &xc_php_hentry, xc_php_size), "failed init opcode cache");
 		}
 
 		if (xc_var_size) {
-			CHECK(xc_var_caches = xc_cache_init(shm, &xc_var_hcache, &xc_var_hentry, NULL, xc_var_size), "failed init variable cache");
+			CHECK(xc_var_caches = xc_cache_init(xc_shm, &xc_var_hcache, &xc_var_hentry, NULL, xc_var_size), "failed init variable cache");
 		}
 	}
 	return SUCCESS;
@@ -2452,9 +2450,10 @@ err:
 		xc_destroy();
 		/* shm destroied in xc_destroy() */
 	}
-	else if (shm) {
+	else if (xc_shm) {
 		xc_destroy();
-		xc_shm_destroy(shm);
+		xc_shm_destroy(xc_shm);
+		xc_shm = NULL;
 	}
 	return 0;
 }
@@ -2518,13 +2517,15 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 /* }}} */
 static void xc_request_shutdown(TSRMLS_D) /* {{{ */
 {
-	xc_entry_unholds(TSRMLS_C);
+	if (xc_shm && !xc_shm->disabled) {
+		xc_entry_unholds(TSRMLS_C);
+		xc_gc_expires_php(TSRMLS_C);
+		xc_gc_expires_var(TSRMLS_C);
+		xc_gc_deletes(TSRMLS_C);
+	}
 #ifdef ZEND_ENGINE_2
 	zend_llist_destroy(&XG(gc_op_arrays));
 #endif
-	xc_gc_expires_php(TSRMLS_C);
-	xc_gc_expires_var(TSRMLS_C);
-	xc_gc_deletes(TSRMLS_C);
 #ifdef HAVE_XCACHE_COVERAGER
 	xc_coverager_request_shutdown(TSRMLS_C);
 #endif
@@ -2708,7 +2709,7 @@ static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAME
 
 	xcache_admin_auth_check(TSRMLS_C);
 
-	if (!xc_initized) {
+	if (!xc_initized || !xc_shm || xc_shm->disabled) {
 		RETURN_NULL();
 	}
 
@@ -2866,7 +2867,7 @@ PHP_FUNCTION(xcache_get)
 	xc_entry_var_t entry_var, *stored_entry_var;
 	zval *name;
 
-	if (!xc_var_caches) {
+	if (!xc_var_caches || !xc_shm || xc_shm->disabled) {
 		VAR_DISABLED_WARNING();
 		RETURN_NULL();
 	}
@@ -2900,7 +2901,7 @@ PHP_FUNCTION(xcache_set)
 	zval *name;
 	zval *value;
 
-	if (!xc_var_caches) {
+	if (!xc_var_caches || !xc_shm || xc_shm->disabled) {
 		VAR_DISABLED_WARNING();
 		RETURN_NULL();
 	}
@@ -2942,7 +2943,7 @@ PHP_FUNCTION(xcache_isset)
 	xc_entry_var_t entry_var, *stored_entry_var;
 	zval *name;
 
-	if (!xc_var_caches) {
+	if (!xc_var_caches || !xc_shm || xc_shm->disabled) {
 		VAR_DISABLED_WARNING();
 		RETURN_FALSE;
 	}
@@ -2976,7 +2977,7 @@ PHP_FUNCTION(xcache_unset)
 	xc_entry_var_t entry_var, *stored_entry_var;
 	zval *name;
 
-	if (!xc_var_caches) {
+	if (!xc_var_caches || !xc_shm || xc_shm->disabled) {
 		VAR_DISABLED_WARNING();
 		RETURN_FALSE;
 	}
@@ -3006,7 +3007,7 @@ PHP_FUNCTION(xcache_unset_by_prefix)
 	zval *prefix;
 	int i, iend;
 
-	if (!xc_var_caches) {
+	if (!xc_var_caches || !xc_shm || xc_shm->disabled) {
 		VAR_DISABLED_WARNING();
 		RETURN_FALSE;
 	}
@@ -3042,7 +3043,7 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 	long value = 0;
 	zval oldzval;
 
-	if (!xc_var_caches) {
+	if (!xc_var_caches || !xc_shm || xc_shm->disabled) {
 		VAR_DISABLED_WARNING();
 		RETURN_NULL();
 	}
@@ -3553,6 +3554,12 @@ static void xcache_signal_handler(int sig) /* {{{ */
 			 * and should'nt print anything which might SEGV again */
 		}
 	}
+	if (xc_disable_on_crash) {
+		xc_disable_on_crash = 0;
+		if (xc_shm) {
+			xc_shm->disabled = 1;
+		}
+	}
 	raise(sig);
 }
 /* }}} */
@@ -3609,6 +3616,7 @@ static PHP_INI_MH(xc_OnUpdateString)
 PHP_INI_BEGIN()
 	PHP_INI_ENTRY1     ("xcache.mmap_path",     DEFAULT_PATH, PHP_INI_SYSTEM, xc_OnUpdateString,   &xc_mmap_path)
 	PHP_INI_ENTRY1     ("xcache.coredump_directory",      "", PHP_INI_SYSTEM, xc_OnUpdateString,   &xc_coredump_dir)
+	PHP_INI_ENTRY1     ("xcache.disable_on_crash",       "0", PHP_INI_SYSTEM, xc_OnUpdateBool,     &xc_disable_on_crash)
 	PHP_INI_ENTRY1     ("xcache.test",                   "0", PHP_INI_SYSTEM, xc_OnUpdateBool,     &xc_test)
 	PHP_INI_ENTRY1     ("xcache.readonly_protection",    "0", PHP_INI_SYSTEM, xc_OnUpdateBool,     &xc_readonly_protection)
 	/* opcode cache */
