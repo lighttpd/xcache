@@ -2,8 +2,14 @@
 API Changes
 ========
  * chg: proto array xcache_clear_cache(int type, [ int id = -1 ]). -1 means all cache splits
+
+Ini Settings Changes
+========
+ * new: xcache.disable_on_crash = Off
+
 ChangeLog
 ========
+ * closes #2: auto disable caching on crash
  * closes #972: warning/error when XCache is loaded incorrectly
  * closes #73: warn for improper PHP_FCGI_CHILDREN setting fcgi mode (>=PHP_5_3)
  * closes #174: updated api for clear all cache

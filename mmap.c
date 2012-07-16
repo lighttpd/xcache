@@ -40,6 +40,7 @@
 /* {{{ xc_shm_t */
 struct _xc_mmap_shm_t {
 	xc_shm_handlers_t *handlers;
+	zend_bool disabled;
 	void *ptr;
 	void *ptr_ro;
 	long  diff;

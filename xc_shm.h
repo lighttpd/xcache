@@ -5,6 +5,7 @@ typedef struct _xc_shm_handlers_t xc_shm_handlers_t;
 #ifndef XC_SHM_IMPL
 struct _xc_shm_t {
 	const xc_shm_handlers_t *handlers;
+	zend_bool disabled;
 };
 #define XC_SHM_IMPL _xc_shm_t
 #endif
