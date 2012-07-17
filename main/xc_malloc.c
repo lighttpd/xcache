@@ -9,8 +9,8 @@
 #endif
 #include "xc_shm.h"
 #include "php.h"
-#include "align.h"
-#include "utils.h"
+#include "xc_utils.h"
+#include "util/xc_align.h"
 
 struct _xc_malloc_mem_t {
 	const xc_mem_handlers_t *handlers;

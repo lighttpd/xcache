@@ -11,16 +11,17 @@ if (PHP_XCACHE != "no") {
 	}
 	// }}}
 
-	var xcache_sources = "processor.c \
+	var xcache_sources = "
+	                      main/xc_processor.c \
+	                      main/xc_const_string.c \
+	                      main/xc_lock.c \
+	                      main/xc_mem.c \
+	                      main/xc_opcode_spec.c \
+	                      main/xc_shm.c \
+	                      main/xc_shm_mmap.c \
+	                      main/xc_utils.c \
+	                      util/xc_stack.c \
 	                      xcache.c \
-	                      mmap.c \
-	                      mem.c \
-	                      xc_shm.c \
-	                      const_string.c \
-	                      opcode_spec.c \
-	                      stack.c \
-	                      utils.c \
-	                      lock.c \
 	                      ";
 	// {{{ add sources on enabled
 	ARG_ENABLE("xcache-optimizer",    "(N/A)", "no");
@@ -40,7 +41,7 @@ if (PHP_XCACHE != "no") {
 		var uname = name.toUpperCase();
 		var withval = eval("PHP_XCACHE_" + uname);
 		if (withval != "no") {
-			xcache_sources += " " + name + ".c";
+			xcache_sources += " submodules/xc_" + name + ".c";
 			XCACHE_MODULES += " " + name;
 			STDOUT.WriteLine("Enabling XCache Module: " + name);
 			AC_DEFINE("HAVE_XCACHE_" + uname, 1, "Define for XCache: " + name)
@@ -75,7 +76,7 @@ if (PHP_XCACHE != "no") {
 	ARG_ENABLE("xcache-test", "XCache: Enable self test - FOR DEVELOPERS ONLY!!", "no");
 	if (PHP_XCACHE_TEST != "no") {
 		ADD_FLAG("XCACHE_ENABLE_TEST", "-DXCACHE_ENABLE_TEST");
-		xcache_sources += " xc_malloc.c";
+		xcache_sources += " main/xc_malloc.c";
 		AC_DEFINE("HAVE_XCACHE_TEST", 1, "Define to enable XCache self test");
 	}
 	else {
@@ -129,23 +130,4 @@ if (PHP_XCACHE != "no") {
 	/// }}}
 	XCACHE_PROC_SOURCES=glob(srcdir + "\\processor\\*.m4").join(' ');
 	ADD_FLAG("XCACHE_PROC_SOURCES", XCACHE_PROC_SOURCES);
-	// {{{ check for opcode_spec_def.h
-	STDOUT.Write("Checking if you have opcode_spec_def.h for XCache ... ");
-	var file = srcdir + "\\opcode_spec_def.h";
-	if (FSO.FileExists(file)) {
-		STDOUT.WriteLine("yes");
-		AC_DEFINE("HAVE_XCACHE_OPCODE_SPEC_DEF", 1, "Define if you have opcode_spec_def.h for XCache");
-	}
-	else {
-		STDOUT.WriteLine("no");
-
-		// check for features depend on opcode_spec_def.h
-		var xcache_require_opcode_spec_def = function(withval, name) {
-			if (withval != "no") {
-				ERROR(file + " is required to enable XCache " + name);
-			}
-		}
-		xcache_require_opcode_spec_def(PHP_XCACHE_DISASSEMBLER, "disassembler");
-	}
-	// }}}
 }

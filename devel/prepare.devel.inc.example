@@ -1,4 +1,4 @@
-# copy this file as devel.prepare.inc before modifying
+# copy this file as ../devel.prepare.inc before modifying
 PHP4_x_DIR=
 PHP5_0_DIR=
 PHP5_1_DIR=

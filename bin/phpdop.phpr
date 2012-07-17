@@ -2,7 +2,7 @@
 <?php
 
 $srcdir = dirname(__FILE__);
-require_once("$srcdir/Decompiler.class.php");
+require_once("$srcdir/../lib/Decompiler.class.php");
 if (file_exists("$srcdir/phpdc.debug.php")) {
 	include("$srcdir/phpdc.debug.php");
 }

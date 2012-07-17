@@ -13,7 +13,7 @@ struct _xc_shm_t {
 typedef struct XC_SHM_IMPL xc_shm_t;
 typedef size_t xc_shmsize_t;
 
-#include "mem.h"
+#include "xc_mem.h"
 
 /* shm */
 #define XC_SHM_CAN_READONLY(func) int   func(xc_shm_t *shm)

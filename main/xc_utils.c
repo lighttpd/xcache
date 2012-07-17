@@ -1,12 +1,11 @@
 
 #include "xcache.h"
-#include "stack.h"
 #include "xcache_globals.h"
-#include "utils.h"
+#include "xc_utils.h"
 #ifdef ZEND_ENGINE_2_1
 #include "zend_vm.h"
 #endif
-#include "opcode_spec.h"
+#include "xc_opcode_spec.h"
 #undef NDEBUG
 #include "assert.h"
 
@@ -282,7 +281,6 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
-#ifdef HAVE_XCACHE_OPCODE_SPEC_DEF
 static void xc_fix_opcode_ex_znode(int tofix, xc_op_spec_t spec, Z_OP_TYPEOF_TYPE *op_type, znode_op *op, int type TSRMLS_DC) /* {{{ */
 {
 #ifdef ZEND_ENGINE_2
@@ -347,7 +345,6 @@ int xc_undo_fix_opcode(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	return 0;
 }
 /* }}} */
-#endif
 
 int xc_foreach_early_binding_class(zend_op_array *op_array, void (*callback)(zend_op *opline, int oplineno, void *data TSRMLS_DC), void *data TSRMLS_DC) /* {{{ */
 {

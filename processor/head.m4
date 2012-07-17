@@ -10,10 +10,9 @@ divert(0)
 #include "zend_ini.h"
 
 #include "xcache.h"
-#include "align.h"
-#include "const_string.h"
-#include "processor.h"
-#include "stack.h"
+#include "util/xc_align.h"
+#include "xc_const_string.h"
+#include "xc_processor.h"
 #include "xcache_globals.h"
 
 #if defined(HARDENING_PATCH_HASH_PROTECT) && HARDENING_PATCH_HASH_PROTECT

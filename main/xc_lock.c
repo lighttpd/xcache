@@ -18,7 +18,7 @@ typedef int HANDLE;
 		FILE_ATTRIBUTE_NORMAL, \
 		NULL)
 #endif
-#include "lock.h"
+#include "xc_lock.h"
 
 struct _xc_lock_t {
 	HANDLE fd;

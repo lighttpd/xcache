@@ -1,11 +1,8 @@
-#include "disassembler.h"
+#include "xc_disassembler.h"
 #include "xcache.h"
-#include "utils.h"
-#include "processor.h"
+#include "xc_utils.h"
+#include "xc_processor.h"
 
-#ifndef HAVE_XCACHE_OPCODE_SPEC_DEF
-#error disassembler cannot be built without xcache/opcode_spec_def.h
-#endif
 static void xc_dasm(zval *output, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
 	const Bucket *b;

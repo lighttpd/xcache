@@ -1,5 +1,5 @@
 #include "xcache.h"
-#include "const_string.h"
+#include "xc_const_string.h"
 
 /* {{{ xc_get_op_type */
 static const char *const op_type_names[] = {
@@ -62,15 +62,15 @@ const char *xc_get_data_type(zend_uchar data_type)
 /* }}} */
 /* {{{ xc_get_opcode */
 #if PHP_MAJOR_VERSION >= 6
-#	include "const_string_opcodes_php6.x.h"
+#	include "xc_const_string_opcodes_php6.x.h"
 #elif defined(ZEND_ENGINE_2_4)
-#	include "const_string_opcodes_php5.4.h"
+#	include "xc_const_string_opcodes_php5.4.h"
 #elif defined(ZEND_ENGINE_2_1)
-#	include "const_string_opcodes_php5.1.h"
+#	include "xc_const_string_opcodes_php5.1.h"
 #elif defined(ZEND_ENGINE_2)
-#	include "const_string_opcodes_php5.0.h"
+#	include "xc_const_string_opcodes_php5.0.h"
 #else
-#	include "const_string_opcodes_php4.x.h"
+#	include "xc_const_string_opcodes_php4.x.h"
 #endif
 
 zend_uchar xc_get_opcode_count()
