@@ -367,7 +367,6 @@ static int xc_check_names(const char *file, int line, const char *functionName, 
 
 		for (b = done_names->pListHead; b != NULL; b = b->pListNext) {
 			int known = 0;
-			int i;
 			for (i = 0; i < assert_names_count; ++i) {
 				if (strcmp(assert_names[i], BUCKET_KEY_S(b)) == 0) {
 					known = 1;

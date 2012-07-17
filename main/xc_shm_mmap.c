@@ -245,7 +245,7 @@ static XC_SHM_INIT(xc_mmap_init) /* {{{ */
 		if (ro_ok) {
 			shm->diff = PTR_SUB(shm->ptr_ro, (char *) shm->ptr);
 			/* no overlap */
-			assert(abs(shm->diff) >= size);
+			assert((xc_shmsize_t) abs(shm->diff) >= size);
 		}
 		else {
 			if (shm->ptr_ro) {

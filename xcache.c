@@ -582,7 +582,7 @@ static void xc_gc_deletes(TSRMLS_D) /* {{{ */
 static void xc_fillinfo_unlocked(int cachetype, xc_cache_t *cache, zval *return_value TSRMLS_DC) /* {{{ */
 {
 	zval *blocks, *hits;
-	int i;
+	size_t i;
 	const xc_block_t *b;
 #ifndef NDEBUG
 	xc_memsize_t avail = 0;
@@ -847,8 +847,8 @@ static inline void xc_entry_unholds_real(xc_stack_t *holds, xc_cache_t **caches,
 				while (xc_stack_count(s)) {
 					entry_php = (xc_entry_php_t *) xc_stack_pop(s);
 					TRACE("unhold %d:%s", entry_php->file_inode, entry_php->entry.name.str.val);
+					assert(entry_php->refcount > 0);
 					--entry_php->refcount;
-					assert(entry_php->refcount >= 0);
 				}
 			} LEAVE_LOCK(cache);
 		}
@@ -1190,7 +1190,7 @@ static int xc_entry_php_init_key(xc_compiler_t *compiler TSRMLS_DC) /* {{{ */
 		compiler->entry_hash.cacheid = xc_php_hcache.size > 1 ? xc_hash_fold(basename_hash_value, &xc_php_hcache) : 0;
 		compiler->entry_hash.entryslotid = xc_hash_fold(
 				compiler->new_entry.file_inode
-				? HASH(compiler->new_entry.file_device + compiler->new_entry.file_inode)
+				? (xc_hash_value_t) HASH(compiler->new_entry.file_device + compiler->new_entry.file_inode)
 				: basename_hash_value
 				, &xc_php_hentry);
 	}
@@ -1416,12 +1416,12 @@ static void xc_collect_op_array_info(xc_compiler_t *compiler, xc_const_usage_t *
 void xc_fix_op_array_info(const xc_entry_php_t *entry_php, const xc_entry_data_php_t *php, zend_op_array *op_array, int shallow_copy, const xc_op_array_info_t *op_array_info TSRMLS_DC) /* {{{ */
 {
 #ifdef ZEND_ENGINE_2_4
-	zend_uint linteralindex;
+	zend_uint literalinfoindex;
 
-	for (linteralindex = 0; linteralindex < op_array_info->literalinfo_cnt; ++linteralindex) {
-		int index = op_array_info->literalinfos[linteralindex].index;
-		int literalinfo = op_array_info->literalinfos[linteralindex].info;
-		zend_literal *literal = &op_array->literals[index];
+	for (literalinfoindex = 0; literalinfoindex < op_array_info->literalinfo_cnt; ++literalinfoindex) {
+		int literalindex = op_array_info->literalinfos[literalinfoindex].index;
+		int literalinfo = op_array_info->literalinfos[literalinfoindex].info;
+		zend_literal *literal = &op_array->literals[literalindex];
 		if ((literalinfo & xcache_literal_is_file)) {
 			if (!shallow_copy) {
 				efree(Z_STRVAL(literal->constant));
@@ -1465,9 +1465,9 @@ void xc_fix_op_array_info(const xc_entry_php_t *entry_php, const xc_entry_data_p
 	zend_uint oplinenum;
 
 	for (oplinenum = 0; oplinenum < op_array_info->oplineinfo_cnt; ++oplinenum) {
-		int oplineno = op_array_info->oplineinfos[oplinenum].index;
+		int oplineindex = op_array_info->oplineinfos[oplinenum].index;
 		int oplineinfo = op_array_info->oplineinfos[oplinenum].info;
-		zend_op *opline = &op_array->opcodes[oplineno];
+		zend_op *opline = &op_array->opcodes[oplineindex];
 		if ((oplineinfo & xcache_op1_is_file)) {
 			assert(Z_OP_TYPE(opline->op1) == IS_CONST);
 			if (!shallow_copy) {
@@ -3411,7 +3411,11 @@ static zend_function_entry xcache_functions[] = /* {{{ */
 #ifdef HAVE_XCACHE_DPRINT
 	PHP_FE(xcache_dprint,            NULL)
 #endif
+#ifdef PHP_FE_END
+	PHP_FE_END
+#else
 	{NULL, NULL,                     NULL}
+#endif
 };
 /* }}} */
 
@@ -4027,7 +4031,11 @@ static zend_module_dep xcache_module_deps[] = {
 	ZEND_MOD_CONFLICTS("apc")
 	ZEND_MOD_CONFLICTS("eAccelerator")
 	ZEND_MOD_CONFLICTS("Turck MMCache")
-	{NULL, NULL, NULL}
+#ifdef ZEND_MOD_END
+	ZEND_MOD_END
+#else
+	{NULL, NULL, NULL, 0}
+#endif
 };
 #endif
 /* }}} */ 

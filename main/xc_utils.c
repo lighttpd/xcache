@@ -136,7 +136,7 @@ int xc_apply_op_array(xc_compile_result_t *cr, apply_func_t applyer TSRMLS_DC) /
 /* }}} */
 int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
-	zend_op *opline, *end;
+	zend_op *opline, *opline_end;
 
 #ifdef ZEND_ENGINE_2_4
 	if (!(op_array->fn_flags & ZEND_ACC_DONE_PASS_TWO)) {
@@ -149,8 +149,8 @@ int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 #endif
 
 	opline = op_array->opcodes;
-	end = opline + op_array->last;
-	while (opline < end) {
+	opline_end = opline + op_array->last;
+	while (opline < opline_end) {
 #ifdef ZEND_ENGINE_2_4
 		if (opline->op1_type == IS_CONST) {
 			opline->op1.constant = opline->op1.literal - op_array->literals;
@@ -197,7 +197,7 @@ int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 /* }}} */
 int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
-	zend_op *opline, *end;
+	zend_op *opline, *opline_end;
 #ifdef ZEND_ENGINE_2_4
 	zend_literal *literal = op_array->literals;
 #endif
@@ -218,8 +218,8 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	*/
 #ifdef ZEND_ENGINE_2_4
 	if (literal) {
-		zend_literal *end = literal + op_array->last_literal;
-		while (literal < end) {
+		zend_literal *literal_end = literal + op_array->last_literal;
+		while (literal < literal_end) {
 			Z_SET_ISREF(literal->constant);
 			Z_SET_REFCOUNT(literal->constant, 2); /* Make sure is_ref won't be reset */
 			literal++;
@@ -228,8 +228,8 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 #endif
 
 	opline = op_array->opcodes;
-	end = opline + op_array->last;
-	while (opline < end) {
+	opline_end = opline + op_array->last;
+	while (opline < opline_end) {
 #ifdef ZEND_ENGINE_2_4
 		if (opline->op1_type == IS_CONST) {
 			opline->op1.literal = op_array->literals + opline->op1.constant;
@@ -348,11 +348,11 @@ int xc_undo_fix_opcode(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 
 int xc_foreach_early_binding_class(zend_op_array *op_array, void (*callback)(zend_op *opline, int oplineno, void *data TSRMLS_DC), void *data TSRMLS_DC) /* {{{ */
 {
-	zend_op *opline, *begin, *end, *next = NULL;
+	zend_op *opline, *begin, *opline_end, *next = NULL;
 
 	opline = begin = op_array->opcodes;
-	end = opline + op_array->last;
-	while (opline < end) {
+	opline_end = opline + op_array->last;
+	while (opline < opline_end) {
 		switch (opline->opcode) {
 #ifdef ZEND_GOTO
 			case ZEND_GOTO:
@@ -376,7 +376,7 @@ int xc_foreach_early_binding_class(zend_op_array *op_array, void (*callback)(zen
 				break;
 
 			case ZEND_RETURN:
-				opline = end;
+				opline = opline_end;
 				break;
 
 #ifdef ZEND_ENGINE_2
