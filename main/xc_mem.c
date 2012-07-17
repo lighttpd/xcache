@@ -17,8 +17,9 @@
 #define XC_MEMBLOCK_IMPL _xc_mem_block_t
 #define XC_MEM_IMPL _xc_mem_mem_t
 #include "xc_shm.h"
-#include "align.h"
-#include "utils.h"
+#include "xc_utils.h"
+#include "util/xc_align.h"
+#include "util/xc_trace.h"
 
 #if 0
 #undef ALLOC_DEBUG_BLOCK_CHECK

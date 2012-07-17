@@ -1,7 +1,7 @@
 XCACHE_PROC_SRC=$(srcdir)/processor/main.m4
 XCACHE_PROC_OUT=$(builddir)/processor.out
-XCACHE_PROC_C=$(builddir)/processor_real.c
-XCACHE_PROC_H=$(builddir)/processor.h
+XCACHE_PROC_C=$(builddir)/main/xc_processor_real.c
+XCACHE_PROC_H=$(builddir)/main/xc_processor.h
 XCACHE_INCLUDES_SRC=$(srcdir)/includes.c
 XCACHE_INCLUDES_I=$(builddir)/includes.i
 XCACHE_STRUCTINFO_OUT=$(builddir)/structinfo.m4
@@ -9,9 +9,9 @@ XCACHE_STRUCTINFO_OUT=$(builddir)/structinfo.m4
 $(XCACHE_INCLUDES_I): $(XCACHE_INCLUDES_SRC) $(srcdir)/xcache.h
 	$(CC) -I. -I$(srcdir) $(COMMON_FLAGS) $(CFLAGS_CLEAN) $(EXTRA_CFLAGS) -E $(XCACHE_INCLUDES_SRC) -o $(XCACHE_INCLUDES_I)
 
-$(XCACHE_STRUCTINFO_OUT): $(XCACHE_INCLUDES_I) $(srcdir)/mkstructinfo.awk
+$(XCACHE_STRUCTINFO_OUT): $(XCACHE_INCLUDES_I) $(srcdir)/gen_structinfo.awk
 	@echo $(XCACHE_STRUCTINFO_OUT) is optional if XCache test is not enabled, feel free if it awk failed to produce it
-	-$(XCACHE_AWK) -f $(srcdir)/mkstructinfo.awk < $(XCACHE_INCLUDES_I) > $(XCACHE_STRUCTINFO_OUT).tmp && mv $(XCACHE_STRUCTINFO_OUT).tmp $(XCACHE_STRUCTINFO_OUT)
+	-$(XCACHE_AWK) -f $(srcdir)/gen_structinfo.awk < $(XCACHE_INCLUDES_I) > $(XCACHE_STRUCTINFO_OUT).tmp && mv $(XCACHE_STRUCTINFO_OUT).tmp $(XCACHE_STRUCTINFO_OUT)
 
 $(XCACHE_PROC_OUT): $(XCACHE_PROC_SRC) $(XCACHE_STRUCTINFO_OUT) $(XCACHE_PROC_SOURCES)
 	$(M4) -D srcdir=$(XCACHE_BACKTICK)"$(srcdir)'" -D builddir=$(XCACHE_BACKTICK)"$(builddir)'" $(XCACHE_ENABLE_TEST) $(XCACHE_PROC_SRC) > $(XCACHE_PROC_OUT).tmp
@@ -25,13 +25,13 @@ $(XCACHE_PROC_C): $(XCACHE_PROC_OUT) $(XCACHE_PROC_H)
 	cp $(XCACHE_PROC_OUT) $(XCACHE_PROC_C)
 	-$(XCACHE_INDENT) < $(XCACHE_PROC_OUT) > $(XCACHE_PROC_C).tmp && mv $(XCACHE_PROC_C).tmp $(XCACHE_PROC_C)
 
-$(builddir)/processor.lo: $(XCACHE_PROC_C) $(XCACHE_PROC_H) $(srcdir)/processor.c
+$(builddir)/main/xc_processor.lo: $(XCACHE_PROC_C) $(XCACHE_PROC_H) $(srcdir)/main/xc_processor.c
 
-$(builddir)/disassembler.lo: $(XCACHE_PROC_H) $(srcdir)/processor.c
+$(builddir)/submodules/xc_disassembler.lo: $(XCACHE_PROC_H) $(srcdir)/main/xc_processor.c
 
-$(builddir)/opcode_spec.lo: $(srcdir)/xcache.h $(srcdir)/opcode_spec.c $(srcdir)/opcode_spec_def.h $(srcdir)/const_string.h
+$(builddir)/xc_opcode_spec.lo: $(srcdir)/xcache.h $(srcdir)/xc_opcode_spec.c $(srcdir)/xc_opcode_spec_def.h $(srcdir)/xc_const_string.h
 
-$(builddir)/xcache.lo: $(XCACHE_PROC_H) $(srcdir)/xc_shm.h $(srcdir)/stack.h $(srcdir)/xcache_globals.h $(srcdir)/xcache.c $(srcdir)/foreachcoresig.h $(srcdir)/utils.h
+$(builddir)/xcache.lo: $(XCACHE_PROC_H) $(srcdir)/main/xc_shm.h $(srcdir)/util/xc_stack.h $(srcdir)/xcache_globals.h $(srcdir)/xcache.c $(srcdir)/util/xc_foreachcoresig.h $(srcdir)/main/xc_utils.h
 
 xcachesvnclean: clean
 	cat $(srcdir)/.cvsignore | grep -v ^Makefile | grep -v ^config.nice | xargs rm -rf

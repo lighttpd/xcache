@@ -1,45 +1,6 @@
 #include "php.h"
 #include "xcache.h"
 
-#ifdef XCACHE_DEBUG
-#	define IFDEBUG(x) (x)
-int xc_vtrace(const char *fmt, va_list args);
-int xc_trace(const char *fmt, ...) ZEND_ATTRIBUTE_PTR_FORMAT(printf, 1, 2);
-
-#	ifdef ZEND_WIN32
-static inline int TRACE(const char *fmt, ...) 
-{
-	va_list args;
-	int ret;
-
-	va_start(args, fmt);
-	ret = xc_vtrace(fmt, args);
-	va_end(args);
-	return ret;
-}
-#	else
-#		define TRACE(fmt, ...) \
-		xc_trace("%s:%d: " fmt "\r\n", __FILE__, __LINE__, __VA_ARGS__)
-#	endif /* ZEND_WIN32 */
-#   undef NDEBUG
-#   undef inline
-#   define inline
-#else /* XCACHE_DEBUG */
-
-#	ifdef ZEND_WIN32
-static inline int TRACE_DUMMY(const char *fmt, ...)
-{
-	return 0;
-}
-#		define TRACE 1 ? 0 : TRACE_DUMMY
-#	else
-#		define TRACE(fmt, ...) do { } while (0)
-#	endif /* ZEND_WIN32 */
-
-#	define IFDEBUG(x) do { } while (0)
-#endif /* XCACHE_DEBUG */
-#include <assert.h>
-
 int xc_util_init(int module_number TSRMLS_DC);
 void xc_util_destroy();
 
@@ -107,52 +68,3 @@ size_t xc_dirname(char *path, size_t len);
 long xc_atol(const char *str, int len);
 #define zend_atol xc_atol
 #endif
-
-typedef struct {
-	zend_uint size;
-	zend_uint cnt;
-	void *data;
-} xc_vector_t;
-
-#define xc_vector_init(type, vector) do { \
-	(vector)->cnt = 0;     \
-	(vector)->size = 0;    \
-	(vector)->data = NULL; \
-} while (0)
-
-#define xc_vector_add(type, vector, value) do { \
-	if ((vector)->cnt == (vector)->size) { \
-		if ((vector)->size) { \
-			(vector)->size <<= 1; \
-			(vector)->data = erealloc((vector)->data, sizeof(type) * (vector)->size); \
-		} \
-		else { \
-			(vector)->size = 8; \
-			(vector)->data = emalloc(sizeof(type) * (vector)->size); \
-		} \
-	} \
-	((type *) (vector)->data)[(vector)->cnt++] = value; \
-} while (0)
-
-static inline void *xc_vector_detach_impl(xc_vector_t *vector)
-{
-	void *data = vector->data;
-	vector->data = NULL;
-	vector->size = 0;
-	vector->cnt = 0;
-	return data;
-}
-
-#define xc_vector_detach(type, vector) ((type *) xc_vector_detach_impl(vector))
-
-static inline void xc_vector_free_impl(xc_vector_t *vector TSRMLS_DC)
-{
-	if (vector->data) {
-		efree(vector->data);
-	}
-	vector->size = 0;
-	vector->cnt = 0;
-}
-
-#define xc_vector_free(type, vector) xc_vector_free_impl(vector TSRMLS_CC)
-

@@ -31,7 +31,7 @@
 #include "php.h"
 #define XC_SHM_IMPL _xc_mmap_shm_t
 #include "xc_shm.h"
-#include "utils.h"
+#include "xc_utils.h"
 
 #ifndef max
 #define max(a, b) ((a) < (b) ? (b) : (a))

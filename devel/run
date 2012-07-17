@@ -1,0 +1,137 @@
+#!/bin/bash
+# this script is for developers only
+
+. run.cfg
+
+basename=$(basename $(pwd))
+if echo $basename | grep -- - >/dev/null; then :; else
+	dirs=${dirs:-php5-debug}
+
+	for dir in $dirs; do
+		cd ../${basename}-${dir} || exit
+
+		rm -f php-src
+		find -L . -type l | xargs rm -f
+		lndir ../$basename >/dev/null
+		find . -iname .\*.swp | xargs rm -f
+		ln -sf ~/src/php/$dir php-src
+		for i in ~/src/php/$dir/sapi/cgi/php{,-cgi}; do
+			[[ -r $i ]] && ln -sf "$i" php-cgi
+		done
+		ln -sf ~/src/php/$dir/sapi/cli/php php-cli
+
+		pwd
+		$0 "$@"
+	done
+	exit
+fi
+phpbasename=${basename#*-}
+xcachebasename=${basename%%-*}
+
+if [[ ! -z $1 ]]; then
+	type=$1
+	shift
+
+	if [[ ! -z $1 ]]; then
+		args=("$@")
+	elif [[ -z $args ]]; then
+		args=(test.php)
+	fi
+fi
+
+case $type in
+prepare)
+	exec ./devel/prepare.devel
+	;;
+tags)
+	exec ./devel/prepare.devel tags
+	;;
+rebuild)
+	PHPDIRS=${PHPDIRS:-$HOME/test}
+	if [[ ! -x $PHPDIRS/$phpbasename/bin/phpize ]]; then
+		echo $PHPDIRS/$phpbasename/bin/phpize not found
+		exit
+	fi
+	export PATH=$PHPDIRS/$phpbasename/bin:$PATH
+	phpize --clean \
+	&& phpize \
+	&& CFLAGS="-Wall -Wno-unused -W -Wshadow -std=gnu99" ./configure --enable-xcache-disassembler --enable-xcache-test --enable-xcache-constant \
+	&& make
+	exit
+	;;
+make)
+	MAKEARGS=("$@")
+	;;
+esac
+
+LANG=C /usr/bin/make $MAKEOPTS "${MAKEARGS[@]}" 2>&1 | hi error implicit warn FAIL
+ret=${PIPESTATUS[0]}
+if [[ $ret -ne 0 || $type = make ]]; then
+	exit $ret
+fi
+
+cmd=()
+tracer=()
+case "$basename" in
+*-apache1*)
+	cmd=($HOME/apache1/bin/httpd -X)
+	;;
+*-apache*)
+	exit 1
+	;;
+*)
+	cmd=(./php-cgi -q -c php.ini)
+	"${cmd[@]}" -v
+	;;
+esac
+
+case "${args[0]}" in
+fcgi)
+	args=(-b 1026)
+	shift
+	;;
+esac
+
+case "$type" in
+ltr*)
+	export USE_ZEND_ALLOC=0
+	tracer=(ltrace -s1024 -e malloc,realloc,free,write)
+	;;
+str*)
+	tracer=(strace -s1024 -T ./php-cgi)
+	;;
+gdb)
+	#USE_ZEND_ALLOC=0
+	tracer=(gdb --args)
+	;;
+val*)
+	export USE_ZEND_ALLOC=0
+	tracer=(valgrind --gen-suppressions=all)
+	;;
+dc)
+	exec ./php-cli -c php.ini ./bin/phpdc.phpr "${args[@]}" | tee decompiled.php
+	;;
+dop)
+	exec ./php-cli -c php.ini ./bin/phpdop.phpr "${args[@]}"
+	;;
+retest)
+	exec make xcachetest "$@" TESTS="`grep '^/.*\.phpt$' php_test_results_*.txt | uniq | xargs`"
+	;;
+test)
+	case "${args[0]}" in
+	*.phpt)
+		exec make xcachetest TEST_ARGS=-v TESTS="${args[*]}"
+		;;
+	*/)
+		exec make xcachetest TESTS="${args[@]}"
+		;;
+	*)
+		exec make xcachetest
+		;;
+	esac
+	;;
+esac
+
+export XCACHE_SKIP_FCGI_WARNING=1
+echo "${tracer[@]}" "${cmd[@]}" "${args[@]}"
+exec "${tracer[@]}" "${cmd[@]}" "${args[@]}"

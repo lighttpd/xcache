@@ -1,3 +1,5 @@
+#ifndef __XC_UTIL_STACK
+#define __XC_UTIL_STACK
 
 typedef struct {
 	void **data;
@@ -16,3 +18,5 @@ void *xc_stack_get(S stack, int n);
 int xc_stack_count(S stack);
 void xc_stack_reverse(S stack);
 #undef S
+
+#endif /* __XC_UTIL_STACK */

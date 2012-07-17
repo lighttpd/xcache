@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <assert.h>
-#include "stack.h"
+#include "xc_stack.h"
 typedef xc_stack_t* S;
 
 void xc_stack_init_ex(S stack, int initsize)

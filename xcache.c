@@ -26,16 +26,18 @@
 #ifdef ZEND_ENGINE_2_1
 #include "ext/date/php_date.h"
 #endif
-#include "optimizer.h"
-#include "coverager.h"
-#include "disassembler.h"
-#include "align.h"
-#include "stack.h"
+#include "submodules/xc_optimizer.h"
+#include "submodules/xc_coverager.h"
+#include "submodules/xc_disassembler.h"
 #include "xcache_globals.h"
-#include "processor.h"
-#include "const_string.h"
-#include "opcode_spec.h"
-#include "utils.h"
+#include "xc_processor.h"
+#include "xc_const_string.h"
+#include "xc_opcode_spec.h"
+#include "xc_utils.h"
+#include "util/xc_align.h"
+#include "util/xc_stack.h"
+#include "util/xc_vector.h"
+#include "util/xc_trace.h"
 
 #define VAR_ENTRY_EXPIRED(pentry) ((pentry)->ttl && XG(request_time) > (pentry)->ctime + (time_t) (pentry)->ttl)
 #define CHECK(x, e) do { if ((x) == NULL) { zend_error(E_ERROR, "XCache: " e); goto err; } } while (0)
@@ -71,10 +73,10 @@ static char *xc_mmap_path = NULL;
 static char *xc_coredump_dir = NULL;
 static zend_bool xc_disable_on_crash = 0;
 
-static xc_hash_t xc_php_hcache = { 0 };
-static xc_hash_t xc_php_hentry = { 0 };
-static xc_hash_t xc_var_hcache = { 0 };
-static xc_hash_t xc_var_hentry = { 0 };
+static xc_hash_t xc_php_hcache = { 0, 0, 0 };
+static xc_hash_t xc_php_hentry = { 0, 0, 0 };
+static xc_hash_t xc_var_hcache = { 0, 0, 0 };
+static xc_hash_t xc_var_hentry = { 0, 0, 0 };
 
 static zend_ulong xc_php_ttl    = 0;
 static zend_ulong xc_var_maxttl = 0;
@@ -113,7 +115,7 @@ static zend_bool xc_zend_extension_faked = 0;
 #	define zend_extension_entry xcache_zend_extension_entry
 #endif
 ZEND_DLEXPORT zend_extension zend_extension_entry;
-ZEND_DECLARE_MODULE_GLOBALS(xcache);
+ZEND_DECLARE_MODULE_GLOBALS(xcache)
 
 typedef enum { XC_TYPE_PHP, XC_TYPE_VAR } xc_entry_type_t;
 /* }}} */
@@ -3270,7 +3272,6 @@ PHP_FUNCTION(xcache_get_op_spec)
 	xc_call_getter(xc_get_op_spec, xc_get_op_spec_count(), INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 /* }}} */
-#ifdef HAVE_XCACHE_OPCODE_SPEC_DEF
 /* {{{ proto string xcache_get_opcode_spec(int opcode) */
 PHP_FUNCTION(xcache_get_opcode_spec)
 {
@@ -3294,7 +3295,6 @@ PHP_FUNCTION(xcache_get_opcode_spec)
 	RETURN_NULL();
 }
 /* }}} */
-#endif
 /* {{{ proto mixed xcache_get_special_value(zval value)
    XCache internal use only: For decompiler to get static value with type fixed */
 PHP_FUNCTION(xcache_get_special_value)
@@ -3397,9 +3397,7 @@ static zend_function_entry xcache_functions[] = /* {{{ */
 	PHP_FE(xcache_get_op_type,       NULL)
 	PHP_FE(xcache_get_data_type,     NULL)
 	PHP_FE(xcache_get_opcode,        NULL)
-#ifdef HAVE_XCACHE_OPCODE_SPEC_DEF
 	PHP_FE(xcache_get_opcode_spec,   NULL)
-#endif
 	PHP_FE(xcache_is_autoglobal,     NULL)
 	PHP_FE(xcache_inc,               NULL)
 	PHP_FE(xcache_dec,               NULL)
@@ -3519,7 +3517,7 @@ static void xcache_init_crash_handler() /* {{{ */
 /* old signal handlers {{{ */
 typedef void (*xc_sighandler_t)(int);
 #define FOREACH_SIG(sig) static xc_sighandler_t old_##sig##_handler = NULL
-#include "foreachcoresig.h"
+#include "util/xc_foreachcoresig.h"
 #undef FOREACH_SIG
 /* }}} */
 static void xcache_signal_handler(int sig);
@@ -3533,7 +3531,7 @@ static void xcache_restore_crash_handler() /* {{{ */
 		signal(sig, SIG_DFL); \
 	} \
 } while (0)
-#include "foreachcoresig.h"
+#include "util/xc_foreachcoresig.h"
 #undef FOREACH_SIG
 }
 /* }}} */
@@ -3541,7 +3539,7 @@ static void xcache_init_crash_handler() /* {{{ */
 {
 #define FOREACH_SIG(sig) \
 	old_##sig##_handler = signal(sig, xcache_signal_handler)
-#include "foreachcoresig.h"
+#include "util/xc_foreachcoresig.h"
 #undef FOREACH_SIG
 }
 /* }}} */
