@@ -14,12 +14,6 @@ if echo $basename | grep -- - >/dev/null; then :; else
 	exit
 fi
 
-LANG=C /usr/bin/make $MAKEOPTS "$@" 2>&1 | hi error warn FAIL
-ret=${PIPESTATUS[0]}
-if [[ $ret -ne 0 ]]; then
-	exit $ret
-fi
-
 if [[ ! -z $1 ]]; then
 	type=$1
 	shift
@@ -29,6 +23,16 @@ if [[ ! -z $1 ]]; then
 	elif [[ -z $args ]]; then
 		args=(test.php)
 	fi
+fi
+
+if [[ $type = make ]]; then
+	MAKEARGS=("$@")
+fi
+
+LANG=C /usr/bin/make $MAKEOPTS "${MAKEARGS[@]}" 2>&1 | hi error warn FAIL
+ret=${PIPESTATUS[0]}
+if [[ $ret -ne 0 || $type = make ]]; then
+	exit $ret
 fi
 
 cmd=()
@@ -54,9 +58,6 @@ fcgi)
 esac
 
 case "$type" in
-make)
-	exit
-	;;
 ltr*)
 	export USE_ZEND_ALLOC=0
 	tracer=(ltrace -s1024 -e malloc,realloc,free,write)
