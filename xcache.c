@@ -34,6 +34,7 @@
 #include "xc_const_string.h"
 #include "xc_opcode_spec.h"
 #include "xc_utils.h"
+#include "xc_sandbox.h"
 #include "util/xc_align.h"
 #include "util/xc_stack.h"
 #include "util/xc_vector.h"
