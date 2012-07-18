@@ -1,6 +1,7 @@
 #include "xc_disassembler.h"
 #include "xcache.h"
-#include "xc_utils.h"
+#include "xcache/xc_utils.h"
+#include "xcache/xc_sandbox.h"
 #include "xc_processor.h"
 
 static void xc_dasm(zval *output, zend_op_array *op_array TSRMLS_DC) /* {{{ */
