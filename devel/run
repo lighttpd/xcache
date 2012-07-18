@@ -1,6 +1,15 @@
 #!/bin/bash
 # this script is for developers only
 
+case "$1" in
+prep*)
+	exec ./devel/prepare
+	;;
+tags)
+	exec ./devel/prepare tags
+	;;
+esac
+
 . run.cfg
 
 basename=$(basename $(pwd))
@@ -39,13 +48,7 @@ if [[ ! -z $1 ]]; then
 	fi
 fi
 
-case $type in
-prep*)
-	exec ./devel/prepare.devel
-	;;
-tags)
-	exec ./devel/prepare.devel tags
-	;;
+case "$type" in
 reb*)
 	PHPDIRS=${PHPDIRS:-$HOME/test}
 	if [[ ! -x $PHPDIRS/$phpbasename/bin/phpize ]]; then
@@ -56,7 +59,7 @@ reb*)
 	phpize --clean \
 	&& phpize \
 	&& CFLAGS="-Wall -Wno-unused -W -Wshadow -std=gnu99" ./configure --enable-xcache-disassembler --enable-xcache-test --enable-xcache-constant \
-	&& make
+	&& make clean all
 	exit
 	;;
 make)
