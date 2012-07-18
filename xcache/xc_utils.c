@@ -6,8 +6,7 @@
 #include "zend_vm.h"
 #endif
 #include "xc_opcode_spec.h"
-#undef NDEBUG
-#include "assert.h"
+#include "../util/xc_trace.h"
 
 #ifndef max
 #define max(a, b) ((a) < (b) ? (b) : (a))
