@@ -1,9 +1,6 @@
 #include "php.h"
 #include "xcache.h"
 
-int xc_util_init(int module_number TSRMLS_DC);
-void xc_util_destroy();
-
 typedef struct {
 	zend_op_array *op_array;
 	HashTable *function_table;

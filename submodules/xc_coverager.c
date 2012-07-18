@@ -468,8 +468,8 @@ void xc_coverager_handle_ext_stmt(zend_op_array *op_array, zend_uchar op) /* {{{
 }
 /* }}} */
 
-/* init/destroy */
-int xc_coverager_init(int module_number TSRMLS_DC) /* {{{ */
+/* MINIT/MSHUTDOWN */
+int xc_coverager_module_init(int module_number TSRMLS_DC) /* {{{ */
 {
 	old_compile_file = zend_compile_file;
 	zend_compile_file = xc_compile_file_for_coverage;
@@ -492,7 +492,7 @@ int xc_coverager_init(int module_number TSRMLS_DC) /* {{{ */
 	return SUCCESS;
 }
 /* }}} */
-void xc_coverager_destroy() /* {{{ */
+void xc_coverager_module_shutdown() /* {{{ */
 {
 	if (old_compile_file == xc_compile_file_for_coverage) {
 		zend_compile_file = old_compile_file;

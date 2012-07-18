@@ -3939,9 +3939,9 @@ static PHP_MINIT_FUNCTION(xcache)
 #endif
 	}
 
-	xc_util_init(module_number TSRMLS_CC);
+	xc_sandbox_module_init(module_number TSRMLS_CC);
 #ifdef HAVE_XCACHE_COVERAGER
-	xc_coverager_init(module_number TSRMLS_CC);
+	xc_coverager_module_init(module_number TSRMLS_CC);
 #endif
 
 	return SUCCESS;
@@ -3954,9 +3954,9 @@ err_init:
 static PHP_MSHUTDOWN_FUNCTION(xcache)
 {
 #ifdef HAVE_XCACHE_COVERAGER
-	xc_coverager_destroy();
+	xc_coverager_module_shutdown();
 #endif
-	xc_util_destroy();
+	xc_sandbox_module_shutdown();
 
 	if (xc_initized) {
 		xc_destroy();

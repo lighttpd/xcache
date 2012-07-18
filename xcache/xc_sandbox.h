@@ -8,6 +8,9 @@
 /* Purpose: run specified function in compiler sandbox, restore everything to previous state after it returns
  */
 
+int xc_sandbox_module_init(int module_number TSRMLS_DC);
+void xc_sandbox_module_shutdown();
+
 /* return op_array to install */
 typedef zend_op_array *(*xc_sandboxed_func_t)(void *data TSRMLS_DC);
 zend_op_array *xc_sandbox(xc_sandboxed_func_t sandboxed_func, void *data, ZEND_24(NOTHING, const) char *filename TSRMLS_DC);
