@@ -40,13 +40,13 @@ if [[ ! -z $1 ]]; then
 fi
 
 case $type in
-prepare)
+prep*)
 	exec ./devel/prepare.devel
 	;;
 tags)
 	exec ./devel/prepare.devel tags
 	;;
-rebuild)
+reb*)
 	PHPDIRS=${PHPDIRS:-$HOME/test}
 	if [[ ! -x $PHPDIRS/$phpbasename/bin/phpize ]]; then
 		echo $PHPDIRS/$phpbasename/bin/phpize not found
