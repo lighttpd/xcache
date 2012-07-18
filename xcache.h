@@ -19,8 +19,8 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "xc_shm.h"
-#include "xc_lock.h"
+#include "xcache/xc_shm.h"
+#include "xcache/xc_lock.h"
 
 #if !defined(ZEND_ENGINE_2_4) && (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 4 || PHP_MAJOR_VERSION > 5)
 #	define ZEND_ENGINE_2_4

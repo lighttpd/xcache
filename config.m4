@@ -24,17 +24,17 @@ if test "$PHP_XCACHE" != "no"; then
   fi
 
   xcache_sources="
-                  main/xc_const_string.c \
-                  main/xc_lock.c \
-                  main/xc_mem.c \
-                  main/xc_opcode_spec.c \
-                  main/xc_processor.c \
-                  main/xc_sandbox.c \
-                  main/xc_shm.c \
-                  main/xc_shm_mmap.c \
-                  main/xc_utils.c \
                   util/xc_stack.c \
                   xcache.c \
+                  xcache/xc_const_string.c \
+                  xcache/xc_lock.c \
+                  xcache/xc_mem.c \
+                  xcache/xc_opcode_spec.c \
+                  xcache/xc_processor.c \
+                  xcache/xc_sandbox.c \
+                  xcache/xc_shm.c \
+                  xcache/xc_shm_mmap.c \
+                  xcache/xc_utils.c \
                   "
   XCACHE_MODULES="cacher"
   XCACHE_MODULE([optimizer],    [optimizer   ], [XCACHE_OPTIMIZER],    [(N/A)])
@@ -49,7 +49,7 @@ if test "$PHP_XCACHE" != "no"; then
   [  --enable-xcache-test            XCache: Enable self test - FOR DEVELOPERS ONLY!!], no, no)
   if test "$PHP_XCACHE_TEST" != "no"; then
     XCACHE_ENABLE_TEST=-DXCACHE_ENABLE_TEST
-    xcache_sources="$xcache_sources main/xc_malloc.c"
+    xcache_sources="$xcache_sources xcache/xc_malloc.c"
     AC_DEFINE([HAVE_XCACHE_TEST], 1, [Define to enable XCache self test])
   else
     XCACHE_ENABLE_TEST=
