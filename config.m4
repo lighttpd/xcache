@@ -25,6 +25,7 @@ if test "$PHP_XCACHE" != "no"; then
 
   xcache_sources="
                   util/xc_stack.c \
+                  util/xc_trace.c \
                   xcache.c \
                   xcache/xc_const_string.c \
                   xcache/xc_lock.c \

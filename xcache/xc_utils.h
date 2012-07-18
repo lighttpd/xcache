@@ -40,8 +40,6 @@ ZESW(xc_cest_t *, void) xc_install_class(ZEND_24(NOTHING, const) char *filename,
 #define XCACHE_ERROR_CACHING
 #endif
 
-void xc_zend_class_add_ref(zend_class_entry ZESW(*ce, **ce));
-
 typedef zend_bool (*xc_if_func_t)(void *data);
 
 void xc_hash_copy_if(HashTable *target, HashTable *source, copy_ctor_func_t pCopyConstructor, void *tmp, uint size, xc_if_func_t checker);

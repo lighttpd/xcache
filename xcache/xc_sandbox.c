@@ -433,23 +433,6 @@ zend_uint xc_sandbox_compilererror_cnt(TSRMLS_D) /* {{{ */
 /* }}} */
 #endif
 
-int xc_vtrace(const char *fmt, va_list args) /* {{{ */
-{
-	return vfprintf(stderr, fmt, args);
-}
-/* }}} */
-int xc_trace(const char *fmt, ...) /* {{{ */
-{
-	va_list args;
-	int ret;
-
-	va_start(args, fmt);
-	ret = xc_vtrace(fmt, args);
-	va_end(args);
-	return ret;
-}
-/* }}} */
-
 #ifndef ZEND_ENGINE_2_3
 #include "ext/standard/php_string.h"
 size_t xc_dirname(char *path, size_t len) /* {{{ */
