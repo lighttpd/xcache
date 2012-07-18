@@ -433,8 +433,8 @@ zend_uint xc_sandbox_compilererror_cnt(TSRMLS_D) /* {{{ */
 /* }}} */
 #endif
 
-/* init/destroy */
-int xc_util_init(int module_number TSRMLS_DC) /* {{{ */
+/* MINIT/MSHUTDOWN */
+int xc_sandbox_module_init(int module_number TSRMLS_DC) /* {{{ */
 {
 #ifdef XCACHE_ERROR_CACHING
 	old_zend_error_cb = zend_error_cb;
@@ -444,7 +444,7 @@ int xc_util_init(int module_number TSRMLS_DC) /* {{{ */
 	return SUCCESS;
 }
 /* }}} */
-void xc_util_destroy() /* {{{ */
+void xc_sandbox_module_shutdown() /* {{{ */
 {
 #ifdef XCACHE_ERROR_CACHING
 	if (zend_error_cb == xc_sandbox_error_cb) {
@@ -453,4 +453,3 @@ void xc_util_destroy() /* {{{ */
 #endif
 }
 /* }}} */
-
