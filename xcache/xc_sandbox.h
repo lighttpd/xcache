@@ -5,6 +5,9 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
+/* Purpose: run specified function in compiler sandbox, restore everything to previous state after it returns
+ */
+
 /* return op_array to install */
 typedef zend_op_array *(*xc_sandboxed_func_t)(void *data TSRMLS_DC);
 zend_op_array *xc_sandbox(xc_sandboxed_func_t sandboxed_func, void *data, ZEND_24(NOTHING, const) char *filename TSRMLS_DC);
