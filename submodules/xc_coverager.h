@@ -10,3 +10,8 @@ PHP_FUNCTION(xcache_coverager_decode);
 PHP_FUNCTION(xcache_coverager_start);
 PHP_FUNCTION(xcache_coverager_stop);
 PHP_FUNCTION(xcache_coverager_get);
+#define XCACHE_COVERAGER_FUNCTIONS() \
+	PHP_FE(xcache_coverager_decode,  NULL) \
+	PHP_FE(xcache_coverager_start,   NULL) \
+	PHP_FE(xcache_coverager_stop,    NULL) \
+	PHP_FE(xcache_coverager_get,     NULL)
