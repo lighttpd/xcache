@@ -28,6 +28,7 @@ if test "$PHP_XCACHE" != "no"; then
                   util/xc_trace.c \
                   xcache.c \
                   xcache/xc_const_string.c \
+                  xcache/xc_compatibility.c \
                   xcache/xc_lock.c \
                   xcache/xc_mem.c \
                   xcache/xc_opcode_spec.c \

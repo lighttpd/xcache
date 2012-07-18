@@ -48,10 +48,3 @@ void xc_zend_constant_ctor(zend_constant *c);
 void xc_zend_constant_dtor(zend_constant *c);
 void xc_copy_internal_zend_constants(HashTable *target, HashTable *source);
 #endif
-
-#ifndef ZEND_ENGINE_2_3
-size_t xc_dirname(char *path, size_t len);
-#define zend_dirname xc_dirname
-long xc_atol(const char *str, int len);
-#define zend_atol xc_atol
-#endif
