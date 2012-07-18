@@ -118,9 +118,8 @@ typedef struct xc_dasm_sandboxed_t { /* {{{ */
 	} input;
 
 	zval *output;
-} xc_dasm_sandboxed_t; /* {{{ */
-
-zend_op_array *xc_dasm_sandboxed(void *data TSRMLS_DC)
+} xc_dasm_sandboxed_t; /* }}} */
+zend_op_array *xc_dasm_sandboxed(void *data TSRMLS_DC) /* {{{ */
 {
 	zend_bool catched = 0;
 	zend_op_array *op_array = NULL;
@@ -186,5 +185,33 @@ void xc_dasm_file(zval *output, const char *filename TSRMLS_DC) /* {{{ */
 
 	zval_dtor(zfilename);
 	FREE_ZVAL(zfilename);
+}
+/* }}} */
+
+/* {{{ proto array xcache_dasm_file(string filename)
+   Disassemble file into opcode array by filename */
+PHP_FUNCTION(xcache_dasm_file)
+{
+	char *filename;
+	int filename_len;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &filename, &filename_len) == FAILURE) {
+		return;
+	}
+	if (!filename_len) RETURN_FALSE;
+
+	xc_dasm_file(return_value, filename TSRMLS_CC);
+}
+/* }}} */
+/* {{{ proto array xcache_dasm_string(string code)
+   Disassemble php code into opcode array */
+PHP_FUNCTION(xcache_dasm_string)
+{
+	zval *code;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &code) == FAILURE) {
+		return;
+	}
+	xc_dasm_string(return_value, code TSRMLS_CC);
 }
 /* }}} */

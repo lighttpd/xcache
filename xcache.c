@@ -26,9 +26,23 @@
 #ifdef ZEND_ENGINE_2_1
 #include "ext/date/php_date.h"
 #endif
-#include "submodules/xc_optimizer.h"
-#include "submodules/xc_coverager.h"
-#include "submodules/xc_disassembler.h"
+
+#ifdef HAVE_XCACHE_OPTIMIZER
+#	include "submodules/xc_optimizer.h"
+#else
+#	define XCACHE_OPTIMIZER_FUNCTIONS()
+#endif
+#ifdef HAVE_XCACHE_COVERAGER
+#	include "submodules/xc_coverager.h"
+#else
+#	define XCACHE_COVERAGER_FUNCTIONS()
+#endif
+#ifdef HAVE_XCACHE_DISASSEMBLER
+#	include "submodules/xc_disassembler.h"
+#else
+#	define XCACHE_DISASSEMBLER_FUNCTIONS()
+#endif
+
 #include "xcache_globals.h"
 #include "xc_processor.h"
 #include "xcache/xc_const_string.h"
@@ -3172,35 +3186,6 @@ PHP_FUNCTION(xcache_asm)
 }
 #endif
 /* }}} */
-#ifdef HAVE_XCACHE_DISASSEMBLER
-/* {{{ proto array  xcache_dasm_file(string filename)
-   Disassemble file into opcode array by filename */
-PHP_FUNCTION(xcache_dasm_file)
-{
-	char *filename;
-	int filename_len;
-
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &filename, &filename_len) == FAILURE) {
-		return;
-	}
-	if (!filename_len) RETURN_FALSE;
-
-	xc_dasm_file(return_value, filename TSRMLS_CC);
-}
-/* }}} */
-/* {{{ proto array  xcache_dasm_string(string code)
-   Disassemble php code into opcode array */
-PHP_FUNCTION(xcache_dasm_string)
-{
-	zval *code;
-
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &code) == FAILURE) {
-		return;
-	}
-	xc_dasm_string(return_value, code TSRMLS_CC);
-}
-/* }}} */
-#endif
 /* {{{ proto string xcache_encode(string filename)
    Encode php file into XCache opcode encoded format */
 #ifdef HAVE_XCACHE_ENCODER
@@ -3373,13 +3358,11 @@ static zend_function_entry xcache_functions[] = /* {{{ */
 	PHP_FE(xcache_list,              NULL)
 	PHP_FE(xcache_clear_cache,       NULL)
 	PHP_FE(xcache_coredump,          NULL)
+	XCACHE_OPTIMIZER_FUNCTIONS()
 #ifdef HAVE_XCACHE_ASSEMBLER
 	PHP_FE(xcache_asm,               NULL)
 #endif
-#ifdef HAVE_XCACHE_DISASSEMBLER
-	PHP_FE(xcache_dasm_file,         NULL)
-	PHP_FE(xcache_dasm_string,       NULL)
-#endif
+	XCACHE_DISASSEMBLER_FUNCTIONS()
 #ifdef HAVE_XCACHE_ENCODER
 	PHP_FE(xcache_encode,            NULL)
 #endif
@@ -3387,12 +3370,7 @@ static zend_function_entry xcache_functions[] = /* {{{ */
 	PHP_FE(xcache_decode_file,       NULL)
 	PHP_FE(xcache_decode_string,     NULL)
 #endif
-#ifdef HAVE_XCACHE_COVERAGER
-	PHP_FE(xcache_coverager_decode,  NULL)
-	PHP_FE(xcache_coverager_start,   NULL)
-	PHP_FE(xcache_coverager_stop,    NULL)
-	PHP_FE(xcache_coverager_get,     NULL)
-#endif
+	XCACHE_COVERAGER_FUNCTIONS()
 	PHP_FE(xcache_get_special_value, NULL)
 	PHP_FE(xcache_get_type,          NULL)
 	PHP_FE(xcache_get_op_type,       NULL)

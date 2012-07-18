@@ -1,4 +1,7 @@
 #include "php.h"
 
-void xc_dasm_string(zval *return_value, zval *code TSRMLS_DC);
-void xc_dasm_file(zval *return_value, const char *filename TSRMLS_DC);
+PHP_FUNCTION(xcache_dasm_file);
+PHP_FUNCTION(xcache_dasm_string);
+#define XCACHE_DISASSEMBLER_FUNCTIONS() \
+	PHP_FE(xcache_dasm_file,         NULL) \
+	PHP_FE(xcache_dasm_string,       NULL)
