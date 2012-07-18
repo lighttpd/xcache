@@ -17,6 +17,7 @@ if (PHP_XCACHE != "no") {
 	                      main/xc_lock.c \
 	                      main/xc_mem.c \
 	                      main/xc_opcode_spec.c \
+	                      main/xc_sandbox.c \
 	                      main/xc_shm.c \
 	                      main/xc_shm_mmap.c \
 	                      main/xc_utils.c \

@@ -29,6 +29,7 @@ if test "$PHP_XCACHE" != "no"; then
                   main/xc_mem.c \
                   main/xc_opcode_spec.c \
                   main/xc_processor.c \
+                  main/xc_sandbox.c \
                   main/xc_shm.c \
                   main/xc_shm_mmap.c \
                   main/xc_utils.c \
