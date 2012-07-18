@@ -401,21 +401,21 @@ zend_op_array *xc_sandbox(xc_sandboxed_func_t sandboxed_func, void *data, ZEND_2
 	}
 	return op_array;
 }
-/* {{{ */
+/* }}} */
 const Bucket *xc_sandbox_user_function_begin(TSRMLS_D) /* {{{ */
 {
 	xc_sandbox_t *sandbox = (xc_sandbox_t *) XG(sandbox);
 	assert(sandbox);
 	return TG(internal_function_tail) ? TG(internal_function_tail)->pListNext : TG(function_table).pListHead;
 }
-/* {{{ */
+/* }}} */
 const Bucket *xc_sandbox_user_class_begin(TSRMLS_D) /* {{{ */
 {
 	xc_sandbox_t *sandbox = (xc_sandbox_t *) XG(sandbox);
 	assert(sandbox);
 	return TG(internal_class_tail) ? TG(internal_class_tail)->pListNext : TG(class_table).pListHead;
 }
-/* {{{ */
+/* }}} */
 #ifdef XCACHE_ERROR_CACHING
 xc_compilererror_t *xc_sandbox_compilererrors(TSRMLS_D) /* {{{ */
 {

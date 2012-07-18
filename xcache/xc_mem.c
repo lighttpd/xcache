@@ -320,7 +320,7 @@ static XC_MEM_DESTROY(xc_mem_destroy) /* {{{ */
 /* }}} */
 
 #ifdef TEST
-/* {{{ */
+/* {{{ testing */
 #undef CHECK
 #define CHECK(a, msg) do { if ((a) == NULL) { puts(msg); return -1; } } while (0)
 #include <time.h>
