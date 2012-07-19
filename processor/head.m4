@@ -12,7 +12,7 @@ divert(0)
 #include "xcache.h"
 #include "util/xc_align.h"
 #include "xcache/xc_const_string.h"
-#include "xcache/xc_processor.h"
+#include "xc_processor.h"
 #include "xcache_globals.h"
 
 #if defined(HARDENING_PATCH_HASH_PROTECT) && HARDENING_PATCH_HASH_PROTECT

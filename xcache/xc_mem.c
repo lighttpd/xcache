@@ -1,9 +1,12 @@
 #ifdef TEST
-#include <limits.h>
-#include <stdio.h>
+#	include <limits.h>
+#	include <stdio.h>
 #	define XCACHE_DEBUG
+typedef int zend_bool;
+#	define ZEND_ATTRIBUTE_PTR_FORMAT(a, b, c)
+#	define zend_error(type, error) fprintf(stderr, "%s", error)
 #else
-#include <php.h>
+#	include <php.h>
 #endif
 
 #ifdef XCACHE_DEBUG
@@ -17,7 +20,7 @@
 #define XC_MEMBLOCK_IMPL _xc_mem_block_t
 #define XC_MEM_IMPL _xc_mem_mem_t
 #include "xc_shm.h"
-#include "xc_utils.h"
+// #include "xc_utils.h"
 #include "util/xc_align.h"
 #include "util/xc_trace.h"
 
@@ -322,7 +325,12 @@ static XC_MEM_DESTROY(xc_mem_destroy) /* {{{ */
 #ifdef TEST
 /* {{{ testing */
 #undef CHECK
-#define CHECK(a, msg) do { if ((a) == NULL) { puts(msg); return -1; } } while (0)
+#define CHECK(a, msg) do { \
+	if (!(a)) { \
+		fprintf(stderr, "%s\n", msg); return -1; \
+	} \
+} while (0)
+
 #include <time.h>
 
 int main()
@@ -330,8 +338,8 @@ int main()
 	int count = 0;
 	void *p;
 	void *memory;
-	xc_mem_t *mem;
 	void **ptrs;
+	xc_mem_t mem_holder, *mem = &mem_holder;
 	int size, i;
 
 #if 0
@@ -341,10 +349,11 @@ int main()
 	size = 100;
 #endif
 	CHECK(memory = malloc(size), "OOM");
-	CHECK(ptrs   = malloc(size * sizeof(void*)), "OOM");
-	CHECK(mem    = xc_mem_init(memory, size), "Failed init memory allocator");
+	CHECK(ptrs   = malloc(size * sizeof(void *)), "OOM");
+	CHECK(mem    = xc_mem_init(memory, mem, size), "Failed init memory allocator");
 
 	while ((p = xc_mem_malloc(mem, 1))) {
+		fprintf(stderr, "%d %p\n", count, ptrs);
 		ptrs[count ++] = p;
 	}
 	fprintf(stderr, "count=%d, random freeing\n", count);
