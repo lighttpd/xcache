@@ -45,3 +45,7 @@ void xc_zend_constant_ctor(zend_constant *c);
 void xc_zend_constant_dtor(zend_constant *c);
 void xc_copy_internal_zend_constants(HashTable *target, HashTable *source);
 #endif
+
+#ifndef ZEND_COMPILE_DELAYED_BINDING
+int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, int oplineno TSRMLS_DC);
+#endif
