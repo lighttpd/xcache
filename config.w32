@@ -11,26 +11,26 @@ if (PHP_XCACHE != "no") {
 	}
 	// }}}
 
-	var xcache_sources = "
-	                      util/xc_stack.c \
-	                      util/xc_trace.c \
-	                      xcache.c \
-	                      xcache/xc_const_string.c \
-	                      xcache/xc_compatibility.c \
-	                      xcache/xc_lock.c \
-	                      xcache/xc_mem.c \
-	                      xcache/xc_opcode_spec.c \
-	                      xcache/xc_processor.c \
-	                      xcache/xc_sandbox.c \
-	                      xcache/xc_shm.c \
-	                      xcache/xc_shm_mmap.c \
-	                      xcache/xc_utils.c \
-	                      ";
+	var xcache_sources = " \
+util/xc_stack.c \
+util/xc_trace.c \
+xcache.c \
+xcache/xc_const_string.c \
+xcache/xc_compatibility.c \
+xcache/xc_lock.c \
+xcache/xc_mem.c \
+xcache/xc_opcode_spec.c \
+xcache/xc_processor.c \
+xcache/xc_sandbox.c \
+xcache/xc_shm.c \
+xcache/xc_shm_mmap.c \
+xcache/xc_utils.c \
+";
 	// {{{ add sources on enabled
 	ARG_ENABLE("xcache-optimizer",    "(N/A)", "no");
 	ARG_ENABLE("xcache-coverager",    "Enable code coverage dumper, useful for testing php scripts", "no");
 	ARG_ENABLE("xcache-assembler",    "(N/A)", "no");
-	ARG_ENABLE("xcache-disassembler", "Enable opcode to php variable dumper, NOT for production server", "no");
+	ARG_ENABLE("xcache-disassembler", "Enable opcode to php variable dumper, not for server usage", "no");
 	ARG_ENABLE("xcache-encoder",      "(N/A)", "no");
 	ARG_ENABLE("xcache-decoder",      "(N/A)", "no");
 

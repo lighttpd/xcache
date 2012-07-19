@@ -23,26 +23,26 @@ if test "$PHP_XCACHE" != "no"; then
     AC_DEFINE([HAVE_XCACHE_CONSTANT], 1, [Define to enable XCache handling of compile time constants])
   fi
 
-  xcache_sources="
-                  util/xc_stack.c \
-                  util/xc_trace.c \
-                  xcache.c \
-                  xcache/xc_const_string.c \
-                  xcache/xc_compatibility.c \
-                  xcache/xc_lock.c \
-                  xcache/xc_mem.c \
-                  xcache/xc_opcode_spec.c \
-                  xcache/xc_processor.c \
-                  xcache/xc_sandbox.c \
-                  xcache/xc_shm.c \
-                  xcache/xc_shm_mmap.c \
-                  xcache/xc_utils.c \
-                  "
+  xcache_sources=" \
+util/xc_stack.c \
+util/xc_trace.c \
+xcache.c \
+xcache/xc_const_string.c \
+xcache/xc_compatibility.c \
+xcache/xc_lock.c \
+xcache/xc_mem.c \
+xcache/xc_opcode_spec.c \
+xcache/xc_processor.c \
+xcache/xc_sandbox.c \
+xcache/xc_shm.c \
+xcache/xc_shm_mmap.c \
+xcache/xc_utils.c \
+"
   XCACHE_MODULES="cacher"
   XCACHE_MODULE([optimizer],    [optimizer   ], [XCACHE_OPTIMIZER],    [(N/A)])
   XCACHE_MODULE([coverager],    [coverager   ], [XCACHE_COVERAGER],    [Enable code coverage dumper, useful for testing php scripts])
   XCACHE_MODULE([assembler],    [assembler   ], [XCACHE_ASSEMBLER],    [(N/A)])
-  XCACHE_MODULE([disassembler], [disassembler], [XCACHE_DISASSEMBLER], [Enable opcode to php variable dumper, NOT for production server])
+  XCACHE_MODULE([disassembler], [disassembler], [XCACHE_DISASSEMBLER], [Enable opcode to php variable dumper, not for server usage])
   XCACHE_MODULE([encoder],      [encoder     ], [XCACHE_ENCODER],      [(N/A)])
   XCACHE_MODULE([decoder],      [decoder     ], [XCACHE_DECODER],      [(N/A)])
   AC_DEFINE_UNQUOTED([XCACHE_MODULES], "$XCACHE_MODULES", [Define what modules is built with XCache])
