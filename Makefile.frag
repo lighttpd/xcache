@@ -1,7 +1,7 @@
 XCACHE_PROC_SRC=$(srcdir)/processor/main.m4
 XCACHE_PROC_OUT=$(builddir)/processor.out
-XCACHE_PROC_C=$(builddir)/xc_processor_real.c
-XCACHE_PROC_H=$(builddir)/xc_processor.h
+XCACHE_PROC_C=$(builddir)/xcache/xc_processor_real.c
+XCACHE_PROC_H=$(builddir)/xcache/xc_processor.h
 XCACHE_INCLUDES_SRC=$(srcdir)/includes.c
 XCACHE_INCLUDES_I=$(builddir)/includes.i
 XCACHE_STRUCTINFO_OUT=$(builddir)/structinfo.m4
