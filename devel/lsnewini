@@ -1,0 +1,8 @@
+#!/bin/sh
+
+tmp1=`mktemp`
+tmp2=`mktemp`
+grep -F '=' xcache.ini |grep -v '^;' | sed -r -e 's# *=.*##' | sort > $tmp2
+grep 'PHP_INI.*("' *.c | sed -r -e 's#^[^"]*"([^"]*)".*#\1#' | sort > $tmp1
+diff -iu $tmp2 $tmp1 |grep '^[-+]'
+rm -f $tmp1 $tmp2
