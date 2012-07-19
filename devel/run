@@ -43,11 +43,11 @@ if [[ ! -z $1 ]]; then
 	type=$1
 	shift
 
-	if [[ ! -z $1 ]]; then
-		args=("$@")
-	elif [[ -z $args ]]; then
-		args=(devel.php)
-	fi
+	args=("$@")
+fi
+
+if [[ -z ${args[0]} ]]; then
+	args=(devel.php)
 fi
 
 case "$type" in
