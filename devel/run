@@ -19,23 +19,25 @@ if echo $basename | grep -- - >/dev/null; then :; else
 	for dir in $dirs; do
 		cd ../${basename}-${dir} || exit
 
-		rm -f php-src
-		find -L . -type l | xargs rm -f
-		lndir ../$basename >/dev/null
-		find . -iname .\*.swp | xargs rm -f
-		ln -sf ~/src/php/$dir php-src
-		for i in ~/src/php/$dir/sapi/cgi/php{,-cgi}; do
-			[[ -r $i ]] && ln -sf "$i" php-cgi
-		done
-		ln -sf ~/src/php/$dir/sapi/cli/php php-cli
-
 		pwd
 		$0 "$@"
 	done
 	exit
 fi
+
 phpbasename=${basename#*-}
 xcachebasename=${basename%%-*}
+xcachesrcdir=../$xcachebasename
+
+rm -f php-src
+find -L . -type l | xargs rm -f
+lndir "$xcachesrcdir" >/dev/null
+find . -iname .\*.swp | xargs rm -f
+ln -sf ~/src/php/$phpbasename php-src
+for i in ~/src/php/$phpbasename/sapi/cgi/php{,-cgi}; do
+	[[ -r $i ]] && ln -sf "$i" php-cgi
+done
+ln -sf ~/src/php/$phpbasename/sapi/cli/php php-cli
 
 if [[ ! -z $1 ]]; then
 	type=$1
@@ -56,6 +58,7 @@ reb*)
 		exit
 	fi
 	export PATH=$PHPDIRS/$phpbasename/bin:$PATH
+	[[ -r Makefile ]] && make xcachesvnclean
 	phpize --clean \
 	&& phpize \
 	&& CFLAGS="-Wall -Wno-unused -W -Wshadow -std=gnu99" ./configure --enable-xcache-disassembler --enable-xcache-test --enable-xcache-constant \
