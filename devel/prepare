@@ -1,10 +1,10 @@
 #! /bin/bash
 SELF="$0"
 
-if test -e prepare.inc ; then
-	. prepare.inc
+if test -e devel/prepare.inc ; then
+	. devel/prepare.inc
 else
-	echo prepare.inc is required, see prepare.inc.example >&2
+	echo devel/prepare.inc is required, see devel/prepare.inc.example >&2
 	exit
 fi
 

@@ -44,7 +44,7 @@
 #endif
 
 #include "xcache_globals.h"
-#include "xcache/xc_processor.h"
+#include "xc_processor.h"
 #include "xcache/xc_const_string.h"
 #include "xcache/xc_opcode_spec.h"
 #include "xcache/xc_utils.h"

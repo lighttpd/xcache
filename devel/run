@@ -1,23 +1,33 @@
 #!/bin/bash
 # this script is for developers only
+set -e
 
-case "$1" in
+. devel/run.cfg
+if [[ ! -z $1 ]]; then
+	type=$1
+fi
+
+case "$type" in
 prep*)
 	exec ./devel/prepare
+	;;
+xtest)
+	exec /usr/bin/make -f devel/test.mak
 	;;
 tags)
 	exec ./devel/prepare tags
 	;;
 esac
 
-. run.cfg
-
 basename=$(basename $(pwd))
 if echo $basename | grep -- - >/dev/null; then :; else
-	dirs=${dirs:-php5-debug}
+	svn propget svn:ignore . > .svnignore
 
+	dirs=${dirs:-php5-debug}
 	for dir in $dirs; do
+		mkdir -p ../${basename}-${dir}
 		cd ../${basename}-${dir} || exit
+		lndir ../${basename} > /dev/null
 
 		pwd
 		$0 "$@"
@@ -29,16 +39,6 @@ phpbasename=${basename#*-}
 xcachebasename=${basename%%-*}
 xcachesrcdir=../$xcachebasename
 
-rm -f php-src
-find -L . -type l | xargs rm -f
-lndir "$xcachesrcdir" >/dev/null
-find . -iname .\*.swp | xargs rm -f
-ln -sf ~/src/php/$phpbasename php-src
-for i in ~/src/php/$phpbasename/sapi/cgi/php{,-cgi}; do
-	[[ -r $i ]] && ln -sf "$i" php-cgi
-done
-ln -sf ~/src/php/$phpbasename/sapi/cli/php php-cli
-
 if [[ ! -z $1 ]]; then
 	type=$1
 	shift
@@ -46,9 +46,29 @@ if [[ ! -z $1 ]]; then
 	if [[ ! -z $1 ]]; then
 		args=("$@")
 	elif [[ -z $args ]]; then
-		args=(test.php)
+		args=(devel.php)
 	fi
 fi
+
+case "$type" in
+reb*)
+	if [[ -r Makefile ]]; then
+		make xcachesvnclean
+	fi
+	;;
+esac
+
+rm -f php-src
+find -L . -type l | xargs rm -f
+lndir "$xcachesrcdir" >/dev/null
+find . -iname .\*.swp | xargs rm -f
+ln -sf ~/src/php/$phpbasename php-src
+for i in ~/src/php/$phpbasename/sapi/cgi/php{,-cgi}; do
+	if [[ -r $i ]]; then
+		ln -sf "$i" php-cgi
+	fi
+done
+ln -sf ~/src/php/$phpbasename/sapi/cli/php php-cli
 
 case "$type" in
 reb*)
@@ -58,7 +78,6 @@ reb*)
 		exit
 	fi
 	export PATH=$PHPDIRS/$phpbasename/bin:$PATH
-	[[ -r Makefile ]] && make xcachesvnclean
 	phpize --clean \
 	&& phpize \
 	&& CFLAGS="-Wall -Wno-unused -W -Wshadow -std=gnu99" ./configure --enable-xcache-disassembler --enable-xcache-test --enable-xcache-constant \
@@ -86,7 +105,7 @@ case "$basename" in
 	exit 1
 	;;
 *)
-	cmd=(./php-cgi -q -c php.ini)
+	cmd=(./php-cgi -q -c devel.ini)
 	"${cmd[@]}" -v
 	;;
 esac
@@ -115,10 +134,10 @@ val*)
 	tracer=(valgrind --gen-suppressions=all)
 	;;
 dc)
-	exec ./php-cli -c php.ini ./bin/phpdc.phpr "${args[@]}" | tee decompiled.php
+	exec ./php-cli -c devel.ini ./bin/phpdc.phpr "${args[@]}" | tee decompiled.php
 	;;
 dop)
-	exec ./php-cli -c php.ini ./bin/phpdop.phpr "${args[@]}"
+	exec ./php-cli -c devel.ini ./bin/phpdop.phpr "${args[@]}"
 	;;
 retest)
 	exec make xcachetest "$@" TESTS="`grep '^/.*\.phpt$' php_test_results_*.txt | uniq | xargs`"

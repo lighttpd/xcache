@@ -1,7 +1,7 @@
 XCACHE_PROC_SRC=$(srcdir)/processor/main.m4
-XCACHE_PROC_OUT=$(builddir)/processor.out
-XCACHE_PROC_C=$(builddir)/xcache/xc_processor_real.c
-XCACHE_PROC_H=$(builddir)/xcache/xc_processor.h
+XCACHE_PROC_OUT=$(builddir)/processor.out.c
+XCACHE_PROC_C=$(builddir)/xc_processor.c.h
+XCACHE_PROC_H=$(builddir)/xc_processor.h
 XCACHE_INCLUDES_SRC=$(srcdir)/includes.c
 XCACHE_INCLUDES_I=$(builddir)/includes.i
 XCACHE_STRUCTINFO_OUT=$(builddir)/structinfo.m4
@@ -25,16 +25,17 @@ $(XCACHE_PROC_C): $(XCACHE_PROC_OUT) $(XCACHE_PROC_H)
 	cp $(XCACHE_PROC_OUT) $(XCACHE_PROC_C)
 	-$(XCACHE_INDENT) < $(XCACHE_PROC_OUT) > $(XCACHE_PROC_C).tmp && mv $(XCACHE_PROC_C).tmp $(XCACHE_PROC_C)
 
-$(builddir)/xcache/xc_processor.lo: $(XCACHE_PROC_C) $(XCACHE_PROC_H) $(srcdir)/xcache/xc_processor.c
+$(builddir)/xcache/xc_processor.lo: $(XCACHE_PROC_C) $(XCACHE_PROC_H)
 
-$(builddir)/submodules/xc_disassembler.lo: $(XCACHE_PROC_H) $(srcdir)/xcache/xc_processor.c
+$(builddir)/submodules/xc_disassembler.lo: $(XCACHE_PROC_H)
 
 $(builddir)/xc_opcode_spec.lo: $(srcdir)/xcache.h $(srcdir)/xc_opcode_spec.c $(srcdir)/xc_opcode_spec_def.h $(srcdir)/xc_const_string.h
 
 $(builddir)/xcache.lo: $(XCACHE_PROC_H) $(srcdir)/xcache/xc_shm.h $(srcdir)/util/xc_stack.h $(srcdir)/xcache_globals.h $(srcdir)/xcache.c $(srcdir)/util/xc_foreachcoresig.h $(srcdir)/xcache/xc_utils.h
 
 xcachesvnclean: clean
-	cat $(srcdir)/.cvsignore | grep -v ^Makefile | grep -v ^config.nice | xargs rm -rf
+	-svn propget svn:ignore . > .svnignore.tmp 2>/dev/null && mv .svnignore.tmp .svnignore
+	cat .svnignore | grep -v devel | grep -v svnignore | grep -v ^Makefile | grep -v ^config.nice | xargs rm -rf
 
 xcachetest: all
 	$(SED) "s#\\./modules/#$(top_builddir)/modules/#" < $(srcdir)/xcache-test.ini > $(top_builddir)/tmp-php.ini
