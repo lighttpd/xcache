@@ -135,7 +135,7 @@ static void xc_coverager_save_cov(char *srcfile, char *outfilename, coverager_t 
 				break;
 			}
 
-			for (; len >= sizeof(long) * 2; len -= sizeof(long) * 2, p += 2) {
+			for (; len >= (int) sizeof(long) * 2; len -= sizeof(long) * 2, p += 2) {
 				if (zend_hash_index_find(cov, p[0], (void**)&phits) == SUCCESS) {
 					if (p[1] == -1) {
 						/* OPTIMIZE: already marked */
@@ -532,7 +532,7 @@ PHP_FUNCTION(xcache_coverager_decode)
 		return;
 	}
 
-	for (; len >= sizeof(long) * 2; len -= sizeof(long) * 2, p += 2) {
+	for (; len >= (int) sizeof(long) * 2; len -= sizeof(long) * 2, p += 2) {
 		add_index_long(return_value, p[0], p[1] < 0 ? 0 : p[1]);
 	}
 }

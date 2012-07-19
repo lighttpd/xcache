@@ -28,10 +28,8 @@
 #	define Z_OP_CONSTANT(op) op_array->literals[op.constant].constant
 #endif
 
-typedef int bbid_t;
-enum {
-	BBID_INVALID = -1
-};
+typedef zend_uint bbid_t;
+#define BBID_INVALID ((bbid_t) -1)
 /* {{{ basic block */
 typedef struct _bb_t {
 	bbid_t     id;
@@ -47,7 +45,7 @@ typedef struct _bb_t {
 	bbid_t     catch;
 #endif
 
-	int        opnum; /* opnum after joining basic block */
+	zend_uint  opnum; /* opnum after joining basic block */
 } bb_t;
 /* }}} */
 
@@ -57,7 +55,7 @@ typedef xc_stack_t bbs_t;
 /* op array helper functions */
 static int op_array_convert_switch(zend_op_array *op_array) /* {{{ */
 {
-	int i;
+	zend_uint i;
 
 	if (op_array->brk_cont_array == NULL) {
 		return SUCCESS;
@@ -444,7 +442,7 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 	}
 
 	for (i = 0; i < op_array->last_try_catch; i ++) {
-		int j;
+		zend_uint j;
 		zend_try_catch_element *e = &op_array->try_catch_array[i];
 		for (j = e->try_op; j < e->catch_op; j ++) {
 			catchbbids[j] = bbids[e->catch_op];
