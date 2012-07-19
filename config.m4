@@ -23,21 +23,27 @@ if test "$PHP_XCACHE" != "no"; then
     AC_DEFINE([HAVE_XCACHE_CONSTANT], 1, [Define to enable XCache handling of compile time constants])
   fi
 
-  xcache_sources=" \
-util/xc_stack.c \
-util/xc_trace.c \
-xcache.c \
-xcache/xc_const_string.c \
-xcache/xc_compatibility.c \
-xcache/xc_lock.c \
-xcache/xc_mem.c \
-xcache/xc_opcode_spec.c \
-xcache/xc_processor.c \
-xcache/xc_sandbox.c \
-xcache/xc_shm.c \
-xcache/xc_shm_mmap.c \
-xcache/xc_utils.c \
-"
+  xcache_sources="xcache.c"
+  for i in \
+xc_stack.c \
+xc_trace.c \
+; do
+  xcache_sources="$xcache_sources util/$i"
+done
+  for i in \
+xc_const_string.c \
+xc_compatibility.c \
+xc_lock.c \
+xc_mem.c \
+xc_opcode_spec.c \
+xc_processor.c \
+xc_sandbox.c \
+xc_shm.c \
+xc_shm_mmap.c \
+xc_utils.c \
+; do
+  xcache_sources="$xcache_sources xcache/$i"
+done
   XCACHE_MODULES="cacher"
   XCACHE_MODULE([optimizer],    [optimizer   ], [XCACHE_OPTIMIZER],    [(N/A)])
   XCACHE_MODULE([coverager],    [coverager   ], [XCACHE_COVERAGER],    [Enable code coverage dumper, useful for testing php scripts])

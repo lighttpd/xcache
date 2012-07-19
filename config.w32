@@ -4,6 +4,7 @@
 ARG_ENABLE("xcache", "Include XCache support", "yes,shared");
 
 if (PHP_XCACHE != "no") {
+	EXTENSION("xcache", "xcache.c", null, "/I " + configure_module_dirname);
 	// {{{ check for xcache-constant 
 	ARG_ENABLE("xcache-constant", "XCache: Handle new constants made by php compiler (e.g.: for __halt_compiler)", "yes");
 	if (PHP_XCACHE_CONSTANT != "no") {
@@ -11,21 +12,24 @@ if (PHP_XCACHE != "no") {
 	}
 	// }}}
 
-	var xcache_sources = " \
-util/xc_stack.c \
-util/xc_trace.c \
-xcache.c \
-xcache/xc_const_string.c \
-xcache/xc_compatibility.c \
-xcache/xc_lock.c \
-xcache/xc_mem.c \
-xcache/xc_opcode_spec.c \
-xcache/xc_processor.c \
-xcache/xc_sandbox.c \
-xcache/xc_shm.c \
-xcache/xc_shm_mmap.c \
-xcache/xc_utils.c \
-";
+	ADD_SOURCES(configure_module_dirname + "/util", " \
+xc_stack.c \
+xc_trace.c \
+", "xcache");
+
+	ADD_SOURCES(configure_module_dirname + "/xcache", " \
+xc_const_string.c \
+xc_compatibility.c \
+xc_lock.c \
+xc_mem.c \
+xc_opcode_spec.c \
+xc_processor.c \
+xc_sandbox.c \
+xc_shm.c \
+xc_shm_mmap.c \
+xc_utils.c \
+", "xcache");
+
 	// {{{ add sources on enabled
 	ARG_ENABLE("xcache-optimizer",    "(N/A)", "no");
 	ARG_ENABLE("xcache-coverager",    "Enable code coverage dumper, useful for testing php scripts", "no");
@@ -44,7 +48,7 @@ xcache/xc_utils.c \
 		var uname = name.toUpperCase();
 		var withval = eval("PHP_XCACHE_" + uname);
 		if (withval != "no") {
-			xcache_sources += " mod_" + name + "/xc_" + name + ".c";
+			ADD_SOURCES(configure_module_dirname + "/mod_" + name, "xc_" + name + ".c", "xcache");
 			XCACHE_MODULES += " " + name;
 			STDOUT.WriteLine("Enabling XCache Module: " + name);
 			AC_DEFINE("HAVE_XCACHE_" + uname, 1, "Define for XCache: " + name)
@@ -79,7 +83,7 @@ xcache/xc_utils.c \
 	ARG_ENABLE("xcache-test", "XCache: Enable self test - FOR DEVELOPERS ONLY!!", "no");
 	if (PHP_XCACHE_TEST != "no") {
 		ADD_FLAG("XCACHE_ENABLE_TEST", "-DXCACHE_ENABLE_TEST");
-		xcache_sources += " xcache/xc_malloc.c";
+		ADD_SOURCES(configure_module_dirname + "/xcache", "xc_malloc.c", "xcache");
 		AC_DEFINE("HAVE_XCACHE_TEST", 1, "Define to enable XCache self test");
 	}
 	else {
@@ -92,8 +96,7 @@ xcache/xc_utils.c \
 		AC_DEFINE("HAVE_XCACHE_DPRINT", 1, "Define to enable XCache debug print functions");
 	}
 	// }}}
-	// {{{ create extension
-	EXTENSION("xcache", xcache_sources);
+	// {{{ get ccrule
 	var srcdir = configure_module_dirname;
 	// it's a bit harder to get builddir
 	var mfofile = "Makefile.objects";

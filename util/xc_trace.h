@@ -5,6 +5,16 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
+#ifdef ZEND_WIN32
+#	ifndef inline
+#		ifdef ZEND_WIN32_FORCE_INLINE
+#			define inline __forceinline
+#		else
+#			define inline
+#		endif
+#	endif
+#endif
+
 #ifdef XCACHE_DEBUG
 #	define IFDEBUG(x) (x)
 int xc_vtrace(const char *fmt, va_list args);

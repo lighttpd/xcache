@@ -12,10 +12,12 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "stack.h"
+#include "util/xc_stack.h"
+#include "util/xc_trace.h"
 #include "xcache_globals.h"
-#include "coverager.h"
-#include "utils.h"
+#include "xc_coverager.h"
+#include "xcache/xc_utils.h"
+
 typedef HashTable *coverager_t;
 #define PCOV_HEADER_MAGIC 0x564f4350
 
