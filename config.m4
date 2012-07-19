@@ -65,6 +65,9 @@ if test "$PHP_XCACHE" != "no"; then
   fi
 
   PHP_NEW_EXTENSION(xcache, $xcache_sources, $ext_shared)
+  PHP_ADD_BUILD_DIR($ext_builddir/util)
+  PHP_ADD_BUILD_DIR($ext_builddir/xcache)
+  PHP_ADD_BUILD_DIR($ext_builddir/submodules)
   PHP_ADD_MAKEFILE_FRAGMENT()
 
   AC_PATH_PROGS([XCACHE_AWK], [gawk awk])
