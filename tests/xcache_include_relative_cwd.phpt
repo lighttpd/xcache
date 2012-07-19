@@ -2,16 +2,16 @@
 include relative to current working dir
 --SKIPIF--
 <?php
-require("include-skipif.php");
+require("include-skipif.inc");
 ?>
 --FILE--
 <?php
 chdir(__DIR__);
-include "./sub-a.php";
-include "./sub-b.php";
+include "./sub-a.inc";
+include "./sub-b.inc";
 ?>
 --EXPECTF--
 %stests
-%stests%ssub-a.php
+%stests%ssub-a.inc
 %stests
-%stests%ssub-b.php
+%stests%ssub-b.inc
