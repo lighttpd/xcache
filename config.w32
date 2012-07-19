@@ -44,7 +44,7 @@ if (PHP_XCACHE != "no") {
 		var uname = name.toUpperCase();
 		var withval = eval("PHP_XCACHE_" + uname);
 		if (withval != "no") {
-			xcache_sources += " submodules/xc_" + name + ".c";
+			xcache_sources += " mod_" + name + "/xc_" + name + ".c";
 			XCACHE_MODULES += " " + name;
 			STDOUT.WriteLine("Enabling XCache Module: " + name);
 			AC_DEFINE("HAVE_XCACHE_" + uname, 1, "Define for XCache: " + name)

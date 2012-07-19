@@ -6,7 +6,7 @@
 #include "zend_vm.h"
 #endif
 #include "xc_opcode_spec.h"
-#include "../util/xc_trace.h"
+#include "util/xc_trace.h"
 
 #ifndef max
 #define max(a, b) ((a) < (b) ? (b) : (a))

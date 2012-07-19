@@ -80,7 +80,13 @@ reb*)
 	export PATH=$PHPDIRS/$phpbasename/bin:$PATH
 	phpize --clean \
 	&& phpize \
-	&& CFLAGS="-Wall -Wno-unused -W -Wshadow -std=gnu99" ./configure --enable-xcache-disassembler --enable-xcache-test --enable-xcache-constant \
+	&& CFLAGS="-Wall -Wno-unused -W -Wshadow -std=gnu99" ./configure \
+		--enable-xcache-cacher \
+		--enable-xcache-optimizer \
+		--enable-xcache-encoder \
+		--enable-xcache-decoder \
+		--enable-xcache-disassembler \
+		--enable-xcache-test --enable-xcache-constant \
 	&& make clean all
 	exit
 	;;
@@ -134,10 +140,10 @@ val*)
 	tracer=(valgrind --gen-suppressions=all)
 	;;
 dc)
-	exec ./php-cli -c devel.ini ./bin/phpdc.phpr "${args[@]}" | tee decompiled.php
+	exec ./php-cli -c devel.ini ./mod_disassembler/bin/phpdc.phpr "${args[@]}" | tee decompiled.php
 	;;
 dop)
-	exec ./php-cli -c devel.ini ./bin/phpdop.phpr "${args[@]}"
+	exec ./php-cli -c devel.ini ./mod_disassembler/bin/phpdop.phpr "${args[@]}"
 	;;
 retest)
 	exec make xcachetest "$@" TESTS="`grep '^/.*\.phpt$' php_test_results_*.txt | uniq | xargs`"
