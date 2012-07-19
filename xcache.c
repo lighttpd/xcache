@@ -28,17 +28,17 @@
 #endif
 
 #ifdef HAVE_XCACHE_OPTIMIZER
-#	include "submodules/xc_optimizer.h"
+#	include "mod_optimizer/xc_optimizer.h"
 #else
 #	define XCACHE_OPTIMIZER_FUNCTIONS()
 #endif
 #ifdef HAVE_XCACHE_COVERAGER
-#	include "submodules/xc_coverager.h"
+#	include "mod_coverager/xc_coverager.h"
 #else
 #	define XCACHE_COVERAGER_FUNCTIONS()
 #endif
 #ifdef HAVE_XCACHE_DISASSEMBLER
-#	include "submodules/xc_disassembler.h"
+#	include "mod_disassembler/xc_disassembler.h"
 #else
 #	define XCACHE_DISASSEMBLER_FUNCTIONS()
 #endif

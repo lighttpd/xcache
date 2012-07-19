@@ -1,1 +1,5 @@
-Please check http://xcache.lighttpd.net/ and https://groups.google.com/forum/?fromgroups#!forum/xcache for help
+XCache is a fast, stable PHP opcode cacher that has been tested and is now running on production servers under high load.
+It is tested (on linux) and supported on all of the latest version of PHP popular release branches.
+ThreadSafe/Windows is also perfectly supported.
+
+Please check http://xcache.lighttpd.net/ and https://groups.google.com/group/xcache for help

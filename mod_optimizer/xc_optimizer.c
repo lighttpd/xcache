@@ -2,15 +2,17 @@
 #	define XCACHE_DEBUG
 #endif
 
-#include "utils.h"
-#include "optimizer.h"
+#include "xcache/xc_utils.h"
+#include "xc_optimizer.h"
 /* the "vector" stack */
-#include "stack.h"
+#include "util/xc_stack.h"
+#include "util/xc_trace.h"
 #include "xcache_globals.h"
 
 #ifdef XCACHE_DEBUG
-#	include "processor.h"
-#	include "const_string.h"
+#error 1
+#	include "xc_processor.h"
+#	include "xcache/xc_const_string.h"
 #	include "ext/standard/php_var.h"
 #endif
 

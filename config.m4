@@ -4,7 +4,7 @@ AC_DEFUN([XCACHE_MODULE], [
   PHP_ARG_ENABLE(xcache-$1, for XCache $1,
   [  --enable-xcache-$2    XCache: $4], no, no)
   if test "$PHP_$3" != "no"; then
-    xcache_sources="$xcache_sources submodules/xc_$1.c"
+    xcache_sources="$xcache_sources mod_$1/xc_$1.c"
     XCACHE_MODULES="$XCACHE_MODULES $1"
     HAVE_$3=1
     AC_DEFINE([HAVE_$3], 1, [Define for XCache: $4])
