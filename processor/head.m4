@@ -448,10 +448,10 @@ $1 *xc_processor_store_$1(xc_cache_t *cache, $1 *src TSRMLS_DC) {
 
 		xc_store_$1(&processor, dst, src TSRMLS_CC);
 		IFAUTOCHECK(` {
-			int real = processor.p - oldp;
-			int should = processor.size;
-			if (real != processor.size) {
-				fprintf(stderr, "real %d - should %d = %d\n", real, should, real - should);
+			size_t unexpected = processor.p - oldp;
+			size_t expected = processor.size;
+			if (unexpected != processor.size) {
+				fprintf(stderr, "unexpected:%lu - expected:%lu = %ld != 0\n", (unsigned long) unexpected, (unsigned long) expected, (long) unexpected - expected);
 				abort();
 			}
 		}')
