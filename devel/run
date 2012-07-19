@@ -86,6 +86,7 @@ reb*)
 		--enable-xcache-encoder \
 		--enable-xcache-decoder \
 		--enable-xcache-disassembler \
+		--enable-xcache-coverager \
 		--enable-xcache-test --enable-xcache-constant \
 	&& make clean all
 	exit
