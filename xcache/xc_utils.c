@@ -395,7 +395,7 @@ int xc_foreach_early_binding_class(zend_op_array *op_array, void (*callback)(zen
 }
 /* }}} */
 #ifndef ZEND_COMPILE_DELAYED_BINDING
-static int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, int oplineno TSRMLS_DC) /* {{{ */
+int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, int oplineno TSRMLS_DC) /* {{{ */
 {
 	zend_op *opline;
 
