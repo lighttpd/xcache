@@ -338,22 +338,22 @@ int main()
 	int count = 0;
 	void *p;
 	void *memory;
+	xc_mem_t *mem;
 	void **ptrs;
-	xc_mem_t mem_holder, *mem = &mem_holder;
 	int size, i;
 
 #if 0
 	fprintf(stderr, "%s", "Input test size: ");
 	scanf("%d", &size);
 #else
-	size = 100;
+	size = 1024;
 #endif
 	CHECK(memory = malloc(size), "OOM");
 	CHECK(ptrs   = malloc(size * sizeof(void *)), "OOM");
-	CHECK(mem    = xc_mem_init(memory, mem, size), "Failed init memory allocator");
+	mem = (xc_mem_t *) memory;
+	CHECK(mem    = xc_mem_init(NULL, mem, size), "Failed init memory allocator");
 
 	while ((p = xc_mem_malloc(mem, 1))) {
-		fprintf(stderr, "%d %p\n", count, ptrs);
 		ptrs[count ++] = p;
 	}
 	fprintf(stderr, "count=%d, random freeing\n", count);
