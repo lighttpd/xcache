@@ -2,15 +2,15 @@
 include absolute path
 --SKIPIF--
 <?php
-require("include-skipif.php");
+require("include-skipif.inc");
 ?>
 --FILE--
 <?php
-include __DIR__ . "/sub-a.php";
-include __DIR__ . "/sub-b.php";
+include __DIR__ . "/sub-a.inc";
+include __DIR__ . "/sub-b.inc";
 ?>
 --EXPECTF--
 %stests
-%stests%ssub-a.php
+%stests%ssub-a.inc
 %stests
-%stests%ssub-b.php
+%stests%ssub-b.inc
