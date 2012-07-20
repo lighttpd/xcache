@@ -131,7 +131,7 @@ phpize)
 		--enable-xcache-decoder \
 		--enable-xcache-disassembler \
 		--enable-xcache-coverager \
-		--enable-xcache-test --enable-xcache-constant \
+		--enable-xcache-test --enable-xcache-constant
 	exit
 	;;
 make)
