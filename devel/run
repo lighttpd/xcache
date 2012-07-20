@@ -11,6 +11,48 @@ case "$type" in
 prep*)
 	exec ./devel/prepare
 	;;
+dep*)
+	pwd=$(readlink -f "$(pwd)")
+	builddir=$(readlink -f ../trunk-php5-debug)
+	if [[ -z $builddir ]]; then
+		echo required ../trunk-php5-debug not found
+		return 1
+	fi
+	find . -iname \*.c | while read -r sourceFile; do
+		sourceFile=${sourceFile#./}
+		echo -n "\$(builddir)/${sourceFile%.c}.lo:"
+		for dependency in $(gcc -M $sourceFile -I$HOME/test/php5-debug/include/php/{,main,Zend,TSRM} -I. -I${builddir} -MG | sed 's#.*:##g' | sed 's#\\##g'); do
+			dependency=$(readlink -f "$dependency")
+			case "$dependency" in
+			$pwd/*)
+				dependency=${dependency#$pwd/}
+				;;
+			$builddir/*)
+				dependency="\$(builddir)/"${dependency#$builddir/}
+				;;
+			esac
+
+			case "$dependency" in
+			/*) ;;
+			$sourceFile) ;;
+			\$\(builddir\)/xc_processor.h)
+				echo -n " \$(XCACHE_PROC_H)"
+				;;
+			\$\(builddir\)/xc_processor.c.h)
+				echo -n " \$(XCACHE_PROC_C)"
+				;;
+			*)
+				if [[ -r $dependency ]]; then
+					echo -n " \$(srcdir)/$dependency"
+				else
+					echo "$dependency not found" >&2
+				fi
+			esac
+		done
+		echo
+	done > Makefile.frag.deps
+	exit
+	;;
 xtest)
 	exec /usr/bin/make -f devel/test.mak
 	;;

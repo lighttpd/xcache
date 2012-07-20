@@ -112,9 +112,11 @@ xc_utils.c \
 	mfo = null;
 	// }}}
 	// {{{ add make fragments
-	var file = srcdir + "\\Makefile.frag";
-	STDOUT.WriteLine("Adding Makefile.frag: " + file);
-	var frag = file_get_contents(file);
+	var makefileFrag = srcdir + "\\Makefile.frag";
+	var makefileFragDeps = srcdir + "\\Makefile.frag.deps";
+	STDOUT.WriteLine("Adding Makefile.frag: " + makefileFrag);
+	STDOUT.WriteLine("Adding Makefile.frag.deps: " + makefileFragDeps);
+	var frag = file_get_contents(makefileFrag) + "\r\n" + file_get_contents(makefileFragDeps);
 	frag = frag.replace(/\$\(srcdir\)\//g,   srcdir + '\\');
 	frag = frag.replace(/\$\(srcdir\)/g,     srcdir);
 	frag = frag.replace(/\$\(builddir\)\//g, builddir + '\\');
