@@ -75,6 +75,7 @@ done
   PHP_ADD_BUILD_DIR($ext_builddir/xcache)
   PHP_ADD_BUILD_DIR($ext_builddir/submodules)
   PHP_ADD_MAKEFILE_FRAGMENT()
+  PHP_ADD_MAKEFILE_FRAGMENT($ext_srcdir/Makefile.frag.deps)
 
   AC_PATH_PROGS([XCACHE_AWK], [gawk awk])
   dnl clean locale for gawk 3.1.5 assertion bug
