@@ -20,6 +20,11 @@ dep*)
 	fi
 	find . -iname \*.c | while read -r sourceFile; do
 		sourceFile=${sourceFile#./}
+		case "$sourceFile" in
+		includes.c)
+			echo -n "\$(XCACHE_INCLUDES_I) "
+			;;
+		esac
 		echo -n "\$(builddir)/${sourceFile%.c}.lo:"
 		for dependency in $(gcc -M $sourceFile -I$HOME/test/php5-debug/include/php/{,main,Zend,TSRM} -I. -I${builddir} -MG | sed 's#.*:##g' | sed 's#\\##g'); do
 			dependency=$(readlink -f "$dependency")

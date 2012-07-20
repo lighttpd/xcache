@@ -6,11 +6,7 @@ XCACHE_INCLUDES_SRC=$(srcdir)/includes.c
 XCACHE_INCLUDES_I=$(builddir)/includes.i
 XCACHE_STRUCTINFO_OUT=$(builddir)/structinfo.m4
 
-.PHONY: $(builddir)/includes.lo
-
-$(builddir)/includes.lo:
-
-$(XCACHE_INCLUDES_I): $(builddir)/includes.lo
+$(XCACHE_INCLUDES_I):
 	$(CC) -I. -I$(srcdir) $(COMMON_FLAGS) $(CFLAGS_CLEAN) $(EXTRA_CFLAGS) -E $(XCACHE_INCLUDES_SRC) -o $(XCACHE_INCLUDES_I)
 
 $(XCACHE_STRUCTINFO_OUT): $(XCACHE_INCLUDES_I) $(srcdir)/gen_structinfo.awk
