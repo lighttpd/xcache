@@ -96,18 +96,6 @@ int xc_apply_method(zend_function *zf, xc_apply_method_info *mi TSRMLS_DC) /* {{
 	return xc_apply_function(zf, mi->applyer TSRMLS_CC);
 }
 /* }}} */
-#if 0
-static int xc_apply_class(zend_class_entry *ce, apply_func_t applyer TSRMLS_DC) /* {{{ */
-{
-	xc_apply_method_info mi;
-
-	mi.applyer = applyer;
-	mi.ce      = ce;
-	zend_hash_apply_with_argument(&(ce->function_table), (apply_func_arg_t) xc_apply_method, &mi TSRMLS_CC);
-	return 0;
-}
-/* }}} */
-#endif
 static int xc_apply_cest(xc_cest_t *cest, apply_func_t applyer TSRMLS_DC) /* {{{ */
 {
 	xc_apply_method_info mi;
