@@ -95,7 +95,9 @@ fi
 case "$type" in
 reb*)
 	if [[ -r Makefile ]]; then
-		make xcachesvnclean
+		if make xcachesvnclean; then
+			:
+		fi
 	fi
 	;;
 esac
