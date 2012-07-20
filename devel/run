@@ -18,7 +18,7 @@ dep*)
 		echo required ../trunk-php5-debug not found
 		return 1
 	fi
-	find . -iname \*.c | while read -r sourceFile; do
+	find . -iname \*.c | sort | while read -r sourceFile; do
 		sourceFile=${sourceFile#./}
 		case "$sourceFile" in
 		includes.c)

@@ -1,5 +1,5 @@
-#include "php.h"
-#include "../xcache.h"
+#include "xcache.h"
+#include "xc_compatibility.h"
 
 typedef struct {
 	zend_op_array *op_array;

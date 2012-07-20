@@ -8,6 +8,9 @@
 /* Purpose: run specified function in compiler sandbox, restore everything to previous state after it returns
  */
 
+#include "xcache.h"
+#include "xcache/xc_compatibility.h"
+
 int xc_sandbox_module_init(int module_number TSRMLS_DC);
 void xc_sandbox_module_shutdown();
 
