@@ -9,6 +9,7 @@ divert(0)
 #include "zend_API.h"
 #include "zend_ini.h"
 
+/* export: #include "xcache.h" :export */
 #include "xcache.h"
 #include "util/xc_align.h"
 #include "xcache/xc_const_string.h"
