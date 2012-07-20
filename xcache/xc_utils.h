@@ -14,8 +14,6 @@ xc_compile_result_t *xc_compile_result_init(xc_compile_result_t *cr,
 void xc_compile_result_free(xc_compile_result_t *cr);
 xc_compile_result_t *xc_compile_result_init_cur(xc_compile_result_t *cr, zend_op_array *op_array TSRMLS_DC);
 /* apply func */
-int xc_apply_function(zend_function *zf, apply_func_t applyer TSRMLS_DC);
-int xc_apply_class(zend_class_entry *ce, apply_func_t applyer TSRMLS_DC);
 int xc_apply_op_array(xc_compile_result_t *cr, apply_func_t applyer TSRMLS_DC);
 
 int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC);
@@ -24,7 +22,8 @@ int xc_fix_opcode(zend_op_array *op_array TSRMLS_DC);
 int xc_undo_fix_opcode(zend_op_array *op_array TSRMLS_DC);
 zend_uchar xc_get_fixed_opcode(zend_uchar opcode, int line);
 
-int xc_foreach_early_binding_class(zend_op_array *op_array, void (*callback)(zend_op *opline, int oplineno, void *data TSRMLS_DC), void *data TSRMLS_DC);
+typedef void (*xc_foreach_early_binding_class_cb)(zend_op *opline, int oplineno, void *data TSRMLS_DC);
+int xc_foreach_early_binding_class(zend_op_array *op_array, xc_foreach_early_binding_class_cb callback, void *data TSRMLS_DC);
 
 /* installer */
 #ifdef HAVE_XCACHE_CONSTANT
