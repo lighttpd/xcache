@@ -86,7 +86,7 @@ phpbasename=${basename#*-}
 xcachebasename=${basename%%-*}
 xcachesrcdir=../$xcachebasename
 
-if [[ ! -z $1 ]]; then
+if [[ $# -gt 0 ]]; then
 	type=$1
 	shift
 
