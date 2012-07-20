@@ -50,7 +50,7 @@ void xc_compile_result_free(xc_compile_result_t *cr) /* {{{ */
 }
 /* }}} */
 
-int xc_apply_function(zend_function *zf, apply_func_t applyer TSRMLS_DC) /* {{{ */
+static int xc_apply_function(zend_function *zf, apply_func_t applyer TSRMLS_DC) /* {{{ */
 {
 	switch (zf->type) {
 	case ZEND_USER_FUNCTION:
@@ -97,7 +97,7 @@ int xc_apply_method(zend_function *zf, xc_apply_method_info *mi TSRMLS_DC) /* {{
 }
 /* }}} */
 #if 0
-int xc_apply_class(zend_class_entry *ce, apply_func_t applyer TSRMLS_DC) /* {{{ */
+static int xc_apply_class(zend_class_entry *ce, apply_func_t applyer TSRMLS_DC) /* {{{ */
 {
 	xc_apply_method_info mi;
 
@@ -338,7 +338,7 @@ int xc_undo_fix_opcode(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
-int xc_foreach_early_binding_class(zend_op_array *op_array, void (*callback)(zend_op *opline, int oplineno, void *data TSRMLS_DC), void *data TSRMLS_DC) /* {{{ */
+int xc_foreach_early_binding_class(zend_op_array *op_array, xc_foreach_early_binding_class_cb callback, void *data TSRMLS_DC) /* {{{ */
 {
 	zend_op *opline, *begin, *opline_end, *next = NULL;
 
