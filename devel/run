@@ -93,7 +93,7 @@ if [[ -z ${args[0]} ]]; then
 fi
 
 case "$type" in
-reb*)
+phpize)
 	if [[ -r Makefile ]]; then
 		if make xcachesvnclean; then
 			:
@@ -115,7 +115,7 @@ done
 ln -sf ~/src/php/$phpbasename/sapi/cli/php php-cli
 
 case "$type" in
-reb*)
+phpize)
 	PHPDIRS=${PHPDIRS:-$HOME/test}
 	if [[ ! -x $PHPDIRS/$phpbasename/bin/phpize ]]; then
 		echo $PHPDIRS/$phpbasename/bin/phpize not found
@@ -132,7 +132,6 @@ reb*)
 		--enable-xcache-disassembler \
 		--enable-xcache-coverager \
 		--enable-xcache-test --enable-xcache-constant \
-	&& make clean all
 	exit
 	;;
 make)
