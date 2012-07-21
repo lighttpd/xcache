@@ -89,12 +89,13 @@ xcachesrcdir=../$xcachebasename
 if [[ $# -gt 0 ]]; then
 	type=$1
 	shift
-
-	args=("$@")
 fi
 
 if [[ -z ${args[0]} ]]; then
-	args=(devel.php)
+	args=("$@")
+	if [[ -z ${args[0]} ]]; then
+		args=(devel.php)
+	fi
 fi
 
 case "$type" in
@@ -168,7 +169,6 @@ esac
 case "${args[0]}" in
 fcgi)
 	args=(-b 1026)
-	shift
 	;;
 esac
 
