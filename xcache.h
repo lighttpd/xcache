@@ -10,11 +10,6 @@
 #define XCACHE_WIKI_URL   XCACHE_URL "/wiki"
 
 #include <php.h>
-#include <zend_compile.h>
-#include <zend_API.h>
-#include <zend.h>
-#include "php_ini.h"
-#include "zend_hash.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>

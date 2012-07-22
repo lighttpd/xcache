@@ -3131,9 +3131,13 @@ PHP_FUNCTION(xcache_get_refcount)
 /* }}} */
 /* {{{ proto bool xcache_get_isref(mixed variable)
    XCache internal uses only: Check if variable data is marked referenced */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
 ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_get_isref, 0, 0, 1)
 	ZEND_ARG_INFO(1, variable)
 ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_get_isref[] = { 1, BYREF_FORCE };
+#endif
 
 PHP_FUNCTION(xcache_get_isref)
 {
@@ -3656,7 +3660,7 @@ static PHP_MINFO_FUNCTION(xcache) /* {{{ */
 
 	if (xc_php_size) {
 		ptr = _php_math_number_format(xc_php_size, 0, '.', ',');
-		snprintf(buf, sizeof(buf), "enabled, %s bytes, %d split(s), with %d slots each", ptr, xc_php_hcache.size, xc_php_hentry.size);
+		snprintf(buf, sizeof(buf), "enabled, %s bytes, %lu split(s), with %lu slots each", ptr, xc_php_hcache.size, xc_php_hentry.size);
 		php_info_print_table_row(2, "Opcode Cache", buf);
 		efree(ptr);
 	}
@@ -3665,7 +3669,7 @@ static PHP_MINFO_FUNCTION(xcache) /* {{{ */
 	}
 	if (xc_var_size) {
 		ptr = _php_math_number_format(xc_var_size, 0, '.', ',');
-		snprintf(buf, sizeof(buf), "enabled, %s bytes, %d split(s), with %d slots each", ptr, xc_var_hcache.size, xc_var_hentry.size);
+		snprintf(buf, sizeof(buf), "enabled, %s bytes, %lu split(s), with %lu slots each", ptr, xc_var_hcache.size, xc_var_hentry.size);
 		php_info_print_table_row(2, "Variable Cache", buf);
 		efree(ptr);
 	}

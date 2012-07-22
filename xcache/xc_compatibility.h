@@ -232,7 +232,11 @@ long xc_atol(const char *str, int len);
 #endif
 
 #ifndef PHP_FE_END
-#	define PHP_FE_END {NULL, NULL, NULL}
+#	ifdef ZEND_ENGINE_2
+#		define PHP_FE_END {NULL, NULL, NULL, 0, 0}
+#	else
+#		define PHP_FE_END {NULL, NULL, NULL}
+#	endif
 #endif
 
 #endif /* XC_COMPATIBILITY_H_54F26ED90198353558718191D5EE244C */

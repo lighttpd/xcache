@@ -1,5 +1,6 @@
 #include "xc_disassembler.h"
 #include "xcache.h"
+#include "xcache/xc_ini.h"
 #include "xcache/xc_utils.h"
 #include "xcache/xc_sandbox.h"
 #include "xcache/xc_compatibility.h"
