@@ -14,14 +14,6 @@
 
 #include <signal.h>
 
-#include "php.h"
-#include "ext/standard/info.h"
-#include "ext/standard/md5.h"
-#include "ext/standard/php_math.h"
-#include "ext/standard/php_string.h"
-#include "zend_extensions.h"
-#include "SAPI.h"
-
 #include "xcache.h"
 #ifdef ZEND_ENGINE_2_1
 #include "ext/date/php_date.h"
@@ -29,22 +21,18 @@
 
 #ifdef HAVE_XCACHE_OPTIMIZER
 #	include "mod_optimizer/xc_optimizer.h"
-#else
-#	define XCACHE_OPTIMIZER_FUNCTIONS()
 #endif
 #ifdef HAVE_XCACHE_COVERAGER
 #	include "mod_coverager/xc_coverager.h"
-#else
-#	define XCACHE_COVERAGER_FUNCTIONS()
 #endif
 #ifdef HAVE_XCACHE_DISASSEMBLER
 #	include "mod_disassembler/xc_disassembler.h"
-#else
-#	define XCACHE_DISASSEMBLER_FUNCTIONS()
 #endif
 
 #include "xcache_globals.h"
 #include "xc_processor.h"
+#include "xcache/xc_extension.h"
+#include "xcache/xc_ini.h"
 #include "xcache/xc_const_string.h"
 #include "xcache/xc_opcode_spec.h"
 #include "xcache/xc_utils.h"
@@ -53,6 +41,13 @@
 #include "util/xc_stack.h"
 #include "util/xc_vector.h"
 #include "util/xc_trace.h"
+
+#include "php.h"
+#include "ext/standard/info.h"
+#include "ext/standard/md5.h"
+#include "ext/standard/php_math.h"
+#include "ext/standard/php_string.h"
+#include "SAPI.h"
 
 #define VAR_ENTRY_EXPIRED(pentry) ((pentry)->ttl && XG(request_time) > (pentry)->ctime + (time_t) (pentry)->ttl)
 #define CHECK(x, e) do { if ((x) == NULL) { zend_error(E_ERROR, "XCache: " e); goto err; } } while (0)
@@ -123,13 +118,6 @@ static zend_bool xc_readonly_protection = 0;
 
 zend_bool xc_have_op_array_ctor = 0;
 
-static zend_bool xc_module_gotup = 0;
-static zend_bool xc_zend_extension_gotup = 0;
-static zend_bool xc_zend_extension_faked = 0;
-#if !COMPILE_DL_XCACHE
-#	define zend_extension_entry xcache_zend_extension_entry
-#endif
-ZEND_DLEXPORT zend_extension zend_extension_entry;
 ZEND_DECLARE_MODULE_GLOBALS(xcache)
 
 typedef enum { XC_TYPE_PHP, XC_TYPE_VAR } xc_entry_type_t;
@@ -2526,10 +2514,6 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 #else
 	XG(request_time) = sapi_get_request_time(TSRMLS_C);
 #endif
-
-#ifdef HAVE_XCACHE_COVERAGER
-	xc_coverager_request_init(TSRMLS_C);
-#endif
 }
 /* }}} */
 static void xc_request_shutdown(TSRMLS_D) /* {{{ */
@@ -2542,9 +2526,6 @@ static void xc_request_shutdown(TSRMLS_D) /* {{{ */
 	}
 #ifdef ZEND_ENGINE_2
 	zend_llist_destroy(&XG(gc_op_arrays));
-#endif
-#ifdef HAVE_XCACHE_COVERAGER
-	xc_coverager_request_shutdown(TSRMLS_C);
 #endif
 }
 /* }}} */
@@ -3358,11 +3339,9 @@ static zend_function_entry xcache_functions[] = /* {{{ */
 	PHP_FE(xcache_list,              NULL)
 	PHP_FE(xcache_clear_cache,       NULL)
 	PHP_FE(xcache_coredump,          NULL)
-	XCACHE_OPTIMIZER_FUNCTIONS()
 #ifdef HAVE_XCACHE_ASSEMBLER
 	PHP_FE(xcache_asm,               NULL)
 #endif
-	XCACHE_DISASSEMBLER_FUNCTIONS()
 #ifdef HAVE_XCACHE_ENCODER
 	PHP_FE(xcache_encode,            NULL)
 #endif
@@ -3370,7 +3349,6 @@ static zend_function_entry xcache_functions[] = /* {{{ */
 	PHP_FE(xcache_decode_file,       NULL)
 	PHP_FE(xcache_decode_string,     NULL)
 #endif
-	XCACHE_COVERAGER_FUNCTIONS()
 	PHP_FE(xcache_get_special_value, NULL)
 	PHP_FE(xcache_get_type,          NULL)
 	PHP_FE(xcache_get_op_type,       NULL)
@@ -3390,11 +3368,7 @@ static zend_function_entry xcache_functions[] = /* {{{ */
 #ifdef HAVE_XCACHE_DPRINT
 	PHP_FE(xcache_dprint,            NULL)
 #endif
-#ifdef PHP_FE_END
 	PHP_FE_END
-#else
-	{NULL, NULL,                     NULL}
-#endif
 };
 /* }}} */
 
@@ -3546,107 +3520,124 @@ static void xcache_signal_handler(int sig) /* {{{ */
 /* }}} */
 #endif
 
+static startup_func_t xc_last_ext_startup;
+static int xc_zend_startup_last(zend_extension *extension) /* {{{ */
+{
+	zend_extension *ext = zend_get_extension(XCACHE_NAME);
+	if (ext) {
+		zend_error(E_WARNING, "Module '" XCACHE_NAME "' already loaded");
+	}
+	/* restore */
+	extension->startup = xc_last_ext_startup;
+	if (extension->startup) {
+		if (extension->startup(extension) != SUCCESS) {
+			return FAILURE;
+		}
+	}
+	assert(xc_llist_zend_extension);
+	xcache_llist_prepend(&zend_extensions, xc_llist_zend_extension);
+	return SUCCESS;
+}
+/* }}} */
+static int xc_zend_startup(zend_extension *extension) /* {{{ */
+{
+	if (!origin_compile_file) {
+		origin_compile_file = zend_compile_file;
+		zend_compile_file = xc_check_initial_compile_file;
+	}
+
+	if (zend_llist_count(&zend_extensions) > 1) {
+		zend_llist_position lpos;
+		zend_extension *ext;
+
+		xc_llist_zend_extension = xcache_llist_get_element_by_zend_extension(&zend_extensions, XCACHE_NAME);
+		if (xc_llist_zend_extension != zend_extensions.head) {
+			zend_error(E_WARNING, "XCache failed to load itself as the first zend_extension. compatibility downgraded");
+		}
+		/* hide myself */
+		xcache_llist_unlink(&zend_extensions, xc_llist_zend_extension);
+
+		ext = (zend_extension *) zend_llist_get_last_ex(&zend_extensions, &lpos);
+		assert(ext && ext != (zend_extension *) xc_llist_zend_extension->data);
+		xc_last_ext_startup = ext->startup;
+		ext->startup = xc_zend_startup_last;
+	}
+	return SUCCESS;
+}
+/* }}} */
+static void xc_zend_shutdown(zend_extension *extension) /* {{{ */
+{
+}
+/* }}} */
+/* {{{ zend extension definition structure */
+static zend_extension zend_extension_entry = {
+	XCACHE_NAME,
+	XCACHE_VERSION,
+	XCACHE_AUTHOR,
+	XCACHE_URL,
+	XCACHE_COPYRIGHT,
+	xc_zend_startup,
+	xc_zend_shutdown,
+	NULL,           /* activate_func_t */
+	NULL,           /* deactivate_func_t */
+	NULL,           /* message_handler_func_t */
+	NULL,           /* op_array_handler_func_t */
+	NULL,           /* statement_handler_func_t */
+	NULL,           /* fcall_begin_handler_func_t */
+	NULL,           /* fcall_end_handler_func_t */
+	NULL,           /* op_array_ctor_func_t */
+	NULL,           /* op_array_dtor_func_t */
+	STANDARD_ZEND_EXTENSION_PROPERTIES
+};
+/* }}} */
+
 /* {{{ PHP_INI */
-
-static PHP_INI_MH(xc_OnUpdateDummy)
-{
-	return SUCCESS;
-}
-
-static PHP_INI_MH(xc_OnUpdateULong)
-{
-	zend_ulong *p = (zend_ulong *) mh_arg1;
-
-	*p = (zend_ulong) atoi(new_value);
-	return SUCCESS;
-}
-
-static PHP_INI_MH(xc_OnUpdateBool)
-{
-	zend_bool *p = (zend_bool *)mh_arg1;
-
-	if (strncasecmp("on", new_value, sizeof("on"))) {
-		*p = (zend_bool) atoi(new_value);
-	}
-	else {
-		*p = (zend_bool) 1;
-	}
-	return SUCCESS;
-}
-
-static PHP_INI_MH(xc_OnUpdateString)
-{
-	char **p = (char**)mh_arg1;
-	if (*p) {
-		pefree(*p, 1);
-	}
-	*p = pemalloc(strlen(new_value) + 1, 1);
-	strcpy(*p, new_value);
-	return SUCCESS;
-}
-
-#ifndef ZEND_ENGINE_2
-#define OnUpdateLong OnUpdateInt
-#endif
-
 #ifdef ZEND_WIN32
 #	define DEFAULT_PATH "xcache"
 #else
 #	define DEFAULT_PATH "/dev/zero"
 #endif
 PHP_INI_BEGIN()
-	PHP_INI_ENTRY1     ("xcache.mmap_path",     DEFAULT_PATH, PHP_INI_SYSTEM, xc_OnUpdateString,   &xc_mmap_path)
-	PHP_INI_ENTRY1     ("xcache.coredump_directory",      "", PHP_INI_SYSTEM, xc_OnUpdateString,   &xc_coredump_dir)
-	PHP_INI_ENTRY1     ("xcache.disable_on_crash",       "0", PHP_INI_SYSTEM, xc_OnUpdateBool,     &xc_disable_on_crash)
-	PHP_INI_ENTRY1     ("xcache.test",                   "0", PHP_INI_SYSTEM, xc_OnUpdateBool,     &xc_test)
-	PHP_INI_ENTRY1     ("xcache.readonly_protection",    "0", PHP_INI_SYSTEM, xc_OnUpdateBool,     &xc_readonly_protection)
+	PHP_INI_ENTRY1     ("xcache.mmap_path",     DEFAULT_PATH, PHP_INI_SYSTEM, xcache_OnUpdateString,   &xc_mmap_path)
+	PHP_INI_ENTRY1     ("xcache.coredump_directory",      "", PHP_INI_SYSTEM, xcache_OnUpdateString,   &xc_coredump_dir)
+	PHP_INI_ENTRY1     ("xcache.disable_on_crash",       "0", PHP_INI_SYSTEM, xcache_OnUpdateBool,     &xc_disable_on_crash)
+	PHP_INI_ENTRY1     ("xcache.test",                   "0", PHP_INI_SYSTEM, xcache_OnUpdateBool,     &xc_test)
+	PHP_INI_ENTRY1     ("xcache.readonly_protection",    "0", PHP_INI_SYSTEM, xcache_OnUpdateBool,     &xc_readonly_protection)
 	/* opcode cache */
-	PHP_INI_ENTRY1     ("xcache.size",                   "0", PHP_INI_SYSTEM, xc_OnUpdateDummy,    NULL)
-	PHP_INI_ENTRY1     ("xcache.count",                  "1", PHP_INI_SYSTEM, xc_OnUpdateDummy,    NULL)
-	PHP_INI_ENTRY1     ("xcache.slots",                 "8K", PHP_INI_SYSTEM, xc_OnUpdateDummy,    NULL)
-	PHP_INI_ENTRY1     ("xcache.shm_scheme",          "mmap", PHP_INI_SYSTEM, xc_OnUpdateString,   &xc_shm_scheme)
-	PHP_INI_ENTRY1     ("xcache.ttl",                    "0", PHP_INI_SYSTEM, xc_OnUpdateULong,    &xc_php_ttl)
-	PHP_INI_ENTRY1     ("xcache.gc_interval",            "0", PHP_INI_SYSTEM, xc_OnUpdateULong,    &xc_php_gc_interval)
+	PHP_INI_ENTRY1     ("xcache.size",                   "0", PHP_INI_SYSTEM, xcache_OnUpdateDummy,    NULL)
+	PHP_INI_ENTRY1     ("xcache.count",                  "1", PHP_INI_SYSTEM, xcache_OnUpdateDummy,    NULL)
+	PHP_INI_ENTRY1     ("xcache.slots",                 "8K", PHP_INI_SYSTEM, xcache_OnUpdateDummy,    NULL)
+	PHP_INI_ENTRY1     ("xcache.shm_scheme",          "mmap", PHP_INI_SYSTEM, xcache_OnUpdateString,   &xc_shm_scheme)
+	PHP_INI_ENTRY1     ("xcache.ttl",                    "0", PHP_INI_SYSTEM, xcache_OnUpdateULong,    &xc_php_ttl)
+	PHP_INI_ENTRY1     ("xcache.gc_interval",            "0", PHP_INI_SYSTEM, xcache_OnUpdateULong,    &xc_php_gc_interval)
 	/* var cache */
-	PHP_INI_ENTRY1     ("xcache.var_size",               "0", PHP_INI_SYSTEM, xc_OnUpdateDummy,    NULL)
-	PHP_INI_ENTRY1     ("xcache.var_count",              "1", PHP_INI_SYSTEM, xc_OnUpdateDummy,    NULL)
-	PHP_INI_ENTRY1     ("xcache.var_slots",             "8K", PHP_INI_SYSTEM, xc_OnUpdateDummy,    NULL)
-	PHP_INI_ENTRY1     ("xcache.var_maxttl",             "0", PHP_INI_SYSTEM, xc_OnUpdateULong,    &xc_var_maxttl)
-	PHP_INI_ENTRY1     ("xcache.var_gc_interval",      "120", PHP_INI_SYSTEM, xc_OnUpdateULong,    &xc_var_gc_interval)
+	PHP_INI_ENTRY1     ("xcache.var_size",               "0", PHP_INI_SYSTEM, xcache_OnUpdateDummy,    NULL)
+	PHP_INI_ENTRY1     ("xcache.var_count",              "1", PHP_INI_SYSTEM, xcache_OnUpdateDummy,    NULL)
+	PHP_INI_ENTRY1     ("xcache.var_slots",             "8K", PHP_INI_SYSTEM, xcache_OnUpdateDummy,    NULL)
+	PHP_INI_ENTRY1     ("xcache.var_maxttl",             "0", PHP_INI_SYSTEM, xcache_OnUpdateULong,    &xc_var_maxttl)
+	PHP_INI_ENTRY1     ("xcache.var_gc_interval",      "120", PHP_INI_SYSTEM, xcache_OnUpdateULong,    &xc_var_gc_interval)
 
 	STD_PHP_INI_BOOLEAN("xcache.cacher",                 "1", PHP_INI_ALL,    OnUpdateBool,        cacher,            zend_xcache_globals, xcache_globals)
 	STD_PHP_INI_BOOLEAN("xcache.stat",                   "1", PHP_INI_ALL,    OnUpdateBool,        stat,              zend_xcache_globals, xcache_globals)
 	STD_PHP_INI_BOOLEAN("xcache.admin.enable_auth",      "1", PHP_INI_SYSTEM, OnUpdateBool,        auth_enabled,      zend_xcache_globals, xcache_globals)
 	STD_PHP_INI_BOOLEAN("xcache.experimental",           "0", PHP_INI_ALL,    OnUpdateBool,        experimental,      zend_xcache_globals, xcache_globals)
-#ifdef HAVE_XCACHE_OPTIMIZER
-	STD_PHP_INI_BOOLEAN("xcache.optimizer",              "0", PHP_INI_ALL,    OnUpdateBool,        optimizer,         zend_xcache_globals, xcache_globals)
-#endif
 	STD_PHP_INI_ENTRY  ("xcache.var_ttl",                "0", PHP_INI_ALL,    OnUpdateLong,        var_ttl,           zend_xcache_globals, xcache_globals)
-#ifdef HAVE_XCACHE_COVERAGER
-	STD_PHP_INI_BOOLEAN("xcache.coverager"      ,        "0", PHP_INI_ALL,    OnUpdateBool,        coverager,         zend_xcache_globals, xcache_globals)
-	PHP_INI_ENTRY1     ("xcache.coveragedump_directory",  "", PHP_INI_SYSTEM, xc_OnUpdateDummy,    NULL)
-#endif
 PHP_INI_END()
 /* }}} */
-/* {{{ PHP_MINFO_FUNCTION(xcache) */
-static PHP_MINFO_FUNCTION(xcache)
+static PHP_MINFO_FUNCTION(xcache) /* {{{ */
 {
 	char buf[100];
 	char *ptr;
 	int left, len;
 	xc_shm_scheme_t *scheme;
-#ifdef HAVE_XCACHE_COVERAGER
-	char *covdumpdir;
-#endif
 
 	php_info_print_table_start();
-	php_info_print_table_header(2, "XCache Support", "enabled");
-	php_info_print_table_row(2, "Version", XCACHE_VERSION);
+	php_info_print_table_row(2, "XCache Version", XCACHE_VERSION);
 #ifdef XCACHE_VERSION_REVISION
 	php_info_print_table_row(2, "Revision", "r" XCACHE_VERSION_REVISION);
 #endif
 	php_info_print_table_row(2, "Modules Built", XCACHE_MODULES);
-	php_info_print_table_row(2, "Readonly Protection", xc_readonly_protection ? "enabled" : "N/A");
+	php_info_print_table_row(2, "Readonly Protection", xc_readonly_protection ? "enabled" : "disabled");
 #ifdef ZEND_ENGINE_2_1
 	ptr = php_format_date("Y-m-d H:i:s", sizeof("Y-m-d H:i:s") - 1, xc_init_time, 1 TSRMLS_CC);
 	php_info_print_table_row(2, "Cache Init Time", ptr);
@@ -3692,103 +3683,9 @@ static PHP_MINFO_FUNCTION(xcache)
 	}
 	php_info_print_table_row(2, "Shared Memory Schemes", buf);
 
-#ifdef HAVE_XCACHE_COVERAGER
-	if (cfg_get_string("xcache.coveragedump_directory", &covdumpdir) != SUCCESS || !covdumpdir[0]) {
-		covdumpdir = NULL;
-	}
-	php_info_print_table_row(2, "Coverage Auto Dumper", XG(coverager) && covdumpdir ? "enabled" : "disabled");
-#endif
 	php_info_print_table_end();
 
 	DISPLAY_INI_ENTRIES();
-}
-/* }}} */
-/* {{{ extension startup */
-static void xc_zend_extension_register(zend_extension *new_extension, DL_HANDLE handle)
-{
-	zend_extension extension;
-
-	extension = *new_extension;
-	extension.handle = handle;
-
-	zend_extension_dispatch_message(ZEND_EXTMSG_NEW_EXTENSION, &extension);
-
-	zend_llist_prepend_element(&zend_extensions, &extension);
-	TRACE("%s", "registered");
-}
-
-static zend_llist_element *xc_llist_get_element_by_zend_extension(zend_llist *l, const char *extension_name)
-{
-	zend_llist_element *element;
-
-	for (element = zend_extensions.head; element; element = element->next) {
-		zend_extension *extension = (zend_extension *) element->data;
-
-		if (!strcmp(extension->name, extension_name)) {
-			return element;
-		}
-	}
-	return NULL;
-}
-
-static void xc_llist_prepend(zend_llist *l, zend_llist_element *element)
-{
-	element->next = l->head;
-	element->prev = NULL;
-	if (l->head) {
-		l->head->prev = element;
-	}
-	else {
-		l->tail = element;
-	}
-	l->head = element;
-	++l->count;
-}
-
-static void xc_llist_unlink(zend_llist *l, zend_llist_element *element)
-{
-	if ((element)->prev) {
-		(element)->prev->next = (element)->next;
-	}
-	else {
-		(l)->head = (element)->next;
-	}
-
-	if ((element)->next) {
-		(element)->next->prev = (element)->prev;
-	}
-	else {
-		(l)->tail = (element)->prev;
-	}
-
-	--l->count;
-}
-
-static int xc_zend_extension_startup(zend_extension *extension)
-{
-	if (extension->startup) {
-		if (extension->startup(extension) != SUCCESS) {
-			return FAILURE;
-		}
-	}
-	return SUCCESS;
-}
-/* }}} */
-static int xc_ptr_compare_func(void *p1, void *p2) /* {{{ */
-{
-	return p1 == p2;
-}
-/* }}} */
-static int xc_zend_remove_extension(zend_extension *extension) /* {{{ */
-{
-	llist_dtor_func_t dtor;
-
-	assert(extension);
-	dtor = zend_extensions.dtor; /* avoid dtor */
-	zend_extensions.dtor = NULL;
-	zend_llist_del_element(&zend_extensions, extension, xc_ptr_compare_func);
-	zend_extensions.dtor = dtor;
-	return SUCCESS;
 }
 /* }}} */
 static int xc_config_hash(xc_hash_t *p, char *name, char *default_value) /* {{{ */
@@ -3823,21 +3720,13 @@ static int xc_config_long(zend_ulong *p, char *name, char *default_value) /* {{{
 	return SUCCESS;
 }
 /* }}} */
-/* {{{ PHP_MINIT_FUNCTION(xcache) */
-static PHP_MINIT_FUNCTION(xcache)
+static PHP_MINIT_FUNCTION(xcache) /* {{{ */
 {
 	char *env;
 	zend_extension *ext;
 	zend_llist_position lpos;
 
-	xc_module_gotup = 1;
-	if (!xc_zend_extension_gotup) {
-		zend_error(E_WARNING, "XCache is designed to be loaded as zend_extension not extension");
-		xc_zend_extension_register(&zend_extension_entry, 0);
-		xc_zend_extension_startup(&zend_extension_entry);
-		xc_zend_extension_faked = 1;
-	}
-
+	xcache_zend_extension_register(&zend_extension_entry, 1);
 	ext = zend_get_extension("Zend Optimizer");
 	if (ext) {
 		/* zend_optimizer.optimization_level>0 is not compatible with other cacher, disabling */
@@ -3917,11 +3806,16 @@ static PHP_MINIT_FUNCTION(xcache)
 #endif
 	}
 
-	xc_sandbox_module_init(module_number TSRMLS_CC);
-#ifdef HAVE_XCACHE_COVERAGER
-	xc_coverager_module_init(module_number TSRMLS_CC);
+#ifdef HAVE_XCACHE_OPTIMIZER
+	xc_optimizer_startup_module();
 #endif
-
+#ifdef HAVE_XCACHE_COVERAGER
+	xc_coverager_startup_module();
+#endif
+#ifdef HAVE_XCACHE_DISASSEMBLER
+	xc_disassembler_startup_module();
+#endif
+	xc_sandbox_module_init(module_number TSRMLS_CC);
 	return SUCCESS;
 
 err_init:
@@ -3931,9 +3825,6 @@ err_init:
 /* {{{ PHP_MSHUTDOWN_FUNCTION(xcache) */
 static PHP_MSHUTDOWN_FUNCTION(xcache)
 {
-#ifdef HAVE_XCACHE_COVERAGER
-	xc_coverager_module_shutdown();
-#endif
 	xc_sandbox_module_shutdown();
 
 	if (xc_initized) {
@@ -3963,21 +3854,8 @@ static PHP_MSHUTDOWN_FUNCTION(xcache)
 #	endif
 #endif
 
-	if (xc_zend_extension_faked) {
-		zend_extension *ext = zend_get_extension(XCACHE_NAME);
-		if (ext) {
-			if (ext->shutdown) {
-				ext->shutdown(ext);
-			}
-			xc_zend_remove_extension(ext);
-		}
-	}
+	xcache_zend_extension_unregister(&zend_extension_entry);
 	UNREGISTER_INI_ENTRIES();
-
-	xc_module_gotup = 0;
-	xc_zend_extension_gotup = 0;
-	xc_zend_extension_faked = 0;
-
 	return SUCCESS;
 }
 /* }}} */
@@ -4004,24 +3882,19 @@ static ZEND_MODULE_POST_ZEND_DEACTIVATE_D(xcache)
 }
 /* }}} */
 /* {{{ module dependencies */
-#if ZEND_MODULE_API_NO >= 20050922
+#ifdef STANDARD_MODULE_HEADER_EX
 static zend_module_dep xcache_module_deps[] = {
 	ZEND_MOD_REQUIRED("standard")
 	ZEND_MOD_CONFLICTS("apc")
 	ZEND_MOD_CONFLICTS("eAccelerator")
 	ZEND_MOD_CONFLICTS("Turck MMCache")
-#ifdef ZEND_MOD_END
 	ZEND_MOD_END
-#else
-	{NULL, NULL, NULL, 0}
-#endif
 };
 #endif
 /* }}} */ 
 /* {{{ module definition structure */
-
 zend_module_entry xcache_module_entry = {
-#if ZEND_MODULE_API_NO >= 20050922
+#ifdef STANDARD_MODULE_HEADER_EX
 	STANDARD_MODULE_HEADER_EX,
 	NULL,
 	xcache_module_deps,
@@ -4056,116 +3929,5 @@ zend_module_entry xcache_module_entry = {
 
 #ifdef COMPILE_DL_XCACHE
 ZEND_GET_MODULE(xcache)
-#endif
-/* }}} */
-static startup_func_t xc_last_ext_startup;
-static int xc_zend_startup_last(zend_extension *extension) /* {{{ */
-{
-	zend_extension *ext = zend_get_extension(XCACHE_NAME);
-	if (ext) {
-		zend_error(E_WARNING, "Module '" XCACHE_NAME "' already loaded");
-	}
-	/* restore */
-	extension->startup = xc_last_ext_startup;
-	if (extension->startup) {
-		if (extension->startup(extension) != SUCCESS) {
-			return FAILURE;
-		}
-	}
-	assert(xc_llist_zend_extension);
-	xc_llist_prepend(&zend_extensions, xc_llist_zend_extension);
-	if (!xc_module_gotup) {
-		return zend_startup_module(&xcache_module_entry);
-	}
-	return SUCCESS;
-}
-/* }}} */
-ZEND_DLEXPORT int xcache_zend_startup(zend_extension *extension) /* {{{ */
-{
-	xc_zend_extension_gotup = 1;
-
-	if (!origin_compile_file) {
-		origin_compile_file = zend_compile_file;
-		zend_compile_file = xc_check_initial_compile_file;
-	}
-
-	if (zend_llist_count(&zend_extensions) > 1) {
-		zend_llist_position lpos;
-		zend_extension *ext;
-
-		xc_llist_zend_extension = xc_llist_get_element_by_zend_extension(&zend_extensions, XCACHE_NAME);
-		if (xc_llist_zend_extension != zend_extensions.head) {
-			zend_error(E_WARNING, "XCache must be loaded as the first zend_extension for maximum compatibility");
-		}
-		/* hide myself */
-		xc_llist_unlink(&zend_extensions, xc_llist_zend_extension);
-
-		ext = (zend_extension *) zend_llist_get_last_ex(&zend_extensions, &lpos);
-		assert(ext && ext != (zend_extension *) xc_llist_zend_extension->data);
-		xc_last_ext_startup = ext->startup;
-		ext->startup = xc_zend_startup_last;
-	}
-	else if (!xc_module_gotup) {
-		return zend_startup_module(&xcache_module_entry);
-	}
-	return SUCCESS;
-}
-/* }}} */
-ZEND_DLEXPORT void xcache_zend_shutdown(zend_extension *extension) /* {{{ */
-{
-	/* empty */
-}
-/* }}} */
-ZEND_DLEXPORT void xcache_statement_handler(zend_op_array *op_array) /* {{{ */
-{
-#ifdef HAVE_XCACHE_COVERAGER
-	xc_coverager_handle_ext_stmt(op_array, ZEND_EXT_STMT);
-#endif
-}
-/* }}} */
-ZEND_DLEXPORT void xcache_fcall_begin_handler(zend_op_array *op_array) /* {{{ */
-{
-#if 0
-	xc_coverager_handle_ext_stmt(op_array, ZEND_EXT_FCALL_BEGIN);
-#endif
-}
-/* }}} */
-ZEND_DLEXPORT void xcache_fcall_end_handler(zend_op_array *op_array) /* {{{ */
-{
-#if 0
-	xc_coverager_handle_ext_stmt(op_array, ZEND_EXT_FCALL_END);
-#endif
-}
-/* }}} */
-/* {{{ zend extension definition structure */
-ZEND_DLEXPORT zend_extension zend_extension_entry = {
-	XCACHE_NAME,
-	XCACHE_VERSION,
-	XCACHE_AUTHOR,
-	XCACHE_URL,
-	XCACHE_COPYRIGHT,
-	xcache_zend_startup,
-	xcache_zend_shutdown,
-	NULL,           /* activate_func_t */
-	NULL,           /* deactivate_func_t */
-	NULL,           /* message_handler_func_t */
-#ifdef HAVE_XCACHE_OPTIMIZER
-	xc_optimizer_op_array_handler,
-#else
-	NULL,           /* op_array_handler_func_t */
-#endif
-	xcache_statement_handler,
-	xcache_fcall_begin_handler,
-	xcache_fcall_end_handler,
-	NULL,           /* op_array_ctor_func_t */
-	NULL,           /* op_array_dtor_func_t */
-	STANDARD_ZEND_EXTENSION_PROPERTIES
-};
-
-#ifndef ZEND_EXT_API
-#	define ZEND_EXT_API ZEND_DLEXPORT
-#endif
-#if COMPILE_DL_XCACHE
-ZEND_EXTENSION();
 #endif
 /* }}} */

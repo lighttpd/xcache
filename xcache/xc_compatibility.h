@@ -227,4 +227,12 @@ long xc_atol(const char *str, int len);
 #define zend_atol xc_atol
 #endif
 
+#ifndef ZEND_MOD_END
+#	define ZEND_MOD_END {NULL, NULL, NULL, 0}
+#endif
+
+#ifndef PHP_FE_END
+#	define PHP_FE_END {NULL, NULL, NULL}
+#endif
+
 #endif /* XC_COMPATIBILITY_H_54F26ED90198353558718191D5EE244C */

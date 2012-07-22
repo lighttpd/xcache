@@ -1,7 +1,10 @@
-#include "php.h"
+#ifndef XC_DISASSEMBLER_H_1547840703D7ADD9C19041818BE9E3C7
+#define XC_DISASSEMBLER_H_1547840703D7ADD9C19041818BE9E3C7
 
-PHP_FUNCTION(xcache_dasm_file);
-PHP_FUNCTION(xcache_dasm_string);
-#define XCACHE_DISASSEMBLER_FUNCTIONS() \
-	PHP_FE(xcache_dasm_file,         NULL) \
-	PHP_FE(xcache_dasm_string,       NULL)
+#if _MSC_VER > 1000
+#pragma once
+#endif // _MSC_VER > 1000
+
+int xc_disassembler_startup_module();
+
+#endif /* XC_DISASSEMBLER_H_1547840703D7ADD9C19041818BE9E3C7 */

@@ -2,6 +2,8 @@
 #define XCACHE_DEBUG
 #endif
 
+#include "xc_coverager.h"
+
 #include <stdio.h>
 #include "xcache.h"
 #include "ext/standard/flock_compat.h"
@@ -12,11 +14,14 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include "xcache/xc_extension.h"
+#include "xcache/xc_ini.h"
+#include "xcache/xc_utils.h"
 #include "util/xc_stack.h"
 #include "util/xc_trace.h"
 #include "xcache_globals.h"
-#include "xc_coverager.h"
-#include "xcache/xc_utils.h"
+
+#include "ext/standard/info.h"
 
 typedef HashTable *coverager_t;
 #define PCOV_HEADER_MAGIC 0x564f4350
@@ -33,7 +38,7 @@ static void xc_destroy_coverage(void *pDest) /* {{{ */
 	efree(cov);
 }
 /* }}} */
-void xcache_mkdirs_ex(char *root, int rootlen, char *path, int pathlen TSRMLS_DC) /* {{{ */
+static void xcache_mkdirs_ex(char *root, int rootlen, char *path, int pathlen TSRMLS_DC) /* {{{ */
 {
 	char *fullpath;
 	struct stat st;
@@ -247,7 +252,7 @@ static void xc_coverager_disable(TSRMLS_D) /* {{{ */
 }
 /* }}} */
 
-void xc_coverager_request_init(TSRMLS_D) /* {{{ */
+static PHP_RINIT_FUNCTION(xcache_coverager) /* {{{ */
 {
 	if (XG(coverager)) {
 		xc_coverager_enable(TSRMLS_C);
@@ -260,6 +265,7 @@ void xc_coverager_request_init(TSRMLS_D) /* {{{ */
 	else {
 		XG(coverage_enabled) = 0;
 	}
+	return SUCCESS;
 }
 /* }}} */
 static void xc_coverager_autodump(TSRMLS_D) /* {{{ */
@@ -334,12 +340,13 @@ static void xc_coverager_dump(zval *return_value TSRMLS_DC) /* {{{ */
 	}
 }
 /* }}} */
-void xc_coverager_request_shutdown(TSRMLS_D) /* {{{ */
+static PHP_RSHUTDOWN_FUNCTION(xcache_coverager) /* {{{ */
 {
 	if (XG(coverager)) {
 		xc_coverager_autodump(TSRMLS_C);
 		xc_coverager_cleanup(TSRMLS_C);
 	}
+	return SUCCESS;
 }
 /* }}} */
 
@@ -456,7 +463,7 @@ static zend_op_array *xc_compile_file_for_coverage(zend_file_handle *h, int type
 /* }}} */
 
 /* hits */
-void xc_coverager_handle_ext_stmt(zend_op_array *op_array, zend_uchar op) /* {{{ */
+static void xc_coverager_handle_ext_stmt(zend_op_array *op_array, zend_uchar op) /* {{{ */
 {
 	TSRMLS_FETCH();
 
@@ -466,42 +473,6 @@ void xc_coverager_handle_ext_stmt(zend_op_array *op_array, zend_uchar op) /* {{{
 		if (oplineno < size) {
 			xc_coverager_add_hits(xc_coverager_get(op_array->filename TSRMLS_CC), (*EG(opline_ptr))->lineno, 1 TSRMLS_CC);
 		}
-	}
-}
-/* }}} */
-
-/* MINIT/MSHUTDOWN */
-int xc_coverager_module_init(int module_number TSRMLS_DC) /* {{{ */
-{
-	old_compile_file = zend_compile_file;
-	zend_compile_file = xc_compile_file_for_coverage;
-
-	if (cfg_get_string("xcache.coveragedump_directory", &xc_coveragedump_dir) == SUCCESS && xc_coveragedump_dir) {
-		int len;
-		xc_coveragedump_dir = pestrdup(xc_coveragedump_dir, 1);
-		len = strlen(xc_coveragedump_dir);
-		if (len) {
-			if (xc_coveragedump_dir[len - 1] == '/') {
-				xc_coveragedump_dir[len - 1] = '\0';
-			}
-		}
-		if (!strlen(xc_coveragedump_dir)) {
-			pefree(xc_coveragedump_dir, 1);
-			xc_coveragedump_dir = NULL;
-		}
-	}
-
-	return SUCCESS;
-}
-/* }}} */
-void xc_coverager_module_shutdown() /* {{{ */
-{
-	if (old_compile_file == xc_compile_file_for_coverage) {
-		zend_compile_file = old_compile_file;
-	}
-	if (xc_coveragedump_dir) {
-		pefree(xc_coveragedump_dir, 1);
-		xc_coveragedump_dir = NULL;
 	}
 }
 /* }}} */
@@ -591,5 +562,154 @@ PHP_FUNCTION(xcache_coverager_get)
 	if (clean) {
 		xc_coverager_clean(TSRMLS_C);
 	}
+}
+/* }}} */
+static zend_function_entry xcache_coverager_functions[] = /* {{{ */
+{
+	PHP_FE(xcache_coverager_decode,  NULL)
+	PHP_FE(xcache_coverager_start,   NULL)
+	PHP_FE(xcache_coverager_stop,    NULL)
+	PHP_FE(xcache_coverager_get,     NULL)
+	PHP_FE_END
+};
+/* }}} */
+
+static int xc_zend_startup(zend_extension *extension) /* {{{ */
+{
+	return SUCCESS;
+}
+/* }}} */
+static void xc_zend_shutdown(zend_extension *extension) /* {{{ */
+{
+	/* empty */
+}
+/* }}} */
+static void xc_statement_handler(zend_op_array *op_array) /* {{{ */
+{
+#ifdef HAVE_XCACHE_COVERAGER
+	xc_coverager_handle_ext_stmt(op_array, ZEND_EXT_STMT);
+#endif
+}
+/* }}} */
+static void xc_fcall_begin_handler(zend_op_array *op_array) /* {{{ */
+{
+#if 0
+	xc_coverager_handle_ext_stmt(op_array, ZEND_EXT_FCALL_BEGIN);
+#endif
+}
+/* }}} */
+static void xc_fcall_end_handler(zend_op_array *op_array) /* {{{ */
+{
+#if 0
+	xc_coverager_handle_ext_stmt(op_array, ZEND_EXT_FCALL_END);
+#endif
+}
+/* }}} */
+/* {{{ zend extension definition structure */
+static zend_extension xc_coverager_zend_extension_entry = {
+	XCACHE_NAME " Coverager",
+	XCACHE_VERSION,
+	XCACHE_AUTHOR,
+	XCACHE_URL,
+	XCACHE_COPYRIGHT,
+	xc_zend_startup,
+	xc_zend_shutdown,
+	NULL,           /* activate_func_t */
+	NULL,           /* deactivate_func_t */
+	NULL,           /* message_handler_func_t */
+	NULL,           /* statement_handler_func_t */
+	xc_statement_handler,
+	xc_fcall_begin_handler,
+	xc_fcall_end_handler,
+	NULL,           /* op_array_ctor_func_t */
+	NULL,           /* op_array_dtor_func_t */
+	STANDARD_ZEND_EXTENSION_PROPERTIES
+};
+/* }}} */
+/* {{{ PHP_INI */
+PHP_INI_BEGIN()
+	STD_PHP_INI_BOOLEAN("xcache.coverager"      ,        "0", PHP_INI_ALL,    OnUpdateBool,         coverager,         zend_xcache_globals, xcache_globals)
+	PHP_INI_ENTRY1     ("xcache.coveragedump_directory",  "", PHP_INI_SYSTEM, xcache_OnUpdateDummy, NULL)
+PHP_INI_END()
+/* }}} */
+static PHP_MINFO_FUNCTION(xcache_coverager) /* {{{ */
+{
+	char *covdumpdir;
+
+	php_info_print_table_start();
+	php_info_print_table_row(2, "XCache Coverager Version", XCACHE_VERSION);
+	if (cfg_get_string("xcache.coveragedump_directory", &covdumpdir) != SUCCESS || !covdumpdir[0]) {
+		covdumpdir = NULL;
+	}
+	php_info_print_table_row(2, "Coverage Auto Dumper", XG(coverager) && covdumpdir ? "enabled" : "disabled");
+	php_info_print_table_end();
+
+	DISPLAY_INI_ENTRIES();
+}
+/* }}} */
+static PHP_MINIT_FUNCTION(xcache_coverager) /* {{{ */
+{
+	old_compile_file = zend_compile_file;
+	zend_compile_file = xc_compile_file_for_coverage;
+
+	REGISTER_INI_ENTRIES();
+
+	if (cfg_get_string("xcache.coveragedump_directory", &xc_coveragedump_dir) == SUCCESS && xc_coveragedump_dir) {
+		int len;
+		xc_coveragedump_dir = pestrdup(xc_coveragedump_dir, 1);
+		len = strlen(xc_coveragedump_dir);
+		if (len) {
+			if (xc_coveragedump_dir[len - 1] == '/') {
+				xc_coveragedump_dir[len - 1] = '\0';
+			}
+		}
+		if (!strlen(xc_coveragedump_dir)) {
+			pefree(xc_coveragedump_dir, 1);
+			xc_coveragedump_dir = NULL;
+		}
+	}
+
+	return xcache_zend_extension_register(&xc_coverager_zend_extension_entry, 0);
+}
+/* }}} */
+static PHP_MSHUTDOWN_FUNCTION(xcache_coverager) /* {{{ */
+{
+	if (old_compile_file == xc_compile_file_for_coverage) {
+		zend_compile_file = old_compile_file;
+	}
+	if (xc_coveragedump_dir) {
+		pefree(xc_coveragedump_dir, 1);
+		xc_coveragedump_dir = NULL;
+	}
+	UNREGISTER_INI_ENTRIES();
+	return xcache_zend_extension_unregister(&xc_coverager_zend_extension_entry);
+}
+/* }}} */
+
+static zend_module_entry xcache_coverager_module_entry = { /* {{{ */
+	STANDARD_MODULE_HEADER,
+	XCACHE_NAME "_Coverager",
+	xcache_coverager_functions,
+	PHP_MINIT(xcache_coverager),
+	PHP_MSHUTDOWN(xcache_coverager),
+	PHP_RINIT(xcache_coverager),
+	PHP_RSHUTDOWN(xcache_coverager),
+	PHP_MINFO(xcache_coverager),
+	XCACHE_VERSION,
+#ifdef PHP_GINIT
+	NO_MODULE_GLOBALS,
+#endif
+#ifdef ZEND_ENGINE_2
+	NULL,
+#else
+	NULL,
+	NULL,
+#endif
+	STANDARD_MODULE_PROPERTIES_EX
+};
+/* }}} */
+int xc_coverager_startup_module() /* {{{ */
+{
+	return zend_startup_module(&xcache_coverager_module_entry);
 }
 /* }}} */

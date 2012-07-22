@@ -13,6 +13,7 @@ ChangeLog
  * closes #972: warning/error when XCache is loaded incorrectly
  * closes #73: warn for improper PHP_FCGI_CHILDREN setting fcgi mode (>=PHP_5_3)
  * closes #174: updated api for clear all cache
+ * uses extension to load XCache. load via zend_extension is unsupported
 
 2.0.1 2012-07-14
 ChangeLog

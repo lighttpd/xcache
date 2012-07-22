@@ -2,12 +2,15 @@
 #	define XCACHE_DEBUG
 #endif
 
-#include "xcache/xc_utils.h"
 #include "xc_optimizer.h"
-/* the "vector" stack */
+#include "xcache/xc_extension.h"
+#include "xcache/xc_ini.h"
+#include "xcache/xc_utils.h"
 #include "util/xc_stack.h"
 #include "util/xc_trace.h"
 #include "xcache_globals.h"
+
+#include "ext/standard/info.h"
 
 #ifdef XCACHE_DEBUG
 #error 1
@@ -606,11 +609,96 @@ static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	return 0;
 }
 /* }}} */
-void xc_optimizer_op_array_handler(zend_op_array *op_array) /* {{{ */
+static void xc_optimizer_op_array_handler(zend_op_array *op_array) /* {{{ */
 {
 	TSRMLS_FETCH();
 	if (XG(optimizer)) {
 		xc_optimize_op_array(op_array TSRMLS_CC);
 	}
+}
+/* }}} */
+
+static int xc_zend_startup(zend_extension *extension) /* {{{ */
+{
+	return SUCCESS;
+}
+/* }}} */
+static void xc_zend_shutdown(zend_extension *extension) /* {{{ */
+{
+}
+/* }}} */
+/* {{{ zend extension definition structure */
+static zend_extension xc_optimizer_zend_extension_entry = {
+	XCACHE_NAME " Optimizer",
+	XCACHE_VERSION,
+	XCACHE_AUTHOR,
+	XCACHE_URL,
+	XCACHE_COPYRIGHT,
+	xc_zend_startup,
+	xc_zend_shutdown,
+	NULL,           /* activate_func_t */
+	NULL,           /* deactivate_func_t */
+	NULL,           /* message_handler_func_t */
+	xc_optimizer_op_array_handler,
+	NULL,           /* statement_handler_func_t */
+	NULL,           /* fcall_begin_handler_func_t */
+	NULL,           /* fcall_end_handler_func_t */
+	NULL,           /* op_array_ctor_func_t */
+	NULL,           /* op_array_dtor_func_t */
+	STANDARD_ZEND_EXTENSION_PROPERTIES
+};
+/* }}} */
+
+/* {{{ ini */
+PHP_INI_BEGIN()
+	STD_PHP_INI_BOOLEAN("xcache.optimizer",              "0", PHP_INI_ALL,    OnUpdateBool,        optimizer,         zend_xcache_globals, xcache_globals)
+PHP_INI_END()
+/* }}} */
+static PHP_MINFO_FUNCTION(xcache_optimizer) /* {{{ */
+{
+	php_info_print_table_start();
+	php_info_print_table_row(2, "XCache Optimizer Version", XCACHE_VERSION);
+	php_info_print_table_end();
+
+	DISPLAY_INI_ENTRIES();
+}
+/* }}} */
+static PHP_MINIT_FUNCTION(xcache_optimizer) /* {{{ */
+{
+	REGISTER_INI_ENTRIES();
+	return xcache_zend_extension_register(&xc_optimizer_zend_extension_entry, 0);
+}
+/* }}} */
+static PHP_MSHUTDOWN_FUNCTION(xcache_optimizer) /* {{{ */
+{
+	UNREGISTER_INI_ENTRIES();
+	return xcache_zend_extension_unregister(&xc_optimizer_zend_extension_entry);
+}
+/* }}} */
+static zend_module_entry xcache_optimizer_module_entry = { /* {{{ */
+	STANDARD_MODULE_HEADER,
+	XCACHE_NAME "_Optimizer",
+	NULL,
+	PHP_MINIT(xcache_optimizer),
+	PHP_MSHUTDOWN(xcache_optimizer),
+	NULL,
+	NULL,
+	PHP_MINFO(xcache_optimizer),
+	XCACHE_VERSION,
+#ifdef PHP_GINIT
+	NO_MODULE_GLOBALS,
+#endif
+#ifdef ZEND_ENGINE_2
+	NULL,
+#else
+	NULL,
+	NULL,
+#endif
+	STANDARD_MODULE_PROPERTIES_EX
+};
+/* }}} */
+int xc_optimizer_startup_module() /* {{{ */
+{
+	return zend_startup_module(&xcache_optimizer_module_entry);
 }
 /* }}} */
