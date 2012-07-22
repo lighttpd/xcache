@@ -1637,6 +1637,7 @@ static void xc_compile_php(xc_compiler_t *compiler, zend_file_handle *h, int typ
 	}
 
 	if (!XG(initial_compile_file_called)) {
+		TRACE("%s", "!initial_compile_file_called, give up");
 		return;
 	}
 
@@ -2438,9 +2439,6 @@ static int xc_init(int module_number TSRMLS_DC) /* {{{ */
 		}
 
 		if (xc_php_size) {
-			old_compile_file = zend_compile_file;
-			zend_compile_file = xc_compile_file;
-
 			CHECK(xc_php_caches = xc_cache_init(xc_shm, &xc_php_hcache, &xc_php_hentry, &xc_php_hentry, xc_php_size), "failed init opcode cache");
 		}
 
@@ -3524,8 +3522,16 @@ static void xcache_signal_handler(int sig) /* {{{ */
 /* }}} */
 #endif
 
+static void xc_zend_startup_last() /* {{{ */
+{
+	if (xc_php_size) {
+		old_compile_file = zend_compile_file;
+		zend_compile_file = xc_compile_file;
+	}
+}
+/* }}} */
 static startup_func_t xc_last_ext_startup;
-static int xc_zend_startup_last(zend_extension *extension) /* {{{ */
+static int xc_zend_startup_last_hook(zend_extension *extension) /* {{{ */
 {
 	zend_extension *ext = zend_get_extension(XCACHE_NAME);
 	if (ext) {
@@ -3540,15 +3546,15 @@ static int xc_zend_startup_last(zend_extension *extension) /* {{{ */
 	}
 	assert(xc_llist_zend_extension);
 	xcache_llist_prepend(&zend_extensions, xc_llist_zend_extension);
+
+	xc_zend_startup_last();
 	return SUCCESS;
 }
 /* }}} */
 static int xc_zend_startup(zend_extension *extension) /* {{{ */
 {
-	if (!origin_compile_file) {
-		origin_compile_file = zend_compile_file;
-		zend_compile_file = xc_check_initial_compile_file;
-	}
+	origin_compile_file = zend_compile_file;
+	zend_compile_file = xc_check_initial_compile_file;
 
 	if (zend_llist_count(&zend_extensions) > 1) {
 		zend_llist_position lpos;
@@ -3558,13 +3564,18 @@ static int xc_zend_startup(zend_extension *extension) /* {{{ */
 		if (xc_llist_zend_extension != zend_extensions.head) {
 			zend_error(E_WARNING, "XCache failed to load itself as the first zend_extension. compatibility downgraded");
 		}
+
 		/* hide myself */
+		/* TODO: hide handle sub modules */
 		xcache_llist_unlink(&zend_extensions, xc_llist_zend_extension);
 
 		ext = (zend_extension *) zend_llist_get_last_ex(&zend_extensions, &lpos);
 		assert(ext && ext != (zend_extension *) xc_llist_zend_extension->data);
 		xc_last_ext_startup = ext->startup;
-		ext->startup = xc_zend_startup_last;
+		ext->startup = xc_zend_startup_last_hook;
+	}
+	else {
+		xc_zend_startup_last();
 	}
 	return SUCCESS;
 }
