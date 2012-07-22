@@ -130,14 +130,15 @@ phpize)
 	export PATH=$PHPDIRS/$phpbasename/bin:$PATH
 	phpize --clean \
 	&& phpize \
-	&& CFLAGS="-Wall -Wno-unused -W -Wshadow -std=gnu99" ./configure \
+	&& CFLAGS="-Wall -Wno-unused -W -Wshadow -Werror=implicit-function-declaration -std=gnu99" ./configure \
 		--enable-xcache-cacher \
 		--enable-xcache-optimizer \
 		--enable-xcache-encoder \
 		--enable-xcache-decoder \
 		--enable-xcache-disassembler \
 		--enable-xcache-coverager \
-		--enable-xcache-test --enable-xcache-constant
+		--enable-xcache-test \
+		--enable-xcache-constant
 	exit
 	;;
 make)
@@ -145,7 +146,9 @@ make)
 	;;
 esac
 
-LANG=C /usr/bin/make $MAKEOPTS "${MAKEARGS[@]}" 2>&1 | hi error implicit warn FAIL
+LANG=C /usr/bin/make $MAKEOPTS "${MAKEARGS[@]}" 2>&1 \
+| sed -ur 's#Werror=implicit-function-declaration#We/rror=i/mplicit-function-declaration#' \
+| hi error implicit warn FAIL
 ret=${PIPESTATUS[0]}
 if [[ $ret -ne 0 || $type = make ]]; then
 	exit $ret
