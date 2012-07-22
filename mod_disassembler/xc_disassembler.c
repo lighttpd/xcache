@@ -2,7 +2,10 @@
 #include "xcache.h"
 #include "xcache/xc_utils.h"
 #include "xcache/xc_sandbox.h"
+#include "xcache/xc_compatibility.h"
 #include "xc_processor.h"
+
+#include "ext/standard/info.h"
 
 static void xc_dasm(zval *output, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
@@ -213,5 +216,50 @@ PHP_FUNCTION(xcache_dasm_string)
 		return;
 	}
 	xc_dasm_string(return_value, code TSRMLS_CC);
+}
+/* }}} */
+
+/* {{{ PHP_MINFO_FUNCTION(xcache_disassembler) */
+static PHP_MINFO_FUNCTION(xcache_disassembler)
+{
+	php_info_print_table_start();
+	php_info_print_table_row(2, "XCache Disassembler Version", XCACHE_VERSION);
+	php_info_print_table_end();
+
+	DISPLAY_INI_ENTRIES();
+}
+/* }}} */
+static zend_function_entry xcache_disassembler_functions[] = /* {{{ */
+{
+	PHP_FE(xcache_dasm_file,         NULL)
+	PHP_FE(xcache_dasm_string,       NULL)
+	PHP_FE_END
+};
+/* }}} */
+static zend_module_entry xcache_disassembler_module_entry = { /* {{{ */
+	STANDARD_MODULE_HEADER,
+	XCACHE_NAME "_Disassembler",
+	xcache_disassembler_functions,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	PHP_MINFO(xcache_disassembler),
+	XCACHE_VERSION,
+#ifdef PHP_GINIT
+	NO_MODULE_GLOBALS,
+#endif
+#ifdef ZEND_ENGINE_2
+	NULL,
+#else
+	NULL,
+	NULL,
+#endif
+	STANDARD_MODULE_PROPERTIES_EX
+};
+/* }}} */
+int xc_disassembler_startup_module() /* {{{ */
+{
+	return zend_startup_module(&xcache_disassembler_module_entry);
 }
 /* }}} */

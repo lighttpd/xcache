@@ -1,17 +1,12 @@
-#include "php.h"
-#include "xcache.h"
+#ifndef XC_COVERAGER_H_D5BB29AAB992B932E91C70A8C2F5D2B1
+#define XC_COVERAGER_H_D5BB29AAB992B932E91C70A8C2F5D2B1
 
-void xc_coverager_handle_ext_stmt(zend_op_array *op_array, zend_uchar op);
-int xc_coverager_module_init(int module_number TSRMLS_DC);
-void xc_coverager_module_shutdown();
-void xc_coverager_request_init(TSRMLS_D);
-void xc_coverager_request_shutdown(TSRMLS_D);
-PHP_FUNCTION(xcache_coverager_decode);
-PHP_FUNCTION(xcache_coverager_start);
-PHP_FUNCTION(xcache_coverager_stop);
-PHP_FUNCTION(xcache_coverager_get);
-#define XCACHE_COVERAGER_FUNCTIONS() \
-	PHP_FE(xcache_coverager_decode,  NULL) \
-	PHP_FE(xcache_coverager_start,   NULL) \
-	PHP_FE(xcache_coverager_stop,    NULL) \
-	PHP_FE(xcache_coverager_get,     NULL)
+#if _MSC_VER > 1000
+#pragma once
+#endif // _MSC_VER > 1000
+
+#include "php.h"
+
+int xc_coverager_startup_module();
+
+#endif /* XC_COVERAGER_H_D5BB29AAB992B932E91C70A8C2F5D2B1 */

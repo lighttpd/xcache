@@ -1,5 +1,12 @@
-#include "php.h"
-#include "xcache.h"
+#ifndef XC_OPTIMIZER_H_6614228F428A266C39CDAC30269D9857
+#define XC_OPTIMIZER_H_6614228F428A266C39CDAC30269D9857
 
-void xc_optimizer_op_array_handler(zend_op_array *op_array);
-#define XCACHE_OPTIMIZER_FUNCTIONS()
+#if _MSC_VER > 1000
+#pragma once
+#endif // _MSC_VER > 1000
+
+#include "php.h"
+
+int xc_optimizer_startup_module();
+
+#endif /* XC_OPTIMIZER_H_6614228F428A266C39CDAC30269D9857 */
