@@ -2161,7 +2161,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 #else
 	 || strstr(PG(include_path), "://") != NULL
 #endif
-	 || xc_shm || xc_shm->disabled
+	 || !xc_shm || xc_shm->disabled
 	 ) {
 		TRACE("%s", "cacher not enabled");
 		return old_compile_file(h, type TSRMLS_CC);
