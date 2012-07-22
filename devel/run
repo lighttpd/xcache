@@ -101,9 +101,7 @@ fi
 case "$type" in
 phpize)
 	if [[ -r Makefile ]]; then
-		if make xcachesvnclean; then
-			:
-		fi
+		make xcachesvnclean || true
 	fi
 	;;
 esac
@@ -165,7 +163,7 @@ case "$basename" in
 	;;
 *)
 	cmd=(./php-cgi -q -c devel.ini)
-	"${cmd[@]}" -v
+	"${cmd[@]}" -v || true
 	;;
 esac
 
