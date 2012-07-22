@@ -1,8 +1,9 @@
+#include "xc_lock.h"
+#include "xcache.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
-#include <php.h>
 #ifndef ZEND_WIN32
 typedef int HANDLE;
 #	ifndef INVALID_HANDLE_VALUE

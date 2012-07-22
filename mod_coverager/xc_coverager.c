@@ -22,6 +22,7 @@
 #include "xcache_globals.h"
 
 #include "ext/standard/info.h"
+#include "zend_compile.h"
 
 typedef HashTable *coverager_t;
 #define PCOV_HEADER_MAGIC 0x564f4350
