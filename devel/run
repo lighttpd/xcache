@@ -130,7 +130,7 @@ phpize)
 	export PATH=$PHPDIRS/$phpbasename/bin:$PATH
 	phpize --clean \
 	&& phpize \
-	&& CFLAGS="-Wall -Wno-unused -W -Wshadow -Werror=implicit-function-declaration -std=gnu99" ./configure \
+	&& CFLAGS="-g -O0 -Wall -Wno-unused -W -Wshadow -Werror=implicit-function-declaration -std=gnu99" ./configure \
 		--enable-xcache-cacher \
 		--enable-xcache-optimizer \
 		--enable-xcache-encoder \
