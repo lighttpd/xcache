@@ -179,7 +179,7 @@ ltr*)
 	tracer=(ltrace -s1024 -e malloc,realloc,free,write)
 	;;
 str*)
-	tracer=(strace -s1024 -T ./php-cgi)
+	tracer=(strace -s1024 -T)
 	;;
 gdb)
 	#USE_ZEND_ALLOC=0
