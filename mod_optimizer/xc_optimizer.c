@@ -618,12 +618,12 @@ static void xc_optimizer_op_array_handler(zend_op_array *op_array) /* {{{ */
 }
 /* }}} */
 
-static int xc_zend_startup(zend_extension *extension) /* {{{ */
+static int xc_coverager_zend_startup(zend_extension *extension) /* {{{ */
 {
 	return SUCCESS;
 }
 /* }}} */
-static void xc_zend_shutdown(zend_extension *extension) /* {{{ */
+static void xc_coverager_zend_shutdown(zend_extension *extension) /* {{{ */
 {
 }
 /* }}} */
@@ -634,8 +634,8 @@ static zend_extension xc_optimizer_zend_extension_entry = {
 	XCACHE_AUTHOR,
 	XCACHE_URL,
 	XCACHE_COPYRIGHT,
-	xc_zend_startup,
-	xc_zend_shutdown,
+	xc_coverager_zend_startup,
+	xc_coverager_zend_shutdown,
 	NULL,           /* activate_func_t */
 	NULL,           /* deactivate_func_t */
 	NULL,           /* message_handler_func_t */
