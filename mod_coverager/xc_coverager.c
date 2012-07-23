@@ -675,7 +675,7 @@ static PHP_MINIT_FUNCTION(xcache_coverager) /* {{{ */
 /* }}} */
 static PHP_MSHUTDOWN_FUNCTION(xcache_coverager) /* {{{ */
 {
-	if (old_compile_file == xc_compile_file_for_coverage) {
+	if (old_compile_file && zend_compile_file == xc_compile_file_for_coverage) {
 		zend_compile_file = old_compile_file;
 	}
 	if (xc_coveragedump_dir) {
