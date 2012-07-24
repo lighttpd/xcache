@@ -16,6 +16,7 @@ ChangeLog
  * code refactor
    * uses extension to load XCache. load via zend_extension is unsupported
    * split XCache features into multiple sub modules
+ * updated XCache admin page
 
 2.0.1 2012-07-14
 ChangeLog
