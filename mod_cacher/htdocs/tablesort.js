@@ -9,7 +9,7 @@ function get_inner_text(el) {
   var str = "";
   var cs = el.childNodes;
   var l = cs.length;
-  for (i=0;i<l;i++) {
+  for (var i=0;i<l;i++) {
    if (cs[i].nodeType==1) str += get_inner_text(cs[i]);
    else if (cs[i].nodeType==3) str += cs[i].nodeValue;
   }
