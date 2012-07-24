@@ -1,14 +1,14 @@
 <?php include("header.tpl.php"); ?>
 <div id="help">
-	<a href="help.php"><?php echo _T("Help") ?> &raquo;</a>
+	<a href="help.php"><?php echo _("Help") ?> &raquo;</a>
 </div>
 <div class="switcher"><?php echo switcher("type", $types); ?></div>
 <?php
 $a = new Cycle('class="col1"', 'class="col2"');
 $b = new Cycle('class="col1"', 'class="col2"');
 ?>
-<table cellspacing="0" cellpadding="4" class="cycles">
-	<caption><?php echo _T('Caches'); ?></caption>
+<table cellspacing="0" cellpadding="4" class="cycles caches">
+	<caption><?php echo _('Caches'); ?></caption>
 	<col />
 	<col align="right" />
 	<col align="right" />
@@ -28,30 +28,33 @@ $b = new Cycle('class="col1"', 'class="col2"');
 	<col align="right" />
 	<col />
 	<tr <?php echo $a->next(); ?>>
-		<th>-</th>
-		<th><?php echo _T('Slots'); ?></th>
-		<th><?php echo _T('Size'); ?></th>
-		<th><?php echo _T('Avail'); ?></th>
-		<th><?php echo _T($config['percent_graph_type'] == 'free' ? '% Free' : '% Used'); ?></th>
-		<th><?php echo _T('Clear'); ?></th>
-		<th><?php echo _T('Compiling'); ?></th>
-		<th><?php echo _T('Hits'); ?></th>
-		<th><?php echo _T('Hits/H'); ?></th>
-		<th><?php echo _T('Hits 24H'); ?></th>
-		<th><?php echo _T('Hits/S'); ?></th>
-		<th><?php echo _T('Updates'); ?></th>
-		<th><?php echo _T('Clogs'); ?></th>
-		<th><?php echo _T('OOMs'); ?></th>
-		<th><?php echo _T('Errors'); ?></th>
-		<th><?php echo _T('Protected'); ?></th>
-		<th><?php echo _T('Cached'); ?></th>
-		<th><?php echo _T('Deleted'); ?></th>
-		<th><?php echo _T('GC'); ?></th>
+	<?php echo
+		th(N_("cache.cache"))
+		, th(N_("cache.size"))
+		, th(N_("cache.avail"))
+		, th(N_("cache.used"))
+		, th(N_("cache.blocksgraph"))
+		, th(N_("cache.operations"))
+		, th(N_("cache.compiling"))
+		, th(N_("cache.hits"))
+		, th(N_("cache.hits_graph"))
+		, th(N_("cache.hits_avg_h"))
+		, th(N_("cache.hits_avg_s"))
+		, th(N_("cache.updates"))
+		, th(N_("cache.clogs"))
+		, th(N_("cache.ooms"))
+		, th(N_("cache.errors"))
+		, th(N_("cache.readonly_protected"))
+		, th(N_("cache.cached"))
+		, th(N_("cache.deleted"))
+		, th(N_("cache.gc_timer"))
+		;
+	?>
 	</tr>
 	<?php
 	$numkeys = explode(',', 'slots,size,avail,hits,updates,clogs,ooms,errors,cached,deleted');
-	$l_clear = _T('Clear');
-	$l_clear_confirm = _T('Sure to clear?');
+	$l_clear = _('Clear');
+	$l_clear_confirm = _('Sure to clear?');
 	foreach ($cacheinfos as $i => $ci) {
 		echo "
 		<tr ", $a->next(), ">";
@@ -113,8 +116,8 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		></td>
 		<td>{$ci['compiling']}</td>
 		<td>{$ci['hits']}</td>
-		<td>{$hits_avg_h}</td>
 		<td><div class="hitsgraph" style="width: {$hits_graph_h_w}px">{$hits_graph_h}</div></td>
+		<td>{$hits_avg_h}</td>
 		<td>{$hits_avg_s}</td>
 		<td>{$ci['updates']}</td>
 		<td>{$ci['clogs']}</td>
@@ -132,13 +135,13 @@ EOS;
 	<?php } ?>
 </table>
 <div class="blockarea legends">
-	<div class="legendtitle"><?php echo _T('Legends:'); ?></div>
+	<div class="legendtitle"><?php echo _('Legends:'); ?></div>
 	<div class="legend pvalue">&nbsp;&nbsp;</div>
-	<div class="legendtitle"><?php echo _T($config['percent_graph_type'] == 'free' ? '% Free' : '% Used'); ?></div>
+	<div class="legendtitle"><?php echo _($config['percent_graph_type'] == 'free' ? '% Free' : '% Used'); ?></div>
 	<div class="legend" style="background: rgb(0,0,255)">&nbsp;&nbsp;</div>
-	<div class="legendtitle"><?php echo _T($config['percent_graph_type'] == 'free' ? 'Free Blocks' : 'Used Blocks'); ?></div>
+	<div class="legendtitle"><?php echo _($config['percent_graph_type'] == 'free' ? 'Free Blocks' : 'Used Blocks'); ?></div>
 	<div class="legend" style="background: rgb(255,0,0)">&nbsp;&nbsp;</div>
-	<div class="legendtitle"><?php echo _T('Hits'); ?></div>
+	<div class="legendtitle"><?php echo _('Hits'); ?></div>
 </div>
 <?php
 
@@ -151,35 +154,58 @@ if ($cachelist) {
 
 	<form action="" method="post">
 	<table cellspacing="0" cellpadding="4" class="cycles entries" width="100%">
-		<caption><?php echo _T("{$cachelist['type_name']} $listname"); ?></caption>
+		<caption><?php echo _("{$cachelist['type_name']} $listname"); ?></caption>
 		<?php
 		echo "
 		<tr ", $a->next(), ">";
 		?>
 
-			<?php if (!$isphp) { ?>
-			<th width="20">R</th>
-			<?php } ?>
-			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Cache'); ?></a></th>
-			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('entry'); ?></a></th>
-			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Hits'); ?></a></th>
-			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Size'); ?></a></th>
-			<?php if ($isphp) { ?>
-			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Refcount'); ?></a></th>
-			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('PhpShared'); ?></a></th>
-			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('SrcSize'); ?></a></th>
-			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Modify'); ?></a></th>
-			<?php if ($haveinode) { ?>
-			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('device'); ?></a></th>
-			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('inode'); ?></a></th>
-			<?php } ?>
-			<?php } ?>
-			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('hash'); ?></a></th>
-			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Access'); ?></a></th>
-			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Create'); ?></a></th>
-			<?php if ($listname == 'Deleted') { ?>
-			<th><a href="javascript:" onclick="resort(this); return false"><?php echo _T('Delete'); ?></a></th>
-			<?php } ?>
+			<?php
+			if ($isphp) {
+				echo
+					th("entry.id")
+					;
+			}
+			else {
+				echo
+					th("entry.remove", 'width="20"')
+					;
+			}
+
+			echo
+				th(N_("entry.name"))
+				, th(N_("entry.hits"))
+				, th(N_("entry.size"))
+				;
+
+			if ($isphp) {
+				echo
+					th(N_("entry.refcount"))
+					, th(N_("entry.phprefcount"))
+					, th(N_("entry.class_cnt"))
+					, th(N_("entry.function_cnt"))
+					, th(N_("entry.file_size"))
+					, th(N_("entry.file_mtime"))
+					;
+				if ($haveinode) {
+					echo
+						th(N_("entry.file_device"))
+						, th(N_("entry.file_inode"))
+						;
+				}
+			}
+			echo
+				th(N_("entry.hash"))
+				, th(N_("entry.atime"))
+				, th(N_("entry.ctime"))
+				;
+
+			if ($listname == 'Deleted') {
+				echo
+					th(N_("entry.delete"))
+					;
+			}
+			?>
 		</tr>
 		<?php
 		foreach ($entries as $i => $entry) {
@@ -188,9 +214,11 @@ if ($cachelist) {
 			$name     = htmlspecialchars($entry['name']);
 			$hits     = number_format($entry['hits']);
 			$size     = size($entry['size']);
+			$class_cnt = number_format($entry['class_cnt']);
+			$function_cnt = number_format($entry['function_cnt']);
 			if ($isphp) {
-				$file_size   = size($entry['file_size']);
 				$phprefcount = number_format($entry['phprefcount']);
+				$file_size   = size($entry['file_size']);
 			}
 
 			if ($isphp) {
@@ -224,6 +252,8 @@ ENTRY;
 				echo <<<ENTRY
 				<td align="right" int="{$entry['refcount']}">{$entry['refcount']}</td>
 				<td align="right" int="{$entry['phprefcount']}">{$phprefcount}</td>
+				<td align="right" int="{$entry['class_cnt']}">{$class_cnt}</td>
+				<td align="right" int="{$entry['function_cnt']}">{$function_cnt}</td>
 				<td align="right" int="{$entry['file_size']}">{$file_size}</td>
 				<td align="right" int="{$entry['file_mtime']}">{$file_mtime}</td>
 ENTRY;
@@ -253,7 +283,7 @@ ENTRY;
 
 	</table>
 	<?php if (!$isphp) { ?>
-	<input type="submit" value="<?php echo _T("Remove Selected"); ?>">
+	<input type="submit" value="<?php echo _("Remove Selected"); ?>">
 	<?php } ?>
 	</form>
 <?php
@@ -261,7 +291,7 @@ ENTRY;
 	ob_end_flush();
 }
 if ($moduleinfo) {
-	$t_moduleinfo = _T("Module Info");
+	$t_moduleinfo = _("Module Info");
 	echo <<<HTML
 <h2>$t_moduleinfo</h2>
 <div class="moduleinfo">$moduleinfo</div>
