@@ -192,6 +192,20 @@ function switcher($name, $options)
 	return implode('', $html);
 }
 
+function th($name, $attrs = null)
+{
+	$translated = __($name);
+	if ($translated == $name) {
+		$translated = "$name|$name";
+	}
+	list($text, $title) = explode('|', $translated, 2);
+	return sprintf('%s<th%s id="%s" title="%s"><a href="javascript:" onclick="resort(this); return false">%s</a></th>%s'
+			, "\t"
+			, $attrs ? " $attrs" : ""
+			, $name, htmlspecialchars(trim($title)), trim($text)
+			, "\n");
+}
+
 if (!extension_loaded('XCache')) {
 	echo '<h1>XCache is not loaded</h1>';
 	ob_start();
@@ -270,7 +284,7 @@ for ($i = 0; $i < $pcnt; $i ++) {
 
 if ($pcnt >= 2) {
 	$total['type'] = XC_TYPE_PHP;
-	$total['cache_name'] = _T('Total');
+	$total['cache_name'] = _('Total');
 	$total['cacheid'] = -1;
 	$total['gc'] = null;
 	$total['istotal'] = true;
@@ -294,7 +308,7 @@ for ($i = 0; $i < $vcnt; $i ++) {
 
 if ($vcnt >= 2) {
 	$total['type'] = XC_TYPE_VAR;
-	$total['cache_name'] = _T('Total');
+	$total['cache_name'] = _('Total');
 	$total['cacheid'] = -1;
 	$total['gc'] = null;
 	$total['istotal'] = true;
@@ -366,7 +380,7 @@ default:
 
 $type_php = XC_TYPE_PHP;
 $type_var = XC_TYPE_VAR;
-$types = array($type_none => _T('Statistics'), $type_php => _T('List PHP'), $type_var => _T('List Var Data'));
+$types = array($type_none => _('Statistics'), $type_php => _('List PHP'), $type_var => _('List Var Data'));
 $php_version = phpversion();
 $xcache_version = XCACHE_VERSION;
 $xcache_modules = XCACHE_MODULES;

@@ -10,8 +10,8 @@ HEAD;
 ?>
 
 	<link rel="stylesheet" type="text/css" href="xcache.css" />
-	<title><?php echo sprintf(_T("XCache %s Administration"), $xcache_version); ?></title>
+	<title><?php echo sprintf(_("XCache %s Administration"), $xcache_version); ?></title>
 </head>
 
 <body>
-<h1><?php echo sprintf(_T("XCache %s Administration"), $xcache_version); ?></h1>
+<h1><?php echo sprintf(_("XCache %s Administration"), $xcache_version); ?></h1>

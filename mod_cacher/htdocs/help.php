@@ -13,7 +13,7 @@ HEAD;
 ?>
 
 	<link rel="stylesheet" type="text/css" href="xcache.css" />
-	<title><?php echo _T('XCache Administration Help'); ?></title>
+	<title><?php echo _('XCache Help'); ?></title>
 	<script>
 	function toggle(o)
 	{
@@ -23,11 +23,11 @@ HEAD;
 </head>
 
 <body>
-<h1><?php echo _T('XCache Administration Help'); ?></h1>
+<h1><?php echo _('XCache Help'); ?></h1>
 <div id1="help">
 <?php include(get_language_file("help")); ?>
 </div>
 
-<?php echo _T('See also'); ?>: <a href="http://xcache.lighttpd.net/wiki/PhpIni">setting php.ini for XCache</a> in the <a href="http://xcache.lighttpd.net/">XCache wiki</a>
+<?php echo _('See also'); ?>: <a href="http://xcache.lighttpd.net/wiki/PhpIni">Setting php.ini for XCache</a> @ <a href="http://xcache.lighttpd.net/">XCache wiki</a>
 </body>
 </html>

@@ -71,14 +71,24 @@ function get_language_file($name)
 	return isset($file) ? $file : "$name-en.lang.php";
 }
 
-function _T($str)
+function _($str)
 {
 	if (isset($GLOBALS['strings'][$str])) {
 		return $GLOBALS['strings'][$str];
 	}
 	if (!empty($GLOBALS['config']['show_todo_strings'])) {
-		return '<span style="color:red">' . htmlspecialchars($str) . '</span>';
+		return '<span style="color:red">' . htmlspecialchars($str) . '</span>|';
 	}
+	return $str;
+}
+
+function __($str)
+{
+	return _($str);
+}
+
+function N_($str)
+{
 	return $str;
 }
 
