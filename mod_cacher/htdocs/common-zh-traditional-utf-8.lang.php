@@ -38,7 +38,7 @@ $strings = array(
 		'var Deleted'
 		=> '待刪變數',
 		'Statistics'
-		=> '摘要統計',
+		=> '統計訊息',
 		'List PHP'
 		=> '列出PHP',
 		'List Var Data'
