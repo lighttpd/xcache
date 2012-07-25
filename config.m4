@@ -46,7 +46,13 @@ xc_utils.c \
 ; do
   xcache_sources="$xcache_sources xcache/$i"
 done
+  for i in \
+xc_cacher.c \
+; do
+  xcache_sources="$xcache_sources mod_cacher/$i"
+done
   XCACHE_MODULES="cacher"
+  AC_DEFINE([HAVE_XCACHE_CACHER], 1, [Define to enable XCache cacher])
   XCACHE_MODULE([optimizer],    [optimizer   ], [XCACHE_OPTIMIZER],    [(N/A)])
   XCACHE_MODULE([coverager],    [coverager   ], [XCACHE_COVERAGER],    [Enable code coverage dumper, useful for testing php scripts])
   XCACHE_MODULE([assembler],    [assembler   ], [XCACHE_ASSEMBLER],    [(N/A)])
