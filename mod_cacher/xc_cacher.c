@@ -3109,6 +3109,7 @@ static PHP_MINFO_FUNCTION(xcache_cacher) /* {{{ */
 	xc_shm_scheme_t *scheme;
 
 	php_info_print_table_start();
+	php_info_print_table_row(2, "XCache Cacher Module", "enabled");
 	php_info_print_table_row(2, "Readonly Protection", xc_readonly_protection ? "enabled" : "disabled");
 #ifdef ZEND_ENGINE_2_1
 	ptr = php_format_date("Y-m-d H:i:s", sizeof("Y-m-d H:i:s") - 1, xc_init_time, 1 TSRMLS_CC);
@@ -3300,7 +3301,7 @@ static ZEND_MODULE_POST_ZEND_DEACTIVATE_D(xcache_cacher)
 /* }}} */
 static zend_module_entry xcache_cacher_module_entry = { /* {{{ */
 	STANDARD_MODULE_HEADER,
-	XCACHE_NAME "_Cacher",
+	XCACHE_NAME " Cacher",
 	xcache_cacher_functions,
 	PHP_MINIT(xcache_cacher),
 	PHP_MSHUTDOWN(xcache_cacher),
