@@ -542,55 +542,81 @@ static void xcache_signal_handler(int sig) /* {{{ */
 /* }}} */
 #endif
 
-static startup_func_t xc_last_ext_old_startup;
-static xc_stack_t xc_llist_zend_extensions; /* (zend_extension *) */
-static int xc_zend_startup_last_hook(zend_extension *extension) /* {{{ */
+/* {{{ incompatible zend extensions handling */
+typedef struct {
+	const char *name;
+	startup_func_t old_startup;
+} xc_incompatible_zend_extension_info_t;
+static xc_incompatible_zend_extension_info_t xc_incompatible_zend_extensions[] = {
+	{ "Zend Optimizer", NULL }
+};
+
+static xc_incompatible_zend_extension_info_t *xc_get_incompatible_zend_extension_info(const char *name)
 {
-	zend_extension *ext = zend_get_extension(XCACHE_NAME);
-	if (ext) {
-		zend_error(E_WARNING, "Module '" XCACHE_NAME "' already loaded");
-	}
-	/* restore */
-	extension->startup = xc_last_ext_old_startup;
-	extension->startup = xc_last_ext_old_startup;
-	xc_last_ext_old_startup = NULL;
-	if (extension->startup) {
-		if (extension->startup(extension) != SUCCESS) {
-			return FAILURE;
+	size_t i;
+
+	for (i = 0; i < sizeof(xc_incompatible_zend_extensions) / sizeof(xc_incompatible_zend_extensions[0]); ++i) {
+		xc_incompatible_zend_extension_info_t *incompatible_zend_extension_info = &xc_incompatible_zend_extensions[i];
+		if (strcmp(incompatible_zend_extension_info->name, name) == 0) {
+			return incompatible_zend_extension_info;
 		}
 	}
 
-	assert(xc_stack_count(&xc_llist_zend_extensions));
-	while (xc_stack_count(&xc_llist_zend_extensions)) {
-		zend_llist_element *p = (zend_llist_element *) xc_stack_pop(&xc_llist_zend_extensions);
-		xcache_llist_prepend(&zend_extensions, p);
+	return NULL;
+}
+/* }}} */
+static int xc_incompatible_zend_extension_startup_hook(zend_extension *extension) /* {{{ */
+{
+	xc_incompatible_zend_extension_info_t *incompatible_zend_extension_info = xc_get_incompatible_zend_extension_info(extension->name);
+	int status;
+	zend_bool catched = 0;
+	zend_llist old_zend_extensions = zend_extensions;
+	TSRMLS_FETCH();
+
+	/* hide all extensions from it */
+	zend_extensions.head = NULL;
+	zend_extensions.count = 0;
+
+	/* restore */
+	extension->startup = incompatible_zend_extension_info->old_startup;
+	incompatible_zend_extension_info->old_startup = NULL;
+	assert(extension->startup);
+
+	zend_try {
+		status = extension->startup(extension);
+	} zend_catch {
+		catched = 1;
+	} zend_end_try();
+
+	zend_extensions = old_zend_extensions;
+	if (catched) {
+		zend_bailout();
 	}
-	xc_stack_destroy(&xc_llist_zend_extensions);
-	return SUCCESS;
+	return status;
 }
 /* }}} */
 static int xc_zend_startup(zend_extension *extension) /* {{{ */
 {
+	zend_llist_position lpos;
+	zend_extension *ext;
+
+	ext = (zend_extension *) zend_extensions.head->data;
+	if (strcmp(ext->name, XCACHE_NAME) != 0) {
+		zend_error(E_WARNING, "XCache failed to load itself as the before \"%s\". compatibility downgraded", ext->name);
+	}
+
 	old_compile_file = zend_compile_file;
 	zend_compile_file = xc_check_initial_compile_file;
 
-	if (1 || xcache_zend_extension_count_by_prefix(&zend_extensions, XCACHE_NAME) != zend_llist_count(&zend_extensions)) {
-		zend_llist_position lpos;
-		zend_extension *ext = (zend_extension *) zend_extensions.head->data;
-		assert(ext);
-
-		if (strcmp(ext->name, XCACHE_NAME) != 0) {
-			zend_error(E_WARNING, "XCache failed to load itself as the before \"%s\". compatibility downgraded", ext->name);
+	for (ext = (zend_extension *) zend_llist_get_first_ex(&zend_extensions, &lpos);
+			ext;
+			ext = (zend_extension *) zend_llist_get_next_ex(&zend_extensions, &lpos)) {
+		xc_incompatible_zend_extension_info_t *incompatible_zend_extension_info = xc_get_incompatible_zend_extension_info(extension->name);
+		if (incompatible_zend_extension_info) {
+			assert(!incompatible_zend_extension_info->old_startup);
+			incompatible_zend_extension_info->old_startup = ext->startup;
+			ext->startup = xc_incompatible_zend_extension_startup_hook;
 		}
-
-		/* hide XCache modules */
-		xc_stack_init(&xc_llist_zend_extensions);
-		xcache_zend_extension_unlink_by_prefix(&xc_llist_zend_extensions, &zend_extensions, XCACHE_NAME);
-
-		ext = (zend_extension *) zend_llist_get_last_ex(&zend_extensions, &lpos);
-		assert(ext);
-		xc_last_ext_old_startup = ext->startup;
-		ext->startup = xc_zend_startup_last_hook;
 	}
 	return SUCCESS;
 }
@@ -656,21 +682,20 @@ static PHP_MINIT_FUNCTION(xcache) /* {{{ */
 	xc_init_constant(module_number TSRMLS_CC);
 	xc_shm_init_modules();
 
-	/* ZendExtension is registered in reverse order for prepend by XCache */
+	/* must be the first */
+	xcache_zend_extension_add(&xc_zend_extension_entry, 1);
+#ifdef HAVE_XCACHE_OPTIMIZER
+	xc_optimizer_startup_module();
+#endif
+#ifdef HAVE_XCACHE_CACHER
+	xc_cacher_startup_module();
+#endif
 #ifdef HAVE_XCACHE_COVERAGER
 	xc_coverager_startup_module();
 #endif
 #ifdef HAVE_XCACHE_DISASSEMBLER
 	xc_disassembler_startup_module();
 #endif
-#ifdef HAVE_XCACHE_CACHER
-	xc_cacher_startup_module();
-#endif
-#ifdef HAVE_XCACHE_OPTIMIZER
-	xc_optimizer_startup_module();
-#endif
-	/* must be the first */
-	xcache_zend_extension_prepend(&xc_zend_extension_entry);
 
 	return SUCCESS;
 

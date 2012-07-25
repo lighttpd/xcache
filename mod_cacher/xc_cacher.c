@@ -3253,7 +3253,7 @@ static PHP_MINIT_FUNCTION(xcache_cacher) /* {{{ */
 	REGISTER_INI_ENTRIES();
 
 	xc_sandbox_module_init(module_number TSRMLS_CC);
-	return xcache_zend_extension_prepend(&xc_cacher_zend_extension_entry);
+	return xcache_zend_extension_add(&xc_cacher_zend_extension_entry, 0);
 
 err_init:
 	return FAILURE;
