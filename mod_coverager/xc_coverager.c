@@ -670,7 +670,7 @@ static PHP_MINIT_FUNCTION(xcache_coverager) /* {{{ */
 		}
 	}
 
-	return xcache_zend_extension_register(&xc_coverager_zend_extension_entry, 0);
+	return xcache_zend_extension_prepend(&xc_coverager_zend_extension_entry);
 }
 /* }}} */
 static PHP_MSHUTDOWN_FUNCTION(xcache_coverager) /* {{{ */
@@ -684,7 +684,7 @@ static PHP_MSHUTDOWN_FUNCTION(xcache_coverager) /* {{{ */
 		xc_coveragedump_dir = NULL;
 	}
 	UNREGISTER_INI_ENTRIES();
-	return xcache_zend_extension_unregister(&xc_coverager_zend_extension_entry);
+	return xcache_zend_extension_remove(&xc_coverager_zend_extension_entry);
 }
 /* }}} */
 

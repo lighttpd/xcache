@@ -3253,7 +3253,7 @@ static PHP_MINIT_FUNCTION(xcache_cacher) /* {{{ */
 	REGISTER_INI_ENTRIES();
 
 	xc_sandbox_module_init(module_number TSRMLS_CC);
-	return xcache_zend_extension_register(&xc_cacher_zend_extension_entry, 0);
+	return xcache_zend_extension_prepend(&xc_cacher_zend_extension_entry);
 
 err_init:
 	return FAILURE;
@@ -3263,7 +3263,7 @@ static PHP_MSHUTDOWN_FUNCTION(xcache_cacher) /* {{{ */
 {
 	xc_sandbox_module_shutdown();
 
-	xcache_zend_extension_unregister(&xc_cacher_zend_extension_entry);
+	xcache_zend_extension_remove(&xc_cacher_zend_extension_entry);
 	UNREGISTER_INI_ENTRIES();
 
 	if (xc_mmap_path) {

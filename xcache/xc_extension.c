@@ -4,7 +4,7 @@
 #include "util/xc_trace.h"
 
 
-int xcache_zend_extension_register(zend_extension *new_extension, zend_bool prepend) /* {{{ */
+int xcache_zend_extension_prepend(zend_extension *new_extension) /* {{{ */
 {
 	zend_extension extension;
 
@@ -13,13 +13,8 @@ int xcache_zend_extension_register(zend_extension *new_extension, zend_bool prep
 
 	zend_extension_dispatch_message(ZEND_EXTMSG_NEW_EXTENSION, &extension);
 
-	if (prepend) {
-		zend_llist_prepend_element(&zend_extensions, &extension);
-	}
-	else {
-		zend_llist_add_element(&zend_extensions, &extension);
-	}
-	TRACE("%s", "registered");
+	zend_llist_prepend_element(&zend_extensions, &extension);
+	TRACE("%s", "prepended");
 	return SUCCESS;
 }
 /* }}} */
@@ -40,7 +35,7 @@ static int xc_zend_extension_remove(zend_extension *extension) /* {{{ */
 	return SUCCESS;
 }
 /* }}} */
-int xcache_zend_extension_unregister(zend_extension *extension) /* {{{ */
+int xcache_zend_extension_remove(zend_extension *extension) /* {{{ */
 {
 	zend_extension *ext = zend_get_extension(extension->name);
 	if (!ext) {
@@ -55,18 +50,42 @@ int xcache_zend_extension_unregister(zend_extension *extension) /* {{{ */
 }
 /* }}} */
 
-zend_llist_element *xcache_llist_get_element_by_zend_extension(zend_llist *l, const char *extension_name) /* {{{ */
+int xcache_zend_extension_count_by_prefix(zend_llist *l, const char *extension_name_prefix) /* {{{ */
 {
 	zend_llist_element *element;
+	size_t n = strlen(extension_name_prefix);
+	int count = 0;
 
 	for (element = zend_extensions.head; element; element = element->next) {
 		zend_extension *extension = (zend_extension *) element->data;
 
-		if (!strcmp(extension->name, extension_name)) {
-			return element;
+		if (strncmp(extension->name, extension_name_prefix, n) == 0) {
+			++count;
 		}
 	}
-	return NULL;
+	return count;
+}
+/* }}} */
+void xcache_zend_extension_unlink_by_prefix(xc_stack_t *linked, zend_llist *l, const char *extension_name_prefix) /* {{{ */
+{
+	size_t n = strlen(extension_name_prefix);
+	zend_llist_element *unlinked = NULL;
+	zend_llist_element *element, *next;
+
+	for (element = zend_extensions.head; element; element = next) {
+		zend_extension *extension = (zend_extension *) element->data;
+		next = element->next;
+
+		if (strncmp(extension->name, extension_name_prefix, n) == 0) {
+			xcache_llist_unlink(l, element);
+			xc_stack_push(linked, element);
+		}
+	}
+
+	for (element = zend_extensions.head; element; element = next) {
+		zend_extension *extension = (zend_extension *) element->data;
+		next = element->next;
+	}
 }
 /* }}} */
 void xcache_llist_prepend(zend_llist *l, zend_llist_element *element) /* {{{ */
