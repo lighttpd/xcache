@@ -294,7 +294,7 @@ if ($moduleinfo) {
 	$t_moduleinfo = _("Module Info");
 	echo <<<HTML
 <h2>$t_moduleinfo</h2>
-<div class="moduleinfo">$moduleinfo</div>
+<div class="phpinfo">$moduleinfo</div>
 HTML;
 }
 ?>

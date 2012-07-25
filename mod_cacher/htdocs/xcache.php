@@ -206,12 +206,25 @@ function th($name, $attrs = null)
 			, "\n");
 }
 
+$php_version = phpversion();
+$xcache_version = XCACHE_VERSION;
+$xcache_modules = XCACHE_MODULES;
+
 if (!extension_loaded('XCache')) {
+	include("header.tpl.php");
 	echo '<h1>XCache is not loaded</h1>';
 	ob_start();
-	phpinfo();
+	phpinfo(INFO_GENERAL);
 	$info = ob_get_clean();
-	if (preg_match('!<td class="v">(.*\\.ini)!', $info, $m)) {
+	if (preg_match_all("!<tr>[^<]*<td[^>]*>[^<]*(?:Configuration|ini|Server API)[^<]*</td>[^<]*<td[^>]*>[^<]*</td>[^<]*</tr>!s", $info, $m)) {
+		echo '<div class="phpinfo">';
+		echo 'PHP Info';
+		echo '<table>';
+		echo implode('', $m[0]);
+		echo '</table>';
+		echo '</div>';
+	}
+	if (preg_match('!<td class="v">(.*?\\.ini)!', $info, $m)) {
 		echo "Please check $m[1]";
 	}
 	else if (preg_match('!Configuration File \\(php.ini\\) Path *</td><td class="v">([^<]+)!', $info, $m)) {
@@ -220,6 +233,8 @@ if (!extension_loaded('XCache')) {
 	else {
 		echo "You don't even have a php.ini yet?";
 	}
+	echo "(See above)";
+	include("footer.tpl.php");
 	exit;
 }
 $pcnt = xcache_count(XC_TYPE_PHP);
@@ -368,8 +383,13 @@ default:
 	ob_start();
 	phpinfo(INFO_MODULES);
 	$moduleinfo = ob_get_clean();
-	if (preg_match_all('!XCache[^<]*</a></h2>(.*?)<h2>!is', $moduleinfo, $m)) {
-		$moduleinfo = implode('', $m[1]);
+	if (preg_match_all('!(XCache[^<>]*)</a></h2>(.*?)<h2>!is', $moduleinfo, $m)) {
+		$moduleinfo = array();
+		foreach ($m[1] as $i => $dummy) {
+			$moduleinfo[] = '<h3>' . trim($m[1][$i]) . '</h3>';
+			$moduleinfo[] = str_replace('<br />', '', trim($m[2][$i]));
+		}
+		$moduleinfo = implode('', $moduleinfo);
 	}
 	else {
 		$moduleinfo = null;
@@ -381,9 +401,6 @@ default:
 $type_php = XC_TYPE_PHP;
 $type_var = XC_TYPE_VAR;
 $types = array($type_none => _('Statistics'), $type_php => _('List PHP'), $type_var => _('List Var Data'));
-$php_version = phpversion();
-$xcache_version = XCACHE_VERSION;
-$xcache_modules = XCACHE_MODULES;
 
 include("xcache.tpl.php");
 
