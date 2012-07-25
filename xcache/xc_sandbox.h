@@ -3,7 +3,7 @@
 
 #if _MSC_VER > 1000
 #pragma once
-#endif // _MSC_VER > 1000
+#endif /* _MSC_VER > 1000 */
 
 /* Purpose: run specified function in compiler sandbox, restore everything to previous state after it returns
  */

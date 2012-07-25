@@ -3,7 +3,7 @@
 
 #if _MSC_VER > 1000
 #pragma once
-#endif // _MSC_VER > 1000
+#endif /* _MSC_VER > 1000 */
 
 int xc_cacher_startup_module();
 int xc_cacher_disable();
