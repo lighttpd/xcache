@@ -20,7 +20,6 @@ typedef int zend_bool;
 #define XC_MEMBLOCK_IMPL _xc_mem_block_t
 #define XC_MEM_IMPL _xc_mem_mem_t
 #include "xc_shm.h"
-// #include "xc_utils.h"
 #include "util/xc_align.h"
 #include "util/xc_trace.h"
 

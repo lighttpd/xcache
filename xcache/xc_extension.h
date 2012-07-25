@@ -3,7 +3,7 @@
 
 #if _MSC_VER > 1000
 #pragma once
-#endif // _MSC_VER > 1000
+#endif /* _MSC_VER > 1000 */
 
 #include "zend_extensions.h"
 int xcache_zend_extension_register(zend_extension *new_extension, zend_bool prepend);
