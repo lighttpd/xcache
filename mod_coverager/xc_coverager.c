@@ -638,7 +638,7 @@ static PHP_MINFO_FUNCTION(xcache_coverager) /* {{{ */
 	char *covdumpdir;
 
 	php_info_print_table_start();
-	php_info_print_table_row(2, "XCache Coverager Version", XCACHE_VERSION);
+	php_info_print_table_row(2, "XCache Coverager Module", "enabled");
 	if (cfg_get_string("xcache.coveragedump_directory", &covdumpdir) != SUCCESS || !covdumpdir[0]) {
 		covdumpdir = NULL;
 	}
@@ -690,7 +690,7 @@ static PHP_MSHUTDOWN_FUNCTION(xcache_coverager) /* {{{ */
 
 static zend_module_entry xcache_coverager_module_entry = { /* {{{ */
 	STANDARD_MODULE_HEADER,
-	XCACHE_NAME "_Coverager",
+	XCACHE_NAME " Coverager",
 	xcache_coverager_functions,
 	PHP_MINIT(xcache_coverager),
 	PHP_MSHUTDOWN(xcache_coverager),

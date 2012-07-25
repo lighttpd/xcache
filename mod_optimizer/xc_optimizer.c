@@ -657,7 +657,7 @@ PHP_INI_END()
 static PHP_MINFO_FUNCTION(xcache_optimizer) /* {{{ */
 {
 	php_info_print_table_start();
-	php_info_print_table_row(2, "XCache Optimizer Version", XCACHE_VERSION);
+	php_info_print_table_row(2, "XCache Optimizer Module", "enabled");
 	php_info_print_table_end();
 
 	DISPLAY_INI_ENTRIES();
@@ -677,7 +677,7 @@ static PHP_MSHUTDOWN_FUNCTION(xcache_optimizer) /* {{{ */
 /* }}} */
 static zend_module_entry xcache_optimizer_module_entry = { /* {{{ */
 	STANDARD_MODULE_HEADER,
-	XCACHE_NAME "_Optimizer",
+	XCACHE_NAME " Optimizer",
 	NULL,
 	PHP_MINIT(xcache_optimizer),
 	PHP_MSHUTDOWN(xcache_optimizer),

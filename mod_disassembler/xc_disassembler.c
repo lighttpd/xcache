@@ -224,7 +224,7 @@ PHP_FUNCTION(xcache_dasm_string)
 static PHP_MINFO_FUNCTION(xcache_disassembler)
 {
 	php_info_print_table_start();
-	php_info_print_table_row(2, "XCache Disassembler Version", XCACHE_VERSION);
+	php_info_print_table_row(2, "XCache Disassembler Module", "enabled");
 	php_info_print_table_end();
 
 	DISPLAY_INI_ENTRIES();
@@ -239,7 +239,7 @@ static zend_function_entry xcache_disassembler_functions[] = /* {{{ */
 /* }}} */
 static zend_module_entry xcache_disassembler_module_entry = { /* {{{ */
 	STANDARD_MODULE_HEADER,
-	XCACHE_NAME "_Disassembler",
+	XCACHE_NAME " Disassembler",
 	xcache_disassembler_functions,
 	NULL,
 	NULL,
