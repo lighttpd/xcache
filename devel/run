@@ -117,6 +117,7 @@ for i in ~/src/php/$phpbasename/sapi/cgi/php{,-cgi}; do
 	fi
 done
 ln -sf ~/src/php/$phpbasename/sapi/cli/php php-cli
+ln -sf ~/src/php/$phpbasename/sapi/fpm/php-fpm php-fpm
 
 case "$type" in
 phpize)
@@ -162,15 +163,21 @@ case "$basename" in
 	exit 1
 	;;
 *)
-	cmd=(./php-cgi -q -c devel.ini)
-	"${cmd[@]}" -v || true
-	;;
-esac
+	case "${args[0]}" in
+	fcgi)
+		cmd=(./php-cgi -q -c devel.ini)
+		args=(-b 1026)
+		;;
+	fpm)
+		cmd=(./php-fpm -c devel.ini)
+		args=(-y devel.fpm)
+		;;
+	*)
+		cmd=(./php-cgi -q -c devel.ini)
+		;;
+	esac
 
-case "${args[0]}" in
-fcgi)
-	args=(-b 1026)
-	;;
+	"${cmd[@]}" -v || true
 esac
 
 case "$type" in
