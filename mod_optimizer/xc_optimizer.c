@@ -666,13 +666,13 @@ static PHP_MINFO_FUNCTION(xcache_optimizer) /* {{{ */
 static PHP_MINIT_FUNCTION(xcache_optimizer) /* {{{ */
 {
 	REGISTER_INI_ENTRIES();
-	return xcache_zend_extension_register(&xc_optimizer_zend_extension_entry, 0);
+	return xcache_zend_extension_prepend(&xc_optimizer_zend_extension_entry);
 }
 /* }}} */
 static PHP_MSHUTDOWN_FUNCTION(xcache_optimizer) /* {{{ */
 {
 	UNREGISTER_INI_ENTRIES();
-	return xcache_zend_extension_unregister(&xc_optimizer_zend_extension_entry);
+	return xcache_zend_extension_remove(&xc_optimizer_zend_extension_entry);
 }
 /* }}} */
 static zend_module_entry xcache_optimizer_module_entry = { /* {{{ */
