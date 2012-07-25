@@ -259,4 +259,6 @@ typedef struct {
 void xc_gc_add_op_array(xc_gc_op_array_t *gc_op_array TSRMLS_DC);
 void xc_fix_op_array_info(const xc_entry_php_t *xce, const xc_entry_data_php_t *php, zend_op_array *op_array, int shallow_copy, const xc_op_array_info_t *op_array_info TSRMLS_DC);
 
+extern zend_bool xc_test;
+
 #endif /* __XCACHE_H */

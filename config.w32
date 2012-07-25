@@ -31,6 +31,9 @@ xc_shm.c \
 xc_shm_mmap.c \
 xc_utils.c \
 ", "xcache");
+	ADD_SOURCES(configure_module_dirname + "/xcache", " \
+xc_cacher.c \
+", "xcache");
 
 	// {{{ add sources on enabled
 	ARG_ENABLE("xcache-optimizer",    "(N/A)", "no");
@@ -41,6 +44,7 @@ xc_utils.c \
 	ARG_ENABLE("xcache-decoder",      "(N/A)", "no");
 
 	var XCACHE_MODULES = "cacher";
+	AC_DEFINE("HAVE_XCACHE_CACHER", 1, "Define for XCache: cacher")
 	var options = ["optimizer",
 	               "coverager",
 	               "assembler", "disassembler",
