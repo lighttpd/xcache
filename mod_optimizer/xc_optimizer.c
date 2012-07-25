@@ -666,7 +666,7 @@ static PHP_MINFO_FUNCTION(xcache_optimizer) /* {{{ */
 static PHP_MINIT_FUNCTION(xcache_optimizer) /* {{{ */
 {
 	REGISTER_INI_ENTRIES();
-	return xcache_zend_extension_prepend(&xc_optimizer_zend_extension_entry);
+	return xcache_zend_extension_add(&xc_optimizer_zend_extension_entry, 0);
 }
 /* }}} */
 static PHP_MSHUTDOWN_FUNCTION(xcache_optimizer) /* {{{ */

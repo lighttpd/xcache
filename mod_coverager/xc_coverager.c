@@ -670,7 +670,7 @@ static PHP_MINIT_FUNCTION(xcache_coverager) /* {{{ */
 		}
 	}
 
-	return xcache_zend_extension_prepend(&xc_coverager_zend_extension_entry);
+	return xcache_zend_extension_add(&xc_coverager_zend_extension_entry, 0);
 }
 /* }}} */
 static PHP_MSHUTDOWN_FUNCTION(xcache_coverager) /* {{{ */
