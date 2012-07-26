@@ -31,8 +31,8 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 		pushdef(`ELEMENTS_DONE')
 		IFAUTOCHECK(`
 			/* {{{ init assert */
-			ifdef(`SIZEOF_$1', , `m4_errprint(`missing SIZEOF_$1, safe to ignore')')
-			ifdef(`COUNTOF_$1', , `m4_errprint(`missing COUNTOF_$1, safe to ignore')')
+			ifdef(`SIZEOF_$1', , `m4_errprint(`Warning: missing SIZEOF_$1, safe to ignore')')
+			ifdef(`COUNTOF_$1', , `m4_errprint(`Warning: missing COUNTOF_$1, safe to ignore')')
 			dnl SIZEOF_x COUNTOF_x can be both defined or both not
 			ifdef(`SIZEOF_$1', `
 				ifdef(`COUNTOF_$1', , `m4_errprint(`AUTOCHECK WARN: missing COUNTOF_$1')')
