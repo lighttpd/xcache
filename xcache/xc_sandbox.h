@@ -20,7 +20,8 @@ const Bucket *xc_sandbox_user_function_begin(TSRMLS_D);
 const Bucket *xc_sandbox_user_class_begin(TSRMLS_D);
 zend_uint xc_sandbox_compilererror_cnt(TSRMLS_D);
 #ifdef XCACHE_ERROR_CACHING
-xc_compilererror_t *xc_sandbox_compilererrors(TSRMLS_D);
+struct _xc_compilererror_t;
+struct _xc_compilererror_t *xc_sandbox_compilererrors(TSRMLS_D);
 zend_uint xc_sandbox_compilererror_cnt(TSRMLS_D);
 #endif
 

@@ -8,6 +8,7 @@
 
 /* {{{ macros */
 #include "xc_cacher.h"
+#include "xc_cache.h"
 #include "xcache.h"
 #include "xc_processor.h"
 #include "xcache_globals.h"
@@ -28,6 +29,8 @@
 #include "ext/standard/php_math.h"
 #include "SAPI.h"
 
+#define ECALLOC_N(x, n) ((x) = ecalloc(n, sizeof((x)[0])))
+#define ECALLOC_ONE(x) ECALLOC_N(x, 1)
 #define VAR_ENTRY_EXPIRED(pentry) ((pentry)->ttl && XG(request_time) > (pentry)->ctime + (time_t) (pentry)->ttl)
 #define CHECK(x, e) do { if ((x) == NULL) { zend_error(E_ERROR, "XCache: " e); goto err; } } while (0)
 #define LOCK(x) xc_lock((x)->lck)
@@ -53,6 +56,14 @@
 		zend_bailout(); \
 	} \
 } while(0)
+/* }}} */
+
+/* {{{ types */
+struct _xc_hash_t {
+	size_t bits;
+	size_t size;
+	xc_hash_value_t mask;
+};
 /* }}} */
 
 /* {{{ globals */

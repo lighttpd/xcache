@@ -1079,7 +1079,7 @@ dnl }}}
 #endif
 ')
 IFRESTORE(`', `
-#ifdef E_STRICT
+#ifdef XCACHE_ERROR_CACHING
 DEF_STRUCT_P_FUNC(`xc_compilererror_t', , `dnl {{{
 	PROCESS(int, type)
 	PROCESS(uint, lineno)
@@ -1131,7 +1131,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 		STRUCT_ARRAY(zend_uint, autoglobal_cnt, xc_autoglobal_t, autoglobals)
 	')
 #endif
-#ifdef E_STRICT
+#ifdef XCACHE_ERROR_CACHING
 	PROCESS(zend_uint, compilererror_cnt)
 	IFRESTORE(`
 		COPY(compilererrors)

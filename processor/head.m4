@@ -11,8 +11,11 @@ divert(0)
 
 /* export: #include "xcache.h" :export */
 #include "xcache.h"
+/* export: #include "mod_cacher/xc_cache.h" :export */
+#include "mod_cacher/xc_cache.h"
 #include "util/xc_align.h"
 #include "xcache/xc_const_string.h"
+#include "xcache/xc_utils.h"
 #include "xc_processor.h"
 #include "xcache_globals.h"
 
@@ -358,7 +361,7 @@ static int xc_check_names(const char *file, int line, const char *functionName, 
 		for (i = 0; i < assert_names_count; ++i) {
 			if (!zend_u_hash_exists(done_names, IS_STRING, assert_names[i], strlen(assert_names[i]) + 1)) {
 				fprintf(stderr
-					, "missing field at %s `#'%d %s`' : %s\n"
+					, "Error: missing field at %s `#'%d %s`' : %s\n"
 					, file, line, functionName
 					, assert_names[i]
 					);
@@ -376,7 +379,7 @@ static int xc_check_names(const char *file, int line, const char *functionName, 
 			}
 			if (!known) {
 				fprintf(stderr
-					, "unknown field at %s `#'%d %s`' : %s\n"
+					, "Error: unknown field at %s `#'%d %s`' : %s\n"
 					, file, line, functionName
 					, BUCKET_KEY_S(b)
 					);
