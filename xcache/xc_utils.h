@@ -1,7 +1,16 @@
 #include "xcache.h"
 #include "xc_compatibility.h"
 
-typedef struct {
+typedef zend_op_array *(zend_compile_file_t)(zend_file_handle *h, int type TSRMLS_DC);
+
+typedef struct _xc_compilererror_t {
+	int type;
+	uint lineno;
+	int error_len;
+	char *error;
+} xc_compilererror_t;
+
+typedef struct _xc_compile_result_t {
 	zend_op_array *op_array;
 	HashTable *function_table;
 	HashTable *class_table;
@@ -31,10 +40,6 @@ void xc_install_constant(ZEND_24(NOTHING, const) char *filename, zend_constant *
 #endif
 void xc_install_function(ZEND_24(NOTHING, const) char *filename, zend_function *func, zend_uchar type, const24_zstr key, uint len, ulong h TSRMLS_DC);
 ZESW(xc_cest_t *, void) xc_install_class(ZEND_24(NOTHING, const) char *filename, xc_cest_t *cest, int oplineno, zend_uchar type, const24_zstr key, uint len, ulong h TSRMLS_DC);
-
-#if defined(E_STRICT) || defined(E_DEPRECATED)
-#define XCACHE_ERROR_CACHING
-#endif
 
 typedef zend_bool (*xc_if_func_t)(void *data);
 
