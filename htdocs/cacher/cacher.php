@@ -91,20 +91,20 @@ function bar_hits_percent($v, $percent, $active)
 		. '</div>';
 }
 
-function hits_to_graph($hits)
+function get_cache_hits_graph($ci, $key)
 {
-	$max = 0;
-	foreach ($hits as $v) {
-		if ($max < $v) {
-			$max = $v;
-		}
+	if ($ci['cacheid'] == -1) {
+		$max = max($ci[$key]);
+	}
+	else {
+		$max = $GLOBALS['maxhits_by_hour'][$ci['type']];
 	}
 	if (!$max) {
-		return '';
+		$max = 1;
 	}
 	$t = (time() / (60 * 60)) % 24;
 	$html = array();
-	foreach ($hits as $i => $v) {
+	foreach ($ci[$key] as $i => $v) {
 		$html[] = bar_hits_percent($v, $v / $max, $i == $t);
 	}
 	return implode('', $html);
@@ -184,6 +184,7 @@ processClear();
 // {{{ load info/list
 $cacheinfos = array();
 $total = array();
+$maxhits_by_hour = array(0, 0);
 for ($i = 0; $i < $pcnt; $i ++) {
 	$data = xcache_info(XC_TYPE_PHP, $i);
 	if ($type === XC_TYPE_PHP) {
@@ -193,6 +194,7 @@ for ($i = 0; $i < $pcnt; $i ++) {
 	$data['cache_name'] = "php#$i";
 	$data['cacheid'] = $i;
 	$cacheinfos[] = $data;
+	$maxhits_by_hour[XC_TYPE_PHP] = max($maxhits_by_hour[XC_TYPE_PHP], max($data['hits_by_hour']));
 	if ($pcnt >= 2) {
 		calc_total($total, $data);
 	}
@@ -217,6 +219,7 @@ for ($i = 0; $i < $vcnt; $i ++) {
 	$data['cache_name'] = "var#$i";
 	$data['cacheid'] = $i;
 	$cacheinfos[] = $data;
+	$maxhits_by_hour[XC_TYPE_VAR] = max($maxhits_by_hour[XC_TYPE_VAR], max($data['hits_by_hour']));
 	if ($vcnt >= 2) {
 		calc_total($total, $data);
 	}

@@ -83,7 +83,7 @@ $b = new Cycle('class="col1"', 'class="col2"');
 
 		$hits_avg_h     = number_format(array_avg($ci['hits_by_hour']), 2);
 		$hits_avg_s     = number_format(array_avg($ci['hits_by_second']), 2);
-		$hits_graph_h   = hits_to_graph($ci['hits_by_hour']);
+		$hits_graph_h   = get_cache_hits_graph($ci, 'hits_by_hour');
 		$hits_graph_h_w = count($ci['hits_by_hour']) * 2;
 
 		if (!empty($ci['istotal'])) {
