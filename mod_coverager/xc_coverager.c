@@ -587,9 +587,7 @@ static void xc_optimizer_zend_shutdown(zend_extension *extension) /* {{{ */
 /* }}} */
 static void xc_statement_handler(zend_op_array *op_array) /* {{{ */
 {
-#ifdef HAVE_XCACHE_COVERAGER
 	xc_coverager_handle_ext_stmt(op_array, ZEND_EXT_STMT);
-#endif
 }
 /* }}} */
 static void xc_fcall_begin_handler(zend_op_array *op_array) /* {{{ */
