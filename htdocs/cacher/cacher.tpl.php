@@ -59,7 +59,7 @@ $b = new Cycle('class="col1"', 'class="col2"');
 	$l_enable = _('Enable');
 	$l_compiling = _('Compiling');
 	$l_normal = _('Normal');
-	$l_clear_confirm = _('Sure to clear?');
+	$l_confirm = _('Sure?');
 	foreach ($cacheinfos as $i => $ci) {
 		echo "
 		<tr ", $a->next(), ">";
@@ -128,7 +128,7 @@ $b = new Cycle('class="col1"', 'class="col2"');
 				><div
 					><input type="hidden" name="type" value="{$ci['type']}"
 					/><input type="hidden" name="cacheid" value="{$ci['cacheid']}"
-					/><input type="submit" name="clearcache" value="{$l_clear}" class="submit" onclick="return confirm('{$l_clear_confirm}');"
+					/><input type="submit" name="clearcache" value="{$l_clear}" class="submit" onclick="return confirm('{$l_confirm}');"
 					/><input type="submit" name="{$enabledisable}" value="{$l_enabledisable}" class="submit"
 				/></div
 			></form
@@ -310,6 +310,15 @@ ENTRY;
 <?php
 	}
 	ob_end_flush();
+}
+if (ini_get("xcache.test")) {
+?>
+<form method="post" action=""
+	><div
+		/><input type="submit" name="coredump" value="Test coredump" class="submit" onclick="return confirm('<?php echo $l_confirm ?>');"
+	/></div
+></form>
+<?php
 }
 if ($moduleinfo) {
 	$t_moduleinfo = _("Module Info");

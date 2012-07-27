@@ -7,8 +7,8 @@ $strings = array(
 		=> '說明',
 		'Clear'
 		=> '清除',
-		'Sure to clear?'
-		=> '確認要清除嗎?',
+		'Sure?'
+		=> '確認?',
 		'% Free'
 		=> '% 剩余',
 		'% Used'
