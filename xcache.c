@@ -654,8 +654,8 @@ static zend_extension xc_zend_extension_entry = {
 /* {{{ PHP_INI */
 PHP_INI_BEGIN()
 	PHP_INI_ENTRY1     ("xcache.coredump_directory",      "", PHP_INI_SYSTEM, xcache_OnUpdateString,   &xc_coredump_dir)
-	PHP_INI_ENTRY1     ("xcache.disable_on_crash",       "0", PHP_INI_SYSTEM, xcache_OnUpdateBool,     &xc_disable_on_crash)
-	PHP_INI_ENTRY1     ("xcache.test",                   "0", PHP_INI_SYSTEM, xcache_OnUpdateBool,     &xc_test)
+	PHP_INI_ENTRY1_EX  ("xcache.disable_on_crash",       "0", PHP_INI_SYSTEM, xcache_OnUpdateBool,     &xc_disable_on_crash, zend_ini_boolean_displayer_cb)
+	PHP_INI_ENTRY1_EX  ("xcache.test",                   "0", PHP_INI_SYSTEM, xcache_OnUpdateBool,     &xc_test,             zend_ini_boolean_displayer_cb)
 	STD_PHP_INI_BOOLEAN("xcache.experimental",           "0", PHP_INI_ALL,    OnUpdateBool,        experimental,      zend_xcache_globals, xcache_globals)
 PHP_INI_END()
 /* }}} */
