@@ -3162,9 +3162,9 @@ static zend_extension xc_cacher_zend_extension_entry = {
 #endif
 PHP_INI_BEGIN()
 	PHP_INI_ENTRY1     ("xcache.mmap_path",     DEFAULT_PATH, PHP_INI_SYSTEM, xcache_OnUpdateString,   &xc_mmap_path)
-	PHP_INI_ENTRY1     ("xcache.readonly_protection",    "0", PHP_INI_SYSTEM, xcache_OnUpdateBool,     &xc_readonly_protection)
+	PHP_INI_ENTRY1_EX  ("xcache.readonly_protection",    "0", PHP_INI_SYSTEM, xcache_OnUpdateBool,     &xc_readonly_protection, zend_ini_boolean_displayer_cb)
 	/* opcode cache */
-	PHP_INI_ENTRY1     ("xcache.admin.enable_auth",      "1", PHP_INI_SYSTEM, xcache_OnUpdateBool,     &xc_admin_enable_auth)
+	PHP_INI_ENTRY1_EX  ("xcache.admin.enable_auth",      "1", PHP_INI_SYSTEM, xcache_OnUpdateBool,     &xc_admin_enable_auth,   zend_ini_boolean_displayer_cb)
 	PHP_INI_ENTRY1     ("xcache.size",                   "0", PHP_INI_SYSTEM, xcache_OnUpdateDummy,    NULL)
 	PHP_INI_ENTRY1     ("xcache.count",                  "1", PHP_INI_SYSTEM, xcache_OnUpdateDummy,    NULL)
 	PHP_INI_ENTRY1     ("xcache.slots",                 "8K", PHP_INI_SYSTEM, xcache_OnUpdateDummy,    NULL)
