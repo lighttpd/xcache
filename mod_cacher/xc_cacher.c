@@ -58,11 +58,38 @@
 } while(0)
 /* }}} */
 
-/* {{{ types */
-struct _xc_hash_t {
+struct _xc_hash_t { /* {{{ */
 	size_t bits;
 	size_t size;
 	xc_hash_value_t mask;
+};
+/* }}} */
+struct _xc_cached_t { /* {{{ stored in shm */
+	int cacheid;
+
+	time_t     compiling;
+	zend_ulong updates;
+	zend_ulong hits;
+	zend_ulong clogs;
+	zend_ulong ooms;
+	zend_ulong errors;
+
+	xc_entry_t **entries;
+	int entries_count;
+	xc_entry_data_php_t **phps;
+	int phps_count;
+	xc_entry_t *deletes;
+	int deletes_count;
+
+	time_t     last_gc_deletes;
+	time_t     last_gc_expires;
+
+	time_t     hits_by_hour_cur_time;
+	zend_uint  hits_by_hour_cur_slot;
+	zend_ulong hits_by_hour[24];
+	time_t     hits_by_second_cur_time;
+	zend_uint  hits_by_second_cur_slot;
+	zend_ulong hits_by_second[5];
 };
 /* }}} */
 
@@ -87,8 +114,8 @@ static zend_ulong xc_var_gc_interval = 0;
 static zend_ulong xc_php_size  = 0;
 static zend_ulong xc_var_size  = 0;
 
-static xc_cache_t **xc_php_caches = NULL;
-static xc_cache_t **xc_var_caches = NULL;
+static xc_cache_t *xc_php_caches = NULL;
+static xc_cache_t *xc_var_caches = NULL;
 
 static zend_bool xc_initized = 0;
 static time_t xc_init_time = 0;
@@ -113,12 +140,12 @@ static inline zend_bool xc_cache_disabled()
 
 /* any function in *_unlocked is only safe be called within locked (single thread access) area */
 
-static void xc_php_add_unlocked(xc_cache_t *cache, xc_entry_data_php_t *php) /* {{{ */
+static void xc_php_add_unlocked(xc_cached_t *cached, xc_entry_data_php_t *php) /* {{{ */
 {
-	xc_entry_data_php_t **head = &(cache->phps[php->hvalue]);
+	xc_entry_data_php_t **head = &(cached->phps[php->hvalue]);
 	php->next = *head;
 	*head = php;
-	cache->phps_count ++;
+	cached->phps_count ++;
 }
 /* }}} */
 static xc_entry_data_php_t *xc_php_store_unlocked(xc_cache_t *cache, xc_entry_data_php_t *php TSRMLS_DC) /* {{{ */
@@ -129,19 +156,19 @@ static xc_entry_data_php_t *xc_php_store_unlocked(xc_cache_t *cache, xc_entry_da
 	php->refcount = 0;
 	stored_php = xc_processor_store_xc_entry_data_php_t(cache, php TSRMLS_CC);
 	if (stored_php) {
-		xc_php_add_unlocked(cache, stored_php);
+		xc_php_add_unlocked(cache->cached, stored_php);
 		return stored_php;
 	}
 	else {
-		cache->ooms ++;
+		cache->cached->ooms ++;
 		return NULL;
 	}
 }
 /* }}} */
-static xc_entry_data_php_t *xc_php_find_unlocked(xc_cache_t *cache, xc_entry_data_php_t *php TSRMLS_DC) /* {{{ */
+static xc_entry_data_php_t *xc_php_find_unlocked(xc_cached_t *cached, xc_entry_data_php_t *php TSRMLS_DC) /* {{{ */
 {
 	xc_entry_data_php_t *p;
-	for (p = cache->phps[php->hvalue]; p; p = (xc_entry_data_php_t *) p->next) {
+	for (p = cached->phps[php->hvalue]; p; p = (xc_entry_data_php_t *) p->next) {
 		if (memcmp(&php->md5.digest, &p->md5.digest, sizeof(php->md5.digest)) == 0) {
 			p->hits ++;
 			return p;
@@ -163,7 +190,7 @@ static void xc_php_addref_unlocked(xc_entry_data_php_t *php) /* {{{ */
 static void xc_php_release_unlocked(xc_cache_t *cache, xc_entry_data_php_t *php) /* {{{ */
 {
 	if (-- php->refcount == 0) {
-		xc_entry_data_php_t **pp = &(cache->phps[php->hvalue]);
+		xc_entry_data_php_t **pp = &(cache->cached->phps[php->hvalue]);
 		xc_entry_data_php_t *p;
 		for (p = *pp; p; pp = &(p->next), p = p->next) {
 			if (memcmp(&php->md5.digest, &p->md5.digest, sizeof(php->md5.digest)) == 0) {
@@ -258,12 +285,12 @@ static inline int xc_entry_has_prefix_unlocked(xc_entry_type_t type, xc_entry_t 
 	return memcmp(entry->name.str.val, Z_STRVAL_P(prefix), Z_STRLEN_P(prefix)) == 0;
 }
 /* }}} */
-static void xc_entry_add_unlocked(xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *entry) /* {{{ */
+static void xc_entry_add_unlocked(xc_cached_t *cached, xc_hash_value_t entryslotid, xc_entry_t *entry) /* {{{ */
 {
-	xc_entry_t **head = &(cache->entries[entryslotid]);
+	xc_entry_t **head = &(cached->entries[entryslotid]);
 	entry->next = *head;
 	*head = entry;
-	cache->entries_count ++;
+	cached->entries_count ++;
 }
 /* }}} */
 static xc_entry_t *xc_entry_store_unlocked(xc_entry_type_t type, xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *entry TSRMLS_DC) /* {{{ */
@@ -277,12 +304,12 @@ static xc_entry_t *xc_entry_store_unlocked(xc_entry_type_t type, xc_cache_t *cac
 		? (xc_entry_t *) xc_processor_store_xc_entry_php_t(cache, (xc_entry_php_t *) entry TSRMLS_CC)
 		: (xc_entry_t *) xc_processor_store_xc_entry_var_t(cache, (xc_entry_var_t *) entry TSRMLS_CC);
 	if (stored_entry) {
-		xc_entry_add_unlocked(cache, entryslotid, stored_entry);
-		++cache->updates;
+		xc_entry_add_unlocked(cache->cached, entryslotid, stored_entry);
+		++cache->cached->updates;
 		return stored_entry;
 	}
 	else {
-		cache->ooms ++;
+		cache->cached->ooms ++;
 		return NULL;
 	}
 }
@@ -307,22 +334,22 @@ static void xc_entry_free_real_unlocked(xc_entry_type_t type, xc_cache_t *cache,
 /* }}} */
 static void xc_entry_free_unlocked(xc_entry_type_t type, xc_cache_t *cache, xc_entry_t *entry TSRMLS_DC) /* {{{ */
 {
-	cache->entries_count --;
+	cache->cached->entries_count --;
 	if ((type == XC_TYPE_PHP ? ((xc_entry_php_t *) entry)->refcount : 0) == 0) {
 		xc_entry_free_real_unlocked(type, cache, entry);
 	}
 	else {
-		entry->next = cache->deletes;
-		cache->deletes = entry;
+		entry->next = cache->cached->deletes;
+		cache->cached->deletes = entry;
 		entry->dtime = XG(request_time);
-		cache->deletes_count ++;
+		cache->cached->deletes_count ++;
 	}
 	return;
 }
 /* }}} */
 static void xc_entry_remove_unlocked(xc_entry_type_t type, xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *entry TSRMLS_DC) /* {{{ */
 {
-	xc_entry_t **pp = &(cache->entries[entryslotid]);
+	xc_entry_t **pp = &(cache->cached->entries[entryslotid]);
 	xc_entry_t *p;
 	for (p = *pp; p; pp = &(p->next), p = p->next) {
 		if (xc_entry_equal_unlocked(type, entry, p TSRMLS_CC)) {
@@ -338,7 +365,7 @@ static void xc_entry_remove_unlocked(xc_entry_type_t type, xc_cache_t *cache, xc
 static xc_entry_t *xc_entry_find_unlocked(xc_entry_type_t type, xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *entry TSRMLS_DC) /* {{{ */
 {
 	xc_entry_t *p;
-	for (p = cache->entries[entryslotid]; p; p = p->next) {
+	for (p = cache->cached->entries[entryslotid]; p; p = p->next) {
 		if (xc_entry_equal_unlocked(type, entry, p TSRMLS_CC)) {
 			zend_bool fresh;
 			switch (type) {
@@ -406,20 +433,20 @@ static inline void xc_counters_inc(time_t *curtime, zend_uint *curslot, time_t i
 	counters[*curslot] ++;
 }
 /* }}} */
-static inline void xc_cache_hit_unlocked(xc_cache_t *cache TSRMLS_DC) /* {{{ */
+static inline void xc_cached_hit_unlocked(xc_cached_t *cached TSRMLS_DC) /* {{{ */
 {
-	cache->hits ++;
+	cached->hits ++;
 
-	xc_counters_inc(&cache->hits_by_hour_cur_time
-			, &cache->hits_by_hour_cur_slot, 60 * 60
-			, cache->hits_by_hour
-			, sizeof(cache->hits_by_hour) / sizeof(cache->hits_by_hour[0])
+	xc_counters_inc(&cached->hits_by_hour_cur_time
+			, &cached->hits_by_hour_cur_slot, 60 * 60
+			, cached->hits_by_hour
+			, sizeof(cached->hits_by_hour) / sizeof(cached->hits_by_hour[0])
 			TSRMLS_CC);
 
-	xc_counters_inc(&cache->hits_by_second_cur_time
-			, &cache->hits_by_second_cur_slot, 1
-			, cache->hits_by_second
-			, sizeof(cache->hits_by_second) / sizeof(cache->hits_by_second[0])
+	xc_counters_inc(&cached->hits_by_second_cur_time
+			, &cached->hits_by_second_cur_slot, 1
+			, cached->hits_by_second
+			, sizeof(cached->hits_by_second) / sizeof(cached->hits_by_second[0])
 			TSRMLS_CC);
 }
 /* }}} */
@@ -433,7 +460,7 @@ static void xc_entry_apply_unlocked(xc_entry_type_t type, xc_cache_t *cache, cac
 	int i, c;
 
 	for (i = 0, c = cache->hentry->size; i < c; i ++) {
-		pp = &(cache->entries[i]);
+		pp = &(cache->cached->entries[i]);
 		for (p = *pp; p; p = *pp) {
 			if (apply_func(p TSRMLS_CC)) {
 				/* unlink */
@@ -472,11 +499,11 @@ static XC_ENTRY_APPLY_FUNC(xc_gc_expires_var_entry_unlocked) /* {{{ */
 /* }}} */
 static void xc_gc_expires_one(xc_entry_type_t type, xc_cache_t *cache, zend_ulong gc_interval, cache_apply_unlocked_func_t apply_func TSRMLS_DC) /* {{{ */
 {
-	TRACE("interval %lu, %lu %lu", (zend_ulong) XG(request_time), (zend_ulong) cache->last_gc_expires, gc_interval);
-	if (XG(request_time) >= cache->last_gc_expires + (time_t) gc_interval) {
+	TRACE("interval %lu, %lu %lu", (zend_ulong) XG(request_time), (zend_ulong) cache->cached->last_gc_expires, gc_interval);
+	if (XG(request_time) >= cache->cached->last_gc_expires + (time_t) gc_interval) {
 		ENTER_LOCK(cache) {
-			if (XG(request_time) >= cache->last_gc_expires + (time_t) gc_interval) {
-				cache->last_gc_expires = XG(request_time);
+			if (XG(request_time) >= cache->cached->last_gc_expires + (time_t) gc_interval) {
+				cache->cached->last_gc_expires = XG(request_time);
 				xc_entry_apply_unlocked(type, cache, apply_func TSRMLS_CC);
 			}
 		} LEAVE_LOCK(cache);
@@ -492,7 +519,7 @@ static void xc_gc_expires_php(TSRMLS_D) /* {{{ */
 	}
 
 	for (i = 0, c = xc_php_hcache.size; i < c; i ++) {
-		xc_gc_expires_one(XC_TYPE_PHP, xc_php_caches[i], xc_php_gc_interval, xc_gc_expires_php_entry_unlocked TSRMLS_CC);
+		xc_gc_expires_one(XC_TYPE_PHP, &xc_php_caches[i], xc_php_gc_interval, xc_gc_expires_php_entry_unlocked TSRMLS_CC);
 	}
 }
 /* }}} */
@@ -505,7 +532,7 @@ static void xc_gc_expires_var(TSRMLS_D) /* {{{ */
 	}
 
 	for (i = 0, c = xc_var_hcache.size; i < c; i ++) {
-		xc_gc_expires_one(XC_TYPE_VAR, xc_var_caches[i], xc_var_gc_interval, xc_gc_expires_var_entry_unlocked TSRMLS_CC);
+		xc_gc_expires_one(XC_TYPE_VAR, &xc_var_caches[i], xc_var_gc_interval, xc_gc_expires_var_entry_unlocked TSRMLS_CC);
 	}
 }
 /* }}} */
@@ -514,7 +541,7 @@ static XC_CACHE_APPLY_FUNC(xc_gc_delete_unlocked) /* {{{ */
 {
 	xc_entry_t *p, **pp;
 
-	pp = &cache->deletes;
+	pp = &cache->cached->deletes;
 	for (p = *pp; p; p = *pp) {
 		xc_entry_php_t *entry = (xc_entry_php_t *) p;
 		if (XG(request_time) - p->dtime > 3600) {
@@ -524,7 +551,7 @@ static XC_CACHE_APPLY_FUNC(xc_gc_delete_unlocked) /* {{{ */
 		if (entry->refcount == 0) {
 			/* unlink */
 			*pp = p->next;
-			cache->deletes_count --;
+			cache->cached->deletes_count --;
 			xc_entry_free_real_unlocked(XC_TYPE_PHP, cache, p);
 		}
 		else {
@@ -535,10 +562,10 @@ static XC_CACHE_APPLY_FUNC(xc_gc_delete_unlocked) /* {{{ */
 /* }}} */
 static XC_CACHE_APPLY_FUNC(xc_gc_deletes_one) /* {{{ */
 {
-	if (cache->deletes && XG(request_time) - cache->last_gc_deletes > xc_deletes_gc_interval) {
+	if (cache->cached->deletes && XG(request_time) - cache->cached->last_gc_deletes > xc_deletes_gc_interval) {
 		ENTER_LOCK(cache) {
-			if (cache->deletes && XG(request_time) - cache->last_gc_deletes > xc_deletes_gc_interval) {
-				cache->last_gc_deletes = XG(request_time);
+			if (cache->cached->deletes && XG(request_time) - cache->cached->last_gc_deletes > xc_deletes_gc_interval) {
+				cache->cached->last_gc_deletes = XG(request_time);
 				xc_gc_delete_unlocked(cache TSRMLS_CC);
 			}
 		} LEAVE_LOCK(cache);
@@ -551,13 +578,13 @@ static void xc_gc_deletes(TSRMLS_D) /* {{{ */
 
 	if (xc_php_caches) {
 		for (i = 0, c = xc_php_hcache.size; i < c; i ++) {
-			xc_gc_deletes_one(xc_php_caches[i] TSRMLS_CC);
+			xc_gc_deletes_one(&xc_php_caches[i] TSRMLS_CC);
 		}
 	}
 
 	if (xc_var_caches) {
 		for (i = 0, c = xc_var_hcache.size; i < c; i ++) {
-			xc_gc_deletes_one(xc_var_caches[i] TSRMLS_CC);
+			xc_gc_deletes_one(&xc_var_caches[i] TSRMLS_CC);
 		}
 	}
 }
@@ -572,9 +599,11 @@ static void xc_fillinfo_unlocked(int cachetype, xc_cache_t *cache, zval *return_
 #ifndef NDEBUG
 	xc_memsize_t avail = 0;
 #endif
-	xc_mem_t *mem = cache->mem;
+	const xc_mem_t *mem = cache->mem;
 	const xc_mem_handlers_t *handlers = mem->handlers;
 	zend_ulong interval;
+	const xc_cached_t *cached = cache->cached;
+
 	if (cachetype == XC_TYPE_PHP) {
 		interval = xc_php_ttl ? xc_php_gc_interval : 0;
 	}
@@ -583,18 +612,18 @@ static void xc_fillinfo_unlocked(int cachetype, xc_cache_t *cache, zval *return_
 	}
 
 	add_assoc_long_ex(return_value, ZEND_STRS("slots"),     cache->hentry->size);
-	add_assoc_long_ex(return_value, ZEND_STRS("compiling"), cache->compiling);
-	add_assoc_long_ex(return_value, ZEND_STRS("updates"),   cache->updates);
-	add_assoc_long_ex(return_value, ZEND_STRS("misses"),    cache->updates); /* deprecated */
-	add_assoc_long_ex(return_value, ZEND_STRS("hits"),      cache->hits);
-	add_assoc_long_ex(return_value, ZEND_STRS("clogs"),     cache->clogs);
-	add_assoc_long_ex(return_value, ZEND_STRS("ooms"),      cache->ooms);
-	add_assoc_long_ex(return_value, ZEND_STRS("errors"),    cache->errors);
+	add_assoc_long_ex(return_value, ZEND_STRS("compiling"), cached->compiling);
+	add_assoc_long_ex(return_value, ZEND_STRS("updates"),   cached->updates);
+	add_assoc_long_ex(return_value, ZEND_STRS("misses"),    cached->updates); /* deprecated */
+	add_assoc_long_ex(return_value, ZEND_STRS("hits"),      cached->hits);
+	add_assoc_long_ex(return_value, ZEND_STRS("clogs"),     cached->clogs);
+	add_assoc_long_ex(return_value, ZEND_STRS("ooms"),      cached->ooms);
+	add_assoc_long_ex(return_value, ZEND_STRS("errors"),    cached->errors);
 
-	add_assoc_long_ex(return_value, ZEND_STRS("cached"),    cache->entries_count);
-	add_assoc_long_ex(return_value, ZEND_STRS("deleted"),   cache->deletes_count);
+	add_assoc_long_ex(return_value, ZEND_STRS("cached"),    cached->entries_count);
+	add_assoc_long_ex(return_value, ZEND_STRS("deleted"),   cached->deletes_count);
 	if (interval) {
-		time_t gc = (cache->last_gc_expires + interval) - XG(request_time);
+		time_t gc = (cached->last_gc_expires + interval) - XG(request_time);
 		add_assoc_long_ex(return_value, ZEND_STRS("gc"),    gc > 0 ? gc : 0);
 	}
 	else {
@@ -602,15 +631,15 @@ static void xc_fillinfo_unlocked(int cachetype, xc_cache_t *cache, zval *return_
 	}
 	MAKE_STD_ZVAL(hits);
 	array_init(hits);
-	for (i = 0; i < sizeof(cache->hits_by_hour) / sizeof(cache->hits_by_hour[0]); i ++) {
-		add_next_index_long(hits, (long) cache->hits_by_hour[i]);
+	for (i = 0; i < sizeof(cached->hits_by_hour) / sizeof(cached->hits_by_hour[0]); i ++) {
+		add_next_index_long(hits, (long) cached->hits_by_hour[i]);
 	}
 	add_assoc_zval_ex(return_value, ZEND_STRS("hits_by_hour"), hits);
 
 	MAKE_STD_ZVAL(hits);
 	array_init(hits);
-	for (i = 0; i < sizeof(cache->hits_by_second) / sizeof(cache->hits_by_second[0]); i ++) {
-		add_next_index_long(hits, (long) cache->hits_by_second[i]);
+	for (i = 0; i < sizeof(cached->hits_by_second) / sizeof(cached->hits_by_second[0]); i ++) {
+		add_next_index_long(hits, (long) cached->hits_by_second[i]);
 	}
 	add_assoc_zval_ex(return_value, ZEND_STRS("hits_by_second"), hits);
 
@@ -720,7 +749,7 @@ static void xc_filllist_unlocked(xc_entry_type_t type, xc_cache_t *cache, zval *
 	array_init(list);
 
 	for (i = 0, c = cache->hentry->size; i < c; i ++) {
-		for (e = cache->entries[i]; e; e = e->next) {
+		for (e = cache->cached->entries[i]; e; e = e->next) {
 			xc_fillentry_unlocked(type, e, i, 0, list TSRMLS_CC);
 		}
 	}
@@ -728,7 +757,7 @@ static void xc_filllist_unlocked(xc_entry_type_t type, xc_cache_t *cache, zval *
 
 	ALLOC_INIT_ZVAL(list);
 	array_init(list);
-	for (e = cache->deletes; e; e = e->next) {
+	for (e = cache->cached->deletes; e; e = e->next) {
 		xc_fillentry_unlocked(XC_TYPE_PHP, e, 0, 1, list TSRMLS_CC);
 	}
 	add_assoc_zval(return_value, "deleted_list", list);
@@ -816,7 +845,7 @@ static zend_op_array *xc_entry_install(xc_entry_php_t *entry_php TSRMLS_DC) /* {
 }
 /* }}} */
 
-static inline void xc_entry_unholds_real(xc_stack_t *holds, xc_cache_t **caches, int cachecount TSRMLS_DC) /* {{{ */
+static inline void xc_entry_unholds_real(xc_stack_t *holds, xc_cache_t *caches, int cachecount TSRMLS_DC) /* {{{ */
 {
 	int i;
 	xc_stack_t *s;
@@ -827,7 +856,7 @@ static inline void xc_entry_unholds_real(xc_stack_t *holds, xc_cache_t **caches,
 		s = &holds[i];
 		TRACE("holded %d items", xc_stack_count(s));
 		if (xc_stack_count(s)) {
-			cache = caches[i];
+			cache = &caches[i];
 			ENTER_LOCK(cache) {
 				while (xc_stack_count(s)) {
 					entry_php = (xc_entry_php_t *) xc_stack_pop(s);
@@ -1023,7 +1052,7 @@ static XC_RESOLVE_PATH_CHECKER(xc_entry_resolve_path_func_unlocked) /* {{{ */
 
 	*entry_resolve_path_data->stored_entry = (xc_entry_php_t *) xc_entry_find_unlocked(
 			XC_TYPE_PHP
-			, xc_php_caches[compiler->entry_hash.cacheid]
+			, &xc_php_caches[compiler->entry_hash.cacheid]
 			, compiler->entry_hash.entryslotid
 			, (xc_entry_t *) &compiler->new_entry
 			TSRMLS_CC);
@@ -1888,7 +1917,7 @@ static zend_op_array *xc_compile_file_sandboxed(void *data TSRMLS_DC) /* {{{ */
 	xc_sandboxed_compiler_t *sandboxed_compiler = (xc_sandboxed_compiler_t *) data;
 	xc_compiler_t *compiler = sandboxed_compiler->compiler;
 	zend_bool catched = 0;
-	xc_cache_t *cache = xc_php_caches[compiler->entry_hash.cacheid];
+	xc_cache_t *cache = &xc_php_caches[compiler->entry_hash.cacheid];
 	xc_entry_php_t *stored_entry;
 	xc_entry_data_php_t *stored_php;
 
@@ -1949,7 +1978,7 @@ static zend_op_array *xc_compile_file_sandboxed(void *data TSRMLS_DC) /* {{{ */
 		goto err_aftersandbox;
 	}
 
-	cache->compiling = 0;
+	cache->cached->compiling = 0;
 	xc_free_php(&compiler->new_php TSRMLS_CC);
 
 	if (stored_entry) {
@@ -1974,9 +2003,9 @@ static zend_op_array *xc_compile_file_sandboxed(void *data TSRMLS_DC) /* {{{ */
 err_aftersandbox:
 	xc_free_php(&compiler->new_php TSRMLS_CC);
 
-	cache->compiling = 0;
+	cache->cached->compiling = 0;
 	if (catched) {
-		cache->errors ++;
+		cache->cached->errors ++;
 		zend_bailout();
 	}
 	return compiler->new_php.op_array;
@@ -2015,12 +2044,12 @@ static zend_op_array *xc_compile_file_cached(xc_compiler_t *compiler, zend_file_
 	zend_bool gaveup = 0;
 	zend_bool catched = 0;
 	zend_op_array *op_array;
-	xc_cache_t *cache = xc_php_caches[compiler->entry_hash.cacheid];
+	xc_cache_t *cache = &xc_php_caches[compiler->entry_hash.cacheid];
 	xc_sandboxed_compiler_t sandboxed_compiler;
 
 	/* stale clogs precheck */
-	if (XG(request_time) - cache->compiling < 30) {
-		cache->clogs ++;
+	if (XG(request_time) - cache->cached->compiling < 30) {
+		cache->cached->clogs ++;
 		return old_compile_file(h, type TSRMLS_CC);
 	}
 
@@ -2046,7 +2075,7 @@ static zend_op_array *xc_compile_file_cached(xc_compiler_t *compiler, zend_file_
 		}
 
 		if (stored_entry) {
-			xc_cache_hit_unlocked(cache TSRMLS_CC);
+			xc_cached_hit_unlocked(cache->cached TSRMLS_CC);
 
 			TRACE(" hit %d:%s, holding", compiler->new_entry.file_inode, stored_entry->entry.name.str.val);
 			xc_entry_hold_php_unlocked(cache, stored_entry TSRMLS_CC);
@@ -2061,7 +2090,7 @@ static zend_op_array *xc_compile_file_cached(xc_compiler_t *compiler, zend_file_
 			break;
 		}
 
-		stored_php = xc_php_find_unlocked(cache, &compiler->new_php TSRMLS_CC);
+		stored_php = xc_php_find_unlocked(cache->cached, &compiler->new_php TSRMLS_CC);
 
 		if (stored_php) {
 			compiler->new_entry.php = stored_php;
@@ -2078,19 +2107,19 @@ static zend_op_array *xc_compile_file_cached(xc_compiler_t *compiler, zend_file_
 			break;
 		}
 
-		if (XG(request_time) - cache->compiling < 30) {
+		if (XG(request_time) - cache->cached->compiling < 30) {
 			TRACE("%s", "miss php, but compiling");
-			cache->clogs ++;
+			cache->cached->clogs ++;
 			gaveup = 1;
 			break;
 		}
 
 		TRACE("%s", "miss php, going to compile");
-		cache->compiling = XG(request_time);
+		cache->cached->compiling = XG(request_time);
 	} LEAVE_LOCK_EX(cache);
 
 	if (catched) {
-		cache->compiling = 0;
+		cache->cached->compiling = 0;
 		zend_bailout();
 	}
 
@@ -2171,7 +2200,7 @@ int xc_is_rw(const void *p) /* {{{ */
 
 	if (xc_php_caches) {
 		for (i = 0; i < xc_php_hcache.size; i ++) {
-			shm = xc_php_caches[i]->shm;
+			shm = xc_php_caches[i].shm;
 			if (shm->handlers->is_readwrite(shm, p)) {
 				return 1;
 			}
@@ -2180,7 +2209,7 @@ int xc_is_rw(const void *p) /* {{{ */
 
 	if (xc_var_caches) {
 		for (i = 0; i < xc_var_hcache.size; i ++) {
-			shm = xc_var_caches[i]->shm;
+			shm = xc_var_caches[i].shm;
 			if (shm->handlers->is_readwrite(shm, p)) {
 				return 1;
 			}
@@ -2196,7 +2225,7 @@ int xc_is_ro(const void *p) /* {{{ */
 
 	if (xc_php_caches) {
 		for (i = 0; i < xc_php_hcache.size; i ++) {
-			shm = xc_php_caches[i]->shm;
+			shm = xc_php_caches[i].shm;
 			if (shm->handlers->is_readonly(shm, p)) {
 				return 1;
 			}
@@ -2205,7 +2234,7 @@ int xc_is_ro(const void *p) /* {{{ */
 
 	if (xc_var_caches) {
 		for (i = 0; i < xc_var_hcache.size; i ++) {
-			shm = xc_var_caches[i]->shm;
+			shm = xc_var_caches[i].shm;
 			if (shm->handlers->is_readonly(shm, p)) {
 				return 1;
 			}
@@ -2254,18 +2283,15 @@ static int xc_init_constant(int module_number TSRMLS_DC) /* {{{ */
 	return 0;
 }
 /* }}} */
-static xc_shm_t *xc_cache_destroy(xc_cache_t **caches, xc_hash_t *hcache) /* {{{ */
+static xc_shm_t *xc_cache_destroy(xc_cache_t *caches, xc_hash_t *hcache) /* {{{ */
 {
 	size_t i;
-	xc_cache_t *cache;
 	xc_shm_t *shm = NULL;
 
-	if (!caches) {
-		return shm;
-	}
+	assert(caches);
 
 	for (i = 0; i < hcache->size; i ++) {
-		cache = caches[i];
+		xc_cache_t *cache = &caches[i];
 		if (cache) {
 			if (cache->lck) {
 				xc_lock_destroy(cache->lck);
@@ -2284,9 +2310,9 @@ static xc_shm_t *xc_cache_destroy(xc_cache_t **caches, xc_hash_t *hcache) /* {{{
 	return shm;
 }
 /* }}} */
-static xc_cache_t **xc_cache_init(xc_shm_t *shm, xc_hash_t *hcache, xc_hash_t *hentry, xc_hash_t *hphp, xc_shmsize_t shmsize) /* {{{ */
+static xc_cache_t *xc_cache_init(xc_shm_t *shm, xc_hash_t *hcache, xc_hash_t *hentry, xc_hash_t *hphp, xc_shmsize_t shmsize) /* {{{ */
 {
-	xc_cache_t **caches = NULL, *cache;
+	xc_cache_t *caches = NULL;
 	xc_mem_t *mem;
 	time_t now = time(NULL);
 	size_t i;
@@ -2305,16 +2331,17 @@ static xc_cache_t **xc_cache_init(xc_shm_t *shm, xc_hash_t *hcache, xc_hash_t *h
 		memsize --;
 	}
 
-	CHECK(caches = calloc(hcache->size, sizeof(xc_cache_t *)), "caches OOM");
+	CHECK(caches = calloc(hcache->size, sizeof(xc_cache_t)), "caches OOM");
 
 	for (i = 0; i < hcache->size; i ++) {
-		CHECK(mem            = shm->handlers->meminit(shm, memsize), "Failed init memory allocator");
-		CHECK(cache          = mem->handlers->calloc(mem, 1, sizeof(xc_cache_t)), "cache OOM");
-		CHECK(cache->entries = mem->handlers->calloc(mem, hentry->size, sizeof(xc_entry_t*)), "entries OOM");
+		xc_cache_t *cache = &caches[i];
+		CHECK(mem                     = shm->handlers->meminit(shm, memsize), "Failed init memory allocator");
+		CHECK(cache->cached           = mem->handlers->calloc(mem, 1, sizeof(xc_cached_t)), "cache OOM");
+		CHECK(cache->cached->entries  = mem->handlers->calloc(mem, hentry->size, sizeof(xc_entry_t*)), "entries OOM");
 		if (hphp) {
-			CHECK(cache->phps= mem->handlers->calloc(mem, hphp->size, sizeof(xc_entry_data_php_t*)), "phps OOM");
+			CHECK(cache->cached->phps = mem->handlers->calloc(mem, hphp->size, sizeof(xc_entry_data_php_t*)), "phps OOM");
 		}
-		CHECK(cache->lck     = xc_lock_init(NULL), "can't create lock");
+		CHECK(cache->lck              = xc_lock_init(NULL), "can't create lock");
 
 		cache->hcache  = hcache;
 		cache->hentry  = hentry;
@@ -2322,9 +2349,8 @@ static xc_cache_t **xc_cache_init(xc_shm_t *shm, xc_hash_t *hcache, xc_hash_t *h
 		cache->shm     = shm;
 		cache->mem     = mem;
 		cache->cacheid = i;
-		cache->last_gc_deletes = now;
-		cache->last_gc_expires = now;
-		caches[i] = cache;
+		cache->cached->last_gc_deletes = now;
+		cache->cached->last_gc_expires = now;
 	}
 	return caches;
 
@@ -2576,11 +2602,11 @@ static void xc_clear(long type, xc_cache_t *cache TSRMLS_DC) /* {{{ */
 
 	ENTER_LOCK(cache) {
 		for (entryslotid = 0, c = cache->hentry->size; entryslotid < c; entryslotid ++) {
-			for (e = cache->entries[entryslotid]; e; e = next) {
+			for (e = cache->cached->entries[entryslotid]; e; e = next) {
 				next = e->next;
 				xc_entry_remove_unlocked(type, cache, entryslotid, e TSRMLS_CC);
 			}
-			cache->entries[entryslotid] = NULL;
+			cache->cached->entries[entryslotid] = NULL;
 		}
 	} LEAVE_LOCK(cache);
 } /* }}} */
@@ -2590,7 +2616,7 @@ static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAME
 {
 	long type;
 	int size;
-	xc_cache_t **caches, *cache;
+	xc_cache_t *caches, *cache;
 	long id = 0;
 
 	xcache_admin_auth_check(TSRMLS_C);
@@ -2647,7 +2673,7 @@ static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAME
 
 			array_init(return_value);
 
-			cache = caches[id];
+			cache = &caches[id];
 			ENTER_LOCK(cache) {
 				if (optype == XC_OP_INFO) {
 					xc_fillinfo_unlocked(type, cache, return_value TSRMLS_CC);
@@ -2666,11 +2692,11 @@ static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAME
 
 			if (id == -1) {
 				for (id = 0; id < size; ++id) {
-					xc_clear(type, caches[id] TSRMLS_CC);
+					xc_clear(type, &caches[id] TSRMLS_CC);
 				}
 			}
 			else {
-				xc_clear(type, caches[id] TSRMLS_CC);
+				xc_clear(type, &caches[id] TSRMLS_CC);
 			}
 
 			xc_gc_deletes(TSRMLS_C);
@@ -2762,14 +2788,14 @@ PHP_FUNCTION(xcache_get)
 		return;
 	}
 	xc_entry_var_init_key(&entry_var, &entry_hash, name TSRMLS_CC);
-	cache = xc_var_caches[entry_hash.cacheid];
+	cache = &xc_var_caches[entry_hash.cacheid];
 
 	ENTER_LOCK(cache) {
 		stored_entry_var = (xc_entry_var_t *) xc_entry_find_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
 		if (stored_entry_var) {
 			/* return */
 			xc_processor_restore_zval(return_value, stored_entry_var->value, stored_entry_var->have_references TSRMLS_CC);
-			xc_cache_hit_unlocked(cache TSRMLS_CC);
+			xc_cached_hit_unlocked(cache->cached TSRMLS_CC);
 		}
 		else {
 			RETVAL_NULL();
@@ -2808,7 +2834,7 @@ PHP_FUNCTION(xcache_set)
 	}
 
 	xc_entry_var_init_key(&entry_var, &entry_hash, name TSRMLS_CC);
-	cache = xc_var_caches[entry_hash.cacheid];
+	cache = &xc_var_caches[entry_hash.cacheid];
 
 	ENTER_LOCK(cache) {
 		stored_entry_var = (xc_entry_var_t *) xc_entry_find_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
@@ -2838,12 +2864,12 @@ PHP_FUNCTION(xcache_isset)
 		return;
 	}
 	xc_entry_var_init_key(&entry_var, &entry_hash, name TSRMLS_CC);
-	cache = xc_var_caches[entry_hash.cacheid];
+	cache = &xc_var_caches[entry_hash.cacheid];
 
 	ENTER_LOCK(cache) {
 		stored_entry_var = (xc_entry_var_t *) xc_entry_find_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
 		if (stored_entry_var) {
-			xc_cache_hit_unlocked(cache TSRMLS_CC);
+			xc_cached_hit_unlocked(cache->cached TSRMLS_CC);
 			RETVAL_TRUE;
 			/* return */
 		}
@@ -2872,7 +2898,7 @@ PHP_FUNCTION(xcache_unset)
 		return;
 	}
 	xc_entry_var_init_key(&entry_var, &entry_hash, name TSRMLS_CC);
-	cache = xc_var_caches[entry_hash.cacheid];
+	cache = &xc_var_caches[entry_hash.cacheid];
 
 	ENTER_LOCK(cache) {
 		stored_entry_var = (xc_entry_var_t *) xc_entry_find_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
@@ -2903,12 +2929,12 @@ PHP_FUNCTION(xcache_unset_by_prefix)
 	}
 
 	for (i = 0, iend = xc_var_hcache.size; i < iend; i ++) {
-		xc_cache_t *cache = xc_var_caches[i];
+		xc_cache_t *cache = &xc_var_caches[i];
 		ENTER_LOCK(cache) {
 			int entryslotid, jend;
 			for (entryslotid = 0, jend = cache->hentry->size; entryslotid < jend; entryslotid ++) {
 				xc_entry_t *entry, *next;
-				for (entry = cache->entries[entryslotid]; entry; entry = next) {
+				for (entry = cache->cached->entries[entryslotid]; entry; entry = next) {
 					next = entry->next;
 					if (xc_entry_has_prefix_unlocked(XC_TYPE_VAR, entry, prefix)) {
 						xc_entry_remove_unlocked(XC_TYPE_VAR, cache, entryslotid, entry TSRMLS_CC);
@@ -2945,7 +2971,7 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 	}
 
 	xc_entry_var_init_key(&entry_var, &entry_hash, name TSRMLS_CC);
-	cache = xc_var_caches[entry_hash.cacheid];
+	cache = &xc_var_caches[entry_hash.cacheid];
 
 	ENTER_LOCK(cache) {
 		stored_entry_var = (xc_entry_var_t *) xc_entry_find_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
@@ -2963,7 +2989,7 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 
 				zv = (zval *) cache->shm->handlers->to_readwrite(cache->shm, (char *) stored_entry_var->value);
 				Z_LVAL_P(zv) = value;
-				++cache->updates;
+				++cache->cached->updates;
 				break; /* leave lock */
 			}
 
@@ -3207,7 +3233,9 @@ static PHP_MINIT_FUNCTION(xcache_cacher) /* {{{ */
 	ext = zend_get_extension("Zend Optimizer");
 	if (ext) {
 		/* zend_optimizer.optimization_level>0 is not compatible with other cacher, disabling */
+#if 0
 		ext->op_array_handler = NULL;
+#endif
 	}
 	/* cache if there's an op_array_ctor */
 	for (ext = zend_llist_get_first_ex(&zend_extensions, &lpos);

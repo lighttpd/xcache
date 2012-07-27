@@ -146,7 +146,10 @@ make)
 esac
 
 LANG=C /usr/bin/make $MAKEOPTS "${MAKEARGS[@]}" 2>&1 \
-| sed -ur 's#Werror=implicit-function-declaration#We/rror=i/mplicit-function-declaration#' \
+| sed -ur \
+	-e 's#Werror=implicit-function-declaration#We/rror=i/mplicit-function-declaration#' \
+	-e 's#\./xc_processor\.h#'$PWD'/xc_processor.h#' \
+	-e 's#\./xc_processor\.c\.h#'$PWD'/xc_processor.c.h#' \
 | hi error implicit warn FAIL
 ret=${PIPESTATUS[0]}
 if [[ $ret -ne 0 || $type = make ]]; then

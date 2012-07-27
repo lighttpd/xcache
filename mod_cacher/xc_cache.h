@@ -10,44 +10,24 @@
 
 typedef ulong xc_hash_value_t;
 typedef struct _xc_hash_t xc_hash_t;
+typedef struct _xc_cached_t xc_cached_t;
 typedef struct _xc_entry_t xc_entry_t;
 typedef struct _xc_entry_data_php_t xc_entry_data_php_t;
 
 struct _xc_lock_t;
 struct _xc_shm_t;
-/* {{{ xc_cache_t */
+/* {{{ xc_cache_t: only cache info, not in shm */
 typedef struct {
 	int cacheid;
 	xc_hash_t  *hcache; /* hash to cacheid */
 
-	time_t     compiling;
-	zend_ulong updates;
-	zend_ulong hits;
-	zend_ulong clogs;
-	zend_ulong ooms;
-	zend_ulong errors;
 	struct _xc_lock_t  *lck;
 	struct _xc_shm_t   *shm; /* which shm contains us */
 	struct _xc_mem_t   *mem; /* which mem contains us */
 
-	xc_entry_t **entries;
-	int entries_count;
-	xc_entry_data_php_t **phps;
-	int phps_count;
-	xc_entry_t *deletes;
-	int deletes_count;
 	xc_hash_t  *hentry; /* hash settings to entry */
 	xc_hash_t  *hphp;   /* hash settings to php */
-
-	time_t     last_gc_deletes;
-	time_t     last_gc_expires;
-
-	time_t     hits_by_hour_cur_time;
-	zend_uint  hits_by_hour_cur_slot;
-	zend_ulong hits_by_hour[24];
-	time_t     hits_by_second_cur_time;
-	zend_uint  hits_by_second_cur_slot;
-	zend_ulong hits_by_second[5];
+	xc_cached_t *cached;
 } xc_cache_t;
 /* }}} */
 /* {{{ xc_op_array_info_detail_t */
