@@ -66,6 +66,9 @@ function th($name, $attrs = null)
 
 function xcache_validateFileName($name)
 {
+	if (!preg_match('!^[a-zA-Z0-9._-]+$!', $name)) {
+		var_dump($name);
+	}
 	return preg_match('!^[a-zA-Z0-9._-]+$!', $name);
 }
 
@@ -80,8 +83,12 @@ function get_language_file_ex($name, $lang)
 	if (isset($langMap[$lang])) {
 		$lang = $langMap[$lang];
 	}
+	else if (!xcache_validateFileName($lang)) {
+		return null;
+	}
+
 	$file = "$name-$lang.lang.php";
-	if (xcache_validateFileName($file) && file_exists($file)) {
+	if (file_exists($file)) {
 		return $file;
 	}
 	return null;
@@ -235,7 +242,7 @@ if (file_exists("./config.php")) {
 	include("./config.php");
 }
 
-include(get_language_file("common"));
+include(get_language_file("../common/common"));
 
 $modules = array();
 if (file_exists("../cacher/index.php")) {
