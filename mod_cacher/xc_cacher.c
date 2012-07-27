@@ -506,7 +506,7 @@ static void xc_gc_expires_one(xc_entry_type_t type, xc_cache_t *cache, zend_ulon
 /* }}} */
 static void xc_gc_expires_php(TSRMLS_D) /* {{{ */
 {
-	int i, c;
+	size_t i, c;
 
 	if (!xc_php_ttl || !xc_php_gc_interval || !xc_php_caches) {
 		return;
@@ -568,7 +568,7 @@ static XC_CACHE_APPLY_FUNC(xc_gc_deletes_one) /* {{{ */
 /* }}} */
 static void xc_gc_deletes(TSRMLS_D) /* {{{ */
 {
-	int i, c;
+	size_t i, c;
 
 	if (xc_php_caches) {
 		for (i = 0, c = xc_php_hcache.size; i < c; i ++) {
@@ -841,9 +841,9 @@ static zend_op_array *xc_entry_install(xc_entry_php_t *entry_php TSRMLS_DC) /* {
 }
 /* }}} */
 
-static inline void xc_entry_unholds_real(xc_stack_t *holds, xc_cache_t *caches, int cachecount TSRMLS_DC) /* {{{ */
+static inline void xc_entry_unholds_real(xc_stack_t *holds, xc_cache_t *caches, size_t cachecount TSRMLS_DC) /* {{{ */
 {
-	int i;
+	size_t i;
 	xc_stack_t *s;
 	xc_cache_t *cache;
 	xc_entry_php_t *entry_php;
@@ -2606,7 +2606,7 @@ typedef enum { XC_OP_COUNT, XC_OP_INFO, XC_OP_LIST, XC_OP_CLEAR, XC_OP_ENABLE } 
 static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAMETERS)
 {
 	long type;
-	int size;
+	long size;
 	xc_cache_t *caches, *cache;
 	long id = 0;
 	zend_bool enable = 1;
@@ -3210,7 +3210,7 @@ static PHP_MINFO_FUNCTION(xcache_cacher) /* {{{ */
 
 	if (xc_php_size) {
 		ptr = _php_math_number_format(xc_php_size, 0, '.', ',');
-		snprintf(buf, sizeof(buf), "enabled, %s bytes, %lu split(s), with %lu slots each", ptr, xc_php_hcache.size, xc_php_hentry.size);
+		snprintf(buf, sizeof(buf), "enabled, %s bytes, %lu split(s), with %lu slots each", ptr, (unsigned long) xc_php_hcache.size, xc_php_hentry.size);
 		php_info_print_table_row(2, "Opcode Cache", buf);
 		efree(ptr);
 	}
@@ -3219,7 +3219,7 @@ static PHP_MINFO_FUNCTION(xcache_cacher) /* {{{ */
 	}
 	if (xc_var_size) {
 		ptr = _php_math_number_format(xc_var_size, 0, '.', ',');
-		snprintf(buf, sizeof(buf), "enabled, %s bytes, %lu split(s), with %lu slots each", ptr, xc_var_hcache.size, xc_var_hentry.size);
+		snprintf(buf, sizeof(buf), "enabled, %s bytes, %lu split(s), with %lu slots each", ptr, (unsigned long) xc_var_hcache.size, xc_var_hentry.size);
 		php_info_print_table_row(2, "Variable Cache", buf);
 		efree(ptr);
 	}
