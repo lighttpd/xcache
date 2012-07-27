@@ -178,6 +178,9 @@ function processAction()
 	}
 }
 processAction();
+if (isset($_POST['coredump'])) {
+	xcache_coredump();
+}
 // }}}
 // {{{ load info/list
 $cacheinfos = array();
