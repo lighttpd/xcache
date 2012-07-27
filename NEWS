@@ -3,6 +3,7 @@
  * improvements
  * adds warning for misconfiguration
  * auto disable caching on crash
+ * updated api
  * uses extension to load XCache. load via zend_extension is unsupported
  * updated XCache admin page
 

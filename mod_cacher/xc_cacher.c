@@ -68,6 +68,7 @@ struct _xc_cached_t { /* {{{ stored in shm */
 	int cacheid;
 
 	time_t     compiling;
+	time_t     disabled;
 	zend_ulong updates;
 	zend_ulong hits;
 	zend_ulong skips;
@@ -130,13 +131,6 @@ static zend_bool xc_readonly_protection = 0;
 zend_bool xc_have_op_array_ctor = 0;
 
 typedef enum { XC_TYPE_PHP, XC_TYPE_VAR } xc_entry_type_t;
-
-/* TODO */
-static inline zend_bool xc_cache_disabled()
-{
-	return 0;
-}
-/* }}} */
 
 /* any function in *_unlocked is only safe be called within locked (single thread access) area */
 
@@ -500,7 +494,7 @@ static XC_ENTRY_APPLY_FUNC(xc_gc_expires_var_entry_unlocked) /* {{{ */
 static void xc_gc_expires_one(xc_entry_type_t type, xc_cache_t *cache, zend_ulong gc_interval, cache_apply_unlocked_func_t apply_func TSRMLS_DC) /* {{{ */
 {
 	TRACE("interval %lu, %lu %lu", (zend_ulong) XG(request_time), (zend_ulong) cache->cached->last_gc_expires, gc_interval);
-	if (XG(request_time) >= cache->cached->last_gc_expires + (time_t) gc_interval) {
+	if (!cache->cached->disabled && XG(request_time) >= cache->cached->last_gc_expires + (time_t) gc_interval) {
 		ENTER_LOCK(cache) {
 			if (XG(request_time) >= cache->cached->last_gc_expires + (time_t) gc_interval) {
 				cache->cached->last_gc_expires = XG(request_time);
@@ -562,7 +556,7 @@ static XC_CACHE_APPLY_FUNC(xc_gc_delete_unlocked) /* {{{ */
 /* }}} */
 static XC_CACHE_APPLY_FUNC(xc_gc_deletes_one) /* {{{ */
 {
-	if (cache->cached->deletes && XG(request_time) - cache->cached->last_gc_deletes > xc_deletes_gc_interval) {
+	if (!cache->cached->disabled && cache->cached->deletes && XG(request_time) - cache->cached->last_gc_deletes > xc_deletes_gc_interval) {
 		ENTER_LOCK(cache) {
 			if (cache->cached->deletes && XG(request_time) - cache->cached->last_gc_deletes > xc_deletes_gc_interval) {
 				cache->cached->last_gc_deletes = XG(request_time);
@@ -613,6 +607,7 @@ static void xc_fillinfo_unlocked(int cachetype, xc_cache_t *cache, zval *return_
 
 	add_assoc_long_ex(return_value, ZEND_STRS("slots"),     cache->hentry->size);
 	add_assoc_long_ex(return_value, ZEND_STRS("compiling"), cached->compiling);
+	add_assoc_long_ex(return_value, ZEND_STRS("disabled"),  cached->disabled);
 	add_assoc_long_ex(return_value, ZEND_STRS("updates"),   cached->updates);
 	add_assoc_long_ex(return_value, ZEND_STRS("misses"),    cached->updates); /* deprecated */
 	add_assoc_long_ex(return_value, ZEND_STRS("hits"),      cached->hits);
@@ -2048,8 +2043,11 @@ static zend_op_array *xc_compile_file_cached(xc_compiler_t *compiler, zend_file_
 	xc_cache_t *cache = &xc_php_caches[compiler->entry_hash.cacheid];
 	xc_sandboxed_compiler_t sandboxed_compiler;
 
+	if (cache->cached->disabled) {
+		return old_compile_file(h, type TSRMLS_CC);
+	}
 	/* stale skips precheck */
-	if (XG(request_time) - cache->cached->compiling < 30) {
+	if (cache->cached->disabled || XG(request_time) - cache->cached->compiling < 30) {
 		cache->cached->skips ++;
 		return old_compile_file(h, type TSRMLS_CC);
 	}
@@ -2169,7 +2167,6 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 #else
 	 || strstr(PG(include_path), "://") != NULL
 #endif
-	 || xc_cache_disabled()
 	 ) {
 		TRACE("%s", "cacher not enabled");
 		return old_compile_file(h, type TSRMLS_CC);
@@ -2480,12 +2477,10 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 /* }}} */
 static void xc_request_shutdown(TSRMLS_D) /* {{{ */
 {
-	if (!xc_cache_disabled()) {
-		xc_entry_unholds(TSRMLS_C);
-		xc_gc_expires_php(TSRMLS_C);
-		xc_gc_expires_var(TSRMLS_C);
-		xc_gc_deletes(TSRMLS_C);
-	}
+	xc_entry_unholds(TSRMLS_C);
+	xc_gc_expires_php(TSRMLS_C);
+	xc_gc_expires_var(TSRMLS_C);
+	xc_gc_deletes(TSRMLS_C);
 #ifdef ZEND_ENGINE_2
 	zend_llist_destroy(&XG(gc_op_arrays));
 #endif
@@ -2607,17 +2602,18 @@ static void xc_clear(long type, xc_cache_t *cache TSRMLS_DC) /* {{{ */
 	} LEAVE_LOCK(cache);
 } /* }}} */
 /* {{{ xcache_admin_operate */
-typedef enum { XC_OP_COUNT, XC_OP_INFO, XC_OP_LIST, XC_OP_CLEAR } xcache_op_type;
+typedef enum { XC_OP_COUNT, XC_OP_INFO, XC_OP_LIST, XC_OP_CLEAR, XC_OP_ENABLE } xcache_op_type;
 static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAMETERS)
 {
 	long type;
 	int size;
 	xc_cache_t *caches, *cache;
 	long id = 0;
+	zend_bool enable = 1;
 
 	xcache_admin_auth_check(TSRMLS_C);
 
-	if (!xc_initized || xc_cache_disabled()) {
+	if (!xc_initized) {
 		RETURN_NULL();
 	}
 
@@ -2627,12 +2623,21 @@ static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAME
 				return;
 			}
 			break;
+
 		case XC_OP_CLEAR:
 			id = -1;
 			if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l|l", &type, &id) == FAILURE) {
 				return;
 			}
 			break;
+
+		case XC_OP_ENABLE:
+			id = -1;
+			if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l|lb", &type, &id, &enable) == FAILURE) {
+				return;
+			}
+			break;
+
 		default:
 			if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ll", &type, &id) == FAILURE) {
 				return;
@@ -2698,6 +2703,23 @@ static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAME
 			xc_gc_deletes(TSRMLS_C);
 			break;
 
+		case XC_OP_ENABLE:
+			if (!caches || id < -1 || id >= size) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "Cache not exists");
+				RETURN_FALSE;
+			}
+
+			if (id == -1) {
+				for (id = 0; id < size; ++id) {
+					caches[id].cached->disabled = !enable ? XG(request_time) : 0;
+				}
+			}
+			else {
+				caches[id].cached->disabled = !enable ? XG(request_time) : 0;
+			}
+
+			break;
+
 		default:
 			assert(0);
 	}
@@ -2731,8 +2753,15 @@ PHP_FUNCTION(xcache_clear_cache)
 	xcache_admin_operate(XC_OP_CLEAR, INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 /* }}} */
+/* {{{ proto array xcache_enable_cache(int type, [ int id = -1, [ bool enable = true ] ])
+   Enable or disable cache by id on specified cache type */
+PHP_FUNCTION(xcache_enable_cache)
+{
+	xcache_admin_operate(XC_OP_ENABLE, INTERNAL_FUNCTION_PARAM_PASSTHRU);
+}
+/* }}} */
 
-#define VAR_DISABLED_WARNING() do { \
+#define VAR_CACHE_NOT_INITIALIZED() do { \
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "XCache var cache was not initialized properly. Check php log for actual reason"); \
 } while (0)
 
@@ -2775,8 +2804,8 @@ PHP_FUNCTION(xcache_get)
 	xc_entry_var_t entry_var, *stored_entry_var;
 	zval *name;
 
-	if (!xc_var_caches || xc_cache_disabled()) {
-		VAR_DISABLED_WARNING();
+	if (!xc_var_caches) {
+		VAR_CACHE_NOT_INITIALIZED();
 		RETURN_NULL();
 	}
 
@@ -2785,6 +2814,10 @@ PHP_FUNCTION(xcache_get)
 	}
 	xc_entry_var_init_key(&entry_var, &entry_hash, name TSRMLS_CC);
 	cache = &xc_var_caches[entry_hash.cacheid];
+
+	if (cache->cached->disabled) {
+		RETURN_NULL();
+	}
 
 	ENTER_LOCK(cache) {
 		stored_entry_var = (xc_entry_var_t *) xc_entry_find_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
@@ -2809,8 +2842,8 @@ PHP_FUNCTION(xcache_set)
 	zval *name;
 	zval *value;
 
-	if (!xc_var_caches || xc_cache_disabled()) {
-		VAR_DISABLED_WARNING();
+	if (!xc_var_caches) {
+		VAR_CACHE_NOT_INITIALIZED();
 		RETURN_NULL();
 	}
 
@@ -2832,6 +2865,10 @@ PHP_FUNCTION(xcache_set)
 	xc_entry_var_init_key(&entry_var, &entry_hash, name TSRMLS_CC);
 	cache = &xc_var_caches[entry_hash.cacheid];
 
+	if (cache->cached->disabled) {
+		RETURN_NULL();
+	}
+
 	ENTER_LOCK(cache) {
 		stored_entry_var = (xc_entry_var_t *) xc_entry_find_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
 		if (stored_entry_var) {
@@ -2851,8 +2888,8 @@ PHP_FUNCTION(xcache_isset)
 	xc_entry_var_t entry_var, *stored_entry_var;
 	zval *name;
 
-	if (!xc_var_caches || xc_cache_disabled()) {
-		VAR_DISABLED_WARNING();
+	if (!xc_var_caches) {
+		VAR_CACHE_NOT_INITIALIZED();
 		RETURN_FALSE;
 	}
 
@@ -2861,6 +2898,10 @@ PHP_FUNCTION(xcache_isset)
 	}
 	xc_entry_var_init_key(&entry_var, &entry_hash, name TSRMLS_CC);
 	cache = &xc_var_caches[entry_hash.cacheid];
+
+	if (cache->cached->disabled) {
+		RETURN_FALSE;
+	}
 
 	ENTER_LOCK(cache) {
 		stored_entry_var = (xc_entry_var_t *) xc_entry_find_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
@@ -2885,8 +2926,8 @@ PHP_FUNCTION(xcache_unset)
 	xc_entry_var_t entry_var, *stored_entry_var;
 	zval *name;
 
-	if (!xc_var_caches || xc_cache_disabled()) {
-		VAR_DISABLED_WARNING();
+	if (!xc_var_caches) {
+		VAR_CACHE_NOT_INITIALIZED();
 		RETURN_FALSE;
 	}
 
@@ -2895,6 +2936,10 @@ PHP_FUNCTION(xcache_unset)
 	}
 	xc_entry_var_init_key(&entry_var, &entry_hash, name TSRMLS_CC);
 	cache = &xc_var_caches[entry_hash.cacheid];
+
+	if (cache->cached->disabled) {
+		RETURN_FALSE;
+	}
 
 	ENTER_LOCK(cache) {
 		stored_entry_var = (xc_entry_var_t *) xc_entry_find_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
@@ -2915,8 +2960,8 @@ PHP_FUNCTION(xcache_unset_by_prefix)
 	zval *prefix;
 	int i, iend;
 
-	if (!xc_var_caches || xc_cache_disabled()) {
-		VAR_DISABLED_WARNING();
+	if (!xc_var_caches) {
+		VAR_CACHE_NOT_INITIALIZED();
 		RETURN_FALSE;
 	}
 
@@ -2926,6 +2971,10 @@ PHP_FUNCTION(xcache_unset_by_prefix)
 
 	for (i = 0, iend = xc_var_hcache.size; i < iend; i ++) {
 		xc_cache_t *cache = &xc_var_caches[i];
+		if (cache->cached->disabled) {
+			continue;
+		}
+
 		ENTER_LOCK(cache) {
 			int entryslotid, jend;
 			for (entryslotid = 0, jend = cache->hentry->size; entryslotid < jend; entryslotid ++) {
@@ -2951,8 +3000,8 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 	long value = 0;
 	zval oldzval;
 
-	if (!xc_var_caches || xc_cache_disabled()) {
-		VAR_DISABLED_WARNING();
+	if (!xc_var_caches) {
+		VAR_CACHE_NOT_INITIALIZED();
 		RETURN_NULL();
 	}
 
@@ -2968,6 +3017,10 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 
 	xc_entry_var_init_key(&entry_var, &entry_hash, name TSRMLS_CC);
 	cache = &xc_var_caches[entry_hash.cacheid];
+
+	if (cache->cached->disabled) {
+		RETURN_NULL();
+	}
 
 	ENTER_LOCK(cache) {
 		stored_entry_var = (xc_entry_var_t *) xc_entry_find_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
@@ -3033,6 +3086,7 @@ static zend_function_entry xcache_cacher_functions[] = /* {{{ */
 	PHP_FE(xcache_info,              NULL)
 	PHP_FE(xcache_list,              NULL)
 	PHP_FE(xcache_clear_cache,       NULL)
+	PHP_FE(xcache_enable_cache,      NULL)
 	PHP_FE(xcache_get,               NULL)
 	PHP_FE(xcache_set,               NULL)
 	PHP_FE(xcache_isset,             NULL)
@@ -3357,5 +3411,27 @@ static zend_module_entry xcache_cacher_module_entry = { /* {{{ */
 int xc_cacher_startup_module() /* {{{ */
 {
 	return zend_startup_module(&xcache_cacher_module_entry);
+}
+/* }}} */
+void xc_cacher_disable() /* {{{ */
+{
+	time_t now = time(NULL);
+	size_t i;
+
+	if (xc_php_caches) {
+		for (i = 0; i < xc_php_hcache.size; i ++) {
+			if (xc_php_caches[i].cached) {
+				xc_php_caches[i].cached->disabled = now;
+			}
+		}
+	}
+
+	if (xc_var_caches) {
+		for (i = 0; i < xc_var_hcache.size; i ++) {
+			if (xc_var_caches[i].cached) {
+				xc_var_caches[i].cached->disabled = now;
+			}
+		}
+	}
 }
 /* }}} */

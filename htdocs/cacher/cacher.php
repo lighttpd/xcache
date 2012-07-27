@@ -157,8 +157,8 @@ if (!isset($_GET['type'])) {
 }
 $_GET['type'] = $type = (int) $_GET['type'];
 
-// {{{ process clear
-function processClear()
+// {{{ process clear, enable, disable
+function processAction()
 {
 	$type = isset($_POST['type']) ? $_POST['type'] : null;
 	if ($type != XC_TYPE_PHP && $type != XC_TYPE_VAR) {
@@ -167,19 +167,17 @@ function processClear()
 	if (isset($type)) {
 		$cacheid = (int) (isset($_POST['cacheid']) ? $_POST['cacheid'] : 0);
 		if (isset($_POST['clearcache'])) {
-			$count = xcache_count($type);
-			if ($cacheid >= 0) {
-				for ($cacheid = 0; $cacheid < $count; $cacheid ++) {
-					xcache_clear_cache($type, $cacheid);
-				}
-			}
-			else {
-				xcache_clear_cache($type);
-			}
+			xcache_clear_cache($type, $cacheid);
+		}
+		if (isset($_POST['enable'])) {
+			xcache_enable_cache($type, $cacheid);
+		}
+		if (isset($_POST['disable'])) {
+			xcache_enable_cache($type, $cacheid, false);
 		}
 	}
 }
-processClear();
+processAction();
 // }}}
 // {{{ load info/list
 $cacheinfos = array();
@@ -206,6 +204,7 @@ if ($pcnt >= 2) {
 	$total['cacheid'] = -1;
 	$total['gc'] = null;
 	$total['istotal'] = true;
+	unset($total['compiling']);
 	$cacheinfos[] = $total;
 }
 

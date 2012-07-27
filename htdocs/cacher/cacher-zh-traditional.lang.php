@@ -17,8 +17,14 @@ $strings = array(
 		=> '命中',
 		'Normal'
 		=> '正常',
-		'Compiling(%s)'
-		=> '編譯中(%s)',
+		'Compiling'
+		=> '編譯中',
+		'Disabled'
+		=> '禁用',
+		'Disable'
+		=> '禁用',
+		'Enable'
+		=> '啟用',
 		'Modify'
 		=> '修改',
 		'See also'

@@ -54,6 +54,11 @@ $b = new Cycle('class="col1"', 'class="col2"');
 	<?php
 	$numkeys = explode(',', 'slots,size,avail,hits,updates,skips,ooms,errors,cached,deleted');
 	$l_clear = _('Clear');
+	$l_disabled = _('Disabled');
+	$l_disable = _('Disable');
+	$l_enable = _('Enable');
+	$l_compiling = _('Compiling');
+	$l_normal = _('Normal');
 	$l_clear_confirm = _('Sure to clear?');
 	foreach ($cacheinfos as $i => $ci) {
 		echo "
@@ -91,14 +96,22 @@ $b = new Cycle('class="col1"', 'class="col2"');
 			$ci['can_readonly'] = '-';
 		}
 		else {
-			if ($ci['type'] == $type_php) {
-			$ci['status'] = $ci['compiling'] ? sprintf(_('Compiling(%s)'), age($ci['compiling'])) : _('Normal');
+			if ($ci['disabled']) {
+				$ci['status'] = $l_disabled
+					. sprintf("(%s)", age($ci['disabled']));
+			}
+			else if ($ci['type'] == $type_php) {
+				$ci['status'] = $ci['compiling']
+					? $l_compiling . sprintf("(%s)", age($ci['compiling']))
+					: $l_normal;
 			}
 			else {
 				$ci['status'] = '-';
 			}
 			$ci['can_readonly'] = $ci['can_readonly'] ? 'yes' : 'no';
 		}
+		$enabledisable = $ci['disabled'] ? 'enable' : 'disable';
+		$l_enabledisable = $ci['disabled'] ? $l_enable : $l_disable;
 		echo <<<EOS
 		<th>{$ci['cache_name']}</th>
 		<td title="{$ci['slots']}">{$ci_slots}</td>
@@ -116,6 +129,7 @@ $b = new Cycle('class="col1"', 'class="col2"');
 					><input type="hidden" name="type" value="{$ci['type']}"
 					/><input type="hidden" name="cacheid" value="{$ci['cacheid']}"
 					/><input type="submit" name="clearcache" value="{$l_clear}" class="submit" onclick="return confirm('{$l_clear_confirm}');"
+					/><input type="submit" name="{$enabledisable}" value="{$l_enabledisable}" class="submit"
 				/></div
 			></form
 		></td>
