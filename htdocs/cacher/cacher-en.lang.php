@@ -17,8 +17,8 @@ $strings = array(
 		=> 'Percent Graph|Shows how much memory available in percent, and memory blocks status in graph',
 		'cache.operations'
 		=> 'Operations|Press the clear button to clean this cache',
-		'cache.compiling'
-		=> 'Comp.|Compiling flag, "yes" if the cache is busy compiling php script',
+		'cache.status'
+		=> 'Status|Compiling flag, "Compiling" if the cache is busy compiling php script. "Disabled" if cache is disabled',
 		'cache.hits'
 		=> 'Hits|Cache Hits, hit=a var/php is loaded from this cache',
 		'cache.hits_avg_h'
@@ -29,8 +29,8 @@ $strings = array(
 		=> 'Hits/S|Average Hits per Second. Only last 5 seconds is logged',
 		'cache.updates'
 		=> 'Updates|Cache Updates',
-		'cache.clogs'
-		=> 'Clogs|Compiling Clogs, clog=compiling is needed but avoided to wait(be blocked) when the cache is busy compiling already',
+		'cache.skips'
+		=> 'Skips|Skips. Skip=updates are needed but skipped for some reason. e.g.: other process/thread is busy compiling on this cache',
 		'cache.ooms'
 		=> 'OOMs|Out Of Memory, how many times a new item should be stored but there isn\'t enough memory in the cache, think of increasing the xcache.size or xcache.var_size',
 		'cache.errors'
@@ -48,7 +48,7 @@ $strings = array(
 		'entry.name'
 		=> 'Entry name|The entry name or filename',
 		'entry.hits'
-		=> 'Hits|Times this entry is hit (loaded from this cache)',
+		=> 'Hits|Hit times of this entry (loaded from this cache)',
 		'entry.size'
 		=> 'Size|Size in bytes of this entry in the cache',
 		'entry.refcount'

@@ -181,11 +181,11 @@ function age($time)
 	for ($i = 6; $i >= 0; $i --) {
 		if ($delta >= $seconds[$i]) {
 			$ret = (int) ($delta / $seconds[$i]);
-			return $ret . ' ' . $name[$i];
+			return $ret . $name[$i];
 		}
 	}
 
-	return '0 s';
+	return '0s';
 }
 
 function stripaddslashes_array($value, $mqs = false)

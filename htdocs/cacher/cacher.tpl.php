@@ -35,13 +35,13 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		, th(N_("cache.used"))
 		, th(N_("cache.blocksgraph"))
 		, th(N_("cache.operations"))
-		, th(N_("cache.compiling"))
+		, th(N_("cache.status"))
 		, th(N_("cache.hits"))
 		, th(N_("cache.hits_graph"))
 		, th(N_("cache.hits_avg_h"))
 		, th(N_("cache.hits_avg_s"))
 		, th(N_("cache.updates"))
-		, th(N_("cache.clogs"))
+		, th(N_("cache.skips"))
 		, th(N_("cache.ooms"))
 		, th(N_("cache.errors"))
 		, th(N_("cache.readonly_protected"))
@@ -52,7 +52,7 @@ $b = new Cycle('class="col1"', 'class="col2"');
 	?>
 	</tr>
 	<?php
-	$numkeys = explode(',', 'slots,size,avail,hits,updates,clogs,ooms,errors,cached,deleted');
+	$numkeys = explode(',', 'slots,size,avail,hits,updates,skips,ooms,errors,cached,deleted');
 	$l_clear = _('Clear');
 	$l_clear_confirm = _('Sure to clear?');
 	foreach ($cacheinfos as $i => $ci) {
@@ -87,11 +87,16 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		$hits_graph_h_w = count($ci['hits_by_hour']) * 2;
 
 		if (!empty($ci['istotal'])) {
-			$ci['compiling']    = '-';
+			$ci['status']       = '-';
 			$ci['can_readonly'] = '-';
 		}
 		else {
-			$ci['compiling']    = $ci['type'] == $type_php ? ($ci['compiling'] ? 'yes' : 'no') : '-';
+			if ($ci['type'] == $type_php) {
+			$ci['status'] = $ci['compiling'] ? sprintf(_('Compiling(%s)'), age($ci['compiling'])) : _('Normal');
+			}
+			else {
+				$ci['status'] = '-';
+			}
 			$ci['can_readonly'] = $ci['can_readonly'] ? 'yes' : 'no';
 		}
 		echo <<<EOS
@@ -114,13 +119,13 @@ $b = new Cycle('class="col1"', 'class="col2"');
 				/></div
 			></form
 		></td>
-		<td>{$ci['compiling']}</td>
+		<td>{$ci['status']}</td>
 		<td>{$ci['hits']}</td>
 		<td><div class="hitsgraph" style="width: {$hits_graph_h_w}px">{$hits_graph_h}</div></td>
 		<td>{$hits_avg_h}</td>
 		<td>{$hits_avg_s}</td>
 		<td>{$ci['updates']}</td>
-		<td>{$ci['clogs']}</td>
+		<td>{$ci['skips']}</td>
 		<td>{$ci['ooms']}</td>
 		<td>{$ci['errors']}</td>
 		<td>{$ci['can_readonly']}</td>
