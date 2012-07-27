@@ -575,12 +575,15 @@ static zend_function_entry xcache_coverager_functions[] = /* {{{ */
 };
 /* }}} */
 
-static int xc_optimizer_zend_startup(zend_extension *extension) /* {{{ */
+static int xc_coverager_zend_startup(zend_extension *extension) /* {{{ */
 {
+	old_compile_file = zend_compile_file;
+	zend_compile_file = xc_compile_file_for_coverage;
+
 	return SUCCESS;
 }
 /* }}} */
-static void xc_optimizer_zend_shutdown(zend_extension *extension) /* {{{ */
+static void xc_coverager_zend_shutdown(zend_extension *extension) /* {{{ */
 {
 	/* empty */
 }
@@ -611,8 +614,8 @@ static zend_extension xc_coverager_zend_extension_entry = {
 	XCACHE_AUTHOR,
 	XCACHE_URL,
 	XCACHE_COPYRIGHT,
-	xc_optimizer_zend_startup,
-	xc_optimizer_zend_shutdown,
+	xc_coverager_zend_startup,
+	xc_coverager_zend_shutdown,
 	NULL,           /* activate_func_t */
 	NULL,           /* deactivate_func_t */
 	NULL,           /* message_handler_func_t */
@@ -648,9 +651,6 @@ static PHP_MINFO_FUNCTION(xcache_coverager) /* {{{ */
 /* }}} */
 static PHP_MINIT_FUNCTION(xcache_coverager) /* {{{ */
 {
-	old_compile_file = zend_compile_file;
-	zend_compile_file = xc_compile_file_for_coverage;
-
 	REGISTER_INI_ENTRIES();
 
 	if (cfg_get_string("xcache.coveragedump_directory", &xc_coveragedump_dir) == SUCCESS && xc_coveragedump_dir) {
