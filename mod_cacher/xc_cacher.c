@@ -70,7 +70,7 @@ struct _xc_cached_t { /* {{{ stored in shm */
 	time_t     compiling;
 	zend_ulong updates;
 	zend_ulong hits;
-	zend_ulong clogs;
+	zend_ulong skips;
 	zend_ulong ooms;
 	zend_ulong errors;
 
@@ -616,7 +616,8 @@ static void xc_fillinfo_unlocked(int cachetype, xc_cache_t *cache, zval *return_
 	add_assoc_long_ex(return_value, ZEND_STRS("updates"),   cached->updates);
 	add_assoc_long_ex(return_value, ZEND_STRS("misses"),    cached->updates); /* deprecated */
 	add_assoc_long_ex(return_value, ZEND_STRS("hits"),      cached->hits);
-	add_assoc_long_ex(return_value, ZEND_STRS("clogs"),     cached->clogs);
+	add_assoc_long_ex(return_value, ZEND_STRS("skips"),     cached->skips);
+	add_assoc_long_ex(return_value, ZEND_STRS("clogs"),     cached->skips); /* deprecated */
 	add_assoc_long_ex(return_value, ZEND_STRS("ooms"),      cached->ooms);
 	add_assoc_long_ex(return_value, ZEND_STRS("errors"),    cached->errors);
 
@@ -2047,9 +2048,9 @@ static zend_op_array *xc_compile_file_cached(xc_compiler_t *compiler, zend_file_
 	xc_cache_t *cache = &xc_php_caches[compiler->entry_hash.cacheid];
 	xc_sandboxed_compiler_t sandboxed_compiler;
 
-	/* stale clogs precheck */
+	/* stale skips precheck */
 	if (XG(request_time) - cache->cached->compiling < 30) {
-		cache->cached->clogs ++;
+		cache->cached->skips ++;
 		return old_compile_file(h, type TSRMLS_CC);
 	}
 
@@ -2109,7 +2110,7 @@ static zend_op_array *xc_compile_file_cached(xc_compiler_t *compiler, zend_file_
 
 		if (XG(request_time) - cache->cached->compiling < 30) {
 			TRACE("%s", "miss php, but compiling");
-			cache->cached->clogs ++;
+			cache->cached->skips ++;
 			gaveup = 1;
 			break;
 		}
@@ -2296,12 +2297,7 @@ static xc_shm_t *xc_cache_destroy(xc_cache_t *caches, xc_hash_t *hcache) /* {{{ 
 			if (cache->lck) {
 				xc_lock_destroy(cache->lck);
 			}
-			/* do NOT free
-			if (cache->entries) {
-				cache->mem->handlers->free(cache->mem, cache->entries);
-			}
-			cache->mem->handlers->free(cache->mem, cache);
-			*/
+			/* do NOT touch cached data */
 			shm = cache->shm;
 			cache->shm->handlers->memdestroy(cache->mem);
 		}
