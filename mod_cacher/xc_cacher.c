@@ -388,30 +388,25 @@ static inline zend_uint advance_wrapped(zend_uint val, zend_uint count) /* {{{ *
 	return val + 1;
 }
 /* }}} */
-static void xc_counters_inc(time_t *curtime, zend_uint *curslot, time_t period, zend_ulong *counters, zend_uint count TSRMLS_DC) /* {{{ */
+static inline void xc_counters_inc(time_t *curtime, zend_uint *curslot, time_t interval, zend_ulong *counters, zend_uint count TSRMLS_DC) /* {{{ */
 {
-	time_t n = XG(request_time) / period;
+	time_t n = XG(request_time) / interval;
 	if (*curtime != n) {
 		zend_uint target_slot = n % count;
-		if (n - *curtime > period) {
-			memset(counters, 0, sizeof(counters[0]) * count);
+		zend_uint slot;
+		for (slot = advance_wrapped(*curslot, count);
+				slot != target_slot;
+				slot = advance_wrapped(slot, count)) {
+			counters[slot] = 0;
 		}
-		else {
-			zend_uint slot;
-			for (slot = advance_wrapped(*curslot, count);
-					slot != target_slot;
-					slot = advance_wrapped(slot, count)) {
-				counters[slot] = 0;
-			}
-			counters[target_slot] = 0;
-		}
+		counters[target_slot] = 0;
 		*curtime = n;
 		*curslot = target_slot;
 	}
 	counters[*curslot] ++;
 }
 /* }}} */
-static void xc_cache_hit_unlocked(xc_cache_t *cache TSRMLS_DC) /* {{{ */
+static inline void xc_cache_hit_unlocked(xc_cache_t *cache TSRMLS_DC) /* {{{ */
 {
 	cache->hits ++;
 
@@ -422,8 +417,7 @@ static void xc_cache_hit_unlocked(xc_cache_t *cache TSRMLS_DC) /* {{{ */
 			TSRMLS_CC);
 
 	xc_counters_inc(&cache->hits_by_second_cur_time
-			, &cache->hits_by_second_cur_slot
-			, 1
+			, &cache->hits_by_second_cur_slot, 1
 			, cache->hits_by_second
 			, sizeof(cache->hits_by_second) / sizeof(cache->hits_by_second[0])
 			TSRMLS_CC);
