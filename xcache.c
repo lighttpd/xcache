@@ -615,7 +615,7 @@ static int xc_zend_startup(zend_extension *extension) /* {{{ */
 	for (ext = (zend_extension *) zend_llist_get_first_ex(&zend_extensions, &lpos);
 			ext;
 			ext = (zend_extension *) zend_llist_get_next_ex(&zend_extensions, &lpos)) {
-		xc_incompatible_zend_extension_info_t *incompatible_zend_extension_info = xc_get_incompatible_zend_extension_info(extension->name);
+		xc_incompatible_zend_extension_info_t *incompatible_zend_extension_info = xc_get_incompatible_zend_extension_info(ext->name);
 		if (incompatible_zend_extension_info) {
 			assert(!incompatible_zend_extension_info->old_startup);
 			incompatible_zend_extension_info->old_startup = ext->startup;
