@@ -2,40 +2,10 @@
 
 include("./common.php");
 
-class Cycle
-{
-	var $values;
-	var $i;
-	var $count;
-
-	function Cycle($v)
-	{
-		$this->values = func_get_args();
-		$this->i = -1;
-		$this->count = count($this->values);
-	}
-
-	function next()
-	{
-		$this->i = ($this->i + 1) % $this->count;
-		return $this->values[$this->i];
-	}
-
-	function cur()
-	{
-		return $this->values[$this->i];
-	}
-
-	function reset()
-	{
-		$this->i = -1;
-	}
-}
-
 class XcacheCoverageViewer
 {
-	var $syntaxhiglight = true;
-	var $usecache = false;
+	var $syntax_higlight = true;
+	var $use_cache = false;
 	var $include_paths = array();
 	var $exclude_paths = array();
 	var $charset = 'UTF-8';
@@ -49,10 +19,10 @@ class XcacheCoverageViewer
 	{
 		$this->datadir = ini_get('xcache.coveragedump_directory');
 
-		// copy config
-		foreach (array('charset', 'include_paths', 'exclude_paths', 'syntaxhiglight', 'usecache', 'datadir', 'lang') as $k) {
-			if (isset($GLOBALS[$k])) {
-				$this->{$k} = $GLOBALS[$k];
+		global $config;
+		foreach (array('charset', 'include_paths', 'exclude_paths', 'syntax_higlight', 'use_cache', 'datadir', 'lang') as $k) {
+			if (isset($config[$k])) {
+				$this->{$k} = $config[$k];
 			}
 		}
 
@@ -78,7 +48,7 @@ class XcacheCoverageViewer
 			$action = 'dir';
 			$prefix_len = strlen($path) + 1;
 			$dirinfo = $this->loadDir($this->outpath);
-			if (!$this->usecache) {
+			if (!$this->use_cache) {
 				ksort($dirinfo['subdirs']);
 				ksort($dirinfo['files']);
 			}
@@ -103,7 +73,7 @@ class XcacheCoverageViewer
 					$lines[$l] .= $chunks[$c];
 				}
 			}
-			if ($this->syntaxhiglight) {
+			if ($this->syntax_higlight) {
 				$source = implode('', $lines);
 				ob_start();
 				highlight_string($source);
@@ -129,20 +99,20 @@ class XcacheCoverageViewer
 		}
 		else if (!$this->datadir) {
 			$action = 'error';
-			$error  = 'require `ini:xcache.coveragedump_directory` or `config:$datadir` to be set';
+			$error  = 'require `xcache.coveragedump_directory` in ini or `$datadir` in config to be set';
 		}
 		else {
 			$action = 'error';
 			$error  = "no data";
 		}
 
-		$xcache_version = defined('XCACHE_VERSION') ? XCACHE_VERSION : '';
+		global $config;
 		include("coverager.tpl.php");
 	}
 
 	function loadDir($outdir, $addtodo = null)
 	{
-		if ($this->usecache) {
+		if ($this->use_cache) {
 			$cachefile = $outdir . "/.pcovcache";
 			if (file_exists($cachefile)) {
 				return unserialize(file_get_contents($cachefile));
@@ -209,7 +179,7 @@ class XcacheCoverageViewer
 			}
 		}
 
-		if ($this->usecache) {
+		if ($this->use_cache) {
 			ksort($subdirs);
 			ksort($files);
 		}
@@ -222,7 +192,7 @@ class XcacheCoverageViewer
 				'subdirs' => $subdirs,
 				);
 
-		if ($this->usecache) {
+		if ($this->use_cache) {
 			$fp = fopen($cachefile, "wb");
 			fwrite($fp, serialize($info));
 			fclose($fp);
@@ -232,7 +202,7 @@ class XcacheCoverageViewer
 
 	function loadFile($file)
 	{
-		if ($this->usecache) {
+		if ($this->use_cache) {
 			$cachefile = $file . "cache";
 			if (file_exists($cachefile)) {
 				return unserialize(file_get_contents($cachefile));
@@ -242,7 +212,7 @@ class XcacheCoverageViewer
 		$info = $this->loadCov($file); //, $lines);
 		unset($info['cov']);
 
-		if ($this->usecache) {
+		if ($this->use_cache) {
 			$fp = fopen($cachefile, "wb");
 			fwrite($fp, serialize($info));
 			fclose($fp);

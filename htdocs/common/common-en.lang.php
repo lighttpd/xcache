@@ -1,0 +1,4 @@
+<?php
+
+$strings = array();
+

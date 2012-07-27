@@ -2,78 +2,6 @@
 
 include("./common.php");
 
-class Cycle
-{
-	var $values;
-	var $i;
-	var $count;
-
-	function Cycle($v)
-	{
-		$this->values = func_get_args();
-		$this->i = -1;
-		$this->count = count($this->values);
-	}
-
-	function next()
-	{
-		$this->i = ($this->i + 1) % $this->count;
-		return $this->values[$this->i];
-	}
-
-	function cur()
-	{
-		return $this->values[$this->i];
-	}
-
-	function reset()
-	{
-		$this->i = -1;
-	}
-}
-
-function number_formats($a, $keys)
-{
-	foreach ($keys as $k) {
-		$a[$k] = number_format($a[$k]);
-	}
-	return $a;
-}
-
-function size($size)
-{
-	$size = (int) $size;
-	if ($size < 1024)
-		return number_format($size, 2) . ' b';
-
-	if ($size < 1048576)
-		return number_format($size / 1024, 2) . ' K';
-
-	return number_format($size / 1048576, 2) . ' M';
-}
-
-function age($time)
-{
-	if (!$time) return '';
-	$delta = REQUEST_TIME - $time;
-
-	if ($delta < 0) {
-		$delta = -$delta;
-	}
-	
-  	static $seconds = array(1, 60, 3600, 86400, 604800, 2678400, 31536000);
-	static $name = array('s', 'm', 'h', 'd', 'w', 'M', 'Y');
-
-	for ($i = 6; $i >= 0; $i --) {
-		if ($delta >= $seconds[$i]) {
-			$ret = (int) ($delta / $seconds[$i]);
-			return $ret . ' ' . $name[$i];
-		}
-	}
-
-	return '0 s';
-}
-
 function freeblock_to_graph($freeblocks, $size)
 {
 	global $config;
@@ -182,36 +110,9 @@ function hits_to_graph($hits)
 	return implode('', $html);
 }
 
-function switcher($name, $options)
-{
-	$n = isset($_GET[$name]) ? $_GET[$name] : null;
-	$html = array();
-	foreach ($options as $k => $v) {
-		$html[] = sprintf('<a href="?%s=%s"%s>%s</a>', $name, $k, $k == $n ? ' class="active"' : '', $v);
-	}
-	return implode('', $html);
-}
-
-function th($name, $attrs = null)
-{
-	$translated = __($name);
-	if ($translated == $name) {
-		$translated = "$name|$name";
-	}
-	list($text, $title) = explode('|', $translated, 2);
-	return sprintf('%s<th%s id="%s" title="%s"><a href="javascript:" onclick="resort(this); return false">%s</a></th>%s'
-			, "\t"
-			, $attrs ? " $attrs" : ""
-			, $name, htmlspecialchars(trim($title)), trim($text)
-			, "\n");
-}
-
-$php_version = phpversion();
-$xcache_version = XCACHE_VERSION;
-$xcache_modules = XCACHE_MODULES;
-
+$module = "cacher";
 if (!extension_loaded('XCache')) {
-	include("header.tpl.php");
+	include("../common/header.tpl.php");
 	echo '<h1>XCache is not loaded</h1>';
 	ob_start();
 	phpinfo(INFO_GENERAL);
@@ -234,7 +135,7 @@ if (!extension_loaded('XCache')) {
 		echo "You don't even have a php.ini yet?";
 	}
 	echo "(See above)";
-	include("footer.tpl.php");
+	include("../common/footer.tpl.php");
 	exit;
 }
 $pcnt = xcache_count(XC_TYPE_PHP);
@@ -400,8 +301,8 @@ default:
 
 $type_php = XC_TYPE_PHP;
 $type_var = XC_TYPE_VAR;
-$types = array($type_none => _('Statistics'), $type_php => _('List PHP'), $type_var => _('List Var Data'));
+$listTypes = array($type_none => _('Statistics'), $type_php => _('List PHP'), $type_var => _('List Var Data'));
 
-include("xcache.tpl.php");
+include("cacher.tpl.php");
 
 ?>
