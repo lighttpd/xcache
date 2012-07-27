@@ -10,11 +10,10 @@
 // 3. ../config.php
 // 4. ./config.php
 
-// width of graph for free or usage blocks
-$config['percent_graph_width'] = 120;
-$config['percent_graph_type'] = 'used'; // either 'used' or 'free'
-
-// only enable if you have password protection for admin page
-// enabling this option will cause user to eval() whatever code they want
-$config['enable_eval'] = false;
+// $config['include_paths = array("/www/my-php-project/");
+// $config['exclude_paths = array("/www/my-php-project/tmp/");
+$config['syntax_higlight'] = true;
+$config['use_cache'] = false;
+//// $config['datadir'] is default to ini_get("xcache.coveragedump_directory")
+// $config['datadir'] = '';
 

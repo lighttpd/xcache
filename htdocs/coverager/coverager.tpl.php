@@ -1,19 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<?php
-echo <<<HEAD
-	<meta http-equiv="Content-Type" content="text/html; charset=$this->charset" />
-	<meta http-equiv="Content-Language" content="{$this->lang}" />
-	<script type="text/javascript" src="tablesort.js" charset="$this->charset"></script>
-HEAD;
-?>
-
-	<link rel="stylesheet" type="text/css" href="coverager.css" />
-	<title><?php echo _T("XCache PHP Code Coverage Viewer"); ?></title>
-</head>
-<body>
-<h1><?php echo _T("XCache PHP Code Coverage Viewer"); ?></h1>
+<?php include "../common/header.tpl.php"; ?>
 
 <?php
 function calc_percent($info, &$percent, &$class)
@@ -49,11 +34,11 @@ function dir_head()
 {
 	global $cycle;
 	$cycle = new Cycle('class="col1"', 'class="col2"');
-	$l_dir = _T("Directory");
-	$l_per = _T("Percent");
-	$l_hit = _T("Hits");
-	$l_lns = _T("Lines");
-	$l_tds = _T("TODO");
+	$l_dir = _("Directory");
+	$l_per = _("Percent");
+	$l_hit = _("Hits");
+	$l_lns = _("Lines");
+	$l_tds = _("TODO");
 	return <<<EOS
 <div class="table-center">
 	<table cellpadding="2" cellspacing="0" border="0" class="cycles center">
@@ -113,10 +98,10 @@ function file_head()
 {
 	global $cycle;
 	$cycle = new Cycle('class="col1"', 'class="col2"');
-	$l_fil = _T("File");
-	$l_per = _T("Percent");
-	$l_hit = _T("Hits");
-	$l_lns = _T("Lines");
+	$l_fil = _("File");
+	$l_per = _("Percent");
+	$l_hit = _("Hits");
+	$l_lns = _("Lines");
 	return <<<EOS
 <div class="center-table">
 	<table cellpadding="2" cellspacing="0" border="0" class="cycles center">
@@ -167,7 +152,7 @@ function file_foot()
 EOS;
 }
 
-$l_root = _T("root");
+$l_root = _("root");
 if ($action == 'dir') {
 	if (function_exists('ob_filter_path_nicer')) {
 		ob_start('ob_filter_path_nicer');
@@ -245,9 +230,5 @@ EOS;
 }
 ?>
 
-<div class="footnote">
-Powered By: XCache <?php echo $xcache_version; ?> coverager <?php echo _T("module"); ?>
-</div>
+<?php include "../common/footer.tpl.php"; ?>
 
-</body>
-</html>

@@ -1,6 +1,6 @@
 <?php
 
-$strings = array(
+$strings += array(
 		'root'
 		=> '开始',
 		'Directory'

@@ -1,8 +1,8 @@
-<?php include("header.tpl.php"); ?>
+<?php include("../common/header.tpl.php"); ?>
+<div class="switcher"><?php echo switcher("type", $listTypes); ?></div>
 <div id="help">
 	<a href="help.php"><?php echo _("Help") ?> &raquo;</a>
 </div>
-<div class="switcher"><?php echo switcher("type", $types); ?></div>
 <?php
 $a = new Cycle('class="col1"', 'class="col2"');
 $b = new Cycle('class="col1"', 'class="col2"');
@@ -214,11 +214,11 @@ if ($cachelist) {
 			$name     = htmlspecialchars($entry['name']);
 			$hits     = number_format($entry['hits']);
 			$size     = size($entry['size']);
-			$class_cnt = number_format($entry['class_cnt']);
-			$function_cnt = number_format($entry['function_cnt']);
 			if ($isphp) {
-				$phprefcount = number_format($entry['phprefcount']);
-				$file_size   = size($entry['file_size']);
+				$class_cnt    = number_format($entry['class_cnt']);
+				$function_cnt = number_format($entry['function_cnt']);
+				$phprefcount  = number_format($entry['phprefcount']);
+				$file_size    = size($entry['file_size']);
 			}
 
 			if ($isphp) {
@@ -230,19 +230,21 @@ if ($cachelist) {
 				$dtime = age($entry['dtime']);
 			}
 
-			if (!$isphp) {
+			if ($isphp) {
+				$namelink = $name;
 				echo <<<ENTRY
-					<td><input type="checkbox" name="remove[]" value="{$name}"/></td>
+				<td>{$entry['cache_name']} {$i}</td>
+ENTRY;
+			}
+			else {
+				echo <<<ENTRY
+					<td><label><input type="checkbox" name="remove[]" value="{$name}"/>{$entry['cache_name']} {$i}</label></td>
 ENTRY;
 				$uname = urlencode($entry['name']);
 				$namelink = "<a href=\"edit.php?name=$uname\">$name</a>";
 			}
-			else {
-				$namelink = $name;
-			}
 
 			echo <<<ENTRY
-			<td>{$entry['cache_name']} {$i}</td>
 			<td>{$namelink}</td>
 			<td align="right" int="{$entry['hits']}">{$entry['hits']}</td>
 			<td align="right" int="{$entry['size']}">{$size}</td>
@@ -298,4 +300,4 @@ if ($moduleinfo) {
 HTML;
 }
 ?>
-<?php include("footer.tpl.php"); ?>
+<?php include("../common/footer.tpl.php"); ?>
