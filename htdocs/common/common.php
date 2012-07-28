@@ -81,9 +81,6 @@ function th($name, $attrs = null)
 
 function xcache_validateFileName($name)
 {
-	if (!preg_match('!^[a-zA-Z0-9._-]+$!', $name)) {
-		var_dump($name);
-	}
 	return preg_match('!^[a-zA-Z0-9._-]+$!', $name);
 }
 
