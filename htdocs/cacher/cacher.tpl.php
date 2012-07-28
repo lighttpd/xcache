@@ -9,24 +9,6 @@ $b = new Cycle('class="col1"', 'class="col2"');
 ?>
 <table cellspacing="0" cellpadding="4" class="cycles caches">
 	<caption><?php echo _('Caches'); ?></caption>
-	<col />
-	<col align="right" />
-	<col align="right" />
-	<col align="right" />
-	<col />
-	<col />
-	<col align="right" />
-	<col align="right" />
-	<col align="right" />
-	<col />
-	<col align="right" />
-	<col align="right" />
-	<col align="right" />
-	<col align="right" />
-	<col align="right" />
-	<col align="right" />
-	<col align="right" />
-	<col />
 	<tr <?php echo $a->next(); ?>>
 	<?php echo
 		th(N_("cache.cache"))
@@ -72,7 +54,7 @@ $b = new Cycle('class="col1"', 'class="col2"');
 			$pempty = $tmp;
 		}
 
-		$w = $config['percent_graph_width'];
+		$w = $config['percent_graph_width'] + 2;
 		if (empty($ci['istotal'])) {
 			$graph = freeblock_to_graph($ci['free_blocks'], $ci['size']);
 			$blocksgraph = "<div class=\"blocksgraph\" style=\"width: {$w}px\">{$graph}</div>";
@@ -114,9 +96,9 @@ $b = new Cycle('class="col1"', 'class="col2"');
 		$l_enabledisable = $ci['disabled'] ? $l_enable : $l_disable;
 		echo <<<EOS
 		<th>{$ci['cache_name']}</th>
-		<td title="{$ci['slots']}">{$ci_slots}</td>
-		<td title="{$ci['size']}">{$ci_size}</td>
-		<td title="{$ci['avail']}">{$ci_avail}</td>
+		<td align="right" title="{$ci['slots']}">{$ci_slots}</td>
+		<td align="right" title="{$ci['size']}">{$ci_size}</td>
+		<td align="right" title="{$ci['avail']}">{$ci_avail}</td>
 		<td title="{$pvalue} %"
 			><div class="percent" style="width: {$w}px"
 				><div style="width: {$pvalue}%" class="pvalue"></div
@@ -134,18 +116,18 @@ $b = new Cycle('class="col1"', 'class="col2"');
 			></form
 		></td>
 		<td>{$ci['status']}</td>
-		<td>{$ci['hits']}</td>
+		<td align="right">{$ci['hits']}</td>
 		<td><div class="hitsgraph" style="width: {$hits_graph_h_w}px">{$hits_graph_h}</div></td>
-		<td>{$hits_avg_h}</td>
-		<td>{$hits_avg_s}</td>
-		<td>{$ci['updates']}</td>
-		<td>{$ci['skips']}</td>
-		<td>{$ci['ooms']}</td>
-		<td>{$ci['errors']}</td>
+		<td align="right">{$hits_avg_h}</td>
+		<td align="right">{$hits_avg_s}</td>
+		<td align="right">{$ci['updates']}</td>
+		<td align="right">{$ci['skips']}</td>
+		<td align="right">{$ci['ooms']}</td>
+		<td align="right">{$ci['errors']}</td>
 		<td>{$ci['can_readonly']}</td>
-		<td>{$ci['cached']}</td>
-		<td>{$ci['deleted']}</td>
-		<td>{$ci['gc']}</td>
+		<td align="right">{$ci['cached']}</td>
+		<td align="right">{$ci['deleted']}</td>
+		<td align="right">{$ci['gc']}</td>
 EOS;
 
 			$b->reset();
@@ -172,7 +154,7 @@ if ($cachelist) {
 		?>
 
 	<form action="" method="post">
-	<table cellspacing="0" cellpadding="4" class="cycles entries" width="100%">
+	<table cellspacing="0" cellpadding="4" class="cycles entries">
 		<caption><?php echo _("{$cachelist['type_name']} $listname"); ?></caption>
 		<?php
 		echo "
@@ -187,7 +169,7 @@ if ($cachelist) {
 			}
 			else {
 				echo
-					th("entry.remove", 'width="20"')
+					th("entry.remove")
 					;
 			}
 
@@ -311,7 +293,8 @@ ENTRY;
 	}
 	ob_end_flush();
 }
-if (ini_get("xcache.test")) {
+if ($moduleinfo) {
+	if (ini_get("xcache.test")) {
 ?>
 <form method="post" action=""
 	><div
@@ -319,8 +302,7 @@ if (ini_get("xcache.test")) {
 	/></div
 ></form>
 <?php
-}
-if ($moduleinfo) {
+	}
 	$t_moduleinfo = _("Module Info");
 	echo <<<HTML
 <h2>$t_moduleinfo</h2>

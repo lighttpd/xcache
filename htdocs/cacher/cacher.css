@@ -1,28 +1,20 @@
 td, th { white-space: pre; }
-.phpinfo table { border: 1px solid black; margin-bottom: 1px; }
-.phpinfo table th, .phpinfo table td { border: 1px solid black; }
-.phpinfo table th { font-weight: bold; }
-.phpinfo .e {background-color: #ccccff; font-weight: bold; color: #000000;}
-.phpinfo .h {background-color: #9999cc; font-weight: bold; color: #000000;}
-.phpinfo .v {background-color: #cccccc; color: #000000;}
-.button { }
-span.sortarrow { color: white; text-decoration: none; }
-form {margin: 0; padding: 0}
 
 .percent { height: 3px; margin-bottom: 1px; border: 1px solid gray; }
 .percent div { float: left; height: 100%; }
 .pvalue { background: limegreen; }
 
-.blocksgraph { height: 16px; }
-.blocksgraph div { float: left; height: 3px; width: 4px; border: solid gray; border-width: 0 0px 1px 0; }
-.blocksgraph { border: 1px solid gray; border-bottom: 0px; }
+.blocksgraph { height: 13px; }
+.blocksgraph div { float: left; height: 3px; width: 4px; border: solid gray; border-width: 0 0 1px 0; }
+.blocksgraph { border: 1px solid gray; border-bottom: 0; }
+.percent *, .blocksgraph *, .hitsgraph * { font-size: 1px; font-height: 1px; }
 
-.hitsgraph { height: 20px; margin: auto; }
+.hitsgraph { margin: auto; }
 .hitsgraph div { float: left; width: 2px; height: 100%; }
 .hitsgraph div:hover { background: gray; }
 .hitsgraph div div { float: none; width: 100%; }
-.hitsgraph div div.barf { border: 0px solid gray; border-width: 1px 0 0 0; }
-.hitsgraph div div.barv { border: 0px solid gray; border-width: 0 0 1px 0; }
+.hitsgraph div div.barf { border: 0 solid gray; border-width: 1px 0 0 0; }
+.hitsgraph div div.barv { border: 0 solid gray; border-width: 0 0 1px 0; }
 .hitsgraph div div.barf.active { border-color: yellow; }
 .hitsgraph div div.barv.active { border-color: yellow; }
 
@@ -30,6 +22,6 @@ form {margin: 0; padding: 0}
 dl { overflow: hidden; }
 dt { font-weight: bold; clear: both; float: left; width: 100px; text-align: right; margin: 0; }
 dd { margin: 0; }
-.blockarea { overflow: hidden; _width: 1px; }
+.blockarea { overflow: hidden; width: 400px; }
 div.legend { float: left; border: 1px solid gray; font: 12px/12px monospace; }
 div.legendtitle { float: left; padding: 2px; padding-right: 10px; font: 12px/12px monospace; }
