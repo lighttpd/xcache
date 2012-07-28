@@ -153,15 +153,15 @@ if ($cachelist) {
 		$a->reset();
 		?>
 
-	<form action="" method="post">
+<form action="" method="post">
 	<table cellspacing="0" cellpadding="4" class="cycles entries">
 		<caption><?php echo _("{$cachelist['type_name']} $listname"); ?></caption>
-		<?php
-		echo "
-		<tr ", $a->next(), ">";
-		?>
+<?php
+		$class = $a->next();
+		echo <<<TR
+		<tr {$class}>
 
-			<?php
+TR;
 			if ($isphp) {
 				echo
 					th("entry.id")
@@ -208,10 +208,13 @@ if ($cachelist) {
 			}
 			?>
 		</tr>
-		<?php
+<?php
 		foreach ($entries as $i => $entry) {
-			echo "
-			<tr ", $a->next(), ">";
+			$class = $a->next();
+			echo <<<TR
+		<tr $class>
+
+TR;
 			$name     = htmlspecialchars($entry['name']);
 			$hits     = number_format($entry['hits']);
 			$size     = size($entry['size']);
@@ -234,12 +237,14 @@ if ($cachelist) {
 			if ($isphp) {
 				$namelink = $name;
 				echo <<<ENTRY
-				<td>{$entry['cache_name']} {$i}</td>
+			<td>{$entry['cache_name']} {$i}</td>
+
 ENTRY;
 			}
 			else {
 				echo <<<ENTRY
-					<td><label><input type="checkbox" name="remove[]" value="{$name}"/>{$entry['cache_name']} {$i}</label></td>
+			<td><label><input type="checkbox" name="remove[]" value="{$name}"/>{$entry['cache_name']} {$i}</label></td>
+
 ENTRY;
 				$uname = urlencode($entry['name']);
 				$namelink = "<a href=\"edit.php?name=$uname\">$name</a>";
@@ -249,21 +254,24 @@ ENTRY;
 			<td>{$namelink}</td>
 			<td align="right" int="{$entry['hits']}">{$entry['hits']}</td>
 			<td align="right" int="{$entry['size']}">{$size}</td>
+
 ENTRY;
 			if ($isphp) {
 				$refcount = number_format($entry['refcount']);
 				echo <<<ENTRY
-				<td align="right" int="{$entry['refcount']}">{$entry['refcount']}</td>
-				<td align="right" int="{$entry['phprefcount']}">{$phprefcount}</td>
-				<td align="right" int="{$entry['class_cnt']}">{$class_cnt}</td>
-				<td align="right" int="{$entry['function_cnt']}">{$function_cnt}</td>
-				<td align="right" int="{$entry['file_size']}">{$file_size}</td>
-				<td align="right" int="{$entry['file_mtime']}">{$file_mtime}</td>
+			<td align="right" int="{$entry['refcount']}">{$entry['refcount']}</td>
+			<td align="right" int="{$entry['phprefcount']}">{$phprefcount}</td>
+			<td align="right" int="{$entry['class_cnt']}">{$class_cnt}</td>
+			<td align="right" int="{$entry['function_cnt']}">{$function_cnt}</td>
+			<td align="right" int="{$entry['file_size']}">{$file_size}</td>
+			<td align="right" int="{$entry['file_mtime']}">{$file_mtime}</td>
+
 ENTRY;
 				if (isset($entry['file_inode'])) {
 					echo <<<ENTRY
-					<td align="right" int="{$entry['file_device']}">{$entry['file_device']}</td>
-					<td align="right" int="{$entry['file_inode']}">{$entry['file_inode']}</td>
+			<td align="right" int="{$entry['file_device']}">{$entry['file_device']}</td>
+			<td align="right" int="{$entry['file_inode']}">{$entry['file_inode']}</td>
+
 ENTRY;
 				}
 			}
@@ -271,24 +279,26 @@ ENTRY;
 			<td align="right" int="{$entry['hvalue']}">{$entry['hvalue']}</td>
 			<td align="right" int="{$entry['atime']}">{$atime}</td>
 			<td align="right" int="{$entry['ctime']}">{$ctime}</td>
+
 ENTRY;
 			if ($listname == 'Deleted') {
-			echo <<<ENTRY
-				<td align="right" int="{$entry['dtime']}">{$dtime}</td>
+				echo <<<ENTRY
+			<td align="right" int="{$entry['dtime']}">{$dtime}</td>
+
 ENTRY;
 			}
 
-			echo "
+			echo <<<TR
 		</tr>
-			";
+
+TR;
 		}
 		?>
-
 	</table>
-	<?php if (!$isphp) { ?>
+<?php if (!$isphp) { ?>
 	<input type="submit" value="<?php echo _("Remove Selected"); ?>">
-	<?php } ?>
-	</form>
+<?php } ?>
+</form>
 <?php
 	}
 	ob_end_flush();
@@ -296,11 +306,11 @@ ENTRY;
 if ($moduleinfo) {
 	if (ini_get("xcache.test")) {
 ?>
-<form method="post" action=""
-	><div
-		/><input type="submit" name="coredump" value="Test coredump" class="submit" onclick="return confirm('<?php echo $l_confirm ?>');"
-	/></div
-></form>
+<form method="post" action="">
+	<div>
+		<input type="submit" name="coredump" value="Test coredump" class="submit" onclick="return confirm('<?php echo $l_confirm ?>');" />
+	</div>
+</form>
 <?php
 	}
 	$t_moduleinfo = _("Module Info");
