@@ -23,5 +23,6 @@ dl { overflow: hidden; }
 dt { font-weight: bold; clear: both; float: left; width: 100px; text-align: right; margin: 0; }
 dd { margin: 0; }
 .blockarea { overflow: hidden; width: 400px; }
+.legends { padding-bottom: 8px; }
 div.legend { float: left; border: 1px solid gray; font: 12px/12px monospace; }
 div.legendtitle { float: left; padding: 2px; padding-right: 10px; font: 12px/12px monospace; }

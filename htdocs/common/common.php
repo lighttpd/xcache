@@ -44,8 +44,11 @@ function mainnav()
 {
 	foreach (array(
 				"http://xcache.lighttpd.net/" => "XCache",
+				"http://xcache.lighttpd.net/wiki/DocTOC" => _("Document"),
+				"http://xcache.lighttpd.net/wiki/GetSupport" => _("Get Support"),
+				"https://groups.google.com/group/xcache/" => _("Discusson"),
 				"http://www.php.net/" => "PHP",
-				"http://www.lighttpd.net/" => "LIGHTTPD",
+				"http://www.lighttpd.net/" => "Lighttpd",
 				) as $url => $title) {
 		$html[] = sprintf('<a href="%s" target="_blank">%s</a>', $url, $title);
 	}
@@ -254,6 +257,7 @@ if (file_exists("./config.php")) {
 	include("./config.php");
 }
 
+$strings = array();
 include(get_language_file("../common/common"));
 
 $modules = array();

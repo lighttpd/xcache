@@ -1,6 +1,6 @@
 <?php
 
-$strings = array(
+$strings += array(
 		'XCache Help'
 		=> 'XCache 說明訊息',
 		'Help'

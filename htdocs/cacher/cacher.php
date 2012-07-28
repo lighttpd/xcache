@@ -34,9 +34,6 @@ function freeblock_to_graph($freeblocks, $size)
 		if ($config['percent_graph_type'] != 'free') {
 			$v = 1 - $v;
 		}
-		if ($k % 30 == 0) {
-			$v = 1;
-		}
 		$v = (int) ($v * $c);
 		$r = $g = $c - $v;
 		$b = $c;
