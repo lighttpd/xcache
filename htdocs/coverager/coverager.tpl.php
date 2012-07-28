@@ -40,8 +40,7 @@ function dir_head()
 	$l_lns = _("Lines");
 	$l_tds = _("TODO");
 	return <<<EOS
-<div class="table-center">
-	<table cellpadding="2" cellspacing="0" border="0" class="cycles center">
+<table cellpadding="2" cellspacing="0" border="0" class="cycles">
 	<tr>
 		<th>{$l_dir}</th><th>{$l_per}</th><th>{$l_hit}</th><th>{$l_lns}</th><th>{$l_tds}</th>
 	</tr>
@@ -89,8 +88,7 @@ EOS;
 function dir_foot()
 {
 	return <<<EOS
-	</table>
-</div>
+</table>
 EOS;
 }
 
@@ -103,8 +101,7 @@ function file_head()
 	$l_hit = _("Hits");
 	$l_lns = _("Lines");
 	return <<<EOS
-<div class="center-table">
-	<table cellpadding="2" cellspacing="0" border="0" class="cycles center">
+<table cellpadding="2" cellspacing="0" border="0" class="cycles">
 	<tr>
 		<th>{$l_fil}</th><th>{$l_per}</th><th>{$l_hit}</th><th>{$l_lns}</th>
 	</tr>
@@ -147,8 +144,7 @@ EOS;
 function file_foot()
 {
 	return <<<EOS
-    </table>
-</div>
+</table>
 EOS;
 }
 

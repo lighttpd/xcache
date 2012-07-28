@@ -40,7 +40,19 @@ function switcher($name, $options)
 	return implode('', $html);
 }
 
-function moduleswitcher()
+function mainnav()
+{
+	foreach (array(
+				"http://xcache.lighttpd.net/" => "XCache",
+				"http://www.php.net/" => "PHP",
+				"http://www.lighttpd.net/" => "LIGHTTPD",
+				) as $url => $title) {
+		$html[] = sprintf('<a href="%s" target="_blank">%s</a>', $url, $title);
+	}
+	return implode('|', $html);
+}
+
+function subnav()
 {
 	global $module, $modules;
 	$html = array();
@@ -57,7 +69,7 @@ function th($name, $attrs = null)
 		$translated = "$name|$name";
 	}
 	list($text, $title) = explode('|', $translated, 2);
-	return sprintf('%s<th%s id="%s" title="%s"><a href="javascript:" onclick="resort(this); return false">%s</a></th>%s'
+	return sprintf('%s<th%s id="%s" class="h" title="%s"><a href="javascript:" onclick="resort(this); return false">%s</a></th>%s'
 			, "\t"
 			, $attrs ? " $attrs" : ""
 			, $name, htmlspecialchars(trim($title)), trim($text)
@@ -253,5 +265,7 @@ if (file_exists("../coverager/index.php")) {
 }
 header("Cache-Control: no-cache, must-revalidate");
 header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
+header("Content-Type: text/html; " . $GLOBALS['config']['charset']);
+header("Content-Language: " . $GLOBALS['config']['lang']);
 
 ?>

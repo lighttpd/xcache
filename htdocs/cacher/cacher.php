@@ -34,6 +34,9 @@ function freeblock_to_graph($freeblocks, $size)
 		if ($config['percent_graph_type'] != 'free') {
 			$v = 1 - $v;
 		}
+		if ($k % 30 == 0) {
+			$v = 1;
+		}
 		$v = (int) ($v * $c);
 		$r = $g = $c - $v;
 		$b = $c;
@@ -85,9 +88,14 @@ function bar_hits_percent($v, $percent, $active)
 	$g = $b = 220 - (int) ($percent * 220);
 	$percent = (int) ($percent * 100);
 	$a = $active ? ' active' : '';
+	$height = 20;
+	$valueHeight = ceil($height * $percent / 100);
+	$paddingHeight = $height - $valueHeight;
+	$valueHeight = $valueHeight ? $valueHeight . "px" : 0;
+	$paddingHeight = $paddingHeight ? $paddingHeight . "px" : 0;
 	return '<div title="' . $v . '">'
-		. '<div class="barf' . $a . '" style="height: ' . (100 - $percent) . '%"></div>'
-		. '<div class="barv' . $a . '" style="background: rgb(' . "$r,$g,$b" . '); height: ' . $percent . '%"></div>'
+		. '<div class="barf' . $a . '" style="height: ' . $paddingHeight . '"></div>'
+		. '<div class="barv' . $a . '" style="background: rgb(' . "$r,$g,$b" . '); height: ' . $valueHeight . '"></div>'
 		. '</div>';
 }
 
