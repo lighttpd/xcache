@@ -243,6 +243,7 @@ function getEntryList() // {{{
 // }}}
 
 $module = "cacher";
+xcache_count(XC_TYPE_PHP); // trigger auth
 if (!extension_loaded('XCache')) {
 	include "../common/header.tpl.php";
 	echo '<h1>XCache is not loaded</h1>';
