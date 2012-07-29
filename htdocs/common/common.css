@@ -37,9 +37,16 @@ h1, h2, h3, h4, h5, h6 {
 }
 #header #banner {
 	font: 32px/51px serif;
-	padding-left: 10px;
 	color: white;
 	font-family: "arial", serif;
+}
+#header #banner a {
+	color: white;
+}
+#header #banner #logo {
+	display: block;
+	float: left;
+	padding-right: 5px;
 }
 #header #mainnav {
 	top: 3px;

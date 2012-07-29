@@ -8,12 +8,16 @@
 
 	<link rel="stylesheet" type="text/css" href="../common/common.css" />
 	<link rel="stylesheet" type="text/css" href="<?php echo $GLOBALS['module']; ?>.css" />
-	<title><?php echo $title = sprintf("XCache %s", $xcache_version = defined('XCACHE_VERSION') ? XCACHE_VERSION : '') . " - " . ucfirst($GLOBALS['module']); ?></title>
+	<title><?php echo sprintf("XCache %s", $xcache_version = defined('XCACHE_VERSION') ? XCACHE_VERSION : ''); ?> - <?php echo ucfirst($GLOBALS['module']); ?></title>
 </head>
 
 <body>
 <div id="header">
-	<div id="banner"><?php echo $title; ?></div>
+	<div id="banner">
+		<a href="http://xcache.lighttpd.net/" target="_blank"><img src="../common/xcache.png" id="logo" />
+			<?php echo $xcache_version; ?> - <?php echo ucfirst($GLOBALS['module']); ?>
+		</a>
+	</div>
 	<div id="nav">
 		<div id="mainnav">
 				<?php echo mainnav(); ?>
