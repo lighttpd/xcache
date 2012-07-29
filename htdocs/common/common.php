@@ -45,7 +45,7 @@ function mainnav()
 	foreach (array(
 				"http://xcache.lighttpd.net/" => "XCache",
 				"http://xcache.lighttpd.net/wiki/DocTOC" => _("Document"),
-				"http://xcache.lighttpd.net/wiki/PhpIni" => _("INI Setting"),
+				"http://xcache.lighttpd.net/wiki/PhpIni" => _("INI Reference"),
 				"http://xcache.lighttpd.net/wiki/GetSupport" => _("Get Support"),
 				"https://groups.google.com/group/xcache/" => _("Discusson"),
 				"http://www.php.net/" => "PHP",
