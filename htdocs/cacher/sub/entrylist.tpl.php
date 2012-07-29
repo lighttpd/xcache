@@ -4,9 +4,8 @@
 		<caption><?php echo _("{$cachelist['type_name']} $listName"); ?></caption>
 <?php
 
-$class = $cycleClass->next();
 echo <<<TR
-		<tr {$class}>
+		<tr>
 
 TR;
 
