@@ -1,6 +1,6 @@
 <?php
 
-include("./common.php");
+include "./common.php";
 
 if (!isset($_GET['name'])) {
 	die("missing name");
@@ -38,6 +38,6 @@ else {
 
 $module = "cacher";
 
-include("edit.tpl.php");
+include "edit.tpl.php";
 
 ?>

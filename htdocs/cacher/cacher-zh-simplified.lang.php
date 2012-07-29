@@ -40,9 +40,9 @@ $strings += array(
 		'Caches'
 		=> '缓存区',
 		'php Cached'
-		=> '缓存的 php 脚本',
+		=> '缓存的 PHP 脚本',
 		'php Deleted'
-		=> '待删 php 缓存',
+		=> '待删 PHP 缓存',
 		'var Cached'
 		=> '缓存的变量',
 		'var Deleted'
@@ -78,9 +78,9 @@ $strings += array(
 		'cache.operations'
 		=> '操作|点击按钮清除对应共享内存区的数据',
 		'cache.status'
-		=> '状态|状态标记. 当共享内存区正在编译 php 脚本时标记为 "编译中". 当共享内存区暂停使用时标记为 "禁用"',
+		=> '状态|状态标记. 当共享内存区正在编译 PHP 脚本时标记为 "编译中". 当共享内存区暂停使用时标记为 "禁用"',
 		'cache.hits'
-		=> '命中|共享内存命中次数, 命中=从该共享内存载入php或者变量',
+		=> '命中|共享内存命中次数, 命中=从该共享内存载入 PHP 或者变量',
 		'cache.hits_avg_h'
 		=> '命中/H|每小时命中次数. 只统计最后 24 小时',
 		'cache.hits_graph'

@@ -18,7 +18,6 @@ td, th { white-space: pre; }
 .hitsgraph div div.barf.active { border-color: yellow; }
 .hitsgraph div div.barv.active { border-color: yellow; }
 
-#help { display: block; float: right; }
 dl { overflow: hidden; }
 dt { font-weight: bold; clear: both; float: left; width: 100px; text-align: right; margin: 0; }
 dd { margin: 0; }

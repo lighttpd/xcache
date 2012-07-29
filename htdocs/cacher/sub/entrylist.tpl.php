@@ -1,7 +1,7 @@
 <?php $cycleClass = new Cycle('class="col1"', 'class="col2"'); ?>
 <form action="" method="post">
 	<table cellspacing="0" cellpadding="4" class="cycles entries">
-		<caption><?php echo _("{$cachelist['type_name']} $listName"); ?></caption>
+		<caption><?php echo _("$typeName $listName"); ?></caption>
 <?php
 
 echo <<<TR
@@ -35,12 +35,10 @@ if ($isphp) {
 		, th(N_("entry.file_size"))
 		, th(N_("entry.file_mtime"))
 		;
-	if ($haveinode) {
-		echo
-			th(N_("entry.file_device"))
-			, th(N_("entry.file_inode"))
-			;
-	}
+	echo
+		th(N_("entry.file_device"))
+		, th(N_("entry.file_inode"))
+		;
 }
 echo
 	th(N_("entry.hash"))

@@ -40,9 +40,9 @@ $strings += array(
 		'Caches'
 		=> '快取',
 		'php Cached'
-		=> '快取的 php 指令',
+		=> '快取的 PHP 指令',
 		'php Deleted'
-		=> '待刪 php 指令',
+		=> '待刪 PHP 指令',
 		'var Cached'
 		=> '快取的變數',
 		'var Deleted'
@@ -78,9 +78,9 @@ $strings += array(
 		'cache.operations'
 		=> '操作按鈕|點擊按鈕清除對應共享記憶體區的資料',
 		'cache.status'
-		=> '狀態|狀態標記. 當共享內存區正在編譯 php 腳本時標記為 "編譯中". 當共享內存區暫停使用時標記為 "禁用"',
+		=> '狀態|狀態標記. 當共享內存區正在編譯 PHP 腳本時標記為 "編譯中". 當共享內存區暫停使用時標記為 "禁用"',
 		'cache.hits'
-		=> '命中|共享記憶體命中次數，命中=從該共享記憶體載入php或者變數',
+		=> '命中|共享記憶體命中次數，命中=從該共享記憶體載入 PHP 或者變數',
 		'cache.hits_avg_h'
 		=> '命中/H|每小时命中次数. 只统计最后 24 小时',
 		'cache.hits_graph'

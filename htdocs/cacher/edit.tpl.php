@@ -1,4 +1,4 @@
-<?php include("../common/header.tpl.php"); ?>
+<?php include "../common/header.tpl.php"; ?>
 <?php
 $h_name = htmlspecialchars($name);
 $h_value = htmlspecialchars($value);
@@ -15,4 +15,4 @@ $h_value = htmlspecialchars($value);
 		?>
 	</fieldset>
 </form>
-<?php include("../common/footer.tpl.php"); ?>
+<?php include "../common/footer.tpl.php"; ?>
