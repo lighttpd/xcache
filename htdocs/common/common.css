@@ -46,7 +46,8 @@ h1, h2, h3, h4, h5, h6 {
 #header #banner #logo {
 	display: block;
 	float: left;
-	padding-right: 5px;
+	margin-right: 5px;
+	background: white;
 }
 #header #mainnav {
 	top: 3px;
