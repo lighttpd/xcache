@@ -147,8 +147,8 @@ h1, h2, h3, h4, h5, h6 {
 	bottom: 8px;
 	right: 8px;
 }
-.phpinfo table { border: 1px solid black; margin-bottom: 1px; }
-.phpinfo table th, .phpinfo table td { border: 1px solid black; }
+.phpinfo table { border: 1px solid #334C66; margin-bottom: 1px; }
+.phpinfo table th, .phpinfo table td { border: 1px solid #334C66; }
 .phpinfo table th { font-weight: bold; }
 .phpinfo .e {background: #81BBF2; font-weight: bold; color: #000000;}
 #main .phpinfo .h th {background: #5084D5; font-weight: bold; color: #000000;}

@@ -127,8 +127,17 @@ function getModuleInfo() // {{{
 
 	$moduleInfo = array();
 	foreach ($m[1] as $i => $dummy) {
-		$moduleInfo[] = '<h3>' . trim($m[1][$i]) . '</h3>';
-		$moduleInfo[] = str_replace('<br />', '', trim($m[2][$i]));
+		$caption = trim($m[1][$i]);
+		$info = str_replace('<br />', '', trim($m[2][$i]));
+
+		$regex = '!<table[^>]*>!';
+		if (preg_match($regex, $info)) {
+			$moduleInfo[] = preg_replace($regex, "\\0<caption>$caption</caption>", $info, 1);
+		}
+		else {
+			$moduleInfo[] = "<h3>$caption</h3>";
+			$moduleInfo[] = $info;
+		}
 	}
 	return implode('', $moduleInfo);
 }
