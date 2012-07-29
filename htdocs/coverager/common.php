@@ -2,6 +2,6 @@
 
 require_once "../common/common.php";
 
-include(get_language_file("coverager"));
+include get_language_file("coverager");
 $module = "coverager";
 
