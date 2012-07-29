@@ -44,6 +44,7 @@ h1, h2, h3, h4, h5, h6 {
 	color: white;
 }
 #header #banner #logo {
+	border: 0;
 	display: block;
 	float: left;
 	margin-right: 5px;
