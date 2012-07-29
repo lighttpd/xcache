@@ -47,8 +47,8 @@ $strings += array(
 		=> '快取的變數',
 		'var Deleted'
 		=> '待刪變數',
-		'Statistics'
-		=> '統計訊息',
+		'Summary'
+		=> '簡要訊息',
 		'List PHP'
 		=> '列出PHP',
 		'List Var Data'

@@ -47,8 +47,8 @@ $strings += array(
 		=> '缓存的变量',
 		'var Deleted'
 		=> '待删变量',
-		'Statistics'
-		=> '统计信息',
+		'Summary'
+		=> '摘要信息',
 		'List PHP'
 		=> '列出PHP',
 		'List Var Data'
