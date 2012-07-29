@@ -74,7 +74,7 @@
 				$ci['status'] = $l_disabled
 					. sprintf("(%s)", age($ci['disabled']));
 			}
-			else if ($ci['type'] == $type_php) {
+			else if ($ci['type'] == XC_TYPE_PHP) {
 				$ci['status'] = $ci['compiling']
 					? $l_compiling . sprintf("(%s)", age($ci['compiling']))
 					: $l_normal;
