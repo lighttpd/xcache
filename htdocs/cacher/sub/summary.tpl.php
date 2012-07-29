@@ -34,7 +34,7 @@
 	$l_compiling = _('Compiling');
 	$l_normal = _('Normal');
 	$l_confirm = _('Sure?');
-	foreach ($cacheinfos as $i => $ci) {
+	foreach (getCacheInfos() as $i => $ci) {
 		$class = $cycleClass->next();
 		echo <<<TR
 	<tr {$class}>

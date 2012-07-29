@@ -1,8 +1,8 @@
 <?php
 
-include("./common.php");
+include "./common.php";
 
-function freeblock_to_graph($freeblocks, $size)
+function freeblock_to_graph($freeblocks, $size) // {{{
 {
 	global $config;
 
@@ -41,8 +41,8 @@ function freeblock_to_graph($freeblocks, $size)
 	}
 	return implode('', $html);
 }
-
-function calc_total(&$total, $data)
+// }}}
+function calc_total(&$total, $data) // {{{
 {
 	foreach ($data as $k => $v) {
 		switch ($k) {
@@ -70,16 +70,16 @@ function calc_total(&$total, $data)
 		}
 	}
 }
-
-function array_avg($a)
+// }}}
+function array_avg($a) // {{{
 {
 	if (count($a) == 0) {
 		return '';
 	}
 	return array_sum($a) / count($a);
 }
-
-function bar_hits_percent($v, $percent, $active)
+// }}}
+function bar_hits_percent($v, $percent, $active) // {{{
 {
 	$r = 220 + (int) ($percent * 25);
 	$g = $b = 220 - (int) ($percent * 220);
@@ -95,14 +95,15 @@ function bar_hits_percent($v, $percent, $active)
 		. '<div class="barv' . $a . '" style="background: rgb(' . "$r,$g,$b" . '); height: ' . $valueHeight . '"></div>'
 		. '</div>';
 }
-
-function get_cache_hits_graph($ci, $key)
+// }}}
+function get_cache_hits_graph($ci, $key) // {{{
 {
+	global $maxHitsByHour;
 	if ($ci['cacheid'] == -1) {
 		$max = max($ci[$key]);
 	}
 	else {
-		$max = $GLOBALS['maxhits_by_hour'][$ci['type']];
+		$max = $maxHitsByHour[$ci['type']];
 	}
 	if (!$max) {
 		$max = 1;
@@ -114,8 +115,8 @@ function get_cache_hits_graph($ci, $key)
 	}
 	return implode('', $html);
 }
-
-function getModuleInfo()
+// }}}
+function getModuleInfo() // {{{
 {
 	ob_start();
 	phpinfo(INFO_MODULES);
@@ -131,10 +132,110 @@ function getModuleInfo()
 	}
 	return implode('', $moduleInfo);
 }
+// }}}
+function getCacheInfos() // {{{
+{
+	static $cacheInfos;
+	if (isset($cacheInfos)) {
+		return $cacheInfos;
+	}
+
+	$phpCacheCount = xcache_count(XC_TYPE_PHP);
+	$varCacheCount = xcache_count(XC_TYPE_VAR);
+
+	$cacheInfos = array();
+	$total = array();
+	global $maxHitsByHour;
+	$maxHitsByHour = array(0, 0);
+	for ($i = 0; $i < $phpCacheCount; $i ++) {
+		$data = xcache_info(XC_TYPE_PHP, $i);
+		if ($_GET['do'] === 'listphp') {
+			$data += xcache_list(XC_TYPE_PHP, $i);
+		}
+		$data['type'] = XC_TYPE_PHP;
+		$data['cache_name'] = "php#$i";
+		$data['cacheid'] = $i;
+		$cacheInfos[] = $data;
+		$maxHitsByHour[XC_TYPE_PHP] = max($maxHitsByHour[XC_TYPE_PHP], max($data['hits_by_hour']));
+		if ($phpCacheCount >= 2) {
+			calc_total($total, $data);
+		}
+	}
+
+	if ($phpCacheCount >= 2) {
+		$total['type'] = XC_TYPE_PHP;
+		$total['cache_name'] = _('Total');
+		$total['cacheid'] = -1;
+		$total['gc'] = null;
+		$total['istotal'] = true;
+		unset($total['compiling']);
+		$cacheInfos[] = $total;
+	}
+
+	$total = array();
+	for ($i = 0; $i < $varCacheCount; $i ++) {
+		$data = xcache_info(XC_TYPE_VAR, $i);
+		if ($_GET['do'] === 'listvar') {
+			$data += xcache_list(XC_TYPE_VAR, $i);
+		}
+		$data['type'] = XC_TYPE_VAR;
+		$data['cache_name'] = "var#$i";
+		$data['cacheid'] = $i;
+		$cacheInfos[] = $data;
+		$maxHitsByHour[XC_TYPE_VAR] = max($maxHitsByHour[XC_TYPE_VAR], max($data['hits_by_hour']));
+		if ($varCacheCount >= 2) {
+			calc_total($total, $data);
+		}
+	}
+
+	if ($varCacheCount >= 2) {
+		$total['type'] = XC_TYPE_VAR;
+		$total['cache_name'] = _('Total');
+		$total['cacheid'] = -1;
+		$total['gc'] = null;
+		$total['istotal'] = true;
+		$cacheInfos[] = $total;
+	}
+	return $cacheInfos;
+}
+// }}}
+function getEntryList() // {{{
+{
+	static $entryList;
+	if (isset($entryList)) {
+		return $entryList;
+	}
+	$entryList = array('cache_list' => array(), 'deleted_list' => array());
+	if ($_GET['do'] == 'listphp') {
+		$entryList['type_name'] = 'php';
+		$entryList['type'] = XC_TYPE_PHP;
+	}
+	else {
+		$entryList['type_name'] = 'var';
+		$entryList['type'] = XC_TYPE_VAR;
+	}
+	foreach (getCacheInfos() as $i => $c) {
+		if (!empty($c['istotal'])) {
+			continue;
+		}
+		if ($c['type'] == $entryList['type'] && isset($c['cache_list'])) {
+			foreach ($c['cache_list'] as $e) {
+				$e['cache_name'] = $c['cache_name'];
+				$entryList['cache_list'][] = $e;
+			}
+			foreach ($c['deleted_list'] as $e) {
+				$e['cache_name'] = $c['cache_name'];
+				$entryList['deleted_list'][] = $e;
+			}
+		}
+	}
+	return $entryList;
+}
+// }}}
 
 $module = "cacher";
 if (!extension_loaded('XCache')) {
-	include("../common/header.tpl.php");
+	include "../common/header.tpl.php";
 	echo '<h1>XCache is not loaded</h1>';
 	ob_start();
 	phpinfo(INFO_GENERAL);
@@ -157,30 +258,27 @@ if (!extension_loaded('XCache')) {
 		echo "You don't even have a php.ini yet?";
 	}
 	echo "(See above)";
-	include("../common/footer.tpl.php");
+	include "../common/footer.tpl.php";
 	exit;
 }
-$pcnt = xcache_count(XC_TYPE_PHP);
-$vcnt = xcache_count(XC_TYPE_VAR);
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-	$remove = @ $_POST['remove'];
-	if ($remove && is_array($remove)) {
-		foreach ($remove as $name) {
-			xcache_unset($name);
+$doTypes = array(
+		'' => _('Summary'),
+		'listphp' => _('List PHP'),
+		'listvar' => _('List Var Data'),
+		'help' => _('Help'),
+		);
+
+function processPOST() // {{{
+{
+	if (isset($_POST['remove']) && is_array($_POST['remove'])) {
+		foreach ($_POST['remove'] as $name) {
+			if (is_string($name)) {
+				xcache_unset($name);
+			}
 		}
 	}
-}
 
-$listTypes = array('' => _('Summary'), 'listphp' => _('List PHP'), 'listvar' => _('List Var Data'));
-
-if (!isset($_GET['do'])) {
-	$_GET['do'] = '';
-}
-
-// {{{ process clear, enable, disable
-function processAction()
-{
 	$type = isset($_POST['type']) ? $_POST['type'] : null;
 	if ($type != XC_TYPE_PHP && $type != XC_TYPE_VAR) {
 		$type = null;
@@ -197,119 +295,32 @@ function processAction()
 			xcache_enable_cache($type, $cacheid, false);
 		}
 	}
-}
-processAction();
-if (isset($_POST['coredump'])) {
-	xcache_coredump();
+
+	if (isset($_POST['coredump'])) {
+		xcache_coredump();
+	}
 }
 // }}}
-// {{{ load info/list
-$cacheinfos = array();
-$total = array();
-$maxhits_by_hour = array(0, 0);
-for ($i = 0; $i < $pcnt; $i ++) {
-	$data = xcache_info(XC_TYPE_PHP, $i);
-	if ($_GET['do'] === 'listphp') {
-		$data += xcache_list(XC_TYPE_PHP, $i);
-	}
-	$data['type'] = XC_TYPE_PHP;
-	$data['cache_name'] = "php#$i";
-	$data['cacheid'] = $i;
-	$cacheinfos[] = $data;
-	$maxhits_by_hour[XC_TYPE_PHP] = max($maxhits_by_hour[XC_TYPE_PHP], max($data['hits_by_hour']));
-	if ($pcnt >= 2) {
-		calc_total($total, $data);
-	}
+
+processPOST();
+
+if (!isset($_GET['do'])) {
+	$_GET['do'] = '';
 }
 
-if ($pcnt >= 2) {
-	$total['type'] = XC_TYPE_PHP;
-	$total['cache_name'] = _('Total');
-	$total['cacheid'] = -1;
-	$total['gc'] = null;
-	$total['istotal'] = true;
-	unset($total['compiling']);
-	$cacheinfos[] = $total;
-}
-
-$total = array();
-for ($i = 0; $i < $vcnt; $i ++) {
-	$data = xcache_info(XC_TYPE_VAR, $i);
-	if ($_GET['do'] === 'listvar') {
-		$data += xcache_list(XC_TYPE_VAR, $i);
-	}
-	$data['type'] = XC_TYPE_VAR;
-	$data['cache_name'] = "var#$i";
-	$data['cacheid'] = $i;
-	$cacheinfos[] = $data;
-	$maxhits_by_hour[XC_TYPE_VAR] = max($maxhits_by_hour[XC_TYPE_VAR], max($data['hits_by_hour']));
-	if ($vcnt >= 2) {
-		calc_total($total, $data);
-	}
-}
-
-if ($vcnt >= 2) {
-	$total['type'] = XC_TYPE_VAR;
-	$total['cache_name'] = _('Total');
-	$total['cacheid'] = -1;
-	$total['gc'] = null;
-	$total['istotal'] = true;
-	$cacheinfos[] = $total;
-}
-// }}}
-// {{{ merge the list
 switch ($_GET['do']) {
 case 'listphp':
 case 'listvar':
-	$cachelist = array('cache_list' => array(), 'deleted_list' => array());
-	if ($_GET['do'] == 'listphp') {
-		$cachelist['type_name'] = 'php';
-		$cachelist['type'] = XC_TYPE_PHP;
-	}
-	else {
-		$cachelist['type_name'] = 'var';
-		$cachelist['type'] = XC_TYPE_VAR;
-	}
-	foreach ($cacheinfos as $i => $c) {
-		if (!empty($c['istotal'])) {
-			continue;
-		}
-		if ($c['type'] == $cachelist['type'] && isset($c['cache_list'])) {
-			foreach ($c['cache_list'] as $e) {
-				$e['cache_name'] = $c['cache_name'];
-				$cachelist['cache_list'][] = $e;
-			}
-			foreach ($c['deleted_list'] as $e) {
-				$e['cache_name'] = $c['cache_name'];
-				$cachelist['deleted_list'][] = $e;
-			}
-		}
-	}
-	if ($cachelist['type'] == XC_TYPE_PHP) {
-		$inodes = array();
-		$haveinode = false;
-		foreach ($cachelist['cache_list'] as $e) {
-			if (isset($e['file_inode'])) {
-				$haveinode = true;
-				break;
-			}
-		}
-		if (!$haveinode) {
-			foreach ($cachelist['deleted_list'] as $e) {
-				if (isset($e['file_inode'])) {
-					$haveinode = true;
-					break;
-				}
-			}
-		}
-	}
-	unset($data);
-	include("./listentries.tpl.php");
+	include "./listentries.tpl.php";
+	break;
+
+case 'help':
+	include "./help.tpl.php";
 	break;
 
 default:
-	include("./summary.tpl.php");
+	include "./summary.tpl.php";
+	break;
 }
-// }}}
 
 ?>
