@@ -1,7 +1,7 @@
 <?php $cycleClass = new Cycle('class="col1"', 'class="col2"'); ?>
 <table cellspacing="0" cellpadding="4" class="cycles caches">
 	<caption><?php echo _('Caches'); ?></caption>
-	<tr <?php echo $cycleClass->next(); ?>>
+	<tr>
 	<?php echo
 		th(N_("cache.cache"))
 		, th(N_("cache.size"))
@@ -35,8 +35,11 @@
 	$l_normal = _('Normal');
 	$l_confirm = _('Sure?');
 	foreach ($cacheinfos as $i => $ci) {
-		echo "
-		<tr ", $cycleClass->next(), ">";
+		$class = $cycleClass->next();
+		echo <<<TR
+	<tr {$class}>
+
+TR;
 		$pvalue = (int) ($ci['avail'] / $ci['size'] * 100);
 		$pempty = 100 - $pvalue;
 		if ($config['percent_graph_type'] == 'used') {
@@ -120,12 +123,11 @@
 		<td align="right">{$ci['cached']}</td>
 		<td align="right">{$ci['deleted']}</td>
 		<td align="right">{$ci['gc']}</td>
-EOS;
 
-			$cycleClass->reset();
-			?>
+EOS;
+		?>
 	</tr>
-	<?php } ?>
+<?php } ?>
 </table>
 <div class="blockarea legends">
 	<div class="legendtitle"><?php echo _('Legends:'); ?></div>
