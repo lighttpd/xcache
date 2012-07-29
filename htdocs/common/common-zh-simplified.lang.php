@@ -7,6 +7,8 @@ $strings += array(
 		=> '代码覆盖查看器',
 		'Document'
 		=> '帮助文档',
+		'INI Reference'
+		=> 'INI 参考',
 		'Get Support'
 		=> '获取支持',
 		'Discusson'
