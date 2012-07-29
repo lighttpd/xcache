@@ -1,6 +1,6 @@
 <?php
 
-include("./common.php");
+include "./common.php";
 
 class XcacheCoverageViewer
 {
@@ -107,7 +107,7 @@ class XcacheCoverageViewer
 		}
 
 		global $config;
-		include("coverager.tpl.php");
+		include "coverager.tpl.php";
 	}
 
 	function loadDir($outdir, $addtodo = null)

@@ -45,6 +45,7 @@ function mainnav()
 	foreach (array(
 				"http://xcache.lighttpd.net/" => "XCache",
 				"http://xcache.lighttpd.net/wiki/DocTOC" => _("Document"),
+				"http://xcache.lighttpd.net/wiki/PhpIni" => _("INI Setting"),
 				"http://xcache.lighttpd.net/wiki/GetSupport" => _("Get Support"),
 				"https://groups.google.com/group/xcache/" => _("Discusson"),
 				"http://www.php.net/" => "PHP",
@@ -244,18 +245,18 @@ ini_set('magic_quotes_runtime', '0');
 
 $config = array();
 if (file_exists("./config.default.php")) {
-	include("./config.default.php");
+	include "./config.default.php";
 }
-include("../config.default.php");
+include "../config.default.php";
 if (file_exists("../config.php")) {
-	include("../config.php");
+	include "../config.php";
 }
 if (file_exists("./config.php")) {
-	include("./config.php");
+	include "./config.php";
 }
 
 $strings = array();
-include(get_language_file("../common/common"));
+include get_language_file("../common/common");
 
 $modules = array();
 if (file_exists("../cacher/index.php")) {
