@@ -11,13 +11,13 @@ Ini Settings Changes
 ChangeLog
 ========
  * closes #2: auto disable caching on crash
- * closes #972: warning/error when XCache is loaded incorrectly
  * closes #73: warn for improper PHP_FCGI_CHILDREN setting fcgi mode (>=PHP_5_3)
  * closes #174: updated api to support "clear all cache"
  * code refactor
    * uses extension to load XCache. load via zend_extension is unsupported
    * split XCache features into multiple sub modules
  * updated XCache admin page
+ * adds an diagnosis module to give professional advise, accessable via htdocs pages
 
 2.0.1 2012-07-14
 ChangeLog
