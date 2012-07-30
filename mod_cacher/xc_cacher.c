@@ -129,6 +129,7 @@ static zend_compile_file_t *old_compile_file = NULL;
 static zend_bool xc_readonly_protection = 0;
 
 zend_bool xc_have_op_array_ctor = 0;
+/* }}} */
 
 typedef enum { XC_TYPE_PHP, XC_TYPE_VAR } xc_entry_type_t;
 
@@ -3283,9 +3284,7 @@ static PHP_MINIT_FUNCTION(xcache_cacher) /* {{{ */
 	ext = zend_get_extension("Zend Optimizer");
 	if (ext) {
 		/* zend_optimizer.optimization_level>0 is not compatible with other cacher, disabling */
-#if 0
 		ext->op_array_handler = NULL;
-#endif
 	}
 	/* cache if there's an op_array_ctor */
 	for (ext = zend_llist_get_first_ex(&zend_extensions, &lpos);
