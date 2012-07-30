@@ -13,7 +13,7 @@
 <body>
 <div id="header">
 	<div id="banner">
-		<a href="http://xcache.lighttpd.net/" target="_blank"><img src="../common/xcache.png" id="logo" width="175" height="51" />
+		<a href="http://xcache.lighttpd.net/" rel="external"><img src="../common/xcache.png" id="logo" alt="XCache logo" width="175" height="51" />
 			<?php echo $xcache_version; ?> - <?php echo ucfirst($GLOBALS['module']); ?>
 		</a>
 	</div>
