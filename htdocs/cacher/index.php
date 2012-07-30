@@ -111,14 +111,6 @@ function get_cache_hits_graph($ci, $key) // {{{
 	$t = (time() / (60 * 60)) % 24;
 
 	$html = array();
-	static $cssOut = false;
-	if (!$cssOut) {
-		$cssOut = true;
-		$html[] = '<style type="text/css">';
-		$html[] = '.hitsgraph a { width: 2px; height: 20px; border-top-width: 1px; border-bottom-width: 1px; }';
-		$html[] = '</style>';
-	}
-
 	$width = count($ci[$key]) * 2;
 	$html[] = '<div class="hitsgraph" style="width: ' . $width . 'px">';
 	foreach ($ci[$key] as $i => $v) {

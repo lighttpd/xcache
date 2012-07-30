@@ -51,7 +51,7 @@ function mainnav()
 				"http://www.php.net/" => "PHP",
 				"http://www.lighttpd.net/" => "Lighttpd",
 				) as $url => $title) {
-		$html[] = sprintf('<a href="%s" target="_blank">%s</a>', $url, $title);
+		$html[] = sprintf('<a href="%s" rel="external">%s</a>', $url, $title);
 	}
 	return implode('|', $html);
 }
@@ -118,19 +118,23 @@ function get_language_file($name)
 			$file = get_language_file_ex($name, $lang);
 		}
 	}
-	else if (!empty($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
-		foreach (explode(',', str_replace(' ', '', $_SERVER['HTTP_ACCEPT_LANGUAGE'])) as $lang) {
-			$lang = strtok($lang, ':;');
-			$file = get_language_file_ex($name, $lang);
-			if (isset($file)) {
-				$config['lang'] = $lang;
-				break;
-			}
-			if (strpos($lang, '-') !== false) {
-				$file = get_language_file_ex($name, strtok($lang, ':-'));
+	else {
+		$config['lang'] = 'en';
+
+		if (!empty($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+			foreach (explode(',', str_replace(' ', '', $_SERVER['HTTP_ACCEPT_LANGUAGE'])) as $lang) {
+				$lang = strtok($lang, ':;');
+				$file = get_language_file_ex($name, $lang);
 				if (isset($file)) {
 					$config['lang'] = $lang;
 					break;
+				}
+				if (strpos($lang, '-') !== false) {
+					$file = get_language_file_ex($name, strtok($lang, ':-'));
+					if (isset($file)) {
+						$config['lang'] = $lang;
+						break;
+					}
 				}
 			}
 		}

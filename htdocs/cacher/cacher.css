@@ -11,6 +11,7 @@ td, th { white-space: pre; }
 
 .hitsgraph { margin: auto; }
 .hitsgraph a { display: block; float: left; border: 0 solid gray; }
+.hitsgraph a { width: 2px; height: 20px; border-top-width: 1px; border-bottom-width: 1px; } /* update this along with index.php */
 .hitsgraph a * { display: block; }
 .hitsgraph a.active { border-top-color: yellow; }
 .hitsgraph a:hover { background: gray; }
