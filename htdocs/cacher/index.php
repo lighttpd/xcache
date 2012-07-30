@@ -143,7 +143,14 @@ function getModuleInfo() // {{{
 			$moduleInfo[] = $info;
 		}
 	}
-	return implode('', $moduleInfo);
+	$moduleInfo = implode('', $moduleInfo);
+	if (ini_get("xcache.test")) {
+		ob_start();
+		include "./sub/testcoredump.tpl.php";
+		$test_coredump = trim(ob_get_clean());
+		$moduleInfo = str_replace('xcache.coredump_directory', 'xcache.coredump_directory' . $test_coredump, $moduleInfo);
+	}
+	return $moduleInfo;
 }
 // }}}
 function getCacheInfos() // {{{
@@ -280,7 +287,6 @@ $doTypes = array(
 		'' => _T('Summary'),
 		'listphp' => _T('List PHP'),
 		'listvar' => _T('List Var Data'),
-		'help' => _T('Help'),
 		);
 
 function processPOST() // {{{
@@ -326,10 +332,6 @@ switch ($_GET['do']) {
 case 'listphp':
 case 'listvar':
 	include "./listentries.tpl.php";
-	break;
-
-case 'help':
-	include "./help.tpl.php";
 	break;
 
 default:
