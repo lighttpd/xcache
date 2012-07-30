@@ -185,7 +185,7 @@ function getCacheInfos() // {{{
 
 	if ($phpCacheCount >= 2) {
 		$total['type'] = XC_TYPE_PHP;
-		$total['cache_name'] = _('Total');
+		$total['cache_name'] = _T('Total');
 		$total['cacheid'] = -1;
 		$total['gc'] = null;
 		$total['istotal'] = true;
@@ -211,7 +211,7 @@ function getCacheInfos() // {{{
 
 	if ($varCacheCount >= 2) {
 		$total['type'] = XC_TYPE_VAR;
-		$total['cache_name'] = _('Total');
+		$total['cache_name'] = _T('Total');
 		$total['cacheid'] = -1;
 		$total['gc'] = null;
 		$total['istotal'] = true;
@@ -285,10 +285,10 @@ if (!extension_loaded('XCache')) {
 }
 
 $doTypes = array(
-		'' => _('Summary'),
-		'listphp' => _('List PHP'),
-		'listvar' => _('List Var Data'),
-		'help' => _('Help'),
+		'' => _T('Summary'),
+		'listphp' => _T('List PHP'),
+		'listvar' => _T('List Var Data'),
+		'help' => _T('Help'),
 		);
 
 function processPOST() // {{{
