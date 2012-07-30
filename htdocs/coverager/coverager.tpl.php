@@ -34,11 +34,11 @@ function dir_head()
 {
 	global $cycle;
 	$cycle = new Cycle('class="col1"', 'class="col2"');
-	$l_dir = _("Directory");
-	$l_per = _("Percent");
-	$l_hit = _("Hits");
-	$l_lns = _("Lines");
-	$l_tds = _("TODO");
+	$l_dir = _T("Directory");
+	$l_per = _T("Percent");
+	$l_hit = _T("Hits");
+	$l_lns = _T("Lines");
+	$l_tds = _T("TODO");
 	return <<<EOS
 <table cellpadding="2" cellspacing="0" border="0" class="cycles">
 	<tr>
@@ -96,10 +96,10 @@ function file_head()
 {
 	global $cycle;
 	$cycle = new Cycle('class="col1"', 'class="col2"');
-	$l_fil = _("File");
-	$l_per = _("Percent");
-	$l_hit = _("Hits");
-	$l_lns = _("Lines");
+	$l_fil = _T("File");
+	$l_per = _T("Percent");
+	$l_hit = _T("Hits");
+	$l_lns = _T("Lines");
 	return <<<EOS
 <table cellpadding="2" cellspacing="0" border="0" class="cycles">
 	<tr>
@@ -148,7 +148,7 @@ function file_foot()
 EOS;
 }
 
-$l_root = _("root");
+$l_root = _T("root");
 if ($action == 'dir') {
 	if (function_exists('ob_filter_path_nicer')) {
 		ob_start('ob_filter_path_nicer');

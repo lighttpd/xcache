@@ -1,6 +1,6 @@
 <?php $cycleClass = new Cycle('class="col1"', 'class="col2"'); ?>
 <table cellspacing="0" cellpadding="4" class="cycles caches">
-	<caption><?php echo _('Caches'); ?></caption>
+	<caption><?php echo _T('Caches'); ?></caption>
 	<tr>
 	<?php echo
 		th(N_("cache.cache"))
@@ -27,13 +27,13 @@
 	</tr>
 	<?php
 	$numkeys = explode(',', 'slots,size,avail,hits,updates,skips,ooms,errors,cached,deleted');
-	$l_clear = _('Clear');
-	$l_disabled = _('Disabled');
-	$l_disable = _('Disable');
-	$l_enable = _('Enable');
-	$l_compiling = _('Compiling');
-	$l_normal = _('Normal');
-	$l_confirm = _('Sure?');
+	$l_clear = _T('Clear');
+	$l_disabled = _T('Disabled');
+	$l_disable = _T('Disable');
+	$l_enable = _T('Enable');
+	$l_compiling = _T('Compiling');
+	$l_normal = _T('Normal');
+	$l_confirm = _T('Sure?');
 	foreach (getCacheInfos() as $i => $ci) {
 		$class = $cycleClass->next();
 		echo <<<TR
@@ -129,12 +129,12 @@ EOS;
 <?php } ?>
 </table>
 <div class="blockarea legends">
-	<div class="legendtitle"><?php echo _('Legends:'); ?></div>
+	<div class="legendtitle"><?php echo _T('Legends:'); ?></div>
 	<div class="legend pvalue">&nbsp;&nbsp;</div>
-	<div class="legendtitle"><?php echo _($config['percent_graph_type'] == 'free' ? '% Free' : '% Used'); ?></div>
+	<div class="legendtitle"><?php echo _T($config['percent_graph_type'] == 'free' ? '% Free' : '% Used'); ?></div>
 	<div class="legend" style="background: rgb(0,0,255)">&nbsp;&nbsp;</div>
-	<div class="legendtitle"><?php echo _($config['percent_graph_type'] == 'free' ? 'Free Blocks' : 'Used Blocks'); ?></div>
+	<div class="legendtitle"><?php echo _T($config['percent_graph_type'] == 'free' ? 'Free Blocks' : 'Used Blocks'); ?></div>
 	<div class="legend" style="background: rgb(255,0,0)">&nbsp;&nbsp;</div>
-	<div class="legendtitle"><?php echo _('Hits'); ?></div>
+	<div class="legendtitle"><?php echo _T('Hits'); ?></div>
 </div>
 <?php unset($cycleClass); ?>

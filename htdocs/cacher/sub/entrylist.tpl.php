@@ -1,7 +1,7 @@
 <?php $cycleClass = new Cycle('class="col1"', 'class="col2"'); ?>
 <form action="" method="post">
 	<table cellspacing="0" cellpadding="4" class="cycles entries">
-		<caption><?php echo _("$typeName $listName"); ?></caption>
+		<caption><?php echo _T("$typeName $listName"); ?></caption>
 <?php
 
 echo <<<TR
@@ -141,7 +141,7 @@ TR;
 ?>
 	</table>
 <?php if (!$isphp && $listName == 'Deleted') { ?>
-	<input type="submit" value="<?php echo _("Remove Selected"); ?>">
+	<input type="submit" value="<?php echo _T("Remove Selected"); ?>">
 <?php } ?>
 </form>
 <?php

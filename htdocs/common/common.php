@@ -44,10 +44,10 @@ function mainnav()
 {
 	foreach (array(
 				"http://xcache.lighttpd.net/" => "XCache",
-				"http://xcache.lighttpd.net/wiki/DocTOC" => _("Document"),
-				"http://xcache.lighttpd.net/wiki/PhpIni" => _("INI Reference"),
-				"http://xcache.lighttpd.net/wiki/GetSupport" => _("Get Support"),
-				"https://groups.google.com/group/xcache/" => _("Discusson"),
+				"http://xcache.lighttpd.net/wiki/DocTOC" => _T("Document"),
+				"http://xcache.lighttpd.net/wiki/PhpIni" => _T("INI Reference"),
+				"http://xcache.lighttpd.net/wiki/GetSupport" => _T("Get Support"),
+				"https://groups.google.com/group/xcache/" => _T("Discusson"),
 				"http://www.php.net/" => "PHP",
 				"http://www.lighttpd.net/" => "Lighttpd",
 				) as $url => $title) {
@@ -138,7 +138,7 @@ function get_language_file($name)
 	return isset($file) ? $file : "$name-en.lang.php";
 }
 
-function _($str)
+function _T($str)
 {
 	if (isset($GLOBALS['strings'][$str])) {
 		return $GLOBALS['strings'][$str];
@@ -151,7 +151,7 @@ function _($str)
 
 function __($str)
 {
-	return _($str);
+	return _T($str);
 }
 
 function N_($str)
@@ -260,10 +260,10 @@ include get_language_file("../common/common");
 
 $modules = array();
 if (file_exists("../cacher/index.php")) {
-	$modules["cacher"] = _("Cacher");
+	$modules["cacher"] = _T("Cacher");
 }
 if (file_exists("../coverager/index.php")) {
-	$modules["coverager"] = _("Coverager");
+	$modules["coverager"] = _T("Coverager");
 }
 header("Cache-Control: no-cache, must-revalidate");
 header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
