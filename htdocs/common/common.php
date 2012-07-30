@@ -148,7 +148,7 @@ function _T($str)
 		return $GLOBALS['strings'][$str];
 	}
 	if (!empty($GLOBALS['config']['show_todo_strings'])) {
-		return '<span style="color:red">' . htmlspecialchars($str) . '</span>|';
+		return '<span style="color:red">' . $str . '</span>|';
 	}
 	return $str;
 }

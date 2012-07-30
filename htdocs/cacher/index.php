@@ -256,30 +256,7 @@ function getEntryList() // {{{
 $module = "cacher";
 xcache_count(XC_TYPE_PHP); // trigger auth
 if (!extension_loaded('XCache')) {
-	include "../common/header.tpl.php";
-	echo '<h1>XCache is not loaded</h1>';
-	ob_start();
-	phpinfo(INFO_GENERAL);
-	$info = ob_get_clean();
-	if (preg_match_all("!<tr>[^<]*<td[^>]*>[^<]*(?:Configuration|ini|Server API)[^<]*</td>[^<]*<td[^>]*>[^<]*</td>[^<]*</tr>!s", $info, $m)) {
-		echo '<div class="phpinfo">';
-		echo 'PHP Info';
-		echo '<table>';
-		echo implode('', $m[0]);
-		echo '</table>';
-		echo '</div>';
-	}
-	if (preg_match('!<td class="v">(.*?\\.ini)!', $info, $m)) {
-		echo "Please check $m[1]";
-	}
-	else if (preg_match('!Configuration File \\(php.ini\\) Path *</td><td class="v">([^<]+)!', $info, $m)) {
-		echo "Please put a php.ini in $m[1] and load XCache extension";
-	}
-	else {
-		echo "You don't even have a php.ini yet?";
-	}
-	echo "(See above)";
-	include "../common/footer.tpl.php";
+	header("Location: ../diagnosis");
 	exit;
 }
 
