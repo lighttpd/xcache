@@ -5,6 +5,8 @@ $strings += array(
 		=> '缓存器',
 		'Coverager'
 		=> '代码覆盖查看器',
+		'Diagnosis'
+		=> '诊断',
 		'Document'
 		=> '帮助文档',
 		'INI Reference'

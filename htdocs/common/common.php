@@ -269,6 +269,9 @@ if (file_exists("../cacher/index.php")) {
 if (file_exists("../coverager/index.php")) {
 	$modules["coverager"] = _T("Coverager");
 }
+if (file_exists("../diagnosis/index.php")) {
+	$modules["diagnosis"] = _T("Diagnosis");
+}
 header("Cache-Control: no-cache, must-revalidate");
 header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
 header("Content-Type: text/html; " . $GLOBALS['config']['charset']);
