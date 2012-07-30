@@ -91,8 +91,8 @@ function bar_hits_percent($v, $percent, $active) // {{{
 	$valueHeight = $valueHeight ? $valueHeight . "px" : 0;
 	$paddingHeight = $paddingHeight ? $paddingHeight . "px" : 0;
 	return '<a title="' . $v . '" href="javascript:;"' . $a . '>'
-		. ($paddingHeight ? '<div style="height: ' . $paddingHeight . '"></div>' : '')
-		. ($valueHeight ? '<div style="background: rgb(' . "$r,$g,$b" . '); height: ' . $valueHeight . '"></div>' : '')
+		. ($paddingHeight ? '<span style="height: ' . $paddingHeight . '"></span>' : '')
+		. ($valueHeight ? '<span style="background: rgb(' . "$r,$g,$b" . '); height: ' . $valueHeight . '"></span>' : '')
 		. '</a>';
 }
 // }}}
