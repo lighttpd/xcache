@@ -5,6 +5,8 @@ $strings += array(
 		=> '快取器',
 		'Coverager'
 		=> '代码覆盖查看器',
+		'Diagnosis'
+		=> '診斷',
 		'Document'
 		=> '幫助文檔',
 		'INI Reference'
