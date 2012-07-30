@@ -66,7 +66,6 @@ TR;
 		$hits_avg_h     = number_format(array_avg($ci['hits_by_hour']), 2);
 		$hits_avg_s     = number_format(array_avg($ci['hits_by_second']), 2);
 		$hits_graph_h   = get_cache_hits_graph($ci, 'hits_by_hour');
-		$hits_graph_h_w = count($ci['hits_by_hour']) * 2;
 
 		if (!empty($ci['istotal'])) {
 			$ci['status']       = '-';
@@ -112,7 +111,7 @@ TR;
 		></td>
 		<td>{$ci['status']}</td>
 		<td align="right">{$ci['hits']}</td>
-		<td><div class="hitsgraph" style="width: {$hits_graph_h_w}px">{$hits_graph_h}</div></td>
+		<td>{$hits_graph_h}</td>
 		<td align="right">{$hits_avg_h}</td>
 		<td align="right">{$hits_avg_s}</td>
 		<td align="right">{$ci['updates']}</td>

@@ -84,16 +84,16 @@ function bar_hits_percent($v, $percent, $active) // {{{
 	$r = 220 + (int) ($percent * 25);
 	$g = $b = 220 - (int) ($percent * 220);
 	$percent = (int) ($percent * 100);
-	$a = $active ? ' active' : '';
-	$height = 20;
+	$a = $active ? ' class="active"' : '';
+	$height = 20 - 1 * 2;
 	$valueHeight = ceil($height * $percent / 100);
 	$paddingHeight = $height - $valueHeight;
 	$valueHeight = $valueHeight ? $valueHeight . "px" : 0;
 	$paddingHeight = $paddingHeight ? $paddingHeight . "px" : 0;
-	return '<div title="' . $v . '">'
-		. '<div class="barf' . $a . '" style="height: ' . $paddingHeight . '"></div>'
-		. '<div class="barv' . $a . '" style="background: rgb(' . "$r,$g,$b" . '); height: ' . $valueHeight . '"></div>'
-		. '</div>';
+	return '<a title="' . $v . '" href="javascript:;"' . $a . '>'
+		. ($paddingHeight ? '<div style="height: ' . $paddingHeight . '"></div>' : '')
+		. ($valueHeight ? '<div style="background: rgb(' . "$r,$g,$b" . '); height: ' . $valueHeight . '"></div>' : '')
+		. '</a>';
 }
 // }}}
 function get_cache_hits_graph($ci, $key) // {{{
@@ -109,10 +109,22 @@ function get_cache_hits_graph($ci, $key) // {{{
 		$max = 1;
 	}
 	$t = (time() / (60 * 60)) % 24;
+
 	$html = array();
+	static $cssOut = false;
+	if (!$cssOut) {
+		$cssOut = true;
+		$html[] = '<style type="text/css">';
+		$html[] = '.hitsgraph a { width: 2px; height: 20px; border-top-width: 1px; border-bottom-width: 1px; }';
+		$html[] = '</style>';
+	}
+
+	$width = count($ci[$key]) * 2;
+	$html[] = '<div class="hitsgraph" style="width: ' . $width . 'px">';
 	foreach ($ci[$key] as $i => $v) {
 		$html[] = bar_hits_percent($v, $v / $max, $i == $t);
 	}
+	$html[] = "</div>";
 	return implode('', $html);
 }
 // }}}

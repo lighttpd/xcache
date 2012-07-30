@@ -5,18 +5,15 @@ td, th { white-space: pre; }
 .pvalue { background: limegreen; }
 
 .blocksgraph { height: 13px; }
-.blocksgraph div { float: left; height: 3px; width: 4px; border: solid gray; border-width: 0 0 1px 0; }
+.blocksgraph div { float: left; height: 3px; width: 4px; border: 0 solid gray; border-width: 0 0 1px 0; }
 .blocksgraph { border: 1px solid gray; border-bottom: 0; }
 .percent *, .blocksgraph *, .hitsgraph * { font-size: 1px; font-height: 1px; }
 
 .hitsgraph { margin: auto; }
-.hitsgraph div { float: left; width: 2px; height: 100%; }
-.hitsgraph div:hover { background: gray; }
-.hitsgraph div div { float: none; width: 100%; }
-.hitsgraph div div.barf { border: 0 solid gray; border-width: 1px 0 0 0; }
-.hitsgraph div div.barv { border: 0 solid gray; border-width: 0 0 1px 0; }
-.hitsgraph div div.barf.active { border-color: yellow; }
-.hitsgraph div div.barv.active { border-color: yellow; }
+.hitsgraph a { float: left; border: 0 solid gray; }
+.hitsgraph a.active { border-top-color: yellow; }
+.hitsgraph a:hover { background: gray; }
+.hitsgraph a div { float: none; }
 
 dl { overflow: hidden; }
 dt { font-weight: bold; clear: both; float: left; width: 100px; text-align: right; margin: 0; }
