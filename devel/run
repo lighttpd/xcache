@@ -1,6 +1,7 @@
 #!/bin/bash
 # this script is for developers only
 set -e
+MAKE=/usr/bin/make
 
 . devel/run.cfg
 if [[ ! -z $1 ]]; then
@@ -9,7 +10,13 @@ fi
 
 case "$type" in
 prep*)
-	exec ./devel/prepare
+	shift
+	exec $MAKE -f devel/prepare.mak "$@"
+	;;
+tags)
+	rm -f tags
+	shift
+	exec $MAKE -f devel/prepare.mak tags "$@"
 	;;
 dep*)
 	pwd=$(readlink -f "$(pwd)")
@@ -59,10 +66,7 @@ dep*)
 	exit
 	;;
 xtest)
-	exec /usr/bin/make -f devel/test.mak
-	;;
-tags)
-	exec ./devel/prepare tags
+	exec $MAKE -f devel/test.mak
 	;;
 esac
 
@@ -101,7 +105,7 @@ fi
 case "$type" in
 phpize)
 	if [[ -r Makefile ]]; then
-		make xcachesvnclean || true
+		$MAKE xcachesvnclean || true
 	fi
 	;;
 esac
@@ -145,7 +149,7 @@ make)
 	;;
 esac
 
-LANG=C /usr/bin/make $MAKEOPTS "${MAKEARGS[@]}" 2>&1 \
+LANG=C $MAKE $MAKEOPTS "${MAKEARGS[@]}" 2>&1 \
 | sed -ur \
 	-e 's#Werror=implicit-function-declaration#We/rror=i/mplicit-function-declaration#' \
 	-e 's#\./xc_processor\.h#'$PWD'/xc_processor.h#' \
@@ -206,18 +210,18 @@ dop)
 	exec ./php-cli -c devel.ini ./bin/phpdop.phpr "${args[@]}"
 	;;
 retest)
-	exec make xcachetest "$@" TESTS="`grep '^/.*\.phpt$' php_test_results_*.txt | uniq | xargs`"
+	exec $MAKE xcachetest "$@" TESTS="`grep '^/.*\.phpt$' php_test_results_*.txt | uniq | xargs`"
 	;;
 test)
 	case "${args[0]}" in
 	*.phpt)
-		exec make xcachetest TEST_ARGS=-v TESTS="${args[*]}"
+		exec $MAKE xcachetest TEST_ARGS=-v TESTS="${args[*]}"
 		;;
 	*/)
-		exec make xcachetest TESTS="${args[@]}"
+		exec $MAKE xcachetest TESTS="${args[@]}"
 		;;
 	*)
-		exec make xcachetest
+		exec $MAKE xcachetest
 		;;
 	esac
 	;;

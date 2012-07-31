@@ -65,6 +65,8 @@ const char *xc_get_data_type(zend_uchar data_type)
 #	include "xc_const_string_opcodes_php6.x.h"
 #elif defined(ZEND_ENGINE_2_4)
 #	include "xc_const_string_opcodes_php5.4.h"
+#elif defined(ZEND_ENGINE_2_3)
+#	include "xc_const_string_opcodes_php5.3.h"
 #elif defined(ZEND_ENGINE_2_1)
 #	include "xc_const_string_opcodes_php5.1.h"
 #elif defined(ZEND_ENGINE_2)
