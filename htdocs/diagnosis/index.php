@@ -307,7 +307,7 @@ checking(_T("Readonly Protection")); // {{{
 if (!$xcacheLoaded) {
 	result("skipped", "XCache not loaded");
 }
-else if (ini_get("xcache.readonly_protection") && !$readonly_protection) {
+else if (ini_get("xcache.readonly_protection") && !$readonlyProtection) {
 	result(
 		"error"
 		, _T("Set to enabled but not available")
