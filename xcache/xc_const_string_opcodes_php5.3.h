@@ -1,4 +1,4 @@
-/* size = 151 */
+/* size = 154 */
 static const char *const xc_opcode_names[] = {
 /* 0 */	"NOP",
 /* 1 */	"ADD",
@@ -69,7 +69,7 @@ static const char *const xc_opcode_names[] = {
 /* 66 */	"SEND_VAR",
 /* 67 */	"SEND_REF",
 /* 68 */	"NEW",
-/* 69 */	"UNDEF",
+/* 69 */	"INIT_NS_FCALL_BY_NAME",
 /* 70 */	"FREE",
 /* 71 */	"INIT_ARRAY",
 /* 72 */	"ADD_ARRAY_ELEMENT",
@@ -100,7 +100,7 @@ static const char *const xc_opcode_names[] = {
 /* 97 */	"FETCH_OBJ_UNSET",
 /* 98 */	"FETCH_DIM_TMP_VAR",
 /* 99 */	"FETCH_CONSTANT",
-/* 100 */	"UNDEF",
+/* 100 */	"GOTO",
 /* 101 */	"EXT_STMT",
 /* 102 */	"EXT_FCALL_BEGIN",
 /* 103 */	"EXT_FCALL_END",
@@ -143,12 +143,15 @@ static const char *const xc_opcode_names[] = {
 /* 140 */	"DECLARE_INHERITED_CLASS",
 /* 141 */	"DECLARE_FUNCTION",
 /* 142 */	"RAISE_ABSTRACT_ERROR",
-/* 143 */	"UNDEF",
+/* 143 */	"DECLARE_CONST",
 /* 144 */	"ADD_INTERFACE",
-/* 145 */	"UNDEF",
+/* 145 */	"DECLARE_INHERITED_CLASS_DELAYED",
 /* 146 */	"VERIFY_ABSTRACT_CLASS",
 /* 147 */	"ASSIGN_DIM",
 /* 148 */	"ISSET_ISEMPTY_PROP_OBJ",
 /* 149 */	"HANDLE_EXCEPTION",
-/* 150 */	"USER_OPCODE"
+/* 150 */	"USER_OPCODE",
+/* 151 */	"UNDEF",
+/* 152 */	"JMP_SET",
+/* 153 */	"DECLARE_LAMBDA_FUNCTION"
 };
