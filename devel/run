@@ -20,9 +20,9 @@ tags)
 	;;
 dep*)
 	pwd=$(readlink -f "$(pwd)")
-	builddir=$(readlink -f ../trunk-php5-debug)
+	builddir=$(readlink -f ../trunk-php5-debug-zts)
 	if [[ -z $builddir ]]; then
-		echo required ../trunk-php5-debug not found
+		echo required ../trunk-php5-debug-zts not found
 		return 1
 	fi
 	find . -iname \*.c | sort | while read -r sourceFile; do
@@ -33,7 +33,7 @@ dep*)
 			;;
 		esac
 		echo -n "\$(builddir)/${sourceFile%.c}.lo:"
-		for dependency in $(gcc -M $sourceFile -I$HOME/test/php5-debug/include/php/{,main,Zend,TSRM} -I. -I${builddir} -MG | sed 's#.*:##g' | sed 's#\\##g'); do
+		for dependency in $(gcc -M $sourceFile -I$HOME/test/php5-debug-zts/include/php/{,main,Zend,TSRM} -I. -I${builddir} -MG | sed 's#.*:##g' | sed 's#\\##g'); do
 			dependency=$(readlink -f "$dependency")
 			case "$dependency" in
 			$pwd/*)
@@ -74,7 +74,7 @@ basename=$(basename $(pwd))
 if echo $basename | grep -- - >/dev/null; then :; else
 	svn propget svn:ignore . > .svnignore
 
-	dirs=${dirs:-php5-debug}
+	dirs=${dirs:-php5-debug-zts}
 	for dir in $dirs; do
 		mkdir -p ../${basename}-${dir}
 		cd ../${basename}-${dir} || exit
