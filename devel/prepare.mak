@@ -5,10 +5,10 @@ include devel/prepare.cfg
 
 .PHONY: dummy
 .PHONY: all
-all: xcache/xc_opcode_spec_def.h xc_const_string tags
+all: xcache/xc_opcode_spec_def.h xc_const_string tags po
 
 .PHONY: clean
-clean: clean_xc_const_string
+clean: clean_xc_const_string clean_po
 	rm -f tags xcache/xc_opcode_spec_def.h
 
 .PHONY: clean_xc_const_string
@@ -96,3 +96,41 @@ tags:
 	echo "* Making tags with ${PHP_DEVEL_DIR}"
 	"$(CTAGS)" -R . "${PHP_DEVEL_DIR}/main" "${PHP_DEVEL_DIR}/Zend" "${PHP_DEVEL_DIR}/TSRM" "${PHP_DEVEL_DIR}/ext/standard"
 endif
+
+.PHONY: po
+define htdocspo
+  po: \
+	htdocs/$(1)/lang/en.po \
+	htdocs/$(1)/lang/en.po-merged \
+	htdocs/$(1)/lang/zh-simplified.po-merged \
+	htdocs/$(1)/lang/zh-simplified.po \
+	htdocs/$(1)/lang/zh-traditional.po \
+	htdocs/$(1)/lang/zh-traditional.po-merged
+
+  htdocs/$(1)/lang/%.po-merged: htdocs/$(1)/lang/%.po htdocs/$(1)/lang/$(1).pot
+	msgmerge -o "$$@".tmp $$^
+	mv "$$@".tmp "$$@"
+
+  htdocs/$(1)/lang/%.po:
+	touch "$$@"
+
+  htdocs/$(1)/lang/$(1).pot:
+	xgettext --keyword=_T --keyword=N_ --from-code=UTF-8 -F -D htdocs/$(1)/ $$(subst htdocs/$(1)/,,$$^) -o "$$@".tmp
+	mv "$$@".tmp "$$@"
+
+  htdocs/$(1)/lang/$(1).pot: $(shell find htdocs/$(1) -type f | grep php | grep -v lang | grep -v config)
+
+endef
+
+$(eval $(call htdocspo,cacher))
+$(eval $(call htdocspo,common))
+$(eval $(call htdocspo,coverager))
+$(eval $(call htdocspo,diagnosis))
+
+.PHONY: clean_po
+clean_po: clean_pot
+	rm -f htdocs/*/lang/*.po-merged
+
+.PHONY: clean_pot
+clean_pot:
+	rm -f htdocs/*/lang/*.pot

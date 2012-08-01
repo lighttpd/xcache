@@ -16,6 +16,22 @@ case "$type" in
 prep*)
 	exec $MAKE -f devel/prepare.mak "${args[@]}"
 	;;
+*langphp)
+	find htdocs -iname '*.po' | while read -r i; do
+		echo updateing $i
+		devel/updatelangphp.awk < $i
+	done
+	exit
+	;;
+mergepo)
+	./run prep
+	find htdocs -iname '*.po' | while read -r i; do
+		if [[ -f $i-merged ]]; then
+			mv $i-merged $i
+		fi
+	done
+	exit
+	;;
 tags)
 	rm -f tags
 	exec $MAKE -f devel/prepare.mak tags "${args[@]}"
