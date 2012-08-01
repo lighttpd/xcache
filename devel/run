@@ -16,10 +16,11 @@ case "$type" in
 prep*)
 	exec $MAKE -f devel/prepare.mak "${args[@]}"
 	;;
-*langphp)
+po2php)
+	./run mergepo
 	find htdocs -iname '*.po' | while read -r i; do
 		phpfile=${i/.po/.php}
-		devel/updatelangphp.awk < $i > $phpfile.tmp
+		devel/po2php.awk < $i > $phpfile.tmp
 		mv $phpfile.tmp $phpfile
 	done
 	exit

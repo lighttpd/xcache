@@ -84,13 +84,13 @@ if (!$xcacheLoaded) {
 		echo sprintf(_T("Please put a php.ini in %s and add extension=xcache.so (or xcache.dll) in it"), $iniDirectory);
 	}
 	else {
-		echo _T("Cannot detect ini location");
+		echo _T("Cannot detect php.ini location");
 	}
-	echo _T(" (See above)");
-	result("error", _T('Not loaded'), ob_get_clean());
+	echo " ", _T("(See above)");
+	result(N_("error"), _T('Not loaded'), ob_get_clean());
 }
 else {
-	result("info", _T('Loaded'));
+	result(N_("info"), _T('Loaded'));
 }
 // }}}
 if ($xcacheLoaded) { // {{{ load XCache summary
@@ -123,107 +123,100 @@ if ($xcacheLoaded) { // {{{ load XCache summary
 // }}}
 checking(_T("Enabling PHP Cacher")); // {{{
 if (!$xcacheLoaded) {
-	result("skipped", "XCache not loaded");
+	result(N_("skipped"), "XCache not loaded");
 }
 else if (!ini_get("xcache.size")) {
-	result(
-		"error"
-		, _T("Not enabled: Website is not accelerated by XCache")
-		, _T("Set xcache.size to non-zero, set xcache.cacher = On")
+	result(N_("error")
+		, _T("Not enabled")
+		, _T("Your PHP pages is not accelerated by XCache. Set xcache.size to non-zero, set xcache.cacher = On")
 		);
 }
 else if (!$phpCached) {
-	result(
-		"error"
-		, _T("No php script cached: Website is not accelerated by XCache")
-		, _T("Set xcache.cacher = On")
+	result(N_("error")
+		, _T("No php script cached")
+		, _T("Your PHP pages is not accelerated by XCache. Set xcache.cacher = On")
 		);
 }
 else {
-	result("info", _T('Enabled'));
+	result(N_("info"), _T('Enabled'));
 }
 // }}}
 checking(_T("PHP Compile Time Error")); // {{{
 if (!$xcacheLoaded) {
-	result("skipped", "XCache not loaded");
+	result(N_("skipped"), "XCache not loaded");
 }
 else if (!$phpCacheCount) {
-	result("skipped", "XCache PHP cacher not enabled");
+	result(N_("skipped"), "XCache PHP cacher not enabled");
 }
 else if ($errors) {
-	result(
-		"warning"
+	result(N_("warning")
 		, _T("Error happened when compiling at least one of your PHP code")
 		, _T("This usually means there is syntax error in your PHP code. Enable PHP error_log to see what parser error is it, fix your code")
 		);
 }
 else {
-	result("info", _T('No error happened'));
+	result(N_("info"), _T('No error happened'));
 }
 // }}}
 checking(_T("Busy Compiling")); // {{{
 if (!$xcacheLoaded) {
-	result("skipped", "XCache not loaded");
+	result(N_("skipped"), "XCache not loaded");
 }
 else if (!$phpCacheCount) {
-	result("skipped", "XCache PHP cacher not enabled");
+	result(N_("skipped"), "XCache PHP cacher not enabled");
 }
 else if ($compiling) {
-	result(
-		"warning"
+	result(N_("warning")
 		, _T("Cache marked as busy for compiling")
 		, _T("It's ok if this status don't stay for long. Otherwise, it could be a sign of PHP crash/coredump, report to XCache devs")
 		);
 }
 else {
-	result("info", _T('Idle'));
+	result(N_("info"), _T('Idle'));
 }
 // }}}
 checking(_T("Enabling VAR Cacher")); // {{{
 if (!$xcacheLoaded) {
-	result("skipped", "XCache not loaded");
+	result(N_("skipped"), "XCache not loaded");
 }
 else if (!ini_get("xcache.var_size")) {
-	result(
-		"error"
-		, _T("Not enabled: code that use xcache var cacher fall back to other backend")
-		, _T("Set xcache.var_size to non-zero")
+	result(N_("error")
+		, _T("Not enabled")
+		, _T("PHP code that use XCache caching backend have to use other caching backend instead. Set xcache.var_size to non-zero")
 		);
 }
 else {
-	result("info", _T('Enabled'));
+	result(N_("info"), _T('Enabled'));
 
 	checking(_T("Using VAR Cacher")); // {{{
-	if ($varCached) {
-		result(
-			"warning"
+	if (!$varCached) {
+		result(N_("warning")
 			, _T("No variable data cached")
 			, _T("Var Cacher won't work simply by enabling it."
-				. " PHP code must call XCache APIs like xcache_set() to use it as cache backend. 3rd party web apps may come with XCache support, config it to use XCache as cachign backend")
+				. " PHP code must call XCache APIs like xcache_set() to use it as cache backend. 3rd party web apps may come with XCache support, config it to use XCache as caching backend")
 			);
 	}
 	else {
-		result("info", _T('Cache in use'));
+		result(N_("info"), _T('Cache in use'));
 	}
 	// }}}
 }
 // }}}
 checking(_T("Cache Size")); // {{{
 if (!$xcacheLoaded) {
-	result("skipped", "XCache not loaded");
+	result(N_("skipped"), "XCache not loaded");
 }
 else if ($ooms) {
-	result(
-		"warning"
+	result(N_("warning")
 		, _T("Out of memory happened when trying to write to cache")
 		, _T("Increase xcache.size and/or xcache.var_size")
 		);
 }
 else {
-	result("info", _T('Enough'));
+	result(N_("info"), _T('Enough'));
 }
 // }}}
-checking(_T("Slots")); // {{{
+checking(_T("Hash Slots")); // {{{
 $slotsTooBig = null;
 $slotsTooSmall = null;
 foreach ($cacheInfos as $cacheInfo) {
@@ -238,8 +231,7 @@ foreach ($cacheInfos as $cacheInfo) {
 }
 if (isset($slotsTooBig)) {
 	$prefix = $slotsTooBig == XC_TYPE_PHP ? '' : 'var_';
-	result(
-		"warning"
+	result(N_("warning")
 		, _T("Slots value too big")
 		, sprintf(_T("A very small value is set to %s value and leave %s value is too big.\n"
 			. "Decrease %s if small cache is really what you want"), "xcache.{$prefix}size", "xcache.{$prefix}slots", "xcache.{$prefix}slots")
@@ -247,42 +239,40 @@ if (isset($slotsTooBig)) {
 }
 else if (isset($slotsTooSmall)) {
 	$prefix = $slotsTooSmall == XC_TYPE_PHP ? '' : 'var_';
-	result(
-		"warning"
+	result(N_("warning")
 		, _T("Slots value too small")
 		, sprintf(_T("So many item are cached. Increase %s to a more proper value"), "xcache.{$prefix}slots")
 		);
 }
 else {
-	result("info", _T('Looks good'));
+	result(N_("info"), _T('Looks good'));
 }
 // }}}
 checking(_T("Cache Status")); // {{{
 if (!$xcacheLoaded) {
-	result("skipped", "XCache not loaded");
+	result(N_("skipped"), "XCache not loaded");
 }
 else if ($disabled) {
-	result(
-		"warning"
+	result(N_("warning")
 		, _T("At least one of the caches is disabled. ")
-			. (ini_get("xcache.crash_on_coredump") ? _T("It was disabled by PHP crash/coredump handler or You disabled it manually") : _T('You disabled it manually'))
 		, _T("Enable the cache.")
+			. (ini_get("xcache.crash_on_coredump") ? " " . _T("It was disabled by PHP crash/coredump handler or you disabled it manually.") : _T('You disabled it manually.'))
 			. (ini_get("xcache.crash_on_coredump") ? " " . _T("If it was caused by PHP crash/coredump, report to XCache devs") : "")
 		);
 }
 else {
-	result("info", _T('Idle'));
+	result(N_("info"), _T('Idle'));
 }
 // }}}
 
 checking(_T("Coredump Directory")); // {{{
 if (!$xcacheLoaded) {
-	result("skipped", "XCache not loaded");
+	result(N_("skipped"), "XCache not loaded");
 }
 else if (!ini_get("xcache.coredump_directory")) {
-	result("info"
+	result(N_("info")
 			, _T("Not enabled")
-			, _T("Enable coredump to know your PHP crash. It can also be enabled in fpm other than in XCache")
+			, _T("Enable coredump to save debugging information in case when PHP crash. It can also be enabled in other module like php-fpm beside XCache")
 			);
 }
 else if (ini_get("xcache.coredump_directory")) {
@@ -292,13 +282,13 @@ else if (ini_get("xcache.coredump_directory")) {
 	}
 	$coreFiles = glob($coreDir . "core*");
 	if ($coreFiles) {
-		result("error"
+		result(N_("error")
 				, _T("Core files found:\n") . implode("\n", $coreFiles)
-				, _T("Disable XCache PHP Cacher (xcache.size=0), remove the core file(s). If core file appears again, report call stack backtrace in the core to XCache devs")
+				, _T("Disable XCache PHP Cacher (set xcache.size=0), remove the core file(s), then restart PHP. If core file appears again, report call stack backtrace in the core to XCache devs")
 				);
 	}
 	else {
-		result("info"
+		result(N_("info")
 				, _T("Enabled")
 				, sprintf(_T("You can see core files if PHP crash in %s if PHP crash"), ini_get("xcache.coredump_directory"))
 				);
@@ -307,18 +297,16 @@ else if (ini_get("xcache.coredump_directory")) {
 // }}}
 checking(_T("Readonly Protection")); // {{{
 if (!$xcacheLoaded) {
-	result("skipped", "XCache not loaded");
+	result(N_("skipped"), "XCache not loaded");
 }
 else if (ini_get("xcache.readonly_protection") && !$readonlyProtection) {
-	result(
-		"error"
+	result(N_("error")
 		, _T("Set to enabled but not available")
 		, _T("Use xcache.mmap_path other than /dev/zero")
 		);
 }
 else {
-	result(
-		"info"
+	result(N_("info")
 		, $readonlyProtection ? _T("Enabled") : _T("Disabled")
 		, _T("Enable readonly_protection == --performance & ++stability. "
 			. "Disable readonly_protection == ++performance & --stability")
@@ -327,38 +315,36 @@ else {
 // }}}
 checking(_T("XCache modules")); // {{{
 if (!$xcacheLoaded) {
-	result("skipped", "XCache not loaded");
+	result(N_("skipped"), "XCache not loaded");
 }
 else {
 	$xcacheModules = explode(" ", XCACHE_MODULES);
 	$unexpectedModules = array_intersect($xcacheModules, array("coverager", "disassembler"));
 	if ($unexpectedModules) {
-		result(
-			"warning"
+		result(N_("warning")
 			, implode("\n", $unexpectedModules)
-			, _T("Acceptable. Module(s) listed above are built into XCache but not for production server\n"
+			, _T("Acceptable. Module(s) listed are built into XCache but not for production server.\n"
 				. "Leave it as is if you're feeling good.\n"
-				. "Re-configure XCache with the above module(s) disabled if you're strict with server security.")
+				. "Re-configure XCache with the module(s) disabled if you're strict with server security.")
 			);
 	}
 	else {
-		result("info", _T('Idle'));
+		result(N_("info"), _T('Idle'));
 	}
 }
 // }}}
 checking(_T("XCache test setting")); // {{{
 if (!$xcacheLoaded) {
-	result("skipped", "XCache not loaded");
+	result(N_("skipped"), "XCache not loaded");
 }
 else if ((int) ini_get('xcache.test') == 1) {
-	result(
-		"warning"
+	result(N_("warning")
 		, _T("Enabled")
 		, _T("xcache.test is for testing only, not for server. set it to off")
 		);
 }
 else {
-	result("info", _T('Disabled'));
+	result(N_("info"), _T('Disabled'));
 }
 // }}}
 checking(_T("PHP Version")); // {{{
@@ -379,22 +365,24 @@ foreach ($knownUnstablePhpVersions as $knownUnstablePhpVersion) {
 	}
 }
 if ($unstablePhpVersionReason) {
-	result("error"
+	result(N_("error")
 			, _T("The version of PHP you're using is known to be unstable: ") . $unstablePhpVersionReason
 			, _T("Upgrade to new version of PHP"));
 }
 else {
-	result("info", _T("Looks good"));
+	result(N_("info"), _T("Looks good"));
 }
 // }}}
 checking(_T("Extension Compatibility")); // {{{
 $loadedZendExtensions = get_loaded_extensions(true);
 if (array_search("Zend Optimizer", $loadedZendExtensions) !== false) {
-	result(
-		"warning"
+	result(N_("info")
 		, _T("Zend Optimizer loaded")
 		, _T("Optimizer feature of 'Zend Optimizer' is disabled by XCache due to compatibility reason; the Loader of it is still available, encoded files are still supported")
 		);
+}
+else {
+	result(N_("info"), _T("Looks good"));
 }
 // }}}
 

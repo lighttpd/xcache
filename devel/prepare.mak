@@ -118,7 +118,7 @@ define htdocspo
 	xgettext --keyword=_T --keyword=N_ --from-code=UTF-8 -F -D htdocs/$(1)/ $$(subst htdocs/$(1)/,,$$^) -o "$$@".tmp
 	mv "$$@".tmp "$$@"
 
-  htdocs/$(1)/lang/$(1).pot: $(shell find htdocs/$(1) -type f | grep php | grep -v lang | grep -v config)
+  htdocs/$(1)/lang/$(1).pot: $(shell find htdocs/$(1) -type f | grep php | grep -v lang | grep -v config | grep -vF .swp)
 
 endef
 

@@ -14,13 +14,13 @@
 			<?php echo _T("Result"); ?>
 		</th>
 		<th>
-			<?php echo _T("Result/Suggestion"); ?>
+			<?php echo _T("Explanation/Suggestion"); ?>
 		</th>
 	</tr>
 <?php foreach ($notes as $note) { ?>
 	<tr class="<?php echo $note['type']; ?>">
 		<td nowrap="nowrap" align="right"><?php echo $note['item']; ?></td>
-		<td nowrap="nowrap"><?php echo ucfirst($note['type']); ?></td>
+		<td nowrap="nowrap"><?php echo ucfirst(__($note['type'])); ?></td>
 		<td nowrap="nowrap"><?php echo nl2br($note['result']); ?></td>
 		<td><?php echo nl2br($note['suggestion']); ?></td>
 	</tr>
