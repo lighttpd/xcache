@@ -46,7 +46,13 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 			')
 			int xc_autocheck_assert_size = SIZEOF_$1, assert_count = COUNTOF_$1;
 			int xc_autocheck_done_size = 0, xc_autocheck_done_count = 0;
-			const char *xc_autocheck_assert_names[] = { ifdef(`ELEMENTSOF_$1', `ELEMENTSOF_$1') };
+			ifdef(`ELEMENTSOF_$1', `
+				const char *xc_autocheck_assert_names[] = { ELEMENTSOF_$1 };
+				size_t xc_autocheck_assert_names_count = sizeof(xc_autocheck_assert_names) / sizeof(xc_autocheck_assert_names[0]);
+			', `
+				const char **xc_autocheck_assert_names = NULL;
+				size_t xc_autocheck_assert_names_count = 0;
+			')
 			zend_bool xc_autocheck_skip = 0;
 			HashTable xc_autocheck_done_names;
 			zend_hash_init(&xc_autocheck_done_names, 0, NULL, NULL, 0);
@@ -74,7 +80,7 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 		IFAUTOCHECK(`
 		/* {{{ autocheck */
 		if (!xc_autocheck_skip) {
-			int name_check_errors = xc_check_names(__FILE__, __LINE__, "FUNC_NAME", xc_autocheck_assert_names, sizeof(xc_autocheck_assert_names) / sizeof(xc_autocheck_assert_names[0]), &xc_autocheck_done_names);
+			int name_check_errors = xc_check_names(__FILE__, __LINE__, "FUNC_NAME", xc_autocheck_assert_names, xc_autocheck_assert_names_count, &xc_autocheck_done_names);
 
 			if (xc_autocheck_done_count != assert_count) {
 				fprintf(stderr
