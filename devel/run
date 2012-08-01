@@ -143,7 +143,7 @@ phpize)
 	export PATH=$PHPDIRS/$phpbasename/bin:$PATH
 	phpize --clean \
 	&& phpize \
-	&& CFLAGS="-g -O0 -pedantic-errors -Wno-variadic-macros -Wno-long-long -Wall -Wno-unused -W -Wshadow -Werror=implicit-function-declaration -std=c89 -D_GNU_SOURCE -D_POSIX_SOURCE -Dinline=" ./configure \
+	&& CFLAGS="-g -O0 -pedantic-errors -Wno-variadic-macros -Wno-long-long -Wall -Wno-unused-parameter -Wno-unused-function -W -Wshadow -Werror=implicit-function-declaration -std=c89 -D_GNU_SOURCE -D_POSIX_SOURCE -Dinline=" ./configure \
 		--enable-xcache-cacher \
 		--enable-xcache-optimizer \
 		--enable-xcache-encoder \
@@ -162,6 +162,7 @@ esac
 LANG=C $MAKE $MAKEOPTS "${MAKEARGS[@]}" 2>&1 \
 | sed -ur \
 	-e 's#Werror=implicit-function-declaration#We/rror=i/mplicit-function-declaration#' \
+	-e 's#-pedantic-errors#-pedantic-e/rrors#' \
 	-e 's#\./xc_processor\.h#'$PWD'/xc_processor.h#' \
 	-e 's#\./xc_processor\.c\.h#'$PWD'/xc_processor.c.h#' \
 | hi error implicit warn FAIL

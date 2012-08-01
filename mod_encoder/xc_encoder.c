@@ -1,1 +1,1 @@
-static char dummy = 1;
+static void dummy() { }

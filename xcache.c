@@ -708,9 +708,6 @@ static PHP_MINIT_FUNCTION(xcache) /* {{{ */
 #endif
 
 	return SUCCESS;
-
-err_init:
-	return FAILURE;
 }
 /* }}} */
 static PHP_MSHUTDOWN_FUNCTION(xcache) /* {{{ */
