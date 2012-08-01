@@ -8,6 +8,7 @@
    * adds an diagnosis module to give advise @ htdocs
    * adds warning for misconfiguration @ startup
    * auto disable caching on crash @ runtime
+ * cache can be enabled/disabled manually
 
 2.0.1 2012-07-14
 ========
