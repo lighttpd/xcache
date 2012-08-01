@@ -31,7 +31,7 @@ xc_shm.c \
 xc_shm_mmap.c \
 xc_utils.c \
 ", "xcache");
-	ADD_SOURCES(configure_module_dirname + "/xcache", " \
+	ADD_SOURCES(configure_module_dirname + "/mod_cacher", " \
 xc_cacher.c \
 ", "xcache");
 
