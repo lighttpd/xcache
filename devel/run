@@ -4,19 +4,26 @@ set -e
 MAKE=/usr/bin/make
 
 . devel/run.cfg
-if [[ ! -z $1 ]]; then
+if [[ $# -gt 0 ]]; then
 	type=$1
+	shift
+	if [[ $# -gt 0 ]]; then
+		args=("$@")
+	fi
 fi
+
+if [[ -z ${args[0]} ]]; then
+	args=(devel.php)
+fi
+
 
 case "$type" in
 prep*)
-	shift
-	exec $MAKE -f devel/prepare.mak "$@"
+	exec $MAKE -f devel/prepare.mak "${args[@]}"
 	;;
 tags)
 	rm -f tags
-	shift
-	exec $MAKE -f devel/prepare.mak tags "$@"
+	exec $MAKE -f devel/prepare.mak tags "${args[@]}"
 	;;
 dep*)
 	pwd=$(readlink -f "$(pwd)")
@@ -89,18 +96,6 @@ fi
 phpbasename=${basename#*-}
 xcachebasename=${basename%%-*}
 xcachesrcdir=../$xcachebasename
-
-if [[ $# -gt 0 ]]; then
-	type=$1
-	shift
-	if [[ $# -gt 0 ]]; then
-		args=("$@")
-	fi
-fi
-
-if [[ -z ${args[0]} ]]; then
-	args=(devel.php)
-fi
 
 case "$type" in
 phpize)
