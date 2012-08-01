@@ -36,8 +36,6 @@ else {
 	}
 }
 
-$module = "cacher";
-
 include "edit.tpl.php";
 
 ?>

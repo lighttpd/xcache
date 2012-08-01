@@ -1,6 +1,8 @@
 <?php
 
 include "../common/common.php";
+include get_language_file("./lang");
+
 $knownUnstablePhpVersions = array(
 		array('=', '5.3.14', 'random corrupt memory on high concurrent'),
 		);

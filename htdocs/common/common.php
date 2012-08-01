@@ -85,7 +85,7 @@ function xcache_validateFileName($name)
 	return preg_match('!^[a-zA-Z0-9._-]+$!', $name);
 }
 
-function get_language_file_ex($name, $lang)
+function get_language_file_ex($dir, $lang)
 {
 	static $langMap = array(
 			'zh'    => 'zh-simplified',
@@ -100,22 +100,22 @@ function get_language_file_ex($name, $lang)
 		return null;
 	}
 
-	$file = "$name-$lang.lang.php";
+	$file = "$dir/$lang.php";
 	if (file_exists($file)) {
 		return $file;
 	}
 	return null;
 }
 
-function get_language_file($name)
+function get_language_file($dir)
 {
 	global $config;
 	if (!empty($config['lang'])) {
 		$lang = strtolower($config['lang']);
-		$file = get_language_file_ex($name, $lang);
+		$file = get_language_file_ex($dir, $lang);
 		if (!isset($file)) {
 			$lang = strtok($lang, ':-');
-			$file = get_language_file_ex($name, $lang);
+			$file = get_language_file_ex($dir, $lang);
 		}
 	}
 	else {
@@ -124,13 +124,13 @@ function get_language_file($name)
 		if (!empty($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
 			foreach (explode(',', str_replace(' ', '', $_SERVER['HTTP_ACCEPT_LANGUAGE'])) as $lang) {
 				$lang = strtok($lang, ':;');
-				$file = get_language_file_ex($name, $lang);
+				$file = get_language_file_ex($dir, $lang);
 				if (isset($file)) {
 					$config['lang'] = $lang;
 					break;
 				}
 				if (strpos($lang, '-') !== false) {
-					$file = get_language_file_ex($name, strtok($lang, ':-'));
+					$file = get_language_file_ex($dir, strtok($lang, ':-'));
 					if (isset($file)) {
 						$config['lang'] = $lang;
 						break;
@@ -139,7 +139,7 @@ function get_language_file($name)
 			}
 		}
 	}
-	return isset($file) ? $file : "$name-en.lang.php";
+	return isset($file) ? $file : "$dir/en.php";
 }
 
 function _T($str)
@@ -260,7 +260,7 @@ if (file_exists("./config.php")) {
 }
 
 $strings = array();
-include get_language_file("../common/common");
+include get_language_file("../common/lang");
 
 $modules = array();
 if (file_exists("../cacher/index.php")) {
