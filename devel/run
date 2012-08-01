@@ -12,11 +12,6 @@ if [[ $# -gt 0 ]]; then
 	fi
 fi
 
-if [[ -z ${args[0]} ]]; then
-	args=(devel.php)
-fi
-
-
 case "$type" in
 prep*)
 	exec $MAKE -f devel/prepare.mak "${args[@]}"
@@ -153,6 +148,10 @@ LANG=C $MAKE $MAKEOPTS "${MAKEARGS[@]}" 2>&1 \
 ret=${PIPESTATUS[0]}
 if [[ $ret -ne 0 || $type = make ]]; then
 	exit $ret
+fi
+
+if [[ -z ${args[0]} ]]; then
+	args=(devel.php)
 fi
 
 cmd=()
