@@ -4,9 +4,9 @@
 	<tr>
 	<?php echo
 		th(N_("cache.cache"))
+		, th(N_("cache.slots"))
 		, th(N_("cache.size"))
 		, th(N_("cache.avail"))
-		, th(N_("cache.used"))
 		, th(N_("cache.blocksgraph"))
 		, th(N_("cache.operations"))
 		, th(N_("cache.status"))
