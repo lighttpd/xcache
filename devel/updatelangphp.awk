@@ -1,7 +1,7 @@
 #!/usr/bin/awk -f
 BEGIN {
 	print "<?php";
-	print "";
+	print "// auto generated, do not modify";
 	print "$strings += array(";
 }
 
@@ -10,9 +10,11 @@ function flushOut() {
 		if (section == "msgstr") {
 			if (msgid == "") {
 			}
+			else if (msgstr == "") {
+			}
 			else {
-				print "\t\""msgid"\"";
-				print "\t=> \""msgstr"\",";
+				print "\t\t'"msgid"'";
+				print "\t\t=> '"msgstr"',";
 			}
 		}
 		else {
@@ -60,6 +62,6 @@ function flushOut() {
 }
 END {
 	flushOut();
-	print ");";
+	print "\t\t);";
 	print "";
 }

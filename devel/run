@@ -18,8 +18,9 @@ prep*)
 	;;
 *langphp)
 	find htdocs -iname '*.po' | while read -r i; do
-		echo updateing $i
-		devel/updatelangphp.awk < $i
+		phpfile=${i/.po/.php}
+		devel/updatelangphp.awk < $i > $phpfile.tmp
+		mv $phpfile.tmp $phpfile
 	done
 	exit
 	;;
@@ -96,10 +97,10 @@ if echo $basename | grep -- - >/dev/null; then :; else
 	for dir in $dirs; do
 		mkdir -p ../${basename}-${dir}
 		cd ../${basename}-${dir} || exit
-		lndir ../${basename} > /dev/null
+		lndir ../${basename} >/dev/null || true
 
 		pwd
-		$0 "$@"
+		$0 "$type" "${args[@]}"
 	done
 	exit
 fi
@@ -117,8 +118,8 @@ phpize)
 esac
 
 rm -f php-src
-find -L . -type l | xargs rm -f
-lndir "$xcachesrcdir" >/dev/null
+find -L . -type l | xargs rm -fv
+lndir "$xcachesrcdir" >/dev/null || true
 find . -iname .\*.swp | xargs rm -f
 ln -sf ~/src/php/$phpbasename php-src
 for i in ~/src/php/$phpbasename/sapi/cgi/php{,-cgi}; do

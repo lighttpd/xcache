@@ -1,12 +1,6 @@
 <?php
-
+// auto generated, do not modify
 $strings += array(
-		'Cacher'
-		=> '缓存器',
-		'Coverager'
-		=> '代码覆盖查看器',
-		'Diagnosis'
-		=> '诊断',
 		'Document'
 		=> '帮助文档',
 		'INI Reference'
@@ -15,7 +9,11 @@ $strings += array(
 		=> '获取支持',
 		'Discusson'
 		=> '讨论',
-		''
-		=> '',
+		'Cacher'
+		=> '缓存器',
+		'Coverager'
+		=> '代码覆盖查看器',
+		'Diagnosis'
+		=> '诊断',
 		);
 
