@@ -13,8 +13,8 @@ function flushOut() {
 			else if (msgstr == "") {
 			}
 			else {
-				print "\t\t'"msgid"'";
-				print "\t\t=> '"msgstr"',";
+				print "\t\t\""msgid"\"";
+				print "\t\t=> \""msgstr"\",";
 			}
 		}
 		else {
