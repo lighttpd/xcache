@@ -227,11 +227,9 @@ function getEntryList() // {{{
 	}
 	$entryList = array('cache_list' => array(), 'deleted_list' => array());
 	if ($_GET['do'] == 'listphp') {
-		$entryList['type_name'] = 'php';
 		$entryList['type'] = XC_TYPE_PHP;
 	}
 	else {
-		$entryList['type_name'] = 'var';
 		$entryList['type'] = XC_TYPE_VAR;
 	}
 	foreach (getCacheInfos() as $i => $c) {

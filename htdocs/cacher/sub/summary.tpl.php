@@ -131,9 +131,9 @@ EOS;
 <div class="blockarea legends">
 	<div class="legendtitle"><?php echo _T('Legends:'); ?></div>
 	<div class="legend pvalue">&nbsp;&nbsp;</div>
-	<div class="legendtitle"><?php echo _T($config['percent_graph_type'] == 'free' ? '% Free' : '% Used'); ?></div>
+	<div class="legendtitle"><?php echo $config['percent_graph_type'] == 'free' ? _T('% Free') : _T('% Used'); ?></div>
 	<div class="legend" style="background: rgb(0,0,255)">&nbsp;&nbsp;</div>
-	<div class="legendtitle"><?php echo _T($config['percent_graph_type'] == 'free' ? 'Free Blocks' : 'Used Blocks'); ?></div>
+	<div class="legendtitle"><?php echo $config['percent_graph_type'] == 'free' ? _T('Free Blocks') : _T('Used Blocks'); ?></div>
 	<div class="legend" style="background: rgb(255,0,0)">&nbsp;&nbsp;</div>
 	<div class="legendtitle"><?php echo _T('Hits'); ?></div>
 </div>

@@ -1,0 +1,318 @@
+msgid ""
+msgstr ""
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2012-08-01 14:47+0800\n"
+"Language: zh\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: diagnosis.tpl.php:4
+msgid "Diagnosis Result"
+msgstr ""
+
+#: diagnosis.tpl.php:8
+msgid "Item"
+msgstr ""
+
+#: diagnosis.tpl.php:11
+msgid "Level"
+msgstr ""
+
+#: diagnosis.tpl.php:14
+msgid "Result"
+msgstr ""
+
+#: diagnosis.tpl.php:17
+msgid "Result/Suggestion"
+msgstr ""
+
+#: index.php:77
+msgid "XCache extension"
+msgstr ""
+
+#: index.php:81
+#, php-format
+msgid "Add extension=xcache.so (or xcache.dll) in %s"
+msgstr ""
+
+#: index.php:84
+#, php-format
+msgid ""
+"Please put a php.ini in %s and add extension=xcache.so (or xcache.dll) in it"
+msgstr ""
+
+#: index.php:87
+msgid "Cannot detect ini location"
+msgstr ""
+
+#: index.php:89
+msgid " (See above)"
+msgstr ""
+
+#: index.php:90
+msgid "Not loaded"
+msgstr ""
+
+#: index.php:93
+msgid "Loaded"
+msgstr ""
+
+#: index.php:124
+msgid "Enabling PHP Cacher"
+msgstr ""
+
+#: index.php:131
+msgid "Not enabled: Website is not accelerated by XCache"
+msgstr ""
+
+#: index.php:132
+msgid "Set xcache.size to non-zero, set xcache.cacher = On"
+msgstr ""
+
+#: index.php:138
+msgid "No php script cached: Website is not accelerated by XCache"
+msgstr ""
+
+#: index.php:139
+msgid "Set xcache.cacher = On"
+msgstr ""
+
+#: index.php:143 index.php:194 index.php:302 index.php:322 index.php:356
+msgid "Enabled"
+msgstr ""
+
+#: index.php:146
+msgid "PHP Compile Time Error"
+msgstr ""
+
+#: index.php:156
+msgid "Error happened when compiling at least one of your PHP code"
+msgstr ""
+
+#: index.php:157
+msgid ""
+"This usually means there is syntax error in your PHP code. Enable PHP "
+"error_log to see what parser error is it, fix your code"
+msgstr ""
+
+#: index.php:161
+msgid "No error happened"
+msgstr ""
+
+#: index.php:164
+msgid "Busy Compiling"
+msgstr ""
+
+#: index.php:174
+msgid "Cache marked as busy for compiling"
+msgstr ""
+
+#: index.php:175
+msgid ""
+"It's ok if this status don't stay for long. Otherwise, it could be a sign of "
+"PHP crash/coredump, report to XCache devs"
+msgstr ""
+
+#: index.php:179 index.php:274 index.php:345
+msgid "Idle"
+msgstr ""
+
+#: index.php:182
+msgid "Enabling VAR Cacher"
+msgstr ""
+
+#: index.php:189
+msgid "Not enabled: code that use xcache var cacher fall back to other backend"
+msgstr ""
+
+#: index.php:190
+msgid "Set xcache.var_size to non-zero"
+msgstr ""
+
+#: index.php:196
+msgid "Using VAR Cacher"
+msgstr ""
+
+#: index.php:200
+msgid "No variable data cached"
+msgstr ""
+
+#: index.php:201
+msgid ""
+"Var Cacher won't work simply by enabling it. PHP code must call XCache APIs "
+"like xcache_set() to use it as cache backend. 3rd party web apps may come "
+"with XCache support, config it to use XCache as cachign backend"
+msgstr ""
+
+#: index.php:206
+msgid "Cache in use"
+msgstr ""
+
+#: index.php:211
+msgid "Cache Size"
+msgstr ""
+
+#: index.php:218
+msgid "Out of memory happened when trying to write to cache"
+msgstr ""
+
+#: index.php:219
+msgid "Increase xcache.size and/or xcache.var_size"
+msgstr ""
+
+#: index.php:223
+msgid "Enough"
+msgstr ""
+
+#: index.php:226
+msgid "Slots"
+msgstr ""
+
+#: index.php:243
+msgid "Slots value too big"
+msgstr ""
+
+#: index.php:244
+#, php-format
+msgid ""
+"A very small value is set to %s value and leave %s value is too big.\n"
+"Decrease %s if small cache is really what you want"
+msgstr ""
+
+#: index.php:252
+msgid "Slots value too small"
+msgstr ""
+
+#: index.php:253
+#, php-format
+msgid "So many item are cached. Increase %s to a more proper value"
+msgstr ""
+
+#: index.php:257 index.php:387
+msgid "Looks good"
+msgstr ""
+
+#: index.php:260
+msgid "Cache Status"
+msgstr ""
+
+#: index.php:267
+msgid "At least one of the caches is disabled. "
+msgstr ""
+
+#: index.php:268
+msgid ""
+"It was disabled by PHP crash/coredump handler or You disabled it manually"
+msgstr ""
+
+#: index.php:268
+msgid "You disabled it manually"
+msgstr ""
+
+#: index.php:269
+msgid "Enable the cache."
+msgstr ""
+
+#: index.php:270
+msgid "If it was caused by PHP crash/coredump, report to XCache devs"
+msgstr ""
+
+#: index.php:278
+msgid "Coredump Directory"
+msgstr ""
+
+#: index.php:284
+msgid "Not enabled"
+msgstr ""
+
+#: index.php:285
+msgid ""
+"Enable coredump to know your PHP crash. It can also be enabled in fpm other "
+"than in XCache"
+msgstr ""
+
+#: index.php:296
+msgid "Core files found:\n"
+msgstr ""
+
+#: index.php:297
+msgid ""
+"Disable XCache PHP Cacher (xcache.size=0), remove the core file(s). If core "
+"file appears again, report call stack backtrace in the core to XCache devs"
+msgstr ""
+
+#: index.php:303
+#, php-format
+msgid "You can see core files if PHP crash in %s if PHP crash"
+msgstr ""
+
+#: index.php:308
+msgid "Readonly Protection"
+msgstr ""
+
+#: index.php:315
+msgid "Set to enabled but not available"
+msgstr ""
+
+#: index.php:316
+msgid "Use xcache.mmap_path other than /dev/zero"
+msgstr ""
+
+#: index.php:322 index.php:361
+msgid "Disabled"
+msgstr ""
+
+#: index.php:323
+msgid ""
+"Enable readonly_protection == --performance & ++stability. Disable "
+"readonly_protection == ++performance & --stability"
+msgstr ""
+
+#: index.php:328
+msgid "XCache modules"
+msgstr ""
+
+#: index.php:339
+msgid ""
+"Acceptable. Module(s) listed above are built into XCache but not for "
+"production server\n"
+"Leave it as is if you're feeling good.\n"
+"Re-configure XCache with the above module(s) disabled if you're strict with "
+"server security."
+msgstr ""
+
+#: index.php:349
+msgid "XCache test setting"
+msgstr ""
+
+#: index.php:357
+msgid "xcache.test is for testing only, not for server. set it to off"
+msgstr ""
+
+#: index.php:364
+msgid "PHP Version"
+msgstr ""
+
+#: index.php:383
+msgid "The version of PHP you're using is known to be unstable: "
+msgstr ""
+
+#: index.php:384
+msgid "Upgrade to new version of PHP"
+msgstr ""
+
+#: index.php:390
+msgid "Extension Compatibility"
+msgstr ""
+
+#: index.php:395
+msgid "Zend Optimizer loaded"
+msgstr ""
+
+#: index.php:396
+msgid ""
+"Optimizer feature of 'Zend Optimizer' is disabled by XCache due to "
+"compatibility reason; the Loader of it is still available, encoded files are "
+"still supported"
+msgstr ""

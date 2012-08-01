@@ -1,7 +1,7 @@
 <?php $cycleClass = new Cycle('class="col1"', 'class="col2"'); ?>
 <form action="" method="post">
 	<table cellspacing="0" cellpadding="4" class="cycles entries">
-		<caption><?php echo _T("$typeName $listName"); ?></caption>
+		<caption><?php echo $caption; ?></caption>
 <?php
 
 echo <<<TR
@@ -11,12 +11,12 @@ TR;
 
 if ($isphp) {
 	echo
-		th("entry.id")
+		th(N_("entry.id"))
 		;
 }
 else {
 	echo
-		th("entry.remove")
+		th(N_("entry.remove"))
 		;
 }
 
