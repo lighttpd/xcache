@@ -50,12 +50,15 @@ void xc_compile_result_free(xc_compile_result_t *cr) /* {{{ */
 }
 /* }}} */
 
-static int xc_apply_function(zend_function *zf, apply_func_t applyer TSRMLS_DC) /* {{{ */
+typedef struct {
+	apply_func_t applyer;
+} xc_apply_func_info;
+static int xc_apply_function(zend_function *zf, xc_apply_func_info *fi TSRMLS_DC) /* {{{ */
 {
 	switch (zf->type) {
 	case ZEND_USER_FUNCTION:
 	case ZEND_EVAL_CODE:
-		return applyer(&zf->op_array TSRMLS_CC);
+		return fi->applyer(&zf->op_array TSRMLS_CC);
 		break;
 
 	case ZEND_INTERNAL_FUNCTION:
@@ -68,7 +71,7 @@ static int xc_apply_function(zend_function *zf, apply_func_t applyer TSRMLS_DC) 
 }
 /* }}} */
 typedef struct {
-	apply_func_t applyer;
+	xc_apply_func_info fi;
 	zend_class_entry *ce;
 } xc_apply_method_info;
 int xc_apply_method(zend_function *zf, xc_apply_method_info *mi TSRMLS_DC) /* {{{ */
@@ -93,23 +96,25 @@ int xc_apply_method(zend_function *zf, xc_apply_method_info *mi TSRMLS_DC) /* {{
 		}
 	}
 #endif
-	return xc_apply_function(zf, mi->applyer TSRMLS_CC);
+	return xc_apply_function(zf, &mi->fi TSRMLS_CC);
 }
 /* }}} */
-static int xc_apply_cest(xc_cest_t *cest, apply_func_t applyer TSRMLS_DC) /* {{{ */
+static int xc_apply_cest(xc_cest_t *cest, xc_apply_func_info *fi TSRMLS_DC) /* {{{ */
 {
 	xc_apply_method_info mi;
 
-	mi.applyer = applyer;
-	mi.ce      = CestToCePtr(*cest);
+	mi.fi = *fi;
+	mi.ce = CestToCePtr(*cest);
 	zend_hash_apply_with_argument(&(CestToCePtr(*cest)->function_table), (apply_func_arg_t) xc_apply_method, &mi TSRMLS_CC);
 	return 0;
 }
 /* }}} */
 int xc_apply_op_array(xc_compile_result_t *cr, apply_func_t applyer TSRMLS_DC) /* {{{ */
 {
-	zend_hash_apply_with_argument(cr->function_table, (apply_func_arg_t) xc_apply_function, (void *) applyer TSRMLS_CC);
-	zend_hash_apply_with_argument(cr->class_table, (apply_func_arg_t) xc_apply_cest, (void *) applyer TSRMLS_CC);
+	xc_apply_func_info fi;
+	fi.applyer = applyer;
+	zend_hash_apply_with_argument(cr->function_table, (apply_func_arg_t) xc_apply_function, &fi TSRMLS_CC);
+	zend_hash_apply_with_argument(cr->class_table, (apply_func_arg_t) xc_apply_cest, &fi TSRMLS_CC);
 
 	return applyer(cr->op_array TSRMLS_CC);
 }

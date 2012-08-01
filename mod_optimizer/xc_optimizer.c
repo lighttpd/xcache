@@ -140,7 +140,7 @@ static int op_array_convert_switch(zend_op_array *op_array) /* {{{ */
 /* }}} */
 /* {{{ op_flowinfo helper func */
 enum {
-	XC_OPNUM_INVALID = -1,
+	XC_OPNUM_INVALID = -1
 };
 typedef struct {
 	int       jmpout_op1;

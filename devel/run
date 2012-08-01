@@ -9,6 +9,8 @@ if [[ $# -gt 0 ]]; then
 	shift
 	if [[ $# -gt 0 ]]; then
 		args=("$@")
+	elif [[ $type = "make" ]]; then
+		args=()
 	fi
 fi
 
@@ -141,7 +143,7 @@ phpize)
 	export PATH=$PHPDIRS/$phpbasename/bin:$PATH
 	phpize --clean \
 	&& phpize \
-	&& CFLAGS="-g -O0 -Wall -Wno-unused -W -Wshadow -Werror=implicit-function-declaration -std=c89 -D_GNU_SOURCE -D_POSIX_SOURCE -Dinline=" ./configure \
+	&& CFLAGS="-g -O0 -pedantic-errors -Wno-variadic-macros -Wno-long-long -Wall -Wno-unused -W -Wshadow -Werror=implicit-function-declaration -std=c89 -D_GNU_SOURCE -D_POSIX_SOURCE -Dinline=" ./configure \
 		--enable-xcache-cacher \
 		--enable-xcache-optimizer \
 		--enable-xcache-encoder \
