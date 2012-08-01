@@ -416,6 +416,7 @@ static MINIDUMPWRITEDUMP dbghelp_MiniDumpWriteDump = NULL;
 static LONG WINAPI miniDumperFilter(struct _EXCEPTION_POINTERS *pExceptionInfo) /* {{{ */
 {
 	HANDLE fileHandle;
+	LONG ret = EXCEPTION_CONTINUE_SEARCH;
 
 	SetUnhandledExceptionFilter(oldFilter);
 
@@ -435,7 +436,7 @@ static LONG WINAPI miniDumperFilter(struct _EXCEPTION_POINTERS *pExceptionInfo) 
 		CloseHandle(fileHandle);
 		if (ok) {
 			zend_error(E_ERROR, "Saved dump file to '%s'", crash_dumpPath);
-			return EXCEPTION_EXECUTE_HANDLER;
+			ret = EXCEPTION_EXECUTE_HANDLER;
 		}
 		else {
 			zend_error(E_ERROR, "Failed to save dump file to '%s' (error %d)", crash_dumpPath, GetLastError());
@@ -445,7 +446,12 @@ static LONG WINAPI miniDumperFilter(struct _EXCEPTION_POINTERS *pExceptionInfo) 
 		zend_error(E_ERROR, "Failed to create dump file '%s' (error %d)", crash_dumpPath, GetLastError());
 	}
 
-	return EXCEPTION_CONTINUE_SEARCH;
+	if (xc_disable_on_crash) {
+		xc_disable_on_crash = 0;
+		xc_cacher_disable();
+	}
+
+	return ret;
 }
 /* }}} */
 
