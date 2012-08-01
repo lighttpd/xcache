@@ -1,4 +1,5 @@
 <?php
-
-$strings = array();
+// auto generated, do not modify
+$strings += array(
+		);
 

@@ -1,12 +1,8 @@
 <?php
-
+// auto generated, do not modify
 $strings += array(
-		'root'
-		=> '开始',
 		'Directory'
 		=> '目录',
-		'File'
-		=> '文件',
 		'Percent'
 		=> '覆盖率',
 		'Hits'
@@ -15,11 +11,9 @@ $strings += array(
 		=> '行数',
 		'TODO'
 		=> '闲置文件',
-		'XCache PHP Code Coverage Viewer'
-		=> 'XCache PHP 代码覆盖查看器',
-		'module'
-		=> '模块',
-		''
-		=> '',
+		'File'
+		=> '文件',
+		'root'
+		=> '开始',
 		);
 

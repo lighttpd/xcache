@@ -1,68 +1,66 @@
 <?php
-
+// auto generated, do not modify
 $strings += array(
-		'XCache Help'
-		=> 'XCache 帮助信息',
-		'Help'
-		=> '帮助',
-		'Clear'
-		=> '清除',
-		'Sure?'
-		=> '确认?',
-		'% Free'
-		=> '% 剩余',
-		'% Used'
-		=> '% 已用',
-		'Hits'
-		=> '命中',
-		'Normal'
-		=> '正常',
-		'Compiling'
-		=> '编译中',
-		'Disabled'
-		=> '禁用',
-		'Disable'
-		=> '禁用',
-		'Enable'
-		=> '启用',
-		'Modify'
-		=> '修改',
-		'See also'
-		=> '建议参考',
-		'Legends:'
-		=> '图例:',
-		'Used Blocks'
-		=> '已用块',
-		'Free Blocks'
-		=> '未用块',
+		'Editing Variable %s'
+		=> '正在编辑变量 %s',
+		'Set %s in config to enable'
+		=> '请在配置文件中设置 %s 启用本功能',
 		'Total'
 		=> '总共',
-		'Caches'
-		=> '缓存区',
-		'php Cached'
-		=> '缓存的 PHP 脚本',
-		'php Deleted'
-		=> '待删 PHP 缓存',
-		'var Cached'
-		=> '缓存的变量',
-		'var Deleted'
-		=> '待删变量',
 		'Summary'
 		=> '摘要信息',
 		'List PHP'
 		=> '列出PHP',
 		'List Var Data'
 		=> '列变量数据',
-		'XCache %s Administration'
-		=> 'XCache %s 管理页面',
-		'Module Info'
-		=> '模块信息',
+		'php Cached'
+		=> '缓存的 PHP 脚本',
+		'var Cached'
+		=> '缓存的变量',
+		'php Deleted'
+		=> '待删 PHP 缓存',
+		'var Deleted'
+		=> '待删变量',
+		'entry.id'
+		=> 'Id|',
+		'entry.remove'
+		=> '删除|',
+		'entry.name'
+		=> '项目名/文件名|项目名或者文件名',
+		'entry.hits'
+		=> '命中|该项目被命中的次数 (从共享内存区载入)',
+		'entry.size'
+		=> '大小|项目在共享内存里占用字节数',
+		'entry.refcount'
+		=> '引用数|项目依然被其他进程占据的引用次数',
+		'entry.phprefcount'
+		=> '共享数|与本项目相同 PHP 代码的个数',
+		'entry.class_cnt'
+		=> '类|类个数',
+		'entry.function_cnt'
+		=> '函数|函数个数',
+		'entry.file_size'
+		=> '源大小|源文件大小',
+		'entry.file_mtime'
+		=> '修改|源文件最后修改时间',
+		'entry.file_device'
+		=> 'dev|源文件所在设备ID',
+		'entry.file_inode'
+		=> 'ino|源文件的 inode',
+		'entry.hash'
+		=> '哈希|该项目的哈希值',
+		'entry.atime'
+		=> '访问|最后访问该项目的时间',
+		'entry.ctime'
+		=> '创建|该项目被创建于共享内的时间',
+		'entry.delete'
+		=> '删除|该项目被决定删除的时间',
 		'Remove Selected'
 		=> '删除所选',
-		'Editing Variable %s'
-		=> '正在编辑变量 %s',
-		'Set %s in config to enable'
-		=> '请在配置文件中设置 %s 启用本功能',
+		'Module Info'
+		=> '模块信息',
+		'Caches'
+		=> '缓存区',
 		'cache.cache'
 		=> '缓存|',
 		'cache.slots'
@@ -71,20 +69,18 @@ $strings += array(
 		=> '大小|共享内存区大小, 单位: 字节',
 		'cache.avail'
 		=> '剩余|可用内存, 对应共享内存区的剩余内存字节数',
-		'cache.used'
-		=> '已用|已用内存, 对应共享内存区的已用内存字节数',
 		'cache.blocksgraph'
 		=> '百分比图|条状显示可用内存的比例, 以及显示分配块状态',
 		'cache.operations'
 		=> '操作|点击按钮清除对应共享内存区的数据',
 		'cache.status'
-		=> '状态|状态标记. 当共享内存区正在编译 PHP 脚本时标记为 "编译中". 当共享内存区暂停使用时标记为 "禁用"',
+		=> '状态|状态标记. 当共享内存区正在编译 PHP 脚本时标记为 \"编译中\". 当共享内存区暂停使用时标记为 \"禁用\"',
 		'cache.hits'
 		=> '命中|共享内存命中次数, 命中=从该共享内存载入 PHP 或者变量',
-		'cache.hits_avg_h'
-		=> '命中/H|每小时命中次数. 只统计最后 24 小时',
 		'cache.hits_graph'
 		=> '24H 分布|24 小时命中分布图. 图表现是最后 24 小时的命中次数',
+		'cache.hits_avg_h'
+		=> '命中/H|每小时命中次数. 只统计最后 24 小时',
 		'cache.hits_avg_s'
 		=> '命中/S|每秒命中次数. 只统计最后 5 秒',
 		'cache.updates'
@@ -103,39 +99,31 @@ $strings += array(
 		=> '待删|共享内存区内将要删除的项目 (已经删除但是还被某些进程占用)',
 		'cache.gc_timer'
 		=> 'GC|垃圾回收的倒计时',
-		'entry.id'
-		=> 'Id|',
-		'entry.name'
-		=> '项目名/文件名|项目名或者文件名',
-		'entry.hits'
-		=> '命中|该项目被命中的次数 (从共享内存区载入)',
-		'entry.size'
-		=> '大小|项目在共享内存里占用字节数',
-		'entry.refcount'
-		=> '引用数|项目依然被其他进程占据的引用次数',
-		'entry.phprefcount'
-		=> '共享数|与本项目相同 PHP 代码的个数',
-		'entry.file_size'
-		=> '源大小|源文件大小',
-		'entry.file_mtime'
-		=> '修改|源文件最后修改时间',
-		'entry.file_device'
-		=> 'dev|源文件所在设备ID',
-		'entry.file_inode'
-		=> 'ino|源文件的 inode',
-		'entry.class_cnt'
-		=> '类|类个数',
-		'entry.function_cnt'
-		=> '函数|函数个数',
-		'entry.hash'
-		=> '哈希|该项目的哈希值',
-		'entry.atime'
-		=> '访问|最后访问该项目的时间',
-		'entry.ctime'
-		=> '创建|该项目被创建于共享内的时间',
-		'entry.delete'
-		=> '删除|该项目被决定删除的时间',
-		'entry.remove'
-		=> '删除|',
-);
+		'Clear'
+		=> '清除',
+		'Disabled'
+		=> '禁用',
+		'Disable'
+		=> '禁用',
+		'Enable'
+		=> '启用',
+		'Compiling'
+		=> '编译中',
+		'Normal'
+		=> '正常',
+		'Sure?'
+		=> '确认?',
+		'Legends:'
+		=> '图例:',
+		'% Free'
+		=> '% 剩余',
+		'% Used'
+		=> '% 已用',
+		'Free Blocks'
+		=> '未用块',
+		'Used Blocks'
+		=> '已用块',
+		'Hits'
+		=> '命中',
+		);
 
