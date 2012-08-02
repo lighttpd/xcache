@@ -7,12 +7,14 @@ API Changes
 Ini Settings Changes
 ========
  * new: xcache.disable_on_crash = Off
+ * new: xcache.coverager_autostart = On
 
 ChangeLog
 ========
  * closes #2: auto disable caching on crash
  * closes #73: warn for improper PHP_FCGI_CHILDREN setting fcgi mode (>=PHP_5_3)
  * closes #174: updated api to support "clear all cache"
+ * fixed #39: ini_set never work for xcache.coverager setting. use API instead
  * code refactor
    * uses extension to load XCache. load via zend_extension is unsupported
    * split XCache features into multiple sub modules
