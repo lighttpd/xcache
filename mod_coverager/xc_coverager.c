@@ -244,19 +244,21 @@ static void xc_coverager_cleanup(TSRMLS_D) /* {{{ */
 
 static void xc_coverager_enable(TSRMLS_D) /* {{{ */
 {
-	XG(coverage_enabled) = 1;
+	XG(coverager_enabled) = 1;
 }
 /* }}} */
 static void xc_coverager_disable(TSRMLS_D) /* {{{ */
 {
-	XG(coverage_enabled) = 0;
+	XG(coverager_enabled) = 0;
 }
 /* }}} */
 
 static PHP_RINIT_FUNCTION(xcache_coverager) /* {{{ */
 {
 	if (XG(coverager)) {
-		xc_coverager_enable(TSRMLS_C);
+		if (XG(coverager_autostart)) {
+			xc_coverager_enable(TSRMLS_C);
+		}
 #ifdef ZEND_COMPILE_EXTENDED_INFO
 		CG(compiler_options) |= ZEND_COMPILE_EXTENDED_INFO;
 #else
@@ -264,7 +266,7 @@ static PHP_RINIT_FUNCTION(xcache_coverager) /* {{{ */
 #endif
 	}
 	else {
-		XG(coverage_enabled) = 0;
+		XG(coverager_enabled) = 0;
 	}
 	return SUCCESS;
 }
@@ -468,7 +470,7 @@ static void xc_coverager_handle_ext_stmt(zend_op_array *op_array, zend_uchar op)
 {
 	TSRMLS_FETCH();
 
-	if (XG(coverages) && XG(coverage_enabled)) {
+	if (XG(coverages) && XG(coverager_enabled)) {
 		int size = xc_coverager_get_op_array_size_no_tail(op_array);
 		int oplineno = (*EG(opline_ptr)) - op_array->opcodes;
 		if (oplineno < size) {
@@ -630,7 +632,8 @@ static zend_extension xc_coverager_zend_extension_entry = {
 /* }}} */
 /* {{{ PHP_INI */
 PHP_INI_BEGIN()
-	STD_PHP_INI_BOOLEAN("xcache.coverager"      ,        "0", PHP_INI_ALL,    OnUpdateBool,         coverager,         zend_xcache_globals, xcache_globals)
+	STD_PHP_INI_BOOLEAN("xcache.coverager",              "0", PHP_INI_SYSTEM|PHP_INI_PERDIR, OnUpdateBool, coverager,           zend_xcache_globals, xcache_globals)
+	STD_PHP_INI_BOOLEAN("xcache.coverager_autostart",    "1", PHP_INI_SYSTEM|PHP_INI_PERDIR, OnUpdateBool, coverager_autostart, zend_xcache_globals, xcache_globals)
 	PHP_INI_ENTRY1     ("xcache.coveragedump_directory",  "", PHP_INI_SYSTEM, xcache_OnUpdateDummy, NULL)
 PHP_INI_END()
 /* }}} */
@@ -643,7 +646,7 @@ static PHP_MINFO_FUNCTION(xcache_coverager) /* {{{ */
 	if (cfg_get_string("xcache.coveragedump_directory", &covdumpdir) != SUCCESS || !covdumpdir[0]) {
 		covdumpdir = NULL;
 	}
-	php_info_print_table_row(2, "Coverage Auto Dumper", XG(coverager) && covdumpdir ? "enabled" : "disabled");
+	php_info_print_table_row(2, "Coverage Started", XG(coverager_started) && covdumpdir ? "On" : "Off");
 	php_info_print_table_end();
 
 	DISPLAY_INI_ENTRIES();
