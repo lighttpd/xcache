@@ -10,8 +10,8 @@
 // 3. ../config.php
 // 4. ./config.php
 
-// $config['include_paths = array("/www/my-php-project/");
-// $config['exclude_paths = array("/www/my-php-project/tmp/");
+// $config['include_paths'] = array("/www/my-php-project/");
+// $config['exclude_paths'] = array("/www/my-php-project/tmp/");
 $config['syntax_higlight'] = true;
 $config['use_cache'] = false;
 //// $config['datadir'] is default to ini_get("xcache.coveragedump_directory")
