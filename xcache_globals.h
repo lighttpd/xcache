@@ -11,7 +11,7 @@ ZEND_BEGIN_MODULE_GLOBALS(xcache)
 #ifdef HAVE_XCACHE_COVERAGER
 	zend_bool coverager;
 	zend_bool coverager_autostart;
-	zend_bool coverager_enabled;
+	zend_bool coverager_started;
 	HashTable *coverages;  /* coverages[file][line] = times */
 #endif
 	xc_stack_t *php_holds;

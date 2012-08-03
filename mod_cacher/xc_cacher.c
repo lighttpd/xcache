@@ -3162,6 +3162,7 @@ static zend_extension xc_cacher_zend_extension_entry = {
 #	define DEFAULT_PATH "/dev/zero"
 #endif
 PHP_INI_BEGIN()
+	PHP_INI_ENTRY1     ("xcache.shm_scheme",          "mmap", PHP_INI_SYSTEM, xcache_OnUpdateString,   &xc_shm_scheme)
 	PHP_INI_ENTRY1     ("xcache.mmap_path",     DEFAULT_PATH, PHP_INI_SYSTEM, xcache_OnUpdateString,   &xc_mmap_path)
 	PHP_INI_ENTRY1_EX  ("xcache.readonly_protection",    "0", PHP_INI_SYSTEM, xcache_OnUpdateBool,     &xc_readonly_protection, zend_ini_boolean_displayer_cb)
 	/* opcode cache */
@@ -3169,7 +3170,6 @@ PHP_INI_BEGIN()
 	PHP_INI_ENTRY1     ("xcache.size",                   "0", PHP_INI_SYSTEM, xcache_OnUpdateDummy,    NULL)
 	PHP_INI_ENTRY1     ("xcache.count",                  "1", PHP_INI_SYSTEM, xcache_OnUpdateDummy,    NULL)
 	PHP_INI_ENTRY1     ("xcache.slots",                 "8K", PHP_INI_SYSTEM, xcache_OnUpdateDummy,    NULL)
-	PHP_INI_ENTRY1     ("xcache.shm_scheme",          "mmap", PHP_INI_SYSTEM, xcache_OnUpdateString,   &xc_shm_scheme)
 	PHP_INI_ENTRY1     ("xcache.ttl",                    "0", PHP_INI_SYSTEM, xcache_OnUpdateULong,    &xc_php_ttl)
 	PHP_INI_ENTRY1     ("xcache.gc_interval",            "0", PHP_INI_SYSTEM, xcache_OnUpdateULong,    &xc_php_gc_interval)
 	STD_PHP_INI_BOOLEAN("xcache.cacher",                 "1", PHP_INI_ALL,    OnUpdateBool,    cacher, zend_xcache_globals, xcache_globals)
