@@ -242,14 +242,14 @@ static void xc_coverager_cleanup(TSRMLS_D) /* {{{ */
 }
 /* }}} */
 
-static void xc_coverager_enable(TSRMLS_D) /* {{{ */
+static void xc_coverager_start(TSRMLS_D) /* {{{ */
 {
-	XG(coverager_enabled) = 1;
+	XG(coverager_started) = 1;
 }
 /* }}} */
-static void xc_coverager_disable(TSRMLS_D) /* {{{ */
+static void xc_coverager_stop(TSRMLS_D) /* {{{ */
 {
-	XG(coverager_enabled) = 0;
+	XG(coverager_started) = 0;
 }
 /* }}} */
 
@@ -257,7 +257,7 @@ static PHP_RINIT_FUNCTION(xcache_coverager) /* {{{ */
 {
 	if (XG(coverager)) {
 		if (XG(coverager_autostart)) {
-			xc_coverager_enable(TSRMLS_C);
+			xc_coverager_start(TSRMLS_C);
 		}
 #ifdef ZEND_COMPILE_EXTENDED_INFO
 		CG(compiler_options) |= ZEND_COMPILE_EXTENDED_INFO;
@@ -266,7 +266,7 @@ static PHP_RINIT_FUNCTION(xcache_coverager) /* {{{ */
 #endif
 	}
 	else {
-		XG(coverager_enabled) = 0;
+		XG(coverager_started) = 0;
 	}
 	return SUCCESS;
 }
@@ -470,7 +470,7 @@ static void xc_coverager_handle_ext_stmt(zend_op_array *op_array, zend_uchar op)
 {
 	TSRMLS_FETCH();
 
-	if (XG(coverages) && XG(coverager_enabled)) {
+	if (XG(coverages) && XG(coverager_started)) {
 		int size = xc_coverager_get_op_array_size_no_tail(op_array);
 		int oplineno = (*EG(opline_ptr)) - op_array->opcodes;
 		if (oplineno < size) {
@@ -527,7 +527,7 @@ PHP_FUNCTION(xcache_coverager_start)
 	}
 
 	if (XG(coverager)) {
-		xc_coverager_enable(TSRMLS_C);
+		xc_coverager_start(TSRMLS_C);
 	}
 	else {
 		php_error(E_WARNING, "You can only start coverager after you set 'xcache.coverager' to 'On' in ini");
@@ -545,7 +545,7 @@ PHP_FUNCTION(xcache_coverager_stop)
 		return;
 	}
 
-	xc_coverager_disable(TSRMLS_C);
+	xc_coverager_stop(TSRMLS_C);
 	if (clean) {
 		xc_coverager_clean(TSRMLS_C);
 	}
