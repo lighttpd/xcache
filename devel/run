@@ -1,5 +1,16 @@
 #!/bin/bash
 # this script is for developers only
+stopfpm() {
+	if [[ -f $pidfile ]]; then
+		pid=`cat $pidfile 2>/dev/null || true`
+		if [[ $pid -gt 0 ]]; then
+			echo
+			echo Stopping fpm $pid @ $pidfile
+			kill $pid || true
+		fi
+	fi
+}
+
 set -e
 MAKE=/usr/bin/make
 
@@ -92,6 +103,18 @@ xtest)
 	;;
 esac
 
+case "${args[0]}" in
+fpm)
+	pidfile=devel.pid
+	stopfpm
+	;;
+stopfpm)
+	pidfile=devel.pid
+	stopfpm
+	exit
+	;;
+esac
+
 basename=$(basename $(pwd))
 if echo $basename | grep -- - >/dev/null; then :; else
 	svn propget svn:ignore . > .svnignore
@@ -111,6 +134,7 @@ fi
 phpbasename=${basename#*-}
 xcachebasename=${basename%%-*}
 xcachesrcdir=../$xcachebasename
+pidfile=../$xcachebasename/devel.pid
 
 case "$type" in
 phpize)
@@ -191,8 +215,9 @@ case "$basename" in
 		args=(-b 1026)
 		;;
 	fpm)
-		cmd=(./php-fpm -c devel.ini)
-		args=(-y devel.fpm)
+		echo Starting fpm ...
+		cmd=(./php-fpm -c devel.ini -y devel.fpm -g $(readlink -f $pidfile))
+		args=()
 		;;
 	*)
 		cmd=(./php-cgi -q -c devel.ini)
@@ -243,5 +268,17 @@ test)
 esac
 
 export XCACHE_SKIP_FCGI_WARNING=1
-echo "${tracer[@]}" "${cmd[@]}" "${args[@]}"
-exec "${tracer[@]}" "${cmd[@]}" "${args[@]}"
+commandLine=("${tracer[@]}" "${cmd[@]}" "${args[@]}")
+
+case "${cmd[0]}" in
+*php-fpm*)
+	stopfpm
+	"${commandLine[@]}"
+	echo -n "Ctrl-C to stop"
+	trap stopfpm SIGINT SIGTERM
+	cat > /dev/null || true
+	;;
+*)
+	exec "${commandLine[@]}"
+	;;
+esac
