@@ -16,21 +16,21 @@ MAKE=/usr/bin/make
 
 . devel/run.cfg
 if [[ $# -gt 0 ]]; then
-	type=$1
+	action=$1
 	shift
 	if [[ $# -gt 0 ]]; then
 		args=("$@")
-	elif [[ $type = "make" ]]; then
+	elif [[ $action = "make" ]]; then
 		args=()
 	fi
 fi
 
-case "$type" in
+case "$action" in
 prep*)
 	exec $MAKE -f devel/prepare.mak "${args[@]}"
 	;;
 po2php)
-	./run mergepo
+	./run mergepo "${args[0]}"
 	find htdocs -iname '*.po' | while read -r i; do
 		phpfile=${i/.po/.php}
 		devel/po2php.awk < $i > $phpfile.tmp
@@ -39,7 +39,7 @@ po2php)
 	exit
 	;;
 mergepo)
-	./run prep
+	./run prep "${args[0]}"
 	find htdocs -iname '*.po' | while read -r i; do
 		if [[ -f $i-merged ]]; then
 			mv $i-merged $i
@@ -126,7 +126,7 @@ if echo $basename | grep -- - >/dev/null; then :; else
 		lndir ../${basename} >/dev/null || true
 
 		pwd
-		$0 "$type" "${args[@]}"
+		$0 "$action" "${args[@]}"
 	done
 	exit
 fi
@@ -136,7 +136,7 @@ xcachebasename=${basename%%-*}
 xcachesrcdir=../$xcachebasename
 pidfile=../$xcachebasename/devel.pid
 
-case "$type" in
+case "$action" in
 phpize)
 	if [[ -r Makefile ]]; then
 		$MAKE xcachesvnclean || true
@@ -145,7 +145,7 @@ phpize)
 esac
 
 rm -f php-src
-find -L . -type l | xargs rm -fv
+find -L . -action l | xargs rm -fv
 lndir "$xcachesrcdir" >/dev/null || true
 find . -iname .\*.swp | xargs rm -f
 ln -sf ~/src/php/$phpbasename php-src
@@ -157,7 +157,7 @@ done
 ln -sf ~/src/php/$phpbasename/sapi/cli/php php-cli
 ln -sf ~/src/php/$phpbasename/sapi/fpm/php-fpm php-fpm
 
-case "$type" in
+case "$action" in
 phpize)
 	PHPDIRS=${PHPDIRS:-$HOME/test}
 	if [[ ! -x $PHPDIRS/$phpbasename/bin/phpize ]]; then
@@ -191,7 +191,7 @@ LANG=C $MAKE $MAKEOPTS "${MAKEARGS[@]}" 2>&1 \
 	-e 's#\./xc_processor\.c\.h#'$PWD'/xc_processor.c.h#' \
 | hi error implicit warn FAIL
 ret=${PIPESTATUS[0]}
-if [[ $ret -ne 0 || $type = make ]]; then
+if [[ $ret -ne 0 || $action = make ]]; then
 	exit $ret
 fi
 
@@ -227,7 +227,7 @@ case "$basename" in
 	"${cmd[@]}" -v || true
 esac
 
-case "$type" in
+case "$action" in
 ltr*)
 	export USE_ZEND_ALLOC=0
 	tracer=(ltrace -s1024 -e malloc,realloc,free,write)
