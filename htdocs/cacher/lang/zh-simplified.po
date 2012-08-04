@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-08-01 15:32+0800\n"
+"POT-Creation-Date: 2012-08-04 10:29+0800\n"
 "Language: zh\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -43,11 +43,11 @@ msgstr "缓存的变量"
 
 #: listentries.tpl.php:15
 msgid "php Deleted"
-msgstr "待删 PHP 缓存"
+msgstr "待删 PHP 脚本缓存"
 
 #: listentries.tpl.php:15
 msgid "var Deleted"
-msgstr "待删变量"
+msgstr "待删变量缓存"
 
 #: sub/entrylist.tpl.php:14
 msgid "entry.id"
@@ -63,11 +63,11 @@ msgstr "项目名/文件名|项目名或者文件名"
 
 #: sub/entrylist.tpl.php:25
 msgid "entry.hits"
-msgstr "命中|该项目被命中的次数 (从共享内存区载入)"
+msgstr "命中|该项目被命中的次数 (从缓存区载入)"
 
 #: sub/entrylist.tpl.php:26
 msgid "entry.size"
-msgstr "大小|项目在共享内存里占用字节数"
+msgstr "大小|项目在缓存里占用字节数"
 
 #: sub/entrylist.tpl.php:31
 msgid "entry.refcount"
@@ -111,7 +111,7 @@ msgstr "访问|最后访问该项目的时间"
 
 #: sub/entrylist.tpl.php:46
 msgid "entry.ctime"
-msgstr "创建|该项目被创建于共享内的时间"
+msgstr "创建|该项目被创建于缓存区内的时间"
 
 #: sub/entrylist.tpl.php:51
 msgid "entry.delete"
@@ -143,7 +143,7 @@ msgstr "大小|共享内存区大小, 单位: 字节"
 
 #: sub/summary.tpl.php:9
 msgid "cache.avail"
-msgstr "剩余|可用内存, 对应共享内存区的剩余内存字节数"
+msgstr "剩余|可用内存, 对应缓存区的剩余内存字节数"
 
 #: sub/summary.tpl.php:10
 msgid "cache.blocksgraph"
@@ -151,17 +151,17 @@ msgstr "百分比图|条状显示可用内存的比例, 以及显示分配块状
 
 #: sub/summary.tpl.php:11
 msgid "cache.operations"
-msgstr "操作|点击按钮清除对应共享内存区的数据"
+msgstr "操作|点击按钮清除对应缓存区的数据"
 
 #: sub/summary.tpl.php:12
 msgid "cache.status"
 msgstr ""
-"状态|状态标记. 当共享内存区正在编译 PHP 脚本时标记为 \"编译中\". 当共享内存区"
-"暂停使用时标记为 \"禁用\""
+"状态|状态标记. 当缓存区正在编译 PHP 脚本时标记为 \"编译中\". 当缓存区暂停使用"
+"时标记为 \"禁用\""
 
 #: sub/summary.tpl.php:13
 msgid "cache.hits"
-msgstr "命中|共享内存命中次数, 命中=从该共享内存载入 PHP 或者变量"
+msgstr "命中|缓存命中次数, 命中=从该缓存载入 PHP 或者变量"
 
 #: sub/summary.tpl.php:14
 msgid "cache.hits_graph"
@@ -177,19 +177,19 @@ msgstr "命中/S|每秒命中次数. 只统计最后 5 秒"
 
 #: sub/summary.tpl.php:17
 msgid "cache.updates"
-msgstr "更新|共享内存更新次数"
+msgstr "更新|缓存更新次数"
 
 #: sub/summary.tpl.php:18
 msgid "cache.skips"
 msgstr ""
-"阻塞|跳过更新次数, 跳过=XCache 自动判断阻塞的共享内存区自动跳过阻塞等待, 直接"
-"使用非共享内存方式继续处理请求"
+"跳过|跳过更新次数, 跳过=XCache 自动判断阻塞的缓存区自动跳过阻塞等待, 直接使用"
+"编译不缓存方式继续处理请求"
 
 #: sub/summary.tpl.php:19
 msgid "cache.ooms"
 msgstr ""
-"内存不足|内存不足次数, 显示需要存储新数据但是共享内存区内存不足的次数. 如果出"
-"现太频繁请考虑加大配置中的 xcache.size 或者 xcache.var_size"
+"内存不足|内存不足次数, 显示需要存储新数据但是缓存区内存不足的次数. 如果出现太"
+"频繁请考虑加大配置中的 xcache.size 或者 xcache.var_size"
 
 #: sub/summary.tpl.php:20
 msgid "cache.errors"
@@ -204,11 +204,11 @@ msgstr ""
 
 #: sub/summary.tpl.php:22
 msgid "cache.cached"
-msgstr "缓存|共享内存于该共享内存区的项目条数"
+msgstr "缓存|缓存于该缓存区的项目条数"
 
 #: sub/summary.tpl.php:23
 msgid "cache.deleted"
-msgstr "待删|共享内存区内将要删除的项目 (已经删除但是还被某些进程占用)"
+msgstr "待删|缓存区内将要删除的项目 (已经删除但是还被某些进程占用)"
 
 #: sub/summary.tpl.php:24
 msgid "cache.gc_timer"
