@@ -18,9 +18,9 @@ $strings += array(
 		"var Cached"
 		=> "快取的變數",
 		"php Deleted"
-		=> "待刪 PHP 指令",
+		=> "待刪 PHP 指令快取",
 		"var Deleted"
-		=> "待刪變數",
+		=> "待刪變數快取",
 		"entry.id"
 		=> "Id|",
 		"entry.remove"
@@ -72,7 +72,7 @@ $strings += array(
 		"cache.blocksgraph"
 		=> "百分比图|條狀顯示可用記憶體的比例",
 		"cache.operations"
-		=> "操作按鈕|點擊按鈕清除對應共享記憶體區的資料",
+		=> "操作|點擊按鈕清除對應共享記憶體區的資料",
 		"cache.status"
 		=> "狀態|狀態標記. 當共享內存區正在編譯 PHP 腳本時標記為 \"編譯中\". 當共享內存區暫停使用時標記為 \"禁用\"",
 		"cache.hits"
@@ -86,13 +86,13 @@ $strings += array(
 		"cache.updates"
 		=> "更新|共享記憶更新過次數",
 		"cache.skips"
-		=> "跳過|跳過更新次數，跳過=XCache 自動判斷阻塞的共享記憶體區自動跳過阻塞等待，直接使用非共享記憶體方式繼續處理請求",
+		=> "跳過|跳過更新次數，跳過=XCache 自動判斷阻塞的共享記憶體區自動跳過阻塞等待，直接使用编译不存储方式繼續處理請求",
 		"cache.ooms"
 		=> "記憶體不足|記憶體不足次數，顯示需要儲存新資料但是共享記憶體區記憶體不足的次數. 如果出現太頻繁請考慮加大配置中的 xcache.size 或者 xcache.var_size",
 		"cache.errors"
-		=> "错误|编译错误, 显示您的脚本被编译时出错的次数. 如果您发现这个数字不断增长, 您应该检查什么脚本产生错误. 参考 說明",
+		=> "错误|编译错误, 显示您的脚本被编译时出错的次数. 如果您发现这个数字不断增长, 您应该检查什么脚本产生错误. 参考 說明 获取更多信息",
 		"cache.readonly_protected"
-		=> "Protected|顯示該 Cache 是否支援並啟用 readonly_protection. 参考 說明",
+		=> "保护|顯示該 Cache 是否支援並啟用 readonly_protection. 参考 說明",
 		"cache.cached"
 		=> "快取|共享記憶體於該共享記憶體區的項目個數",
 		"cache.deleted"

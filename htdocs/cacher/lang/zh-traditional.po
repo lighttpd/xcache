@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-08-01 15:32+0800\n"
+"POT-Creation-Date: 2012-08-04 10:29+0800\n"
 "Language: zh_TW\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -43,11 +43,11 @@ msgstr "快取的變數"
 
 #: listentries.tpl.php:15
 msgid "php Deleted"
-msgstr "待刪 PHP 指令"
+msgstr "待刪 PHP 指令快取"
 
 #: listentries.tpl.php:15
 msgid "var Deleted"
-msgstr "待刪變數"
+msgstr "待刪變數快取"
 
 #: sub/entrylist.tpl.php:14
 msgid "entry.id"
@@ -151,7 +151,7 @@ msgstr "百分比图|條狀顯示可用記憶體的比例"
 
 #: sub/summary.tpl.php:11
 msgid "cache.operations"
-msgstr "操作按鈕|點擊按鈕清除對應共享記憶體區的資料"
+msgstr "操作|點擊按鈕清除對應共享記憶體區的資料"
 
 #: sub/summary.tpl.php:12
 msgid "cache.status"
@@ -183,7 +183,7 @@ msgstr "更新|共享記憶更新過次數"
 msgid "cache.skips"
 msgstr ""
 "跳過|跳過更新次數，跳過=XCache 自動判斷阻塞的共享記憶體區自動跳過阻塞等待，直"
-"接使用非共享記憶體方式繼續處理請求"
+"接使用编译不存储方式繼續處理請求"
 
 #: sub/summary.tpl.php:19
 msgid "cache.ooms"
@@ -195,11 +195,11 @@ msgstr ""
 msgid "cache.errors"
 msgstr ""
 "错误|编译错误, 显示您的脚本被编译时出错的次数. 如果您发现这个数字不断增长, 您"
-"应该检查什么脚本产生错误. 参考 說明"
+"应该检查什么脚本产生错误. 参考 說明 获取更多信息"
 
 #: sub/summary.tpl.php:21
 msgid "cache.readonly_protected"
-msgstr "Protected|顯示該 Cache 是否支援並啟用 readonly_protection. 参考 說明"
+msgstr "保护|顯示該 Cache 是否支援並啟用 readonly_protection. 参考 說明"
 
 #: sub/summary.tpl.php:22
 msgid "cache.cached"
