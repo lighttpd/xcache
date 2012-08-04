@@ -1,6 +1,7 @@
 #!/bin/bash
 # this script is for developers only
-stopfpm() {
+
+stopfpm() { # {{{1
 	if [[ -f $pidfile ]]; then
 		pid=`cat $pidfile 2>/dev/null || true`
 		if [[ $pid -gt 0 ]]; then
@@ -11,47 +12,36 @@ stopfpm() {
 	fi
 }
 
-set -e
-MAKE=/usr/bin/make
+xtest() { # {{{1
+	$MAKE -f devel/test.mak
+}
 
-. devel/run.cfg
-if [[ $# -gt 0 ]]; then
-	action=$1
-	shift
-	if [[ $# -gt 0 ]]; then
-		args=("$@")
-	elif [[ $action = "make" ]]; then
-		args=()
-	fi
-fi
+prep() { # {{{1
+	$MAKE -f devel/prepare.mak "$@"
+}
 
-case "$action" in
-prep*)
-	exec $MAKE -f devel/prepare.mak "${args[@]}"
-	;;
-po2php)
-	./run mergepo "${args[0]}"
-	find htdocs -iname '*.po' | while read -r i; do
-		phpfile=${i/.po/.php}
-		devel/po2php.awk < $i > $phpfile.tmp
-		mv $phpfile.tmp $phpfile
-	done
-	exit
-	;;
-mergepo)
-	./run prep "${args[0]}"
+mergepo() { # {{{1
+	prep
+	local i
 	find htdocs -iname '*.po' | while read -r i; do
 		if [[ -f $i-merged ]]; then
 			mv $i-merged $i
 		fi
 	done
-	exit
-	;;
-tags)
-	rm -f tags
-	exec $MAKE -f devel/prepare.mak tags "${args[@]}"
-	;;
-dep*)
+}
+
+po2php() { # {{{1
+	mergepo
+
+	local phpfile
+	find htdocs -iname '*.po' | while read -r i; do
+		phpfile=${i/.po/.php}
+		devel/po2php.awk < $i > $phpfile.tmp
+		mv $phpfile.tmp $phpfile
+	done
+}
+
+updatedeps() { # {{{1
 	pwd=$(readlink -f "$(pwd)")
 	builddir=$(readlink -f ../trunk-php5-debug-zts)
 	if [[ -z $builddir ]]; then
@@ -96,25 +86,40 @@ dep*)
 		done
 		echo
 	done > Makefile.frag.deps
-	exit
-	;;
-xtest)
-	exec $MAKE -f devel/test.mak
-	;;
+}
+# }}}1
+
+set -e
+MAKE=/usr/bin/make
+
+. devel/run.cfg
+PHPSDIR=${PHPSDIR:-$HOME/test}
+
+if [[ $# -eq 0 ]]; then
+	set -- "$action" "${args[@]}"
+fi
+
+if [[ $# -gt 0 ]]; then
+	action=$1
+	shift
+fi
+
+# devel actions
+case "$action" in
+prep*) prep "$@"; exit;;
+tags) rm -f tags; prep tags "$@"; exit;;
+po2php) po2php; exit;;
+mergepo) mergepo; exit;;
+dep*) updatedeps; exit;;
+xtest) xtest; exit;;
 esac
 
-case "${args[0]}" in
-fpm)
-	pidfile=devel.pid
-	stopfpm
-	;;
-stopfpm)
-	pidfile=devel.pid
-	stopfpm
-	exit
-	;;
+case "$1" in
+fpm) pidfile=devel.pid; stopfpm;;
+stopfpm) pidfile=devel.pid; stopfpm; exit;;
 esac
 
+# process each $dirs
 basename=$(basename $(pwd))
 if echo $basename | grep -- - >/dev/null; then :; else
 	svn propget svn:ignore . > .svnignore
@@ -126,7 +131,7 @@ if echo $basename | grep -- - >/dev/null; then :; else
 		lndir ../${basename} >/dev/null || true
 
 		pwd
-		$0 "$action" "${args[@]}"
+		$0 "$action" "$@"
 	done
 	exit
 fi
@@ -135,7 +140,40 @@ phpbasename=${basename#*-}
 xcachebasename=${basename%%-*}
 xcachesrcdir=../$xcachebasename
 pidfile=../$xcachebasename/devel.pid
+phpize() { # {{{1
+	if [[ ! -x $PHPSDIR/$phpbasename/bin/phpize ]]; then
+		echo $PHPSDIR/$phpbasename/bin/phpize not found
+		exit
+	fi
+	export PATH=$PHPSDIR/$phpbasename/bin:$PATH
+	phpize --clean \
+	&& phpize \
+	&& CFLAGS="-g -O0 -pedantic-errors -Wno-variadic-macros -Wno-long-long -Wall -Wno-unused-parameter -Wno-unused-function -W -Wshadow -Werror=implicit-function-declaration -std=c89 -D_GNU_SOURCE -D_POSIX_SOURCE -Dinline=" ./configure \
+		--enable-xcache-cacher \
+		--enable-xcache-optimizer \
+		--enable-xcache-encoder \
+		--enable-xcache-decoder \
+		--enable-xcache-disassembler \
+		--enable-xcache-coverager \
+		--enable-xcache-test \
+		--enable-xcache-constant
+}
+make() { # {{{1
+	LANG=C $MAKE $MAKEOPTS "$@" 2>&1 \
+	| sed -ur \
+		-e 's#Werror=implicit-function-declaration#We/rror=i/mplicit-function-declaration#' \
+		-e 's#-pedantic-errors#-pedantic-e/rrors#' \
+		-e 's#\./xc_processor\.h#'$PWD'/xc_processor.h#' \
+		-e 's#\./xc_processor\.c\.h#'$PWD'/xc_processor.c.h#' \
+	| hi error implicit warn FAIL
+	ret=${PIPESTATUS[0]}
+	if [[ $ret -ne 0 ]]; then
+		exit $ret
+	fi
+}
+# }}}
 
+# prepare {{{1
 case "$action" in
 phpize)
 	if [[ -r Makefile ]]; then
@@ -145,7 +183,7 @@ phpize)
 esac
 
 rm -f php-src
-find -L . -action l | xargs rm -fv
+find -L . -type l | xargs rm -fv
 lndir "$xcachesrcdir" >/dev/null || true
 find . -iname .\*.swp | xargs rm -f
 ln -sf ~/src/php/$phpbasename php-src
@@ -158,49 +196,46 @@ ln -sf ~/src/php/$phpbasename/sapi/cli/php php-cli
 ln -sf ~/src/php/$phpbasename/sapi/fpm/php-fpm php-fpm
 
 case "$action" in
-phpize)
-	PHPDIRS=${PHPDIRS:-$HOME/test}
-	if [[ ! -x $PHPDIRS/$phpbasename/bin/phpize ]]; then
-		echo $PHPDIRS/$phpbasename/bin/phpize not found
-		exit
-	fi
-	export PATH=$PHPDIRS/$phpbasename/bin:$PATH
-	phpize --clean \
-	&& phpize \
-	&& CFLAGS="-g -O0 -pedantic-errors -Wno-variadic-macros -Wno-long-long -Wall -Wno-unused-parameter -Wno-unused-function -W -Wshadow -Werror=implicit-function-declaration -std=c89 -D_GNU_SOURCE -D_POSIX_SOURCE -Dinline=" ./configure \
-		--enable-xcache-cacher \
-		--enable-xcache-optimizer \
-		--enable-xcache-encoder \
-		--enable-xcache-decoder \
-		--enable-xcache-disassembler \
-		--enable-xcache-coverager \
-		--enable-xcache-test \
-		--enable-xcache-constant
-	exit
-	;;
-make)
-	MAKEARGS=("$@")
-	;;
+phpize) phpize; exit;;
+make) make "$@"; exit;;
+*) make;;
 esac
+# }}}1
 
-LANG=C $MAKE $MAKEOPTS "${MAKEARGS[@]}" 2>&1 \
-| sed -ur \
-	-e 's#Werror=implicit-function-declaration#We/rror=i/mplicit-function-declaration#' \
-	-e 's#-pedantic-errors#-pedantic-e/rrors#' \
-	-e 's#\./xc_processor\.h#'$PWD'/xc_processor.h#' \
-	-e 's#\./xc_processor\.c\.h#'$PWD'/xc_processor.c.h#' \
-| hi error implicit warn FAIL
-ret=${PIPESTATUS[0]}
-if [[ $ret -ne 0 || $action = make ]]; then
-	exit $ret
-fi
-
-if [[ -z ${args[0]} ]]; then
-	args=(devel.php)
+if [[ -z $1 ]]; then
+	set -- devel.php
 fi
 
 cmd=()
 tracer=()
+
+# run utils {{{1
+case "$action" in
+dc)
+	exec ./php-cli -c devel.ini ./bin/phpdc.phpr $@ | tee decompiled.php
+	;;
+dop)
+	exec ./php-cli -c devel.ini ./bin/phpdop.phpr $@
+	;;
+retest)
+	exec $MAKE xcachetest "$@" TESTS="`grep '^/.*\.phpt$' php_test_results_*.txt | uniq | xargs`"
+	;;
+test)
+	case "$1" in
+	*.phpt)
+		exec $MAKE xcachetest TEST_ARGS=-v TESTS="$*"
+		;;
+	*/)
+		exec $MAKE xcachetest TESTS="$*"
+		;;
+	*)
+		exec $MAKE xcachetest
+		;;
+	esac
+	;;
+esac
+# }}}
+# pick sapi {{{1
 case "$basename" in
 *-apache1*)
 	cmd=($HOME/apache1/bin/httpd -X)
@@ -209,15 +244,15 @@ case "$basename" in
 	exit 1
 	;;
 *)
-	case "${args[0]}" in
+	case "$1" in
 	fcgi)
 		cmd=(./php-cgi -q -c devel.ini)
-		args=(-b 1026)
+		set -- -b 1026
 		;;
 	fpm)
 		echo Starting fpm ...
 		cmd=(./php-fpm -c devel.ini -y devel.fpm -g $(readlink -f $pidfile))
-		args=()
+		set --
 		;;
 	*)
 		cmd=(./php-cgi -q -c devel.ini)
@@ -226,7 +261,8 @@ case "$basename" in
 
 	"${cmd[@]}" -v || true
 esac
-
+# }}}
+# pick action {{{1
 case "$action" in
 ltr*)
 	export USE_ZEND_ALLOC=0
@@ -243,42 +279,23 @@ val*)
 	export USE_ZEND_ALLOC=0
 	tracer=(valgrind --gen-suppressions=all)
 	;;
-dc)
-	exec ./php-cli -c devel.ini ./bin/phpdc.phpr "${args[@]}" | tee decompiled.php
-	;;
-dop)
-	exec ./php-cli -c devel.ini ./bin/phpdop.phpr "${args[@]}"
-	;;
-retest)
-	exec $MAKE xcachetest "$@" TESTS="`grep '^/.*\.phpt$' php_test_results_*.txt | uniq | xargs`"
-	;;
-test)
-	case "${args[0]}" in
-	*.phpt)
-		exec $MAKE xcachetest TEST_ARGS=-v TESTS="${args[*]}"
-		;;
-	*/)
-		exec $MAKE xcachetest TESTS="${args[@]}"
-		;;
-	*)
-		exec $MAKE xcachetest
-		;;
-	esac
-	;;
 esac
 
+# run {{{1
 export XCACHE_SKIP_FCGI_WARNING=1
-commandLine=("${tracer[@]}" "${cmd[@]}" "${args[@]}")
+commandLine=("${tracer[@]}" "${cmd[@]}" "$@")
 
 case "${cmd[0]}" in
 *php-fpm*)
 	stopfpm
 	"${commandLine[@]}"
 	echo -n "Ctrl-C to stop"
-	trap stopfpm SIGINT SIGTERM
+	trap stopfpm SIGINT SIGTERM exit
 	cat > /dev/null || true
+	stopfpm
 	;;
 *)
 	exec "${commandLine[@]}"
 	;;
 esac
+# }}}
