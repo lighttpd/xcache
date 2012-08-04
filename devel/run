@@ -1,12 +1,38 @@
 #!/bin/bash
 # this script is for developers only
 
+set -e
+MAKE=/usr/bin/make
+
+true() { # {{{1
+	return 0
+}
+
+hi() { # {{{1
+	colors=(4 2 3 5 6 7 8 9)
+	re=()
+	i=0
+	for r in "$@"; do
+		((color=$i % ${#colors[@]})) || true
+		color=${colors[$color]}
+		r="${r/\#/\\#}"
+		r="s#$r#[4${color}m[31m\0[0m#g"
+		re[$i]="-e$r"
+		((i=i+1))
+	done
+	sed -ur "${re[@]}"
+}
+hiecho() { # {{{1
+	echo "[32m""$@""[0m"
+}
+
+# }}}
+
 stopfpm() { # {{{1
-	if [[ -f $pidfile ]]; then
-		pid=`cat $pidfile 2>/dev/null || true`
+	if [[ -f $1 ]]; then
+		local pid=`cat $1 2>/dev/null || true`
 		if [[ $pid -gt 0 ]]; then
-			echo
-			echo Stopping fpm $pid @ $pidfile
+			hiecho Stopping fpm $pid @ $1
 			kill $pid || true
 		fi
 	fi
@@ -45,7 +71,7 @@ updatedeps() { # {{{1
 	pwd=$(readlink -f "$(pwd)")
 	builddir=$(readlink -f ../trunk-php5-debug-zts)
 	if [[ -z $builddir ]]; then
-		echo required ../trunk-php5-debug-zts not found
+		hiecho required ../trunk-php5-debug-zts not found
 		return 1
 	fi
 	find . -iname \*.c | sort | while read -r sourceFile; do
@@ -80,7 +106,7 @@ updatedeps() { # {{{1
 				if [[ -r $dependency ]]; then
 					echo -n " \$(srcdir)/$dependency"
 				else
-					echo "$dependency not found" >&2
+					hiecho "$dependency not found" >&2
 				fi
 			esac
 		done
@@ -89,9 +115,7 @@ updatedeps() { # {{{1
 }
 # }}}1
 
-set -e
-MAKE=/usr/bin/make
-
+hiecho "Loading config devel/run.cfg"
 . devel/run.cfg
 PHPSDIR=${PHPSDIR:-$HOME/test}
 
@@ -115,34 +139,13 @@ xtest) xtest; exit;;
 esac
 
 case "$1" in
-fpm) pidfile=devel.pid; stopfpm;;
-stopfpm) pidfile=devel.pid; stopfpm; exit;;
+fpm) stopfpm devel.pid;;
+stopfpm) stopfpm devel.pid; exit;;
 esac
 
-# process each $dirs
-basename=$(basename $(pwd))
-if echo $basename | grep -- - >/dev/null; then :; else
-	svn propget svn:ignore . > .svnignore
-
-	dirs=${dirs:-php5-debug-zts}
-	for dir in $dirs; do
-		mkdir -p ../${basename}-${dir}
-		cd ../${basename}-${dir} || exit
-		lndir ../${basename} >/dev/null || true
-
-		pwd
-		$0 "$action" "$@"
-	done
-	exit
-fi
-
-phpbasename=${basename#*-}
-xcachebasename=${basename%%-*}
-xcachesrcdir=../$xcachebasename
-pidfile=../$xcachebasename/devel.pid
-phpize() { # {{{1
+do_phpize() { # {{{1
 	if [[ ! -x $PHPSDIR/$phpbasename/bin/phpize ]]; then
-		echo $PHPSDIR/$phpbasename/bin/phpize not found
+		hiecho $PHPSDIR/$phpbasename/bin/phpize not found
 		exit
 	fi
 	export PATH=$PHPSDIR/$phpbasename/bin:$PATH
@@ -158,7 +161,10 @@ phpize() { # {{{1
 		--enable-xcache-test \
 		--enable-xcache-constant
 }
-make() { # {{{1
+do_make() { # {{{1
+	if [[ ! -f Makefile ]]; then
+		do_phpize
+	fi
 	LANG=C $MAKE $MAKEOPTS "$@" 2>&1 \
 	| sed -ur \
 		-e 's#Werror=implicit-function-declaration#We/rror=i/mplicit-function-declaration#' \
@@ -172,130 +178,163 @@ make() { # {{{1
 	fi
 }
 # }}}
+run() {
+	pidfile=$xcachesrcdir/devel.pid
 
-# prepare {{{1
-case "$action" in
-phpize)
-	if [[ -r Makefile ]]; then
-		$MAKE xcachesvnclean || true
+	# prepare {{{1
+	case "$action" in
+	phpize)
+		if [[ -r Makefile ]]; then
+			$MAKE xcachesvnclean || true
+		fi
+		;;
+	esac
+
+	rm -f php-src
+	find -L . -type l | xargs rm -fv
+	lndir "$xcachesrcdir" >/dev/null || true
+	find . -iname .\*.swp | xargs rm -f
+	ln -snf ~/src/php/$phpbasename php-src
+	for i in ~/src/php/$phpbasename/sapi/cgi/php{,-cgi}; do
+		if [[ -r $i ]]; then
+			ln -snf "$i" php-cgi
+		fi
+	done
+	ln -snf ~/src/php/$phpbasename/sapi/cli/php php-cli
+	ln -snf ~/src/php/$phpbasename/sapi/fpm/php-fpm php-fpm
+
+	case "$action" in
+	phpize) do_phpize; exit;;
+	make) do_make "$@"; exit;;
+	*) do_make;;
+	esac
+	# }}}1
+
+	if [[ -z $1 ]]; then
+		set -- devel.php
 	fi
-	;;
-esac
 
-rm -f php-src
-find -L . -type l | xargs rm -fv
-lndir "$xcachesrcdir" >/dev/null || true
-find . -iname .\*.swp | xargs rm -f
-ln -sf ~/src/php/$phpbasename php-src
-for i in ~/src/php/$phpbasename/sapi/cgi/php{,-cgi}; do
-	if [[ -r $i ]]; then
-		ln -sf "$i" php-cgi
-	fi
-done
-ln -sf ~/src/php/$phpbasename/sapi/cli/php php-cli
-ln -sf ~/src/php/$phpbasename/sapi/fpm/php-fpm php-fpm
+	cmd=()
+	tracer=()
 
-case "$action" in
-phpize) phpize; exit;;
-make) make "$@"; exit;;
-*) make;;
-esac
-# }}}1
+	# run utils {{{1
+	case "$action" in
+	dc)
+		./php-cli -c devel.ini ./bin/phpdc.phpr $@ | tee decompiled.php
+		return
+		;;
+	dop)
+		./php-cli -c devel.ini ./bin/phpdop.phpr $@
+		return
+		;;
+	retest)
+		$MAKE xcachetest "$@" TESTS="`grep '^/.*\.phpt$' php_test_results_*.txt | uniq | xargs`"
+		return
+		;;
+	test)
+		case "$1" in
+		*.phpt)
+			$MAKE xcachetest TEST_ARGS=-v TESTS="$*"
+			return
+			;;
+		*/)
+			$MAKE xcachetest TESTS="$*"
+			return
+			;;
+		*)
+			$MAKE xcachetest
+			return
+			;;
+		esac
+		;;
+	esac
+	# }}}
+	# pick sapi {{{1
+	case "$basename" in
+	*-apache1*)
+		cmd=($HOME/apache1/bin/httpd -X)
+		;;
+	*-apache*)
+		exit 1
+		;;
+	*)
+		case "$1" in
+		fcgi)
+			cmd=(./php-cgi -q -c devel.ini)
+			set -- -b 1026
+			;;
+		fpm)
+			cmd=(./php-fpm -c devel.ini -y devel.fpm -g $(readlink -f $pidfile))
+			set --
+			;;
+		*)
+			cmd=(./php-cgi -q -c devel.ini)
+			;;
+		esac
 
-if [[ -z $1 ]]; then
-	set -- devel.php
+		"${cmd[@]}" -v || true
+	esac
+	# }}}
+	# pick action {{{1
+	case "$action" in
+	ltr*)
+		export USE_ZEND_ALLOC=0
+		tracer=(ltrace -s1024 -e malloc,realloc,free,write)
+		;;
+	str*)
+		tracer=(strace -s1024 -T)
+		;;
+	gdb)
+		#USE_ZEND_ALLOC=0
+		tracer=(gdb --args)
+		;;
+	val*)
+		export USE_ZEND_ALLOC=0
+		tracer=(valgrind --gen-suppressions=all)
+		;;
+	esac
+
+	# run {{{1
+	export XCACHE_SKIP_FCGI_WARNING=1
+	commandLine=("${tracer[@]}" "${cmd[@]}" "$@")
+
+	case "${cmd[0]}" in
+	*php-fpm*)
+		hiecho Starting fpm ...
+		"${commandLine[@]}"
+		# echo -n "Ctrl-C to stop"
+	cleanfpm() {
+		echo
+		stopfpm $pidfile
+	}
+		# trap stopfpm SIGINT SIGTERM exit
+		# cat > /dev/null || true
+		# stopfpm
+		;;
+	*)
+		"${commandLine[@]}"
+		;;
+	esac
+	# }}}
+}
+
+# process each $dirs
+basename=$(basename $(pwd))
+if echo $basename | grep -- - >/dev/null; then
+	phpbasename=${basename#*-}
+	xcachesrcdir=../${basename%%-*}
+	run "$@"
+else
+	svn propget svn:ignore . > .svnignore
+
+	dirs=${dirs:-php5-debug-zts}
+	xcachesrcdir=../$basename
+	for phpbasename in $dirs; do
+		mkdir -p ../${basename}-${phpbasename}
+		cd ../${basename}-${phpbasename} || exit
+		lndir ${xcachesrcdir} >/dev/null || true
+
+		pwd
+		run "$@"
+	done
 fi
-
-cmd=()
-tracer=()
-
-# run utils {{{1
-case "$action" in
-dc)
-	exec ./php-cli -c devel.ini ./bin/phpdc.phpr $@ | tee decompiled.php
-	;;
-dop)
-	exec ./php-cli -c devel.ini ./bin/phpdop.phpr $@
-	;;
-retest)
-	exec $MAKE xcachetest "$@" TESTS="`grep '^/.*\.phpt$' php_test_results_*.txt | uniq | xargs`"
-	;;
-test)
-	case "$1" in
-	*.phpt)
-		exec $MAKE xcachetest TEST_ARGS=-v TESTS="$*"
-		;;
-	*/)
-		exec $MAKE xcachetest TESTS="$*"
-		;;
-	*)
-		exec $MAKE xcachetest
-		;;
-	esac
-	;;
-esac
-# }}}
-# pick sapi {{{1
-case "$basename" in
-*-apache1*)
-	cmd=($HOME/apache1/bin/httpd -X)
-	;;
-*-apache*)
-	exit 1
-	;;
-*)
-	case "$1" in
-	fcgi)
-		cmd=(./php-cgi -q -c devel.ini)
-		set -- -b 1026
-		;;
-	fpm)
-		echo Starting fpm ...
-		cmd=(./php-fpm -c devel.ini -y devel.fpm -g $(readlink -f $pidfile))
-		set --
-		;;
-	*)
-		cmd=(./php-cgi -q -c devel.ini)
-		;;
-	esac
-
-	"${cmd[@]}" -v || true
-esac
-# }}}
-# pick action {{{1
-case "$action" in
-ltr*)
-	export USE_ZEND_ALLOC=0
-	tracer=(ltrace -s1024 -e malloc,realloc,free,write)
-	;;
-str*)
-	tracer=(strace -s1024 -T)
-	;;
-gdb)
-	#USE_ZEND_ALLOC=0
-	tracer=(gdb --args)
-	;;
-val*)
-	export USE_ZEND_ALLOC=0
-	tracer=(valgrind --gen-suppressions=all)
-	;;
-esac
-
-# run {{{1
-export XCACHE_SKIP_FCGI_WARNING=1
-commandLine=("${tracer[@]}" "${cmd[@]}" "$@")
-
-case "${cmd[0]}" in
-*php-fpm*)
-	stopfpm
-	"${commandLine[@]}"
-	echo -n "Ctrl-C to stop"
-	trap stopfpm SIGINT SIGTERM exit
-	cat > /dev/null || true
-	stopfpm
-	;;
-*)
-	exec "${commandLine[@]}"
-	;;
-esac
-# }}}
