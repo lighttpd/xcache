@@ -300,7 +300,6 @@ run() {
 	esac
 
 	# run {{{1
-	export XCACHE_SKIP_FCGI_WARNING=1
 	commandLine=("${tracer[@]}" "${cmd[@]}" "$@")
 
 	case "${cmd[0]}" in

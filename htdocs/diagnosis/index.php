@@ -385,6 +385,20 @@ else {
 	result(N_("info"), _T("Looks good"));
 }
 // }}}
+checking(_T("SAPI Compatibility")); // {{{
+
+if (php_sapi_name() == "cgi" || php_sapi_name() == "cgi-fcgi" && !isset($_SERVER["FCGI_ROLE"])) {
+	result(N_("error"), _T("CGI is not supported"), _T("Use FastCGI or FPM instead"));
+}
+else if (php_sapi_name() == "cgi-fcgi" && isset($_SERVER["FCGI_ROLE"]) && (int) getenv("PHP_FCGI_CHILDREN") < 1) {
+	result(N_("error")
+		, "PHP_FCGI_CHILDREN<1"
+		, _T("PHP_FCGI_CHILDREN should be >= 1 and use 1 group of parent/childs model. See http://xcache.lighttpd.net/wiki/Faq"));
+}
+else {
+	result(N_("info"), _T("Looks good"));
+}
+// }}}
 
 include "./diagnosis.tpl.php";
 
