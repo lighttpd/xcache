@@ -3194,10 +3194,17 @@ static PHP_MINFO_FUNCTION(xcache_cacher) /* {{{ */
 	php_info_print_table_row(2, "XCache Cacher Module", "enabled");
 	php_info_print_table_row(2, "Readonly Protection", xc_readonly_protection ? "enabled" : "disabled");
 #ifdef ZEND_ENGINE_2_1
+	ptr = php_format_date("Y-m-d H:i:s", sizeof("Y-m-d H:i:s") - 1, XG(request_time), 1 TSRMLS_CC);
+	php_info_print_table_row(2, "Page Request Time", ptr);
+	efree(ptr);
+
 	ptr = php_format_date("Y-m-d H:i:s", sizeof("Y-m-d H:i:s") - 1, xc_init_time, 1 TSRMLS_CC);
 	php_info_print_table_row(2, "Cache Init Time", ptr);
 	efree(ptr);
 #else
+	snprintf(buf, sizeof(buf), "%lu", (long unsigned) XG(request_time));
+	php_info_print_table_row(2, "Page Request Time", buf);
+
 	snprintf(buf, sizeof(buf), "%lu", (long unsigned) xc_init_time);
 	php_info_print_table_row(2, "Cache Init Time", buf);
 #endif
