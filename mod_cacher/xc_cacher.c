@@ -93,6 +93,19 @@ struct _xc_cached_t { /* {{{ stored in shm */
 	zend_ulong hits_by_second[5];
 };
 /* }}} */
+typedef struct { /* {{{ xc_cache_t: only cache info, not in shm */
+	int cacheid;
+	xc_hash_t  *hcache; /* hash to cacheid */
+
+	struct _xc_lock_t  *lck;
+	struct _xc_shm_t   *shm; /* which shm contains us */
+	struct _xc_mem_t   *mem; /* which mem contains us */
+
+	xc_hash_t  *hentry; /* hash settings to entry */
+	xc_hash_t  *hphp;   /* hash settings to php */
+	xc_cached_t *cached;
+} xc_cache_t;
+/* }}} */
 
 /* {{{ globals */
 static char *xc_shm_scheme = NULL;
@@ -149,7 +162,7 @@ static xc_entry_data_php_t *xc_php_store_unlocked(xc_cache_t *cache, xc_entry_da
 
 	php->hits     = 0;
 	php->refcount = 0;
-	stored_php = xc_processor_store_xc_entry_data_php_t(cache, php TSRMLS_CC);
+	stored_php = xc_processor_store_xc_entry_data_php_t(cache->shm, cache->mem, php TSRMLS_CC);
 	if (stored_php) {
 		xc_php_add_unlocked(cache->cached, stored_php);
 		return stored_php;
@@ -296,8 +309,8 @@ static xc_entry_t *xc_entry_store_unlocked(xc_entry_type_t type, xc_cache_t *cac
 	entry->ctime = XG(request_time);
 	entry->atime = XG(request_time);
 	stored_entry = type == XC_TYPE_PHP
-		? (xc_entry_t *) xc_processor_store_xc_entry_php_t(cache, (xc_entry_php_t *) entry TSRMLS_CC)
-		: (xc_entry_t *) xc_processor_store_xc_entry_var_t(cache, (xc_entry_var_t *) entry TSRMLS_CC);
+		? (xc_entry_t *) xc_processor_store_xc_entry_php_t(cache->shm, cache->mem, (xc_entry_php_t *) entry TSRMLS_CC)
+		: (xc_entry_t *) xc_processor_store_xc_entry_var_t(cache->shm, cache->mem, (xc_entry_var_t *) entry TSRMLS_CC);
 	if (stored_entry) {
 		xc_entry_add_unlocked(cache->cached, entryslotid, stored_entry);
 		++cache->cached->updates;
@@ -3284,7 +3297,6 @@ static int xc_config_long(zend_ulong *p, char *name, char *default_value) /* {{{
 /* }}} */
 static PHP_MINIT_FUNCTION(xcache_cacher) /* {{{ */
 {
-	char *env;
 	zend_extension *ext;
 	zend_llist_position lpos;
 

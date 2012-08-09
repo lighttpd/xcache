@@ -16,20 +16,6 @@ typedef struct _xc_entry_data_php_t xc_entry_data_php_t;
 
 struct _xc_lock_t;
 struct _xc_shm_t;
-/* {{{ xc_cache_t: only cache info, not in shm */
-typedef struct {
-	int cacheid;
-	xc_hash_t  *hcache; /* hash to cacheid */
-
-	struct _xc_lock_t  *lck;
-	struct _xc_shm_t   *shm; /* which shm contains us */
-	struct _xc_mem_t   *mem; /* which mem contains us */
-
-	xc_hash_t  *hentry; /* hash settings to entry */
-	xc_hash_t  *hphp;   /* hash settings to php */
-	xc_cached_t *cached;
-} xc_cache_t;
-/* }}} */
 /* {{{ xc_op_array_info_detail_t */
 typedef struct {
 	zend_uint index;
