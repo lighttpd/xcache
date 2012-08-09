@@ -60,21 +60,22 @@ static int xc_init_constant(int module_number TSRMLS_DC) /* {{{ */
 		const char *prefix;
 		zend_uchar (*getsize)();
 		const char *(*get)(zend_uchar i);
-	} xc_meminfo_t;
-	xc_meminfo_t nameinfos[] = {
+	} xc_nameinfo_t;
+	xc_nameinfo_t nameinfos[] = {
 		{ "",        xc_get_op_type_count,   xc_get_op_type   },
 		{ "",        xc_get_data_type_count, xc_get_data_type },
 		{ "",        xc_get_opcode_count,    xc_get_opcode    },
 		{ "OPSPEC_", xc_get_op_spec_count,   xc_get_op_spec   },
 		{ NULL, NULL, NULL }
 	};
-	xc_meminfo_t* p;
-	zend_uchar i, count;
-	char const_name[96];
-	int const_name_len;
 	int undefdone = 0;
 
 	for (p = nameinfos; p->getsize; p ++) {
+		zend_uchar i, count;
+		char const_name[96];
+		int const_name_len;
+		xc_nameinfo_t *p;
+
 		count = p->getsize();
 		for (i = 0; i < count; i ++) {
 			const char *name = p->get(i);
