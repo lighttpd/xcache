@@ -120,7 +120,7 @@ hiecho "Loading config devel/run.cfg"
 PHPSDIR=${PHPSDIR:-$HOME/test}
 
 if [[ $# -eq 0 ]]; then
-	set -- "$action" "${args[@]}"
+	set -- $action "${args[@]}"
 fi
 
 # devel actions
@@ -331,7 +331,7 @@ run() {
 	case "${cmd[0]}" in
 	*php-fpm*)
 		stopfpm
-		hiecho Starting fpm ...
+		hiecho Starting fpm "${commandLine[@]}" ...
 		"${commandLine[@]}"
 		echo -n "Ctrl-C to stop"
 		trap cleanfpm SIGINT SIGTERM exit
@@ -339,6 +339,7 @@ run() {
 		stopfpm
 		;;
 	*)
+		hiecho "${commandLine[@]}"
 		"${commandLine[@]}"
 		;;
 	esac
