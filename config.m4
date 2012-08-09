@@ -31,12 +31,13 @@ xc_trace.c \
   xcache_sources="$xcache_sources util/$i"
 done
   for i in \
+xc_allocator.c \
+xc_allocator_bestfit.c \
 xc_compatibility.c \
 xc_const_string.c \
 xc_extension.c \
 xc_ini.c \
 xc_lock.c \
-xc_mem.c \
 xc_opcode_spec.c \
 xc_processor.c \
 xc_sandbox.c \

@@ -1,5 +1,8 @@
 #ifndef XC_SHM_H
 #define XC_SHM_H
+
+#include <stdlib.h>
+
 typedef struct _xc_shm_handlers_t xc_shm_handlers_t;
 
 #ifndef XC_SHM_IMPL
@@ -12,8 +15,6 @@ struct _xc_shm_t {
 typedef struct XC_SHM_IMPL xc_shm_t;
 typedef size_t xc_shmsize_t;
 
-#include "xc_mem.h"
-
 /* shm */
 #define XC_SHM_CAN_READONLY(func) int   func(xc_shm_t *shm)
 #define XC_SHM_IS_READWRITE(func) int   func(xc_shm_t *shm, const void *p)
@@ -24,12 +25,11 @@ typedef size_t xc_shmsize_t;
 #define XC_SHM_INIT(func)         xc_shm_t *func(xc_shmsize_t size, int readonly_protection, const void *arg1, const void *arg2)
 #define XC_SHM_DESTROY(func)      void func(xc_shm_t *shm)
 
-#define XC_SHM_MEMINIT(func)      xc_mem_t *func(xc_shm_t *shm, xc_memsize_t size)
-#define XC_SHM_MEMDESTROY(func)   void func(xc_mem_t *mem)
+#define XC_SHM_MEMINIT(func)      void *func(xc_shm_t *shm, xc_shmsize_t size)
+#define XC_SHM_MEMDESTROY(func)   void func(void *mem)
 
 #define XC_SHM_HANDLERS(name)    { \
-	NULL                           \
-	, xc_##name##_can_readonly     \
+	xc_##name##_can_readonly       \
 	, xc_##name##_is_readwrite     \
 	, xc_##name##_is_readonly      \
 	, xc_##name##_to_readwrite     \
@@ -43,7 +43,6 @@ typedef size_t xc_shmsize_t;
 }
 
 struct _xc_shm_handlers_t {
-	const xc_mem_handlers_t *memhandlers;
 	XC_SHM_CAN_READONLY((*can_readonly));
 	XC_SHM_IS_READWRITE((*is_readwrite));
 	XC_SHM_IS_READONLY((*is_readonly));
