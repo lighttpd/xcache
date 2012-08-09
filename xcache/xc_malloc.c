@@ -1,5 +1,5 @@
 #define XC_SHM_IMPL _xc_malloc_shm_t
-#define XC_MEM_IMPL _xc_malloc_mem_t
+#define _xc_allocator_t _xc_allocator_malloc_t
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -8,13 +8,15 @@
 #include <config.h>
 #endif
 #include "xc_shm.h"
-#include "php.h"
-#include "xc_utils.h"
+#include "xc_allocator.h"
+#ifndef TEST
+#include "xcache.h"
+#endif
 #include "util/xc_align.h"
 
-struct _xc_malloc_mem_t {
-	const xc_mem_handlers_t *handlers;
-	xc_shm_t                *shm;
+struct _xc_allocator_malloc_t {
+	const xc_allocator_vtable_t *vtable;
+	xc_shm_t *shm;
 	xc_memsize_t size;
 	xc_memsize_t avail;       /* total free */
 };
@@ -24,112 +26,112 @@ struct _xc_malloc_shm_t {
 	xc_shm_handlers_t *handlers;
 	xc_shmsize_t       size;
 	xc_shmsize_t       memoffset;
+#ifndef TEST
 	HashTable blocks;
+#endif
 };
 /* }}} */
 
-#define CHECK(x, e) do { if ((x) == NULL) { zend_error(E_ERROR, "XCache: " e); goto err; } } while (0)
+#ifndef TEST
+#	define CHECK(x, e) do { if ((x) == NULL) { zend_error(E_ERROR, "XCache: " e); goto err; } } while (0)
+#else
+#	define CHECK(x, e) do { if ((x) == NULL) { fprintf(stderr, "%s\n", "XCache: " e); goto err; } } while (0)
+#endif
 
-static void *xc_add_to_blocks(xc_mem_t *mem, void *p, size_t size) /* {{{ */
+static void *xc_add_to_blocks(xc_allocator_t *allocator, void *p, size_t size) /* {{{ */
 {
 	if (p) {
-		zend_hash_add(&mem->shm->blocks, (void *) &p, sizeof(p), (void *) &size, sizeof(size), NULL);
+#ifdef TEST
+		allocator->avail -= size;
+#else
+		zend_hash_add(&allocator->shm->blocks, (void *) &p, sizeof(p), (void *) &size, sizeof(size), NULL);
+#endif
 	}
 	return p;
 }
 /* }}} */
-static void xc_del_from_blocks(xc_mem_t *mem, void *p) /* {{{ */
+static void xc_del_from_blocks(xc_allocator_t *allocator, void *p) /* {{{ */
 {
-	zend_hash_del(&mem->shm->blocks, (void *) &p, sizeof(p));
+#ifdef TEST
+	/* TODO: allocator->avail += size; */
+#else
+	zend_hash_del(&allocator->shm->blocks, (void *) &p, sizeof(p));
+#endif
 }
 /* }}} */
 
-static XC_MEM_MALLOC(xc_malloc_malloc) /* {{{ */
+static XC_ALLOCATOR_MALLOC(xc_allocator_malloc_malloc) /* {{{ */
 {
-	return xc_add_to_blocks(mem, malloc(size), size);
+	return xc_add_to_blocks(allocator, malloc(size), size);
 }
 /* }}} */
-static XC_MEM_FREE(xc_malloc_free) /* {{{ return block size freed */
+static XC_ALLOCATOR_FREE(xc_allocator_malloc_free) /* {{{ return block size freed */
 {
-	xc_del_from_blocks(mem, (void *) p);
+	xc_del_from_blocks(allocator, (void *) p);
 	free((void *) p);
 	return 0;
 }
 /* }}} */
-static XC_MEM_CALLOC(xc_malloc_calloc) /* {{{ */
+static XC_ALLOCATOR_CALLOC(xc_allocator_malloc_calloc) /* {{{ */
 {
-	return xc_add_to_blocks(mem, calloc(memb, size), size);
+	return xc_add_to_blocks(allocator, calloc(memb, size), size);
 }
 /* }}} */
-static XC_MEM_REALLOC(xc_malloc_realloc) /* {{{ */
+static XC_ALLOCATOR_REALLOC(xc_allocator_malloc_realloc) /* {{{ */
 {
-	return xc_add_to_blocks(mem, realloc((void *) p, size), size);
-}
-/* }}} */
-static XC_MEM_STRNDUP(xc_malloc_strndup) /* {{{ */
-{
-	char *p = xc_add_to_blocks(mem, malloc(len), len);
-	if (!p) {
-		return NULL;
-	}
-	return memcpy(p, str, len);
-}
-/* }}} */
-static XC_MEM_STRDUP(xc_malloc_strdup) /* {{{ */
-{
-	return xc_malloc_strndup(mem, str, strlen(str) + 1);
+	return xc_add_to_blocks(allocator, realloc((void *) p, size), size);
 }
 /* }}} */
 
-static XC_MEM_AVAIL(xc_malloc_avail) /* {{{ */
+static XC_ALLOCATOR_AVAIL(xc_allocator_malloc_avail) /* {{{ */
 {
-	return mem->avail;
+	return allocator->avail;
 }
 /* }}} */
-static XC_MEM_SIZE(xc_malloc_size) /* {{{ */
+static XC_ALLOCATOR_SIZE(xc_allocator_malloc_size) /* {{{ */
 {
-	return mem->size;
+	return allocator->size;
 }
 /* }}} */
 
-static XC_MEM_FREEBLOCK_FIRST(xc_malloc_freeblock_first) /* {{{ */
+static XC_ALLOCATOR_FREEBLOCK_FIRST(xc_allocator_malloc_freeblock_first) /* {{{ */
 {
 	return (void *) -1;
 }
 /* }}} */
-XC_MEM_FREEBLOCK_NEXT(xc_malloc_freeblock_next) /* {{{ */
+static XC_ALLOCATOR_FREEBLOCK_NEXT(xc_allocator_malloc_freeblock_next) /* {{{ */
 {
 	return NULL;
 }
 /* }}} */
-XC_MEM_BLOCK_SIZE(xc_malloc_block_size) /* {{{ */
+static XC_ALLOCATOR_BLOCK_SIZE(xc_allocator_malloc_block_size) /* {{{ */
 {
 	return 0;
 }
 /* }}} */
-XC_MEM_BLOCK_OFFSET(xc_malloc_block_offset) /* {{{ */
+static XC_ALLOCATOR_BLOCK_OFFSET(xc_allocator_malloc_block_offset) /* {{{ */
 {
 	return 0;
 }
 /* }}} */
 
-static XC_MEM_INIT(xc_mem_malloc_init) /* {{{ */
+static XC_ALLOCATOR_INIT(xc_allocator_malloc_init) /* {{{ */
 {
-#define MINSIZE (ALIGN(sizeof(xc_mem_t)))
+#define MINSIZE (ALIGN(sizeof(xc_allocator_t)))
 	/* requires at least the header and 1 tail block */
 	if (size < MINSIZE) {
-		fprintf(stderr, "xc_mem_malloc_init requires %lu bytes at least\n", (unsigned long) MINSIZE);
+		fprintf(stderr, "xc_allocator_malloc_init requires %lu bytes at least\n", (unsigned long) MINSIZE);
 		return NULL;
 	}
-	mem->shm = shm;
-	mem->size = size;
-	mem->avail = size - MINSIZE;
+	allocator->shm = shm;
+	allocator->size = size;
+	allocator->avail = size - MINSIZE;
 #undef MINSIZE
 
-	return mem;
+	return allocator;
 }
 /* }}} */
-static XC_MEM_DESTROY(xc_mem_malloc_destroy) /* {{{ */
+static XC_ALLOCATOR_DESTROY(xc_allocator_malloc_destroy) /* {{{ */
 {
 }
 /* }}} */
@@ -141,6 +143,7 @@ static XC_SHM_CAN_READONLY(xc_malloc_can_readonly) /* {{{ */
 /* }}} */
 static XC_SHM_IS_READWRITE(xc_malloc_is_readwrite) /* {{{ */
 {
+#ifndef TEST
 	HashPosition pos;
 	size_t *psize;
 	char **ptr;
@@ -153,6 +156,7 @@ static XC_SHM_IS_READWRITE(xc_malloc_is_readwrite) /* {{{ */
 		}
 		zend_hash_move_forward_ex(&shm->blocks, &pos);
 	}
+#endif
 
 	return 0;
 }
@@ -175,7 +179,9 @@ static XC_SHM_TO_READONLY(xc_malloc_to_readonly) /* {{{ */
 
 static XC_SHM_DESTROY(xc_malloc_destroy) /* {{{ */
 {
+#ifndef TEST
 	zend_hash_destroy(&shm->blocks);
+#endif
 	free(shm);
 	return;
 }
@@ -186,7 +192,9 @@ static XC_SHM_INIT(xc_malloc_init) /* {{{ */
 	CHECK(shm = calloc(1, sizeof(xc_shm_t)), "shm OOM");
 	shm->size = size;
 
+#ifndef TEST
 	zend_hash_init(&shm->blocks, 64, NULL, NULL, 1);
+#endif
 	return shm;
 err:
 	return NULL;
@@ -195,15 +203,15 @@ err:
 
 static XC_SHM_MEMINIT(xc_malloc_meminit) /* {{{ */
 {
-	xc_mem_t *mem;
+	void *mem;
 	if (shm->memoffset + size > shm->size) {
+#ifndef TEST
 		zend_error(E_ERROR, "XCache: internal error at %s#%d", __FILE__, __LINE__);
+#endif
 		return NULL;
 	}
 	shm->memoffset += size;
-	CHECK(mem = calloc(1, sizeof(xc_mem_t)), "mem OOM");
-	mem->handlers = shm->handlers->memhandlers;
-	mem->handlers->init(shm, mem, size);
+	CHECK(mem = calloc(1, size), "mem OOM");
 	return mem;
 err:
 	return NULL;
@@ -211,28 +219,28 @@ err:
 /* }}} */
 static XC_SHM_MEMDESTROY(xc_malloc_memdestroy) /* {{{ */
 {
-	mem->handlers->destroy(mem);
 	free(mem);
 }
 /* }}} */
 
-#define xc_malloc_destroy xc_mem_malloc_destroy
-#define xc_malloc_init xc_mem_malloc_init
-static xc_mem_handlers_t xc_mem_malloc_handlers = XC_MEM_HANDLERS(malloc);
-#undef xc_malloc_init
-#undef xc_malloc_destroy
+static xc_allocator_vtable_t xc_allocator_malloc_vtable = XC_ALLOCATOR_VTABLE(allocator_malloc);
 static xc_shm_handlers_t xc_shm_malloc_handlers = XC_SHM_HANDLERS(malloc);
+void xc_allocator_malloc_register() /* {{{ */
+{
+	if (xc_allocator_register("malloc", &xc_allocator_malloc_vtable) == 0) {
+#ifndef TEST
+		zend_error(E_ERROR, "XCache: failed to register malloc mem_scheme");
+#endif
+	}
+}
+/* }}} */
+
+#ifndef TEST
 void xc_shm_malloc_register() /* {{{ */
 {
-	if (xc_mem_scheme_register("malloc", &xc_mem_malloc_handlers) == 0) {
-		zend_error(E_ERROR, "XCache: failed to register malloc mem_scheme");
-	}
-
-	CHECK(xc_shm_malloc_handlers.memhandlers = xc_mem_scheme_find("malloc"), "cannot find malloc handlers");
 	if (xc_shm_scheme_register("malloc", &xc_shm_malloc_handlers) == 0) {
 		zend_error(E_ERROR, "XCache: failed to register malloc shm_scheme");
 	}
-err:
-	return;
 }
 /* }}} */
+#endif

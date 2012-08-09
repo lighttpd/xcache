@@ -13,9 +13,13 @@ divert(0)
 #include "xcache.h"
 /* export: #include "mod_cacher/xc_cache.h" :export */
 #include "mod_cacher/xc_cache.h"
-#include "util/xc_align.h"
+/* export: #include "xcache/xc_shm.h" :export */
+#include "xcache/xc_shm.h"
+/* export: #include "xcache/xc_allocator.h" :export */
+#include "xcache/xc_allocator.h"
 #include "xcache/xc_const_string.h"
 #include "xcache/xc_utils.h"
+#include "util/xc_align.h"
 #include "xc_processor.h"
 #include "xcache_globals.h"
 
@@ -94,7 +98,7 @@ struct _xc_processor_t {
 	const xc_entry_data_php_t *php_src;
 	const xc_entry_data_php_t *php_dst;
 	xc_shm_t                  *shm;
-	xc_mem_t                  *mem;
+	xc_allocator_t            *allocator;
 	const zend_class_entry *cache_ce;
 	zend_uint cache_class_index;
 
@@ -394,15 +398,15 @@ static int xc_check_names(const char *file, int line, const char *functionName, 
 /* }}} */
 dnl ================ export API
 define(`DEFINE_STORE_API', `
-/* export: $1 *xc_processor_store_$1(xc_shm_t *shm, xc_mem_t *mem, $1 *src TSRMLS_DC); :export {{{ */
-$1 *xc_processor_store_$1(xc_shm_t *shm, xc_mem_t *mem, $1 *src TSRMLS_DC) {
+/* export: $1 *xc_processor_store_$1(xc_shm_t *shm, xc_allocator_t *allocator, $1 *src TSRMLS_DC); :export {{{ */
+$1 *xc_processor_store_$1(xc_shm_t *shm, xc_allocator_t *allocator, $1 *src TSRMLS_DC) {
 	$1 *dst;
 	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
 	processor.reference = 1;
 	processor.shm = shm;
-	processor.mem = mem;
+	processor.allocator = allocator;
 
 	IFAUTOCHECK(`xc_stack_init(&processor.allocsizes);')
 
@@ -439,8 +443,8 @@ $1 *xc_processor_store_$1(xc_shm_t *shm, xc_mem_t *mem, $1 *src TSRMLS_DC) {
 			zend_hash_init(&processor.zvalptrs, 0, NULL, NULL, 0);
 		}
 
-		/* mem :) */
-		processor.p = (char *) processor.mem->handlers->malloc(processor.mem, processor.size);
+		/* allocator :) */
+		processor.p = (char *) processor.allocator->vtable->malloc(processor.allocator, processor.size);
 		if (processor.p == NULL) {
 			dst = NULL;
 			goto err_alloc;

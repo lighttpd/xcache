@@ -99,7 +99,7 @@ typedef struct { /* {{{ xc_cache_t: only cache info, not in shm */
 
 	struct _xc_lock_t  *lck;
 	struct _xc_shm_t   *shm; /* which shm contains us */
-	struct _xc_mem_t   *mem; /* which mem contains us */
+	xc_allocator_t *allocator;
 
 	xc_hash_t  *hentry; /* hash settings to entry */
 	xc_hash_t  *hphp;   /* hash settings to php */
@@ -123,6 +123,9 @@ static zend_ulong xc_var_maxttl = 0;
 enum { xc_deletes_gc_interval = 120 };
 static zend_ulong xc_php_gc_interval = 0;
 static zend_ulong xc_var_gc_interval = 0;
+
+static char *xc_php_allocator = NULL;
+static char *xc_var_allocator = NULL;
 
 /* total size */
 static zend_ulong xc_php_size  = 0;
@@ -162,7 +165,7 @@ static xc_entry_data_php_t *xc_php_store_unlocked(xc_cache_t *cache, xc_entry_da
 
 	php->hits     = 0;
 	php->refcount = 0;
-	stored_php = xc_processor_store_xc_entry_data_php_t(cache->shm, cache->mem, php TSRMLS_CC);
+	stored_php = xc_processor_store_xc_entry_data_php_t(cache->shm, cache->allocator, php TSRMLS_CC);
 	if (stored_php) {
 		xc_php_add_unlocked(cache->cached, stored_php);
 		return stored_php;
@@ -187,7 +190,7 @@ static xc_entry_data_php_t *xc_php_find_unlocked(xc_cached_t *cached, xc_entry_d
 /* }}} */
 static void xc_php_free_unlocked(xc_cache_t *cache, xc_entry_data_php_t *php) /* {{{ */
 {
-	cache->mem->handlers->free(cache->mem, (xc_entry_data_php_t *)php);
+	cache->allocator->vtable->free(cache->allocator, (xc_entry_data_php_t *)php);
 }
 /* }}} */
 static void xc_php_addref_unlocked(xc_entry_data_php_t *php) /* {{{ */
@@ -309,8 +312,8 @@ static xc_entry_t *xc_entry_store_unlocked(xc_entry_type_t type, xc_cache_t *cac
 	entry->ctime = XG(request_time);
 	entry->atime = XG(request_time);
 	stored_entry = type == XC_TYPE_PHP
-		? (xc_entry_t *) xc_processor_store_xc_entry_php_t(cache->shm, cache->mem, (xc_entry_php_t *) entry TSRMLS_CC)
-		: (xc_entry_t *) xc_processor_store_xc_entry_var_t(cache->shm, cache->mem, (xc_entry_var_t *) entry TSRMLS_CC);
+		? (xc_entry_t *) xc_processor_store_xc_entry_php_t(cache->shm, cache->allocator, (xc_entry_php_t *) entry TSRMLS_CC)
+		: (xc_entry_t *) xc_processor_store_xc_entry_var_t(cache->shm, cache->allocator, (xc_entry_var_t *) entry TSRMLS_CC);
 	if (stored_entry) {
 		xc_entry_add_unlocked(cache->cached, entryslotid, stored_entry);
 		++cache->cached->updates;
@@ -337,7 +340,7 @@ static void xc_entry_free_real_unlocked(xc_entry_type_t type, xc_cache_t *cache,
 	if (type == XC_TYPE_PHP) {
 		xc_php_release_unlocked(cache, ((xc_entry_php_t *) entry)->php);
 	}
-	cache->mem->handlers->free(cache->mem, (xc_entry_t *)entry);
+	cache->allocator->vtable->free(cache->allocator, (xc_entry_t *)entry);
 }
 /* }}} */
 static void xc_entry_free_unlocked(xc_entry_type_t type, xc_cache_t *cache, xc_entry_t *entry TSRMLS_DC) /* {{{ */
@@ -603,12 +606,12 @@ static void xc_fillinfo_unlocked(int cachetype, xc_cache_t *cache, zval *return_
 {
 	zval *blocks, *hits;
 	size_t i;
-	const xc_block_t *b;
+	const xc_allocator_block_t *b;
 #ifndef NDEBUG
 	xc_memsize_t avail = 0;
 #endif
-	const xc_mem_t *mem = cache->mem;
-	const xc_mem_handlers_t *handlers = mem->handlers;
+	const xc_allocator_t *allocator = cache->allocator;
+	const xc_allocator_vtable_t *vtable = allocator->vtable;
 	zend_ulong interval;
 	const xc_cached_t *cached = cache->cached;
 
@@ -656,26 +659,26 @@ static void xc_fillinfo_unlocked(int cachetype, xc_cache_t *cache, zval *return_
 	MAKE_STD_ZVAL(blocks);
 	array_init(blocks);
 
-	add_assoc_long_ex(return_value, ZEND_STRS("size"),  handlers->size(mem));
-	add_assoc_long_ex(return_value, ZEND_STRS("avail"), handlers->avail(mem));
+	add_assoc_long_ex(return_value, ZEND_STRS("size"),  vtable->size(allocator));
+	add_assoc_long_ex(return_value, ZEND_STRS("avail"), vtable->avail(allocator));
 	add_assoc_bool_ex(return_value, ZEND_STRS("can_readonly"), xc_readonly_protection);
 
-	for (b = handlers->freeblock_first(mem); b; b = handlers->freeblock_next(b)) {
+	for (b = vtable->freeblock_first(allocator); b; b = vtable->freeblock_next(b)) {
 		zval *bi;
 
 		MAKE_STD_ZVAL(bi);
 		array_init(bi);
 
-		add_assoc_long_ex(bi, ZEND_STRS("size"),   handlers->block_size(b));
-		add_assoc_long_ex(bi, ZEND_STRS("offset"), handlers->block_offset(mem, b));
+		add_assoc_long_ex(bi, ZEND_STRS("size"),   vtable->block_size(b));
+		add_assoc_long_ex(bi, ZEND_STRS("offset"), vtable->block_offset(allocator, b));
 		add_next_index_zval(blocks, bi);
 #ifndef NDEBUG
-		avail += handlers->block_size(b);
+		avail += vtable->block_size(b);
 #endif
 	}
 	add_assoc_zval_ex(return_value, ZEND_STRS("free_blocks"), blocks);
 #ifndef NDEBUG
-	assert(avail == handlers->avail(mem));
+	assert(avail == vtable->avail(allocator));
 #endif
 }
 /* }}} */
@@ -2310,17 +2313,17 @@ static xc_shm_t *xc_cache_destroy(xc_cache_t *caches, xc_hash_t *hcache) /* {{{ 
 			}
 			/* do NOT touch cached data */
 			shm = cache->shm;
-			cache->shm->handlers->memdestroy(cache->mem);
+			cache->shm->handlers->memdestroy(cache->allocator);
 		}
 	}
 	free(caches);
 	return shm;
 }
 /* }}} */
-static xc_cache_t *xc_cache_init(xc_shm_t *shm, xc_hash_t *hcache, xc_hash_t *hentry, xc_hash_t *hphp, xc_shmsize_t shmsize) /* {{{ */
+static xc_cache_t *xc_cache_init(xc_shm_t *shm, const char *allocator_name, xc_hash_t *hcache, xc_hash_t *hentry, xc_hash_t *hphp, xc_shmsize_t shmsize) /* {{{ */
 {
 	xc_cache_t *caches = NULL;
-	xc_mem_t *mem;
+	xc_allocator_t *allocator;
 	time_t now = time(NULL);
 	size_t i;
 	xc_memsize_t memsize;
@@ -2342,11 +2345,16 @@ static xc_cache_t *xc_cache_init(xc_shm_t *shm, xc_hash_t *hcache, xc_hash_t *he
 
 	for (i = 0; i < hcache->size; i ++) {
 		xc_cache_t *cache = &caches[i];
-		CHECK(mem                     = shm->handlers->meminit(shm, memsize), "Failed init memory allocator");
-		CHECK(cache->cached           = mem->handlers->calloc(mem, 1, sizeof(xc_cached_t)), "cache OOM");
-		CHECK(cache->cached->entries  = mem->handlers->calloc(mem, hentry->size, sizeof(xc_entry_t*)), "entries OOM");
+		CHECK(allocator = shm->handlers->meminit(shm, memsize), "Failed init shm");
+		if (!(allocator->vtable = xc_allocator_find(allocator_name))) {
+			zend_error(E_ERROR, "Allocator %s not found", allocator_name);
+			goto err;
+		}
+		CHECK(allocator->vtable->init(shm, allocator, memsize), "Failed init allocator");
+		CHECK(cache->cached           = allocator->vtable->calloc(allocator, 1, sizeof(xc_cached_t)), "cache OOM");
+		CHECK(cache->cached->entries  = allocator->vtable->calloc(allocator, hentry->size, sizeof(xc_entry_t*)), "entries OOM");
 		if (hphp) {
-			CHECK(cache->cached->phps = mem->handlers->calloc(mem, hphp->size, sizeof(xc_entry_data_php_t*)), "phps OOM");
+			CHECK(cache->cached->phps = allocator->vtable->calloc(allocator, hphp->size, sizeof(xc_entry_data_php_t*)), "phps OOM");
 		}
 		CHECK(cache->lck              = xc_lock_init(NULL), "can't create lock");
 
@@ -2354,7 +2362,7 @@ static xc_cache_t *xc_cache_init(xc_shm_t *shm, xc_hash_t *hcache, xc_hash_t *he
 		cache->hentry  = hentry;
 		cache->hphp    = hphp;
 		cache->shm     = shm;
-		cache->mem     = mem;
+		cache->allocator = allocator;
 		cache->cacheid = i;
 		cache->cached->last_gc_deletes = now;
 		cache->cached->last_gc_expires = now;
@@ -2412,11 +2420,11 @@ static int xc_init() /* {{{ */
 		}
 
 		if (xc_php_size) {
-			CHECK(xc_php_caches = xc_cache_init(shm, &xc_php_hcache, &xc_php_hentry, &xc_php_hentry, xc_php_size), "failed init opcode cache");
+			CHECK(xc_php_caches = xc_cache_init(shm, xc_php_allocator, &xc_php_hcache, &xc_php_hentry, &xc_php_hentry, xc_php_size), "failed init opcode cache");
 		}
 
 		if (xc_var_size) {
-			CHECK(xc_var_caches = xc_cache_init(shm, &xc_var_hcache, &xc_var_hentry, NULL, xc_var_size), "failed init variable cache");
+			CHECK(xc_var_caches = xc_cache_init(shm, xc_var_allocator, &xc_var_hcache, &xc_var_hentry, NULL, xc_var_size), "failed init variable cache");
 		}
 	}
 	return SUCCESS;
@@ -3183,6 +3191,7 @@ PHP_INI_BEGIN()
 	PHP_INI_ENTRY1     ("xcache.size",                   "0", PHP_INI_SYSTEM, xcache_OnUpdateDummy,    NULL)
 	PHP_INI_ENTRY1     ("xcache.count",                  "1", PHP_INI_SYSTEM, xcache_OnUpdateDummy,    NULL)
 	PHP_INI_ENTRY1     ("xcache.slots",                 "8K", PHP_INI_SYSTEM, xcache_OnUpdateDummy,    NULL)
+	PHP_INI_ENTRY1     ("xcache.allocator",        "bestfit", PHP_INI_SYSTEM, xcache_OnUpdateString,   &xc_php_allocator)
 	PHP_INI_ENTRY1     ("xcache.ttl",                    "0", PHP_INI_SYSTEM, xcache_OnUpdateULong,    &xc_php_ttl)
 	PHP_INI_ENTRY1     ("xcache.gc_interval",            "0", PHP_INI_SYSTEM, xcache_OnUpdateULong,    &xc_php_gc_interval)
 	STD_PHP_INI_BOOLEAN("xcache.cacher",                 "1", PHP_INI_ALL,    OnUpdateBool,    cacher, zend_xcache_globals, xcache_globals)
@@ -3193,6 +3202,7 @@ PHP_INI_BEGIN()
 	PHP_INI_ENTRY1     ("xcache.var_slots",             "8K", PHP_INI_SYSTEM, xcache_OnUpdateDummy,    NULL)
 	PHP_INI_ENTRY1     ("xcache.var_maxttl",             "0", PHP_INI_SYSTEM, xcache_OnUpdateULong,    &xc_var_maxttl)
 	PHP_INI_ENTRY1     ("xcache.var_gc_interval",      "120", PHP_INI_SYSTEM, xcache_OnUpdateULong,    &xc_var_gc_interval)
+	PHP_INI_ENTRY1     ("xcache.var_allocator",    "bestfit", PHP_INI_SYSTEM, xcache_OnUpdateString,   &xc_var_allocator)
 	STD_PHP_INI_ENTRY  ("xcache.var_ttl",                "0", PHP_INI_ALL,    OnUpdateLong, var_ttl,   zend_xcache_globals, xcache_globals)
 PHP_INI_END()
 /* }}} */
@@ -3359,6 +3369,14 @@ static PHP_MSHUTDOWN_FUNCTION(xcache_cacher) /* {{{ */
 	if (xc_shm_scheme) {
 		pefree(xc_shm_scheme, 1);
 		xc_shm_scheme = NULL;
+	}
+	if (xc_php_allocator) {
+		pefree(xc_php_allocator, 1);
+		xc_php_allocator = NULL;
+	}
+	if (xc_var_allocator) {
+		pefree(xc_var_allocator, 1);
+		xc_var_allocator = NULL;
 	}
 
 	return SUCCESS;

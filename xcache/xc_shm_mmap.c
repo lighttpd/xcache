@@ -294,15 +294,13 @@ err:
 
 static XC_SHM_MEMINIT(xc_mmap_meminit) /* {{{ */
 {
-	xc_mem_t *mem;
+	void *mem;
 	if (shm->memoffset + size > shm->size) {
 		zend_error(E_ERROR, "XCache: internal error at %s#%d", __FILE__, __LINE__);
 		return NULL;
 	}
-	mem = (xc_mem_t *) PTR_ADD(shm->ptr, shm->memoffset);
+	mem = PTR_ADD(shm->ptr, shm->memoffset);
 	shm->memoffset += size;
-	mem->handlers = shm->handlers->memhandlers;
-	mem->handlers->init(shm, mem, size);
 	return mem;
 }
 /* }}} */
@@ -314,11 +312,9 @@ static XC_SHM_MEMDESTROY(xc_mmap_memdestroy) /* {{{ */
 static xc_shm_handlers_t xc_shm_mmap_handlers = XC_SHM_HANDLERS(mmap);
 void xc_shm_mmap_register() /* {{{ */
 {
-	CHECK(xc_shm_mmap_handlers.memhandlers = xc_mem_scheme_find("mem"), "cannot find mem handlers");
 	if (xc_shm_scheme_register("mmap", &xc_shm_mmap_handlers) == 0) {
 		zend_error(E_ERROR, "XCache: failed to register mmap shm_scheme");
 	}
-err:
 	return;
 }
 /* }}} */
