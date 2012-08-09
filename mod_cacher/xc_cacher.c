@@ -3312,9 +3312,6 @@ static PHP_MINIT_FUNCTION(xcache_cacher) /* {{{ */
 	xc_config_hash(&xc_var_hentry,     "xcache.var_slots",  "8K");
 
 	if (strcmp(sapi_module.name, "cli") == 0) {
-		if ((env = getenv("XCACHE_TEST")) != NULL) {
-			xc_test = atoi(env);
-		}
 		if (!xc_test) {
 			/* disable cache for cli except for testing */
 			xc_php_size = xc_var_size = 0;
