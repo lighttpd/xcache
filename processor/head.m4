@@ -93,7 +93,8 @@ struct _xc_processor_t {
 	const xc_entry_php_t *entry_php_dst;
 	const xc_entry_data_php_t *php_src;
 	const xc_entry_data_php_t *php_dst;
-	const xc_cache_t          *cache;
+	xc_shm_t                  *shm;
+	xc_mem_t                  *mem;
 	const zend_class_entry *cache_ce;
 	zend_uint cache_class_index;
 
@@ -393,14 +394,15 @@ static int xc_check_names(const char *file, int line, const char *functionName, 
 /* }}} */
 dnl ================ export API
 define(`DEFINE_STORE_API', `
-/* export: $1 *xc_processor_store_$1(xc_cache_t *cache, $1 *src TSRMLS_DC); :export {{{ */
-$1 *xc_processor_store_$1(xc_cache_t *cache, $1 *src TSRMLS_DC) {
+/* export: $1 *xc_processor_store_$1(xc_shm_t *shm, xc_mem_t *mem, $1 *src TSRMLS_DC); :export {{{ */
+$1 *xc_processor_store_$1(xc_shm_t *shm, xc_mem_t *mem, $1 *src TSRMLS_DC) {
 	$1 *dst;
 	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
 	processor.reference = 1;
-	processor.cache = cache;
+	processor.shm = shm;
+	processor.mem = mem;
 
 	IFAUTOCHECK(`xc_stack_init(&processor.allocsizes);')
 
@@ -438,7 +440,7 @@ $1 *xc_processor_store_$1(xc_cache_t *cache, $1 *src TSRMLS_DC) {
 		}
 
 		/* mem :) */
-		processor.p = (char *) processor.cache->mem->handlers->malloc(processor.cache->mem, processor.size);
+		processor.p = (char *) processor.mem->handlers->malloc(processor.mem, processor.size);
 		if (processor.p == NULL) {
 			dst = NULL;
 			goto err_alloc;

@@ -125,11 +125,11 @@ dnl }}}
 dnl {{{ FIXPOINTER
 define(`FIXPOINTER', `FIXPOINTER_EX(`$1', `dst->$2')')
 define(`FIXPOINTER_EX', `IFSTORE(`
-	$2 = ($1 *) processor->cache->shm->handlers->to_readonly(processor->cache->shm, (char *)$2);
+	$2 = ($1 *) processor->shm->handlers->to_readonly(processor->shm, (char *)$2);
 ')')
 define(`UNFIXPOINTER', `UNFIXPOINTER_EX(`$1', `dst->$2')')
 define(`UNFIXPOINTER_EX', `IFSTORE(`
-	$2 = ($1 *) processor->cache->shm->handlers->to_readwrite(processor->cache->shm, (char *)$2);
+	$2 = ($1 *) processor->shm->handlers->to_readwrite(processor->shm, (char *)$2);
 ')')
 dnl }}}
 dnl {{{ COPY
