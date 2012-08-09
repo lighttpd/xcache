@@ -69,12 +69,12 @@ static int xc_init_constant(int module_number TSRMLS_DC) /* {{{ */
 		{ NULL, NULL, NULL }
 	};
 	int undefdone = 0;
+	xc_nameinfo_t *p;
 
 	for (p = nameinfos; p->getsize; p ++) {
 		zend_uchar i, count;
 		char const_name[96];
 		int const_name_len;
-		xc_nameinfo_t *p;
 
 		count = p->getsize();
 		for (i = 0; i < count; i ++) {
