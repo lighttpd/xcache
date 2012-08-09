@@ -31,6 +31,7 @@
 #include "php.h"
 #include "ext/standard/info.h"
 #include "ext/standard/php_string.h"
+#include "SAPI.h"
 /* }}} */
 
 /* {{{ globals */
@@ -690,6 +691,7 @@ static PHP_MINIT_FUNCTION(xcache) /* {{{ */
 	}
 
 	if (strcmp(sapi_module.name, "cli") == 0) {
+		char *env;
 		if ((env = getenv("XCACHE_TEST")) != NULL) {
 			xc_test = atoi(env);
 		}
