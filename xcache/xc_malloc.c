@@ -24,9 +24,7 @@ struct _xc_malloc_shm_t {
 	xc_shm_handlers_t *handlers;
 	xc_shmsize_t       size;
 	xc_shmsize_t       memoffset;
-#ifdef HAVE_XCACHE_TEST
 	HashTable blocks;
-#endif
 };
 /* }}} */
 
@@ -34,19 +32,15 @@ struct _xc_malloc_shm_t {
 
 static void *xc_add_to_blocks(xc_mem_t *mem, void *p, size_t size) /* {{{ */
 {
-#ifdef HAVE_XCACHE_TEST
 	if (p) {
 		zend_hash_add(&mem->shm->blocks, (void *) &p, sizeof(p), (void *) &size, sizeof(size), NULL);
 	}
-#endif
 	return p;
 }
 /* }}} */
 static void xc_del_from_blocks(xc_mem_t *mem, void *p) /* {{{ */
 {
-#ifdef HAVE_XCACHE_TEST
 	zend_hash_del(&mem->shm->blocks, (void *) &p, sizeof(p));
-#endif
 }
 /* }}} */
 
@@ -147,7 +141,6 @@ static XC_SHM_CAN_READONLY(xc_malloc_can_readonly) /* {{{ */
 /* }}} */
 static XC_SHM_IS_READWRITE(xc_malloc_is_readwrite) /* {{{ */
 {
-#ifdef HAVE_XCACHE_TEST
 	HashPosition pos;
 	size_t *psize;
 	char **ptr;
@@ -160,7 +153,6 @@ static XC_SHM_IS_READWRITE(xc_malloc_is_readwrite) /* {{{ */
 		}
 		zend_hash_move_forward_ex(&shm->blocks, &pos);
 	}
-#endif
 
 	return 0;
 }
@@ -183,9 +175,7 @@ static XC_SHM_TO_READONLY(xc_malloc_to_readonly) /* {{{ */
 
 static XC_SHM_DESTROY(xc_malloc_destroy) /* {{{ */
 {
-#ifdef HAVE_XCACHE_TEST
 	zend_hash_destroy(&shm->blocks);
-#endif
 	free(shm);
 	return;
 }
@@ -196,9 +186,7 @@ static XC_SHM_INIT(xc_malloc_init) /* {{{ */
 	CHECK(shm = calloc(1, sizeof(xc_shm_t)), "shm OOM");
 	shm->size = size;
 
-#ifdef HAVE_XCACHE_TEST
 	zend_hash_init(&shm->blocks, 64, NULL, NULL, 1);
-#endif
 	return shm;
 err:
 	return NULL;

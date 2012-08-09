@@ -689,6 +689,12 @@ static PHP_MINIT_FUNCTION(xcache) /* {{{ */
 		xcache_init_crash_handler();
 	}
 
+	if (strcmp(sapi_module.name, "cli") == 0) {
+		if ((env = getenv("XCACHE_TEST")) != NULL) {
+			xc_test = atoi(env);
+		}
+	}
+
 	xc_init_constant(module_number TSRMLS_CC);
 	xc_shm_init_modules();
 
