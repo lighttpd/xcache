@@ -1,14 +1,13 @@
 3.0.0 2012-??-??
 ========
  * lots of improvements
+ * bug fixes
  * updates api, adds a few ini
- * uses extension to load XCache. load via zend_extension is unsupported
+ * uses extension= to load XCache. loading via zend_extension= is unsupported
  * updates XCache admin page
  * professional helpers
    * adds an diagnosis module to give advise @ htdocs
-   * adds warning for misconfiguration @ startup
    * auto disable caching on crash @ runtime
- * cache can be enabled/disabled manually
 
 2.0.1 2012-07-14
 ========
