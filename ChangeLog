@@ -18,10 +18,11 @@ ChangeLog
  * closes #174: updates api to support "clear all cache"
  * fixes #39: ini_set never work for xcache.coverager setting. use API instead
  * code refactor
-   * uses extension to load XCache. load via zend_extension is unsupported
+   * uses extension= to load XCache. loading via zend_extension= is unsupported
    * split XCache features into multiple sub modules
  * updates XCache admin page
  * adds an diagnosis module to give professional advise, accessable via htdocs pages
+ * cache can be enabled/disabled manually
 
 2.0.1 2012-07-14
 ChangeLog
