@@ -225,7 +225,7 @@ run() {
 
 	case "$1" in
 	phpize) do_phpize; exit;;
-	make) do_make "$@"; exit;;
+	make) shift; do_make "$@"; exit;;
 	*) do_make;;
 	esac
 	# }}}1
