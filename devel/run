@@ -76,41 +76,44 @@ updatedeps() { # {{{1
 	fi
 	find . -iname \*.c | sort | while read -r sourceFile; do
 		sourceFile=${sourceFile#./}
-		case "$sourceFile" in
-		includes.c)
-			echo -n "\$(XCACHE_INCLUDES_I) "
-			;;
-		esac
-		echo -n "\$(builddir)/${sourceFile%.c}.lo:"
-		for dependency in $(gcc -M $sourceFile -I$HOME/test/php5-debug-zts/include/php/{,main,Zend,TSRM} -I. -I${builddir} -MG | sed 's#.*:##g' | sed 's#\\##g'); do
-			dependency=$(readlink -f "$dependency")
-			case "$dependency" in
-			$pwd/*)
-				dependency=${dependency#$pwd/}
-				;;
-			$builddir/*)
-				dependency="\$(builddir)/"${dependency#$builddir/}
+		{
+			case "$sourceFile" in
+			includes.c)
+				echo '$(XCACHE_INCLUDES_I)'
 				;;
 			esac
+			echo '$(builddir)/'${sourceFile%.c}.lo:
+			hiecho "Checking $sourceFile ..." >&2
+			for dependency in $(gcc -MM $sourceFile -I$HOME/test/php5-debug-zts/include/php/{,main,Zend,TSRM} -I. -I${builddir} -MG | sed 's#.*:##g' | sed 's#\\##g'); do
+				dependency=$(readlink -f "$dependency")
+				case "$dependency" in
+				$pwd/*)
+					dependency=${dependency#$pwd/}
+					;;
+				$builddir/*)
+					dependency="\$(builddir)/"${dependency#$builddir/}
+					;;
+				esac
 
-			case "$dependency" in
-			/*) ;;
-			$sourceFile) ;;
-			\$\(builddir\)/xc_processor.h)
-				echo -n " \$(XCACHE_PROC_H)"
-				;;
-			\$\(builddir\)/xc_processor.c.h)
-				echo -n " \$(XCACHE_PROC_C)"
-				;;
-			*)
-				if [[ -r $dependency ]]; then
-					echo -n " \$(srcdir)/$dependency"
-				else
-					hiecho "$dependency not found" >&2
-				fi
-			esac
-		done
-		echo
+				case "$dependency" in
+				/*) ;;
+				$sourceFile) ;;
+
+				\$\(builddir\)/xc_processor.h)
+					echo '$(XCACHE_PROC_H)'
+					;;
+				\$\(builddir\)/xc_processor.c.h)
+					echo '$(XCACHE_PROC_C)'
+					;;
+				*)
+					if [[ -r $dependency ]]; then
+						echo '$(srcdir)/'$dependency
+					else
+						hiecho "$dependency not found" >&2
+					fi
+				esac
+			done | sort | uniq
+		} | xargs
 	done > Makefile.frag.deps
 }
 # }}}1
