@@ -140,7 +140,7 @@ TR;
 }
 ?>
 	</table>
-<?php if (!$isphp && $listName == 'Deleted') { ?>
+<?php if (!$isphp && $listName != 'Deleted') { ?>
 	<input type="submit" value="<?php echo _T("Remove Selected"); ?>">
 <?php } ?>
 </form>
