@@ -6,9 +6,14 @@ if (!isset($_GET['name'])) {
 	die("missing name");
 }
 
-$name = $_GET['name'];
 // trigger auth
 $vcnt = xcache_count(XC_TYPE_VAR);
+xcache_admin_namespace();
+
+$name = $_GET['name'];
+if (!empty($config['enable_eval'])) {
+	eval('$name = ' . $name . ';');
+}
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 	if (!empty($config['enable_eval'])) {

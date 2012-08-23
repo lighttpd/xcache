@@ -20,6 +20,12 @@ ZEND_BEGIN_MODULE_GLOBALS(xcache)
 	zend_uint var_holds_size;
 	time_t request_time;
 	long   var_ttl;
+#ifdef IS_UNCODE
+	zval uvar_namespace_hard;
+	zval uvar_namespace_soft;
+#endif
+	zval var_namespace_hard;
+	zval var_namespace_soft;
 
 	zend_llist gc_op_arrays;
 

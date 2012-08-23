@@ -257,6 +257,7 @@ if (!extension_loaded('XCache')) {
 }
 
 xcache_count(XC_TYPE_PHP); // trigger auth
+xcache_admin_namespace();
 
 $doTypes = array(
 		'' => _T('Summary'),
