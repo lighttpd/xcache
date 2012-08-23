@@ -1,6 +1,6 @@
 <?php include "../common/header.tpl.php"; ?>
 <?php
-$h_name = htmlspecialchars($name);
+$h_name = htmlspecialchars(var_export($name, true));
 $h_value = htmlspecialchars($value);
 ?>
 <form method="post" action="">

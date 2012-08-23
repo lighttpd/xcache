@@ -5,6 +5,7 @@
  * updates api, adds a few ini
  * uses extension= to load XCache. loading via zend_extension= is unsupported
  * updates XCache admin page
+ * namespace support
  * professional helpers
    * adds an diagnosis module to give advise @ htdocs
    * auto disable caching on crash @ runtime

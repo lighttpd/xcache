@@ -144,6 +144,10 @@ static zend_compile_file_t *old_compile_file = NULL;
 
 static zend_bool xc_readonly_protection = 0;
 
+static zend_ulong xc_var_namespace_mode = 0;
+static char *xc_var_namespace = NULL;
+
+
 zend_bool xc_have_op_array_ctor = 0;
 /* }}} */
 
@@ -256,7 +260,7 @@ static inline int xc_entry_equal_unlocked(xc_entry_type_t type, const xc_entry_t
 
 			if (entry1->name_type == IS_UNICODE) {
 				return entry1->name.ustr.len == entry2->name.ustr.len
-				    && memcmp(entry1->name.ustr.val, entry2->name.ustr.val, (entry1->name.ustr.len + 1) * sizeof(UChar)) == 0;
+				    && memcmp(entry1->name.ustr.val, entry2->name.ustr.val, (entry1->name.ustr.len + 1) * sizeof(entry1->name.ustr.val[0])) == 0;
 			}
 #endif
 			return entry1->name.str.len == entry2->name.str.len
@@ -267,33 +271,6 @@ static inline int xc_entry_equal_unlocked(xc_entry_type_t type, const xc_entry_t
 			assert(0);
 	}
 	return 0;
-}
-/* }}} */
-static inline int xc_entry_has_prefix_unlocked(xc_entry_type_t type, xc_entry_t *entry, zval *prefix) /* {{{ */
-{
-	/* this function isn't required but can be in unlocked */
-
-#ifdef IS_UNICODE
-	if (entry->name_type != prefix->type) {
-		return 0;
-	}
-
-	if (entry->name_type == IS_UNICODE) {
-		if (entry->name.ustr.len < Z_USTRLEN_P(prefix)) {
-			return 0;
-		}
-		return memcmp(entry->name.ustr.val, Z_USTRVAL_P(prefix), Z_USTRLEN_P(prefix) * sizeof(UChar)) == 0;
-	}
-#endif
-	if (prefix->type != IS_STRING) {
-		return 0;
-	}
-
-	if (entry->name.str.len < Z_STRLEN_P(prefix)) {
-		return 0;
-	}
-
-	return memcmp(entry->name.str.val, Z_STRVAL_P(prefix), Z_STRLEN_P(prefix)) == 0;
 }
 /* }}} */
 static void xc_entry_add_unlocked(xc_cached_t *cached, xc_hash_value_t entryslotid, xc_entry_t *entry) /* {{{ */
@@ -2306,6 +2283,308 @@ static void xc_gc_op_array(void *pDest) /* {{{ */
 }
 /* }}} */
 
+/* variable namespace */
+#ifdef IS_UNICODE
+void xc_var_namespace_init_from_unicodel(const UChar *string, int len TSRMLS_DC) /* {{{ */
+{
+	if (!len) {
+#ifdef IS_UNICODE
+		ZVAL_EMPTY_UNICODE(&XG(uvar_namespace_hard));
+#endif
+		ZVAL_EMPTY_STRING(&XG(var_namespace_hard));
+	}
+	else {
+		ZVAL_UNICODE_L(&XG(uvar_namespace_hard), string, len, 1);
+		/* TODO: copy to var */
+	}
+}
+/* }}} */
+#endif
+void xc_var_namespace_init_from_stringl(const char *string, int len TSRMLS_DC) /* {{{ */
+{
+	if (!len) {
+#ifdef IS_UNICODE
+		ZVAL_EMPTY_UNICODE(&XG(uvar_namespace_hard));
+#endif
+		ZVAL_EMPTY_STRING(&XG(var_namespace_hard));
+	}
+	else {
+		ZVAL_STRINGL(&XG(var_namespace_hard), string, len, 1);
+#ifdef IS_UNICODE
+		/* TODO: copy to uvar */
+#endif
+	}
+}
+/* }}} */
+void xc_var_namespace_init_from_long(long value TSRMLS_DC) /* {{{ */
+{
+	ZVAL_LONG(&XG(var_namespace_hard), value);
+#ifdef IS_UNICODE
+	/* TODO: copy to uvar_namespace */
+#endif
+}
+/* }}} */
+#ifdef IS_UNICODE
+void xc_var_namespace_set_unicodel(const UChar *unicode, int len TSRMLS_DC) /* {{{ */
+{
+	zval_dtor(&XG(uvar_namespace_soft));
+	zval_dtor(&XG(var_namespace_soft));
+	if (len) {
+		if (!Z_USTRLEN_P(&XG(uvar_namespace_soft))) {
+			ZVAL_UNICODEL(&XG(uvar_namespace_soft), unicode, len, 1);
+		}
+		else {
+			int buffer_len = Z_USTRLEN_P(&XG(var_namespace_hard)) + 1 + len;
+			char *buffer = emalloc((buffer_len + 1) * sizeof(unicode[0]));
+			char *p = buffer;
+			memcpy(p, Z_USTRVAL_P(&XG(var_namespace_hard)), (Z_USTRLEN_P(&XG(var_namespace_hard)) + 1));
+			p += (Z_USTRLEN_P(&XG(var_namespace_hard)) + 1) * sizeof(unicode[0]);
+			memcpy(p, unicode, (len + 1) * sizeof(unicode[0]));
+			ZVAL_UNICODEL(&XG(uvar_namespace_soft), buffer, buffer_len, 0);
+		}
+		/* TODO: copy to var */
+	}
+	else {
+#ifdef IS_UNICODE
+		XG(uvar_namespace_soft) = XG(uvar_namespace_hard);
+		zval_copy_ctor(&XG(uvar_namespace_soft));
+#endif
+		XG(var_namespace_soft) = XG(var_namespace_hard);
+		zval_copy_ctor(&XG(var_namespace_soft));
+	}
+}
+/* }}} */
+#endif
+void xc_var_namespace_set_stringl(const char *string, int len TSRMLS_DC) /* {{{ */
+{
+#ifdef IS_UNICODE
+	zval_dtor(&XG(uvar_namespace_soft));
+#endif
+	zval_dtor(&XG(var_namespace_soft));
+	if (len) {
+		if (!Z_STRLEN_P(&XG(var_namespace_soft))) {
+			ZVAL_STRINGL(&XG(var_namespace_soft), string, len, 1);
+		}
+		else {
+			int buffer_len = Z_STRLEN_P(&XG(var_namespace_hard)) + 1 + len;
+			char *buffer = emalloc(buffer_len + 1);
+			char *p = buffer;
+			memcpy(p, Z_STRVAL_P(&XG(var_namespace_hard)), Z_STRLEN_P(&XG(var_namespace_hard)) + 1);
+			p += Z_STRLEN_P(&XG(var_namespace_hard)) + 1;
+			memcpy(p, string, len + 1);
+			ZVAL_STRINGL(&XG(var_namespace_soft), buffer, buffer_len, 0);
+		}
+#ifdef IS_UNICODE
+		/* TODO: copy to uvar */
+#endif
+	}
+	else {
+#ifdef IS_UNICODE
+		XG(uvar_namespace_soft) = XG(uvar_namespace_hard);
+		zval_copy_ctor(&XG(uvar_namespace_soft));
+#endif
+		XG(var_namespace_soft) = XG(var_namespace_hard);
+		zval_copy_ctor(&XG(var_namespace_soft));
+	}
+}
+/* }}} */
+static void xc_var_namespace_break(TSRMLS_D) /* {{{ */
+{
+#ifdef IS_UNICODE
+	zval_dtor(&XG(uvar_namespace_soft));
+#endif
+	zval_dtor(&XG(var_namespace_soft));
+#ifdef IS_UNICODE
+	ZVAL_EMPTY_UNICODE(&XG(uvar_namespace_soft));
+#endif
+	ZVAL_EMPTY_STRING(&XG(var_namespace_soft));
+}
+/* }}} */
+static void xc_var_namespace_init(TSRMLS_D) /* {{{ */
+{
+	uid_t id = (uid_t) -1;
+
+	switch (xc_var_namespace_mode) {
+		case 1:
+			{
+				zval **server;
+				HashTable *ht;
+				zval **val;
+
+#ifdef ZEND_ENGINE_2_1
+				zend_is_auto_global("_SERVER", sizeof("_SERVER") - 1 TSRMLS_CC);
+#endif
+
+				if (zend_hash_find(&EG(symbol_table), "_SERVER", sizeof("_SERVER"), (void**)&server) == FAILURE
+				 || Z_TYPE_PP(server) != IS_ARRAY
+				 || !(ht = Z_ARRVAL_P(*server))
+				 || zend_hash_find(ht, xc_var_namespace, strlen(xc_var_namespace) + 1, (void**)&val) == FAILURE) {
+					xc_var_namespace_init_from_stringl(NULL, 0 TSRMLS_CC);
+				}
+				else {
+#ifdef IS_UNICODE
+					if (Z_TYPE_PP(val) == IS_UNICODE) {
+						xc_var_namespace_init_from_unicodel(Z_USTRVAL_PP(val), Z_USTRLEN_PP(val) TSRMLS_CC);
+					}
+					else
+#endif
+					{
+						xc_var_namespace_init_from_stringl(Z_STRVAL_PP(val), Z_STRLEN_PP(val) TSRMLS_CC);
+					}
+				}
+			}
+			break;
+
+		case 2:
+			if (strncmp(xc_var_namespace, "uid", 3) == 0) {
+				id = getuid();
+			}
+			else if (strncmp(xc_var_namespace, "gid", 3) == 0) {
+				id = getgid();
+			}
+
+			if (id == (uid_t) -1){
+				xc_var_namespace_init_from_stringl(NULL, 0 TSRMLS_CC);
+			}
+			else {
+				xc_var_namespace_init_from_long((long) id TSRMLS_CC);
+			}
+			break;
+
+		case 0:
+		default:
+			xc_var_namespace_init_from_stringl(xc_var_namespace, strlen(xc_var_namespace) TSRMLS_CC);
+			break;
+	}
+
+#ifdef IS_UNICODE
+	INIT_ZVAL(XG(uvar_namespace_soft));
+#endif
+	INIT_ZVAL(XG(var_namespace_soft));
+	xc_var_namespace_set_stringl("", 0 TSRMLS_CC);
+}
+/* }}} */
+static void xc_var_namespace_destroy(TSRMLS_D) /* {{{ */
+{
+#ifdef IS_UNICODE
+	zval_dtor(&XG(uvar_namespace_hard));
+	zval_dtor(&XG(uvar_namespace_soft));
+#endif
+	zval_dtor(&XG(var_namespace_hard));
+	zval_dtor(&XG(var_namespace_soft));
+}
+/* }}} */
+static int xc_var_buffer_prepare(zval *name TSRMLS_DC) /* {{{ prepare name, calculate buffer size */
+{
+	int namespace_len;
+	switch (name->type) {
+#ifdef IS_UNICODE
+		case IS_UNICODE:
+do_unicode:
+			namespace_len = Z_USTRLEN_P(&XG(uvar_namespace_soft));
+			return (namespace_len ? namespace_len + 1 : 0) + Z_USTRLEN_P(name);
+#endif
+
+		case IS_STRING:
+do_string:
+			namespace_len = Z_STRLEN_P(&XG(var_namespace_soft));
+			return (namespace_len ? namespace_len + 1 : 0) + Z_STRLEN_P(name);
+
+		default:
+#ifdef IS_UNICODE
+			convert_to_unicode(name);
+			goto do_unicode;
+#else
+			convert_to_string(name);
+			goto do_string;
+#endif
+	}
+}
+/* }}} */
+static int xc_var_buffer_alloca_size(zval *name TSRMLS_DC) /* {{{ prepare name, calculate buffer size */
+{
+	int namespace_len;
+	switch (name->type) {
+#ifdef IS_UNICODE
+		case IS_UNICODE:
+			namespace_len = Z_USTRLEN_P(&XG(uvar_namespace_soft));
+			return !namespace_len ? 0 : (namespace_len + 1 + Z_USTRLEN_P(name) + 1) * sizeof(Z_USTRVAL_P(&XG(uvar_namespace_soft))[0]);
+#endif
+
+		case IS_STRING:
+			namespace_len = Z_STRLEN_P(&XG(var_namespace_soft));
+			return !namespace_len ? 0 : (namespace_len + 1 + Z_STRLEN_P(name) + 1);
+	}
+	assert(0);
+	return 0;
+}
+/* }}} */
+static void xc_var_buffer_init(char *buffer, zval *name TSRMLS_DC) /* {{{ prepare name, calculate buffer size */
+{
+#ifdef IS_UNICODE
+	if (Z_TYPE(name) == IS_UNICODE) {
+		memcpy(buffer, Z_USTRVAL_P(&XG(uvar_namespace_soft)), (Z_USTRLEN_P(&XG(uvar_namespace_soft)) + 1) * sizeof(Z_USTRVAL_P(name)[0]));
+		buffer += (Z_USTRLEN_P(&XG(uvar_namespace_soft)) + 1) * sizeof(Z_USTRVAL_P(name)[0]);
+		memcpy(buffer, Z_USTRVAL_P(name), (Z_USTRLEN_P(name) + 1) * sizeof(Z_USTRVAL_P(name)[0]));
+	}
+#endif
+	memcpy(buffer, Z_STRVAL_P(&XG(var_namespace_soft)), (Z_STRLEN_P(&XG(var_namespace_soft)) + 1));
+	buffer += (Z_STRLEN_P(&XG(var_namespace_soft)) + 1);
+	memcpy(buffer, Z_STRVAL_P(name), (Z_STRLEN_P(name) + 1));
+}
+/* }}} */
+typedef struct xc_namebuffer_t_ { /* {{{ */
+	ALLOCA_FLAG(useheap);
+	void *buffer;
+	int alloca_size;
+	int len;
+} xc_namebuffer_t;
+/* }}} */
+
+#define VAR_BUFFER_FLAGS(name) \
+	xc_namebuffer_t name##_buffer;
+
+#define VAR_BUFFER_INIT(name) \
+	name##_buffer.len = xc_var_buffer_prepare(name TSRMLS_CC); \
+	name##_buffer.alloca_size = xc_var_buffer_alloca_size(name TSRMLS_CC); \
+	name##_buffer.buffer = name##_buffer.alloca_size \
+		? do_alloca(name##_buffer.alloca_size, name##_buffer.useheap) \
+		: UNISW(Z_STRVAL_P(name), Z_TYPE(name) == IS_UNICODE ? Z_USTRVAL_P(name) : Z_STRVAL_P(name)); \
+	if (name##_buffer.alloca_size) xc_var_buffer_init(name##_buffer.buffer, name TSRMLS_CC);
+
+#define VAR_BUFFER_FREE(name) \
+	if (name##_buffer.alloca_size) { \
+		free_alloca(name##_buffer.buffer, name##_buffer.useheap); \
+	}
+
+static inline int xc_var_has_prefix(xc_entry_t *entry, zval *prefix TSRMLS_DC) /* {{{ */
+{
+	zend_bool result = 0;
+	VAR_BUFFER_FLAGS(prefix);
+
+	if (UNISW(IS_STRING, entry->name_type) != prefix->type) {
+		return 0;
+	}
+	VAR_BUFFER_INIT(prefix);
+
+#ifdef IS_UNICODE
+	if (Z_TYPE(prefix) == IS_UNICODE) {
+		result = entry->name.ustr.len >= prefix_buffer.len
+		 && memcmp(entry->name.ustr.val, prefix_buffer.buffer, prefix_buffer.len * sizeof(Z_USTRVAL_P(prefix)[0])) == 0;
+		goto finish;
+	}
+#endif
+
+	result = entry->name.str.len >= prefix_buffer.len
+	 && memcmp(entry->name.str.val, prefix_buffer.buffer, prefix_buffer.len) == 0;
+	goto finish;
+
+finish:
+	VAR_BUFFER_FREE(prefix);
+	return result;
+}
+/* }}} */
+
 /* module helper function */
 static int xc_init_constant(int module_number TSRMLS_DC) /* {{{ */
 {
@@ -2501,7 +2780,7 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 			xc_stack_init(&XG(var_holds[i]));
 		}
 	}
-
+	xc_var_namespace_init(TSRMLS_C);
 #ifdef ZEND_ENGINE_2
 	zend_llist_init(&XG(gc_op_arrays), sizeof(xc_gc_op_array_t), xc_gc_op_array, 0);
 #endif
@@ -2519,6 +2798,7 @@ static void xc_request_shutdown(TSRMLS_D) /* {{{ */
 	xc_gc_expires_php(TSRMLS_C);
 	xc_gc_expires_var(TSRMLS_C);
 	xc_gc_deletes(TSRMLS_C);
+	xc_var_namespace_destroy(TSRMLS_C);
 #ifdef ZEND_ENGINE_2
 	zend_llist_destroy(&XG(gc_op_arrays));
 #endif
@@ -2565,7 +2845,7 @@ static int xcache_admin_auth_check(TSRMLS_D) /* {{{ */
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "_SERVER is corrupted");
 		zend_bailout();
 	}
-	ht = HASH_OF((*server));
+	ht = Z_ARRVAL_P((*server));
 
 	if (zend_hash_find(ht, "PHP_AUTH_USER", sizeof("PHP_AUTH_USER"), (void **) &user) == FAILURE) {
 	 	user = NULL;
@@ -2798,32 +3078,28 @@ PHP_FUNCTION(xcache_enable_cache)
 	xcache_admin_operate(XC_OP_ENABLE, INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 /* }}} */
+/* {{{ proto mixed xcache_admin_namespace()
+   Break out of namespace limitation */
+PHP_FUNCTION(xcache_admin_namespace)
+{
+	xcache_admin_auth_check(TSRMLS_C);
+	xc_var_namespace_break(TSRMLS_C);
+}
+/* }}} */
 
 #define VAR_CACHE_NOT_INITIALIZED() do { \
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "XCache var cache was not initialized properly. Check php log for actual reason"); \
 } while (0)
 
-static int xc_entry_var_init_key(xc_entry_var_t *entry_var, xc_entry_hash_t *entry_hash, zval *name TSRMLS_DC) /* {{{ */
+static int xc_entry_var_init_key(xc_entry_var_t *entry_var, xc_entry_hash_t *entry_hash, xc_namebuffer_t *name_buffer TSRMLS_DC) /* {{{ */
 {
 	xc_hash_value_t hv;
-
-	switch (name->type) {
-#ifdef IS_UNICODE
-		case IS_UNICODE:
-		case IS_STRING:
-#endif
-		default:
-#ifdef IS_UNICODE
-			convert_to_unicode(name);
-#else
-			convert_to_string(name);
-#endif
-	}
 
 #ifdef IS_UNICODE
 	entry_var->name_type = name->type;
 #endif
-	entry_var->entry.name = name->value;
+	entry_var->entry.name.str.val = name_buffer->buffer;
+	entry_var->entry.name.str.len = name_buffer->len;
 
 	hv = xc_entry_hash_var((xc_entry_t *) entry_var TSRMLS_CC);
 
@@ -2831,6 +3107,31 @@ static int xc_entry_var_init_key(xc_entry_var_t *entry_var, xc_entry_hash_t *ent
 	hv >>= xc_var_hcache.bits;
 	entry_hash->entryslotid = (hv & xc_var_hentry.mask);
 	return SUCCESS;
+}
+/* }}} */
+/* {{{ proto mixed xcache_set_namespace(string namespace)
+   Switch to user defined namespace */
+PHP_FUNCTION(xcache_set_namespace)
+{
+	zval *namespace;
+
+	if (!xc_var_caches) {
+		VAR_CACHE_NOT_INITIALIZED();
+		RETURN_NULL();
+	}
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &namespace) == FAILURE) {
+		return;
+	}
+
+	if (Z_TYPE_P(namespace) == IS_STRING) {
+		xc_var_namespace_set_stringl(Z_STRVAL_P(namespace), Z_STRLEN_P(namespace) TSRMLS_CC);
+	}
+#ifdef IS_UNICODE
+	else if (Z_TYPE_P(namespace) == IS_UNICODE) {
+		xc_var_namespace_set_unicodel(Z_USTRVAL_P(namespace), Z_USTRLEN_P(namespace) TSRMLS_CC);
+	}
+#endif
 }
 /* }}} */
 /* {{{ proto mixed xcache_get(string name)
@@ -2841,6 +3142,7 @@ PHP_FUNCTION(xcache_get)
 	xc_cache_t *cache;
 	xc_entry_var_t entry_var, *stored_entry_var;
 	zval *name;
+	VAR_BUFFER_FLAGS(name);
 
 	if (!xc_var_caches) {
 		VAR_CACHE_NOT_INITIALIZED();
@@ -2850,10 +3152,12 @@ PHP_FUNCTION(xcache_get)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &name) == FAILURE) {
 		return;
 	}
-	xc_entry_var_init_key(&entry_var, &entry_hash, name TSRMLS_CC);
+	VAR_BUFFER_INIT(name);
+	xc_entry_var_init_key(&entry_var, &entry_hash, &name_buffer TSRMLS_CC);
 	cache = &xc_var_caches[entry_hash.cacheid];
 
 	if (cache->cached->disabled) {
+		VAR_BUFFER_FREE(name);
 		RETURN_NULL();
 	}
 
@@ -2868,6 +3172,7 @@ PHP_FUNCTION(xcache_get)
 			RETVAL_NULL();
 		}
 	} LEAVE_LOCK(cache);
+	VAR_BUFFER_FREE(name);
 }
 /* }}} */
 /* {{{ proto bool  xcache_set(string name, mixed value [, int ttl])
@@ -2879,6 +3184,7 @@ PHP_FUNCTION(xcache_set)
 	xc_entry_var_t entry_var, *stored_entry_var;
 	zval *name;
 	zval *value;
+	VAR_BUFFER_FLAGS(name);
 
 	if (!xc_var_caches) {
 		VAR_CACHE_NOT_INITIALIZED();
@@ -2900,10 +3206,12 @@ PHP_FUNCTION(xcache_set)
 		entry_var.entry.ttl = xc_var_maxttl;
 	}
 
-	xc_entry_var_init_key(&entry_var, &entry_hash, name TSRMLS_CC);
+	VAR_BUFFER_INIT(name);
+	xc_entry_var_init_key(&entry_var, &entry_hash, &name_buffer TSRMLS_CC);
 	cache = &xc_var_caches[entry_hash.cacheid];
 
 	if (cache->cached->disabled) {
+		VAR_BUFFER_FREE(name);
 		RETURN_NULL();
 	}
 
@@ -2915,6 +3223,7 @@ PHP_FUNCTION(xcache_set)
 		entry_var.value = value;
 		RETVAL_BOOL(xc_entry_var_store_unlocked(cache, entry_hash.entryslotid, &entry_var TSRMLS_CC) != NULL ? 1 : 0);
 	} LEAVE_LOCK(cache);
+	VAR_BUFFER_FREE(name);
 }
 /* }}} */
 /* {{{ proto bool  xcache_isset(string name)
@@ -2925,6 +3234,7 @@ PHP_FUNCTION(xcache_isset)
 	xc_cache_t *cache;
 	xc_entry_var_t entry_var, *stored_entry_var;
 	zval *name;
+	VAR_BUFFER_FLAGS(name);
 
 	if (!xc_var_caches) {
 		VAR_CACHE_NOT_INITIALIZED();
@@ -2934,10 +3244,12 @@ PHP_FUNCTION(xcache_isset)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &name) == FAILURE) {
 		return;
 	}
-	xc_entry_var_init_key(&entry_var, &entry_hash, name TSRMLS_CC);
+	VAR_BUFFER_INIT(name);
+	xc_entry_var_init_key(&entry_var, &entry_hash, &name_buffer TSRMLS_CC);
 	cache = &xc_var_caches[entry_hash.cacheid];
 
 	if (cache->cached->disabled) {
+		VAR_BUFFER_FREE(name);
 		RETURN_FALSE;
 	}
 
@@ -2953,6 +3265,7 @@ PHP_FUNCTION(xcache_isset)
 		}
 
 	} LEAVE_LOCK(cache);
+	VAR_BUFFER_FREE(name);
 }
 /* }}} */
 /* {{{ proto bool  xcache_unset(string name)
@@ -2963,6 +3276,7 @@ PHP_FUNCTION(xcache_unset)
 	xc_cache_t *cache;
 	xc_entry_var_t entry_var, *stored_entry_var;
 	zval *name;
+	VAR_BUFFER_FLAGS(name);
 
 	if (!xc_var_caches) {
 		VAR_CACHE_NOT_INITIALIZED();
@@ -2972,10 +3286,12 @@ PHP_FUNCTION(xcache_unset)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &name) == FAILURE) {
 		return;
 	}
-	xc_entry_var_init_key(&entry_var, &entry_hash, name TSRMLS_CC);
+	VAR_BUFFER_INIT(name);
+	xc_entry_var_init_key(&entry_var, &entry_hash, &name_buffer TSRMLS_CC);
 	cache = &xc_var_caches[entry_hash.cacheid];
 
 	if (cache->cached->disabled) {
+		VAR_BUFFER_FREE(name);
 		RETURN_FALSE;
 	}
 
@@ -2989,6 +3305,7 @@ PHP_FUNCTION(xcache_unset)
 			RETVAL_FALSE;
 		}
 	} LEAVE_LOCK(cache);
+	VAR_BUFFER_FREE(name);
 }
 /* }}} */
 /* {{{ proto bool  xcache_unset_by_prefix(string prefix)
@@ -3019,7 +3336,7 @@ PHP_FUNCTION(xcache_unset_by_prefix)
 				xc_entry_t *entry, *next;
 				for (entry = cache->cached->entries[entryslotid]; entry; entry = next) {
 					next = entry->next;
-					if (xc_entry_has_prefix_unlocked(XC_TYPE_VAR, entry, prefix)) {
+					if (xc_var_has_prefix(entry, prefix TSRMLS_CC)) {
 						xc_entry_remove_unlocked(XC_TYPE_VAR, cache, entryslotid, entry TSRMLS_CC);
 					}
 				}
@@ -3037,6 +3354,7 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 	long count = 1;
 	long value = 0;
 	zval oldzval;
+	VAR_BUFFER_FLAGS(name);
 
 	if (!xc_var_caches) {
 		VAR_CACHE_NOT_INITIALIZED();
@@ -3053,10 +3371,12 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 		entry_var.entry.ttl = xc_var_maxttl;
 	}
 
-	xc_entry_var_init_key(&entry_var, &entry_hash, name TSRMLS_CC);
+	VAR_BUFFER_INIT(name);
+	xc_entry_var_init_key(&entry_var, &entry_hash, &name_buffer TSRMLS_CC);
 	cache = &xc_var_caches[entry_hash.cacheid];
 
 	if (cache->cached->disabled) {
+		VAR_BUFFER_FREE(name);
 		RETURN_NULL();
 	}
 
@@ -3102,6 +3422,7 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 		}
 		xc_entry_var_store_unlocked(cache, entry_hash.entryslotid, &entry_var TSRMLS_CC);
 	} LEAVE_LOCK(cache);
+	VAR_BUFFER_FREE(name);
 }
 /* }}} */
 /* {{{ proto int xcache_inc(string name [, int value [, int ttl]])
@@ -3125,6 +3446,8 @@ static zend_function_entry xcache_cacher_functions[] = /* {{{ */
 	PHP_FE(xcache_list,              NULL)
 	PHP_FE(xcache_clear_cache,       NULL)
 	PHP_FE(xcache_enable_cache,      NULL)
+	PHP_FE(xcache_admin_namespace,   NULL)
+	PHP_FE(xcache_set_namespace,     NULL)
 	PHP_FE(xcache_get,               NULL)
 	PHP_FE(xcache_set,               NULL)
 	PHP_FE(xcache_isset,             NULL)
@@ -3220,6 +3543,8 @@ PHP_INI_BEGIN()
 	PHP_INI_ENTRY1     ("xcache.var_gc_interval",      "120", PHP_INI_SYSTEM, xcache_OnUpdateULong,    &xc_var_gc_interval)
 	PHP_INI_ENTRY1     ("xcache.var_allocator",    "bestfit", PHP_INI_SYSTEM, xcache_OnUpdateString,   &xc_var_allocator)
 	STD_PHP_INI_ENTRY  ("xcache.var_ttl",                "0", PHP_INI_ALL,    OnUpdateLong, var_ttl,   zend_xcache_globals, xcache_globals)
+	PHP_INI_ENTRY1     ("xcache.var_namespace_mode",     "0", PHP_INI_SYSTEM, xcache_OnUpdateULong,    &xc_var_namespace_mode)
+	PHP_INI_ENTRY1     ("xcache.var_namespace",           "", PHP_INI_SYSTEM, xcache_OnUpdateString,   &xc_var_namespace)
 PHP_INI_END()
 /* }}} */
 static PHP_MINFO_FUNCTION(xcache_cacher) /* {{{ */
@@ -3393,6 +3718,10 @@ static PHP_MSHUTDOWN_FUNCTION(xcache_cacher) /* {{{ */
 	if (xc_var_allocator) {
 		pefree(xc_var_allocator, 1);
 		xc_var_allocator = NULL;
+	}
+	if (xc_var_namespace) {
+		pefree(xc_var_namespace, 1);
+		xc_var_namespace = NULL;
 	}
 
 	return SUCCESS;

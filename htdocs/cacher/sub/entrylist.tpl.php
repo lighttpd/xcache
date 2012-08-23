@@ -60,7 +60,6 @@ foreach ($entries as $i => $entry) {
 		<tr $class>
 
 TR;
-	$name     = htmlspecialchars($entry['name']);
 	$hits     = number_format($entry['hits']);
 	$size     = size($entry['size']);
 	if ($isphp) {
@@ -80,19 +79,25 @@ TR;
 	}
 
 	if ($isphp) {
-		$namelink = $name;
+		$hname = htmlspecialchars($entry['name']);
+		$namelink = $hname;
 		echo <<<ENTRY
 			<td>{$entry['cache_name']} {$i}</td>
 
 ENTRY;
 	}
 	else {
+		$name = $entry['name'];
+		if (!empty($config['enable_eval'])) {
+			$name = var_export($name, true);
+		}
+		$uname = urlencode($name);
+		$hname = htmlspecialchars(str_replace("\0", "\\0", $entry['name']));
 		echo <<<ENTRY
-			<td><label><input type="checkbox" name="remove[]" value="{$name}"/>{$entry['cache_name']} {$i}</label></td>
+			<td><label><input type="checkbox" name="remove[]" value="{$hname}"/>{$entry['cache_name']} {$i}</label></td>
 
 ENTRY;
-		$uname = urlencode($entry['name']);
-		$namelink = "<a href=\"edit.php?name=$uname\">$name</a>";
+		$namelink = "<a href=\"edit.php?name=$uname\">$hname</a>";
 	}
 
 	echo <<<ENTRY

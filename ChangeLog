@@ -3,6 +3,8 @@ API Changes
 ========
  * chg: proto array xcache_clear_cache(int type, [ int id = -1 ]). -1 means all cache splits
  * new: proto array xcache_enable_cache(int type, [ int id = -1, [ bool enable = true ] ])
+ * new: proto array xcache_admin_namespace()
+ * new: proto array xcache_set_namespace(string namespace)
 
 Ini Settings Changes
 ========
@@ -17,6 +19,7 @@ ChangeLog
  * closes #73: warn for improper PHP_FCGI_CHILDREN setting fcgi mode (>=PHP_5_3)
  * closes #174: updates api to support "clear all cache"
  * closes #198: support for caching protocol url
+ * closes #287: namespace support
  * fixes #39: ini_set never work for xcache.coverager setting. use API instead
  * code refactor
    * uses extension= to load XCache. loading via zend_extension= is unsupported
