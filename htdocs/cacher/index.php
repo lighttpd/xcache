@@ -251,11 +251,12 @@ function getEntryList() // {{{
 }
 // }}}
 
-xcache_count(XC_TYPE_PHP); // trigger auth
 if (!extension_loaded('XCache')) {
 	header("Location: ../diagnosis");
 	exit;
 }
+
+xcache_count(XC_TYPE_PHP); // trigger auth
 
 $doTypes = array(
 		'' => _T('Summary'),
