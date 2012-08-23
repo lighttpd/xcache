@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 	exit;
 }
 $value = xcache_get($name);
-if (!empty($enable['enable_eval'])) {
+if (!empty($config['enable_eval'])) {
 	$value = var_export($value, true);
 	$editable = true;
 }
