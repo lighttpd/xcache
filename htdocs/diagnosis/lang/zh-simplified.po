@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-08-01 17:10+0800\n"
+"POT-Creation-Date: 2012-09-02 00:52+0800\n"
 "Language: zh\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -56,7 +56,7 @@ msgid "Not loaded"
 msgstr "未载入"
 
 #: index.php:90 index.php:129 index.php:135 index.php:183 index.php:285
-#: index.php:303 index.php:368
+#: index.php:303 index.php:368 index.php:391 index.php:394
 msgid "error"
 msgstr "错误"
 
@@ -67,7 +67,7 @@ msgstr "已载入"
 #: index.php:93 index.php:141 index.php:158 index.php:175 index.php:189
 #: index.php:200 index.php:216 index.php:248 index.php:264 index.php:273
 #: index.php:291 index.php:309 index.php:332 index.php:347 index.php:373
-#: index.php:379 index.php:385
+#: index.php:379 index.php:385 index.php:399
 msgid "info"
 msgstr "信息"
 
@@ -226,7 +226,7 @@ msgstr "哈希槽设定太小"
 msgid "So many item are cached. Increase %s to a more proper value"
 msgstr "相当多的项目缓存了. 请适量加大 %s"
 
-#: index.php:248 index.php:373 index.php:385
+#: index.php:248 index.php:373 index.php:385 index.php:399
 msgid "Looks good"
 msgstr "看起来还行"
 
@@ -362,3 +362,22 @@ msgid ""
 msgstr ""
 "由于兼容性问题, 'Zend Optimizer' 的优化器已被 XCache 禁止; 其加载器依然可用, "
 "可继续使用 Zend 加密的文件"
+
+#: index.php:388
+#, fuzzy
+msgid "SAPI Compatibility"
+msgstr "Extension 兼容性"
+
+#: index.php:391
+msgid "CGI is not supported"
+msgstr ""
+
+#: index.php:391
+msgid "Use FastCGI or FPM instead"
+msgstr ""
+
+#: index.php:396
+msgid ""
+"PHP_FCGI_CHILDREN should be >= 1 and use 1 group of parent/childs model. See "
+"http://xcache.lighttpd.net/wiki/Faq"
+msgstr ""

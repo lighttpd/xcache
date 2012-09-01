@@ -74,7 +74,7 @@ $strings += array(
 		"cache.ooms"
 		=> "OOMs|Out Of Memory, how many times a new item should be stored but there isn't enough memory in the cache, think of increasing the xcache.size or xcache.var_size",
 		"cache.errors"
-		=> "Errs|Compiler errors, how many times your script is compiled but failed. You should really check what is happening if you see this value increase. (See Help for more information)",
+		=> "Errs|Compiler errors, how many times your script(s) failed to be compiled by PHP. You should really check what is happening if you see this value increase. (See Help for more information)",
 		"cache.readonly_protected"
 		=> "Protected|Whether readonly_protection is available and enable on this cache (See help for more information)",
 		"cache.cached"
