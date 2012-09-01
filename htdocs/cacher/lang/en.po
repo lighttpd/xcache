@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-08-04 10:29+0800\n"
+"POT-Creation-Date: 2012-09-02 00:52+0800\n"
 "Language: en\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -21,15 +21,15 @@ msgstr ""
 msgid "Total"
 msgstr ""
 
-#: index.php:261
+#: index.php:263
 msgid "Summary"
 msgstr ""
 
-#: index.php:262
+#: index.php:264
 msgid "List PHP"
 msgstr ""
 
-#: index.php:263
+#: index.php:265
 msgid "List Var Data"
 msgstr ""
 
@@ -117,7 +117,7 @@ msgstr "Create|The time when this entry is stored"
 msgid "entry.delete"
 msgstr "Delete|The time when this entry is deleted"
 
-#: sub/entrylist.tpl.php:144
+#: sub/entrylist.tpl.php:149
 msgid "Remove Selected"
 msgstr ""
 
@@ -197,9 +197,9 @@ msgstr ""
 #: sub/summary.tpl.php:20
 msgid "cache.errors"
 msgstr ""
-"Errs|Compiler errors, how many times your script is compiled but failed. You "
-"should really check what is happening if you see this value increase. (See "
-"Help for more information)"
+"Errs|Compiler errors, how many times your script(s) failed to be compiled by "
+"PHP. You should really check what is happening if you see this value "
+"increase. (See Help for more information)"
 
 #: sub/summary.tpl.php:21
 msgid "cache.readonly_protected"

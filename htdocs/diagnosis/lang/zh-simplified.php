@@ -145,5 +145,7 @@ $strings += array(
 		=> "Zend Optimizer 载入了",
 		"Optimizer feature of 'Zend Optimizer' is disabled by XCache due to compatibility reason; the Loader of it is still available, encoded files are still supported"
 		=> "由于兼容性问题, 'Zend Optimizer' 的优化器已被 XCache 禁止; 其加载器依然可用, 可继续使用 Zend 加密的文件",
+		"SAPI Compatibility"
+		=> "Extension 兼容性",
 		);
 

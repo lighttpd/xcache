@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-08-04 10:29+0800\n"
+"POT-Creation-Date: 2012-09-02 00:52+0800\n"
 "Language: zh\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -21,15 +21,15 @@ msgstr "请在配置文件中设置 %s 启用本功能"
 msgid "Total"
 msgstr "总共"
 
-#: index.php:261
+#: index.php:263
 msgid "Summary"
 msgstr "摘要信息"
 
-#: index.php:262
+#: index.php:264
 msgid "List PHP"
 msgstr "列出PHP"
 
-#: index.php:263
+#: index.php:265
 msgid "List Var Data"
 msgstr "列变量数据"
 
@@ -117,7 +117,7 @@ msgstr "创建|该项目被创建于缓存区内的时间"
 msgid "entry.delete"
 msgstr "删除|该项目被决定删除的时间"
 
-#: sub/entrylist.tpl.php:144
+#: sub/entrylist.tpl.php:149
 msgid "Remove Selected"
 msgstr "删除所选"
 
