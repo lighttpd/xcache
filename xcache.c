@@ -1214,6 +1214,11 @@ static int xc_entry_data_php_init_md5(xc_cache_t *cache, xc_compiler_t *compiler
 	php_stream     *stream;
 	ulong           old_rsid = EG(regular_list).nNextFreeElement;
 
+	php_stream_wrapper *wrapper = NULL; 
+	char *path_for_open = NULL; 
+	wrapper = php_stream_locate_url_wrapper(compiler->filename, &path_for_open, 0 TSRMLS_CC); 
+	TRACE("wrapper == &php_plain_files_wrapper => (%i) for file %s", wrapper == &php_plain_files_wrapper, compiler->filename);
+  
 	stream = php_stream_open_wrapper((char *) compiler->filename, "rb", USE_PATH | REPORT_ERRORS | ENFORCE_SAFE_MODE | STREAM_DISABLE_OPEN_BASEDIR, NULL);
 	if (!stream) {
 		return FAILURE;
@@ -2135,12 +2140,31 @@ static zend_op_array *xc_compile_file_cached(xc_compiler_t *compiler, zend_file_
 	}
 }
 /* }}} */
+
+static php_stream_wrapper *xc_swap_file_stream_wrapper(php_stream_wrapper *new_wrapper, zend_file_handle *h){
+	php_stream_wrapper *wrapper = NULL; 
+	char *path_for_open = NULL; 
+	char *protocol = "file";
+	int succes =0;
+
+	wrapper = php_stream_locate_url_wrapper( h->filename, &path_for_open, 0 TSRMLS_CC); 
+	succes = php_unregister_url_stream_wrapper_volatile(protocol TSRMLS_CC);
+	TRACE("php_unregister_url_stream_wrapper => (%i)", succes == SUCCESS);
+	succes = php_register_url_stream_wrapper_volatile(protocol, new_wrapper TSRMLS_DC);
+	TRACE("php_register_url_stream_wrapper => (%i)", succes == SUCCESS);
+	return wrapper;
+}
+
 static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /* {{{ */
 {
 	xc_compiler_t compiler;
 	zend_op_array *op_array;
 
 	assert(xc_initized);
+
+	php_stream_wrapper *stream_wrapper = NULL; 
+	TRACE("using plain wrapper in xc_compile_file",0);
+	stream_wrapper =  xc_swap_file_stream_wrapper(&php_plain_files_wrapper, h);
 
 	TRACE("xc_compile_file: type=%d name=%s", h->type, h->filename ? h->filename : "NULL");
 
@@ -2156,6 +2180,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 #endif
 	 ) {
 		TRACE("%s", "cacher not enabled");
+		xc_swap_file_stream_wrapper(stream_wrapper, h);
 		return old_compile_file(h, type TSRMLS_CC);
 	}
 
@@ -2165,6 +2190,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	compiler.filename_len = strlen(compiler.filename);
 	if (xc_entry_php_init_key(&compiler TSRMLS_CC) != SUCCESS) {
 		TRACE("failed to init key for %s", compiler.filename);
+		xc_swap_file_stream_wrapper(stream_wrapper, h);
 		return old_compile_file(h, type TSRMLS_CC);
 	}
 	/* }}} */
@@ -2172,7 +2198,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	op_array = xc_compile_file_cached(&compiler, h, type TSRMLS_CC);
 
 	xc_entry_free_key_php(&compiler.new_entry TSRMLS_CC);
-
+	xc_swap_file_stream_wrapper(stream_wrapper, h);
 	return op_array;
 }
 /* }}} */
