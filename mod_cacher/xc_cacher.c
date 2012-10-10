@@ -2534,7 +2534,7 @@ static void xc_var_buffer_init(char *buffer, zval *name TSRMLS_DC) /* {{{ prepar
 }
 /* }}} */
 typedef struct xc_namebuffer_t_ { /* {{{ */
-	ALLOCA_FLAG(useheap);
+	ALLOCA_FLAG(useheap)
 	void *buffer;
 	int alloca_size;
 	int len;
@@ -2548,13 +2548,13 @@ typedef struct xc_namebuffer_t_ { /* {{{ */
 	name##_buffer.len = xc_var_buffer_prepare(name TSRMLS_CC); \
 	name##_buffer.alloca_size = xc_var_buffer_alloca_size(name TSRMLS_CC); \
 	name##_buffer.buffer = name##_buffer.alloca_size \
-		? do_alloca(name##_buffer.alloca_size, name##_buffer.useheap) \
+		? my_do_alloca(name##_buffer.alloca_size, name##_buffer.useheap) \
 		: UNISW(Z_STRVAL_P(name), Z_TYPE(name) == IS_UNICODE ? Z_USTRVAL_P(name) : Z_STRVAL_P(name)); \
 	if (name##_buffer.alloca_size) xc_var_buffer_init(name##_buffer.buffer, name TSRMLS_CC);
 
 #define VAR_BUFFER_FREE(name) \
 	if (name##_buffer.alloca_size) { \
-		free_alloca(name##_buffer.buffer, name##_buffer.useheap); \
+		my_free_alloca(name##_buffer.buffer, name##_buffer.useheap); \
 	}
 
 static inline int xc_var_has_prefix(xc_entry_t *entry, zval *prefix TSRMLS_DC) /* {{{ */
