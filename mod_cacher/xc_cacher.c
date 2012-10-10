@@ -762,7 +762,7 @@ static zend_op_array *xc_entry_install(xc_entry_php_t *entry_php TSRMLS_DC) /* {
 #ifndef ZEND_ENGINE_2
 	ALLOCA_FLAG(use_heap)
 	/* new ptr which is stored inside CG(class_table) */
-	xc_cest_t **new_cest_ptrs = (xc_cest_t **)my_do_alloca(sizeof(xc_cest_t*) * p->classinfo_cnt, use_heap);
+	xc_cest_t **new_cest_ptrs = (xc_cest_t **)xc_do_alloca(sizeof(xc_cest_t*) * p->classinfo_cnt, use_heap);
 #endif
 
 	CG(active_op_array) = p->op_array;
@@ -828,7 +828,7 @@ static zend_op_array *xc_entry_install(xc_entry_php_t *entry_php TSRMLS_DC) /* {
 #endif
 
 #ifndef ZEND_ENGINE_2
-	my_free_alloca(new_cest_ptrs, use_heap);
+	xc_free_alloca(new_cest_ptrs, use_heap);
 #endif
 	CG(active_op_array) = old_active_op_array;
 	return p->op_array;
@@ -949,7 +949,7 @@ static int xc_resolve_path(const char *filepath, char *path_buffer, xc_resolve_p
 #endif
 
 	size = strlen(PG(include_path)) + 1;
-	paths = (char *)my_do_alloca(size, use_heap);
+	paths = (char *)xc_do_alloca(size, use_heap);
 	memcpy(paths, PG(include_path), size);
 
 	for (path = php_strtok_r(paths, tokens, &tokbuf); path; path = php_strtok_r(NULL, tokens, &tokbuf)) {
@@ -984,7 +984,7 @@ static int xc_resolve_path(const char *filepath, char *path_buffer, xc_resolve_p
 	ret = FAILURE;
 
 finish:
-	my_free_alloca(paths, use_heap);
+	xc_free_alloca(paths, use_heap);
 
 	return ret;
 }
@@ -2548,13 +2548,13 @@ typedef struct xc_namebuffer_t_ { /* {{{ */
 	name##_buffer.len = xc_var_buffer_prepare(name TSRMLS_CC); \
 	name##_buffer.alloca_size = xc_var_buffer_alloca_size(name TSRMLS_CC); \
 	name##_buffer.buffer = name##_buffer.alloca_size \
-		? my_do_alloca(name##_buffer.alloca_size, name##_buffer.useheap) \
+		? xc_do_alloca(name##_buffer.alloca_size, name##_buffer.useheap) \
 		: UNISW(Z_STRVAL_P(name), Z_TYPE(name) == IS_UNICODE ? Z_USTRVAL_P(name) : Z_STRVAL_P(name)); \
 	if (name##_buffer.alloca_size) xc_var_buffer_init(name##_buffer.buffer, name TSRMLS_CC);
 
 #define VAR_BUFFER_FREE(name) \
 	if (name##_buffer.alloca_size) { \
-		my_free_alloca(name##_buffer.buffer, name##_buffer.useheap); \
+		xc_free_alloca(name##_buffer.buffer, name##_buffer.useheap); \
 	}
 
 static inline int xc_var_has_prefix(xc_entry_t *entry, zval *prefix TSRMLS_DC) /* {{{ */
