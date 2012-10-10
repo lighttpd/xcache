@@ -46,7 +46,7 @@ static void xcache_mkdirs_ex(char *root, int rootlen, char *path, int pathlen TS
 	ALLOCA_FLAG(use_heap)
 
 	TRACE("mkdirs %s %d %s %d", root, rootlen, path, pathlen);
-	fullpath = my_do_alloca(rootlen + pathlen + 1, use_heap);
+	fullpath = xc_do_alloca(rootlen + pathlen + 1, use_heap);
 	memcpy(fullpath, root, rootlen);
 	memcpy(fullpath + rootlen, path, pathlen);
 	fullpath[rootlen + pathlen] = '\0';
@@ -67,7 +67,7 @@ static void xcache_mkdirs_ex(char *root, int rootlen, char *path, int pathlen TS
 		mkdir(fullpath, 0700);
 #endif
 	}
-	my_free_alloca(fullpath, use_heap);
+	xc_free_alloca(fullpath, use_heap);
 }
 /* }}} */
 static void xc_coverager_save_cov(char *srcfile, char *outfilename, coverager_t cov TSRMLS_DC) /* {{{ */
