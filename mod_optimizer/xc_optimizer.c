@@ -391,11 +391,11 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 	ALLOCA_FLAG(use_heap_bbids)
 	ALLOCA_FLAG(use_heap_catchbbids)
 	ALLOCA_FLAG(use_heap_markbbhead)
-	bbid_t *bbids          = my_do_alloca(count * sizeof(bbid_t),    use_heap_bbids);
+	bbid_t *bbids          = xc_do_alloca(count * sizeof(bbid_t),    use_heap_bbids);
 #ifdef ZEND_ENGINE_2
-	bbid_t *catchbbids     = my_do_alloca(count * sizeof(bbid_t),    use_heap_catchbbids);
+	bbid_t *catchbbids     = xc_do_alloca(count * sizeof(bbid_t),    use_heap_catchbbids);
 #endif
-	zend_bool *markbbhead  = my_do_alloca(count * sizeof(zend_bool), use_heap_markbbhead);
+	zend_bool *markbbhead  = xc_do_alloca(count * sizeof(zend_bool), use_heap_markbbhead);
 
 	/* {{{ mark jmpin/jumpout */
 	memset(markbbhead,  0, count * sizeof(zend_bool));
@@ -502,11 +502,11 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 	}
 	/* }}} */
 
-	my_free_alloca(markbbhead, use_heap_markbbhead);
+	xc_free_alloca(markbbhead, use_heap_markbbhead);
 #ifdef ZEND_ENGINE_2
-	my_free_alloca(catchbbids, use_heap_catchbbids);
+	xc_free_alloca(catchbbids, use_heap_catchbbids);
 #endif
-	my_free_alloca(bbids,      use_heap_bbids);
+	xc_free_alloca(bbids,      use_heap_bbids);
 	return SUCCESS;
 }
 /* }}} */

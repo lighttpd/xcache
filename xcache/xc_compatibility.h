@@ -37,14 +37,14 @@
 #endif
 
 #ifdef do_alloca_with_limit
-#	define my_do_alloca(size, use_heap) do_alloca_with_limit(size, use_heap)
-#	define my_free_alloca(size, use_heap) free_alloca_with_limit(size, use_heap)
+#	define xc_do_alloca(size, use_heap) do_alloca_with_limit(size, use_heap)
+#	define xc_free_alloca(size, use_heap) free_alloca_with_limit(size, use_heap)
 #elif defined(ALLOCA_FLAG)
-#	define my_do_alloca(size, use_heap) do_alloca(size, use_heap)
-#	define my_free_alloca(size, use_heap) free_alloca(size, use_heap)
+#	define xc_do_alloca(size, use_heap) do_alloca(size, use_heap)
+#	define xc_free_alloca(size, use_heap) free_alloca(size, use_heap)
 #else
-#	define my_do_alloca(size, use_heap) do_alloca(size)
-#	define my_free_alloca(size, use_heap) free_alloca(size)
+#	define xc_do_alloca(size, use_heap) do_alloca(size)
+#	define xc_free_alloca(size, use_heap) free_alloca(size)
 #	define ALLOCA_FLAG(x)
 #endif
 #ifndef Z_ISREF
@@ -67,28 +67,28 @@
 #endif
 /* {{{ dirty fix for PHP 6 */
 #ifdef add_assoc_long_ex
-static inline void my_add_assoc_long_ex(zval *arg, char *key, uint key_len, long value)
+static inline void xc_add_assoc_long_ex(zval *arg, char *key, uint key_len, long value)
 {
 	add_assoc_long_ex(arg, key, key_len, value);
 }
 #	undef add_assoc_long_ex
-#	define add_assoc_long_ex my_add_assoc_long_ex
+#	define add_assoc_long_ex xc_add_assoc_long_ex
 #endif
 #ifdef add_assoc_bool_ex
-static inline void my_add_assoc_bool_ex(zval *arg, char *key, uint key_len, zend_bool value)
+static inline void xc_add_assoc_bool_ex(zval *arg, char *key, uint key_len, zend_bool value)
 {
 	add_assoc_bool_ex(arg, key, key_len, value);
 }
 #	undef add_assoc_bool_ex
-#	define add_assoc_bool_ex my_add_assoc_bool_ex
+#	define add_assoc_bool_ex xc_add_assoc_bool_ex
 #endif
 #ifdef add_assoc_null_ex
-static inline void my_add_assoc_null_ex(zval *arg, char *key, uint key_len)
+static inline void xc_add_assoc_null_ex(zval *arg, char *key, uint key_len)
 {
 	add_assoc_null_ex(arg, key, key_len);
 }
 #	undef add_assoc_null_ex
-#	define add_assoc_null_ex my_add_assoc_null_ex
+#	define add_assoc_null_ex xc_add_assoc_null_ex
 #endif
 /* }}} */
 
