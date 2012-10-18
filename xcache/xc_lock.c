@@ -87,7 +87,7 @@ xc_lock_t *xc_fcntl_init(const char *pathname) /* {{{ */
 	char *myname;
 
 	if (pathname == NULL) {
-		static int i = 0;
+		static int instanceId = 0;
 		const char default_tmpdir[] = { DEFAULT_SLASH, 't', 'm', 'p', '\0' };
 		const char *tmpdir;
 
@@ -100,7 +100,7 @@ xc_lock_t *xc_fcntl_init(const char *pathname) /* {{{ */
 		}
 		size = strlen(tmpdir) + sizeof("/.xcache.lock") - 1 + 3 * 10 + 100;
 		myname = malloc(size);
-		snprintf(myname, size - 1, "%s%c.xcache.%d.%d.%d.lock", tmpdir, DEFAULT_SLASH, (int) getuid(), i ++, rand());
+		snprintf(myname, size - 1, "%s%c.xcache.%d.%d.%d.lock", tmpdir, DEFAULT_SLASH, (int) getuid(), (int) getpid(), ++instanceId);
 		pathname = myname;
 	}
 	else {

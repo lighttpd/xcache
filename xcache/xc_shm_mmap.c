@@ -150,22 +150,21 @@ static XC_SHM_INIT(xc_mmap_init) /* {{{ */
 	xc_shm_t *shm = NULL;
 	int ro_ok;
 	volatile void *romem;
-	char tmpname[sizeof(TMP_PATH) - 1 + 100];
+	char tmpname[sizeof(TMP_PATH) - 1 + 4 * 10 + 100] = { 0 };
 	const char *errstr = NULL;
 	const char *path = (const char *) arg1;
+	static int instanceId = 0;
 
 	CHECK(shm = calloc(1, sizeof(xc_shm_t)), "shm OOM");
 	shm->size = size;
 
 	if (path == NULL || !path[0]) {
-		static int inc = 0;
-		snprintf(tmpname, sizeof(tmpname) - 1, "%s.%d.%d.%d.%d", TMP_PATH, (int) getuid(), (int) getpid(), inc ++, rand());
+		snprintf(tmpname, sizeof(tmpname) - 1, "%s.%d.%d.%d", TMP_PATH, (int) getuid(), (int) getpid(), ++instanceId);
 		path = tmpname;
 	}
 #ifdef ZEND_WIN32
 	else {
-		static int inc2 = 0;
-		snprintf(tmpname, sizeof(tmpname) - 1, "%s.%d.%d.%d.%d", path, (int) getuid(), (int) getpid(), inc2 ++, rand());
+		snprintf(tmpname, sizeof(tmpname) - 1, "%s.%d.%d.%d", path, (int) getuid(), (int) getpid(), ++instanceId);
 		path = tmpname;
 	}
 #endif
