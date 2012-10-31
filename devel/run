@@ -82,7 +82,7 @@ updatedeps() { # {{{1
 				echo '$(XCACHE_INCLUDES_I)'
 				;;
 			esac
-			echo '$(builddir)/'${sourceFile%.c}.lo:
+			echo ${sourceFile%.c}.lo '$(builddir)/'${sourceFile%.c}.lo:
 			hiecho "Checking $sourceFile ..." >&2
 			for dependency in $(gcc -MM $sourceFile -I$HOME/test/php5-debug-zts/include/php/{,main,Zend,TSRM} -I. -I${builddir} -MG | sed 's#.*:##g' | sed 's#\\##g'); do
 				dependency=$(readlink -f "$dependency")
