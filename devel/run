@@ -141,7 +141,7 @@ basename=$(basename $(pwd))
 case "$basename" in
 *-*)
 	# in build dir, starts from src dir
-	dirs="$basename"
+	dirs="${basename#*-}"
 	xcachesrcdir=../${basename%%-*}
 	cd $xcachesrcdir
 	;;
@@ -300,7 +300,7 @@ run() {
 	esac
 
 	# pick sapi {{{1
-	case "$basename" in
+	case "$phpbasename" in
 	*-apache1*)
 		cmd=($HOME/apache1/bin/httpd -X)
 		;;
@@ -350,8 +350,8 @@ run() {
 }
 
 for phpbasename in "${dirs[@]}"; do
-	mkdir -p ../${basename}-${phpbasename}
-	cd ../${basename}-${phpbasename} || exit
+	mkdir -p ${xcachesrcdir}-${phpbasename}
+	cd ${xcachesrcdir}-${phpbasename} || exit
 	lndir ${xcachesrcdir} >/dev/null || true
 
 	pwd
