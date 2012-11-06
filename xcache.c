@@ -560,7 +560,8 @@ typedef struct {
 	startup_func_t old_startup;
 } xc_incompatible_zend_extension_info_t;
 static xc_incompatible_zend_extension_info_t xc_incompatible_zend_extensions[] = {
-	{ "Zend Optimizer", NULL }
+	{ "Zend Optimizer", NULL },
+	{ "the ionCube PHP Loader", NULL }
 };
 
 static xc_incompatible_zend_extension_info_t *xc_get_incompatible_zend_extension_info(const char *name)
@@ -583,23 +584,28 @@ static int xc_incompatible_zend_extension_startup_hook(zend_extension *extension
 	int status;
 	zend_bool catched = 0;
 	zend_llist old_zend_extensions = zend_extensions;
-	TSRMLS_FETCH();
-
-	/* hide all extensions from it */
-	zend_extensions.head = NULL;
-	zend_extensions.count = 0;
 
 	/* restore */
 	extension->startup = incompatible_zend_extension_info->old_startup;
 	incompatible_zend_extension_info->old_startup = NULL;
 	assert(extension->startup);
 
+	/* hide all extensions from it */
+	zend_extensions.head = NULL;
+	zend_extensions.tail = NULL;
+	zend_extensions.count = 0;
+	zend_extensions.dtor = NULL;
+	zend_llist_add_element(&zend_extensions, extension);
+	extension = zend_get_extension(extension->name);
+
+	assert(extension->startup != xc_incompatible_zend_extension_startup_hook);
 	zend_try {
 		status = extension->startup(extension);
 	} zend_catch {
 		catched = 1;
 	} zend_end_try();
 
+	/* restore */
 	zend_extensions = old_zend_extensions;
 	if (catched) {
 		zend_bailout();
