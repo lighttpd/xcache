@@ -584,6 +584,7 @@ static int xc_incompatible_zend_extension_startup_hook(zend_extension *extension
 	int status;
 	zend_bool catched = 0;
 	zend_llist old_zend_extensions = zend_extensions;
+	TSRMLS_FETCH();
 
 	/* restore */
 	extension->startup = incompatible_zend_extension_info->old_startup;
@@ -606,6 +607,7 @@ static int xc_incompatible_zend_extension_startup_hook(zend_extension *extension
 	} zend_end_try();
 
 	/* restore */
+	zend_llist_remove_tail(&zend_extensions);
 	zend_extensions = old_zend_extensions;
 	if (catched) {
 		zend_bailout();
