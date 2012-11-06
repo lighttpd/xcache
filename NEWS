@@ -2,6 +2,7 @@
 ChangeLog
 ========
  * bug fixes
+ * compatible with "the ionCube PHP Loader"
 
 3.0.0 2012-10-29
 ========
