@@ -18,6 +18,8 @@ Ini Settings Changes
  * new: xcache.coverager_autostart = On
  * new: xcache.allocator = bestfit (no other option value yet)
  * new: xcache.var_allocator = bestfit (no other option value yet)
+ * new: xcache.var_namespace_mode = 0
+ * new: xcache.var_namespace = ""
 
 ChangeLog
 ========
