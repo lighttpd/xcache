@@ -1945,7 +1945,6 @@ static zend_op_array *xc_compile_file_sandboxed(void *data TSRMLS_DC) /* {{{ */
 #endif
 	memset(&compiler->new_php.op_array_info, 0, sizeof(compiler->new_php.op_array_info));
 
-	XG(initial_compile_file_called) = 0;
 	zend_try {
 		compiler->new_php.op_array = NULL;
 		xc_compile_php(compiler, sandboxed_compiler->h, sandboxed_compiler->type TSRMLS_CC);

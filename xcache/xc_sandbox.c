@@ -229,6 +229,7 @@ static xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, ZEND_24(NOTHING, con
 #endif
 
 	XG(sandbox) = (void *) sandbox;
+	XG(initial_compile_file_called) = 0;
 	return sandbox;
 }
 /* }}} */
@@ -290,13 +291,16 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 	}
 #endif
 
+	/* CG(compiler_options) applies only if initial_compile_file_called */
+	if (XG(initial_compile_file_called)) {
 #ifdef ZEND_COMPILE_DELAYED_BINDING
-	zend_do_delayed_early_binding(CG(active_op_array) TSRMLS_CC);
+		zend_do_delayed_early_binding(CG(active_op_array) TSRMLS_CC);
 #else
-	xc_undo_pass_two(CG(active_op_array) TSRMLS_CC);
-	xc_foreach_early_binding_class(CG(active_op_array), xc_early_binding_cb, (void *) sandbox TSRMLS_CC);
-	xc_redo_pass_two(CG(active_op_array) TSRMLS_CC);
+		xc_undo_pass_two(CG(active_op_array) TSRMLS_CC);
+		xc_foreach_early_binding_class(CG(active_op_array), xc_early_binding_cb, (void *) sandbox TSRMLS_CC);
+		xc_redo_pass_two(CG(active_op_array) TSRMLS_CC);
 #endif
+	}
 
 #ifdef XCACHE_ERROR_CACHING
 	/* restore trigger errors */
