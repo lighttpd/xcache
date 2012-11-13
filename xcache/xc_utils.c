@@ -573,9 +573,6 @@ void xc_hash_copy_if(HashTable *target, HashTable *source, copy_ctor_func_t pCop
 	p = source->pListHead;
 	while (p) {
 		if (checker(p->pData)) {
-			if (setTargetPointer && source->pInternalPointer == p) {
-				target->pInternalPointer = NULL;
-			}
 			if (p->nKeyLength) {
 				zend_u_hash_quick_update(target, p->key.type, ZSTR(BUCKET_KEY_S(p)), p->nKeyLength, p->h, p->pData, size, &new_entry);
 			} else {
@@ -583,6 +580,9 @@ void xc_hash_copy_if(HashTable *target, HashTable *source, copy_ctor_func_t pCop
 			}
 			if (pCopyConstructor) {
 				pCopyConstructor(new_entry);
+			}
+			if (setTargetPointer && source->pInternalPointer == p) {
+				target->pInternalPointer = new_entry;
 			}
 		}
 		p = p->pListNext;
