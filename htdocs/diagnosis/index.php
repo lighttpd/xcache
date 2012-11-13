@@ -217,35 +217,40 @@ else {
 }
 // }}}
 checking(_T("Hash Slots")); // {{{
-$slotsTooBig = null;
-$slotsTooSmall = null;
-foreach ($cacheInfos as $cacheInfo) {
-	if ($cacheInfo['size'] < '1024000' && $cacheInfo['slots'] >= '8192') {
-		$slotsTooBig = $cacheInfo['type'];
-		break;
-	}
-	if ($cacheInfo['slots'] < $cacheInfo['cached'] / 2) {
-		$slotsTooSmall = $cacheInfo['type'];
-		break;
-	}
-}
-if (isset($slotsTooBig)) {
-	$prefix = $slotsTooBig == XC_TYPE_PHP ? '' : 'var_';
-	result(N_("warning")
-		, _T("Slots value too big")
-		, sprintf(_T("A very small value is set to %s value and leave %s value is too big.\n"
-			. "Decrease %s if small cache is really what you want"), "xcache.{$prefix}size", "xcache.{$prefix}slots", "xcache.{$prefix}slots")
-		);
-}
-else if (isset($slotsTooSmall)) {
-	$prefix = $slotsTooSmall == XC_TYPE_PHP ? '' : 'var_';
-	result(N_("warning")
-		, _T("Slots value too small")
-		, sprintf(_T("So many item are cached. Increase %s to a more proper value"), "xcache.{$prefix}slots")
-		);
+if (!$xcacheLoaded) {
+	result(N_("skipped"), "XCache not loaded");
 }
 else {
-	result(N_("info"), _T('Looks good'));
+	$slotsTooBig = null;
+	$slotsTooSmall = null;
+	foreach ($cacheInfos as $cacheInfo) {
+		if ($cacheInfo['size'] < '1024000' && $cacheInfo['slots'] >= '8192') {
+			$slotsTooBig = $cacheInfo['type'];
+			break;
+		}
+		if ($cacheInfo['slots'] < $cacheInfo['cached'] / 2) {
+			$slotsTooSmall = $cacheInfo['type'];
+			break;
+		}
+	}
+	if (isset($slotsTooBig)) {
+		$prefix = $slotsTooBig == XC_TYPE_PHP ? '' : 'var_';
+		result(N_("warning")
+			, _T("Slots value too big")
+			, sprintf(_T("A very small value is set to %s value and leave %s value is too big.\n"
+				. "Decrease %s if small cache is really what you want"), "xcache.{$prefix}size", "xcache.{$prefix}slots", "xcache.{$prefix}slots")
+			);
+	}
+	else if (isset($slotsTooSmall)) {
+		$prefix = $slotsTooSmall == XC_TYPE_PHP ? '' : 'var_';
+		result(N_("warning")
+			, _T("Slots value too small")
+			, sprintf(_T("So many item are cached. Increase %s to a more proper value"), "xcache.{$prefix}slots")
+			);
+	}
+	else {
+		result(N_("info"), _T('Looks good'));
+	}
 }
 // }}}
 checking(_T("Cache Status")); // {{{
