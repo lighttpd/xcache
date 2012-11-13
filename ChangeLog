@@ -2,7 +2,7 @@
 ChangeLog
 ========
  * fixed #290: workaround phpize vs fbsd make bug again
- * improve compatibility with "the ionCube PHP Loader", but still broken
+ * improve compatibility with "the ionCube PHP Loader", Zend Optimizer
 
 3.0.0 2012-10-29
 API Changes

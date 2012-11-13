@@ -1,7 +1,7 @@
 #include "util/xc_stack.h"
 
 ZEND_BEGIN_MODULE_GLOBALS(xcache)
-	zend_bool initial_compile_file_called; /* true is origin_compile_file is called */
+	zend_bool initial_compile_file_called; /* true if origin_compile_file is called */
 	zend_bool cacher;      /* true if enabled */
 	zend_bool stat;
 	zend_bool experimental;
