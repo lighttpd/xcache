@@ -252,7 +252,7 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 				Z_OP(opline->op2).jmp_addr = op_array->opcodes + Z_OP(opline->op2).opline_num;
 				break;
 		}
-		ZEND_VM_SET_OPCODE_HANDLER(opline);
+		/* ZEND_VM_SET_OPCODE_HANDLER(opline); this is not undone, don't redo. only do this for loader */
 #endif
 		opline++;
 	}
