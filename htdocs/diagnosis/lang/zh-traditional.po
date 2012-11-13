@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-09-02 00:52+0800\n"
+"POT-Creation-Date: 2012-11-13 18:17+0800\n"
 "Language: zh_TW\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -54,8 +54,8 @@ msgstr ""
 msgid "Not loaded"
 msgstr ""
 
-#: index.php:90 index.php:129 index.php:135 index.php:183 index.php:285
-#: index.php:303 index.php:368 index.php:391 index.php:394
+#: index.php:90 index.php:129 index.php:135 index.php:183 index.php:290
+#: index.php:308 index.php:373 index.php:396 index.php:399
 msgid "error"
 msgstr ""
 
@@ -64,9 +64,9 @@ msgid "Loaded"
 msgstr ""
 
 #: index.php:93 index.php:141 index.php:158 index.php:175 index.php:189
-#: index.php:200 index.php:216 index.php:248 index.php:264 index.php:273
-#: index.php:291 index.php:309 index.php:332 index.php:347 index.php:373
-#: index.php:379 index.php:385 index.php:399
+#: index.php:200 index.php:216 index.php:252 index.php:269 index.php:278
+#: index.php:296 index.php:314 index.php:337 index.php:352 index.php:378
+#: index.php:384 index.php:390 index.php:404
 msgid "info"
 msgstr ""
 
@@ -75,12 +75,12 @@ msgid "Enabling PHP Cacher"
 msgstr ""
 
 #: index.php:126 index.php:146 index.php:149 index.php:163 index.php:166
-#: index.php:180 index.php:207 index.php:253 index.php:270 index.php:300
-#: index.php:318 index.php:338
+#: index.php:180 index.php:207 index.php:221 index.php:258 index.php:275
+#: index.php:305 index.php:323 index.php:343
 msgid "skipped"
 msgstr ""
 
-#: index.php:130 index.php:184 index.php:274
+#: index.php:130 index.php:184 index.php:279
 msgid "Not enabled"
 msgstr ""
 
@@ -98,7 +98,7 @@ msgstr ""
 msgid "Your PHP pages is not accelerated by XCache. Set xcache.cacher = On"
 msgstr ""
 
-#: index.php:141 index.php:189 index.php:292 index.php:310 index.php:342
+#: index.php:141 index.php:189 index.php:297 index.php:315 index.php:347
 msgid "Enabled"
 msgstr ""
 
@@ -106,8 +106,8 @@ msgstr ""
 msgid "PHP Compile Time Error"
 msgstr ""
 
-#: index.php:152 index.php:169 index.php:193 index.php:210 index.php:234
-#: index.php:242 index.php:256 index.php:324 index.php:341
+#: index.php:152 index.php:169 index.php:193 index.php:210 index.php:238
+#: index.php:246 index.php:261 index.php:329 index.php:346
 msgid "warning"
 msgstr ""
 
@@ -139,7 +139,7 @@ msgid ""
 "PHP crash/coredump, report to XCache devs"
 msgstr ""
 
-#: index.php:175 index.php:264 index.php:332
+#: index.php:175 index.php:269 index.php:337
 msgid "Idle"
 msgstr ""
 
@@ -192,108 +192,108 @@ msgstr ""
 msgid "Hash Slots"
 msgstr ""
 
-#: index.php:235
+#: index.php:239
 msgid "Slots value too big"
 msgstr ""
 
-#: index.php:236
+#: index.php:240
 #, php-format
 msgid ""
 "A very small value is set to %s value and leave %s value is too big.\n"
 "Decrease %s if small cache is really what you want"
 msgstr ""
 
-#: index.php:243
+#: index.php:247
 msgid "Slots value too small"
 msgstr ""
 
-#: index.php:244
+#: index.php:248
 #, php-format
 msgid "So many item are cached. Increase %s to a more proper value"
 msgstr ""
 
-#: index.php:248 index.php:373 index.php:385 index.php:399
+#: index.php:252 index.php:378 index.php:390 index.php:404
 msgid "Looks good"
 msgstr ""
 
-#: index.php:251
+#: index.php:256
 msgid "Cache Status"
 msgstr ""
 
-#: index.php:257
+#: index.php:262
 msgid "At least one of the caches is disabled. "
 msgstr ""
 
-#: index.php:258
+#: index.php:263
 msgid "Enable the cache."
 msgstr ""
 
-#: index.php:259
+#: index.php:264
 msgid ""
 "It was disabled by PHP crash/coredump handler or you disabled it manually."
 msgstr ""
 
-#: index.php:259
+#: index.php:264
 msgid "You disabled it manually."
 msgstr ""
 
-#: index.php:260
+#: index.php:265
 msgid "If it was caused by PHP crash/coredump, report to XCache devs"
 msgstr ""
 
-#: index.php:268
+#: index.php:273
 msgid "Coredump Directory"
 msgstr ""
 
-#: index.php:275
+#: index.php:280
 msgid ""
 "Enable coredump to save debugging information in case when PHP crash. It can "
 "also be enabled in other module like php-fpm beside XCache"
 msgstr ""
 
-#: index.php:286
+#: index.php:291
 msgid "Core files found:\n"
 msgstr ""
 
-#: index.php:287
+#: index.php:292
 msgid ""
 "Disable XCache PHP Cacher (set xcache.size=0), remove the core file(s), then "
 "restart PHP. If core file appears again, report call stack backtrace in the "
 "core to XCache devs"
 msgstr ""
 
-#: index.php:293
+#: index.php:298
 #, php-format
 msgid "You can see core files if PHP crash in %s if PHP crash"
 msgstr ""
 
-#: index.php:298
+#: index.php:303
 msgid "Readonly Protection"
 msgstr ""
 
-#: index.php:304
+#: index.php:309
 msgid "Set to enabled but not available"
 msgstr ""
 
-#: index.php:305
+#: index.php:310
 msgid "Use xcache.mmap_path other than /dev/zero"
 msgstr ""
 
-#: index.php:310 index.php:347
+#: index.php:315 index.php:352
 msgid "Disabled"
 msgstr ""
 
-#: index.php:311
+#: index.php:316
 msgid ""
 "Enable readonly_protection == --performance & ++stability. Disable "
 "readonly_protection == ++performance & --stability"
 msgstr ""
 
-#: index.php:316
+#: index.php:321
 msgid "XCache modules"
 msgstr ""
 
-#: index.php:326
+#: index.php:331
 msgid ""
 "Acceptable. Module(s) listed are built into XCache but not for production "
 "server.\n"
@@ -302,54 +302,54 @@ msgid ""
 "security."
 msgstr ""
 
-#: index.php:336
+#: index.php:341
 msgid "XCache test setting"
 msgstr ""
 
-#: index.php:343
+#: index.php:348
 msgid "xcache.test is for testing only, not for server. set it to off"
 msgstr ""
 
-#: index.php:350
+#: index.php:355
 msgid "PHP Version"
 msgstr ""
 
-#: index.php:369
+#: index.php:374
 msgid "The version of PHP you're using is known to be unstable: "
 msgstr ""
 
-#: index.php:370
+#: index.php:375
 msgid "Upgrade to new version of PHP"
 msgstr ""
 
-#: index.php:376
+#: index.php:381
 msgid "Extension Compatibility"
 msgstr ""
 
-#: index.php:380
+#: index.php:385
 msgid "Zend Optimizer loaded"
 msgstr ""
 
-#: index.php:381
+#: index.php:386
 msgid ""
 "Optimizer feature of 'Zend Optimizer' is disabled by XCache due to "
 "compatibility reason; the Loader of it is still available, encoded files are "
 "still supported"
 msgstr ""
 
-#: index.php:388
+#: index.php:393
 msgid "SAPI Compatibility"
 msgstr ""
 
-#: index.php:391
+#: index.php:396
 msgid "CGI is not supported"
 msgstr ""
 
-#: index.php:391
+#: index.php:396
 msgid "Use FastCGI or FPM instead"
 msgstr ""
 
-#: index.php:396
+#: index.php:401
 msgid ""
 "PHP_FCGI_CHILDREN should be >= 1 and use 1 group of parent/childs model. See "
 "http://xcache.lighttpd.net/wiki/Faq"

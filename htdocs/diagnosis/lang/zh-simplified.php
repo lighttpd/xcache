@@ -147,5 +147,7 @@ $strings += array(
 		=> "由于兼容性问题, 'Zend Optimizer' 的优化器已被 XCache 禁止; 其加载器依然可用, 可继续使用 Zend 加密的文件",
 		"SAPI Compatibility"
 		=> "Extension 兼容性",
+		"PHP_FCGI_CHILDREN should be >= 1 and use 1 group of parent/childs model. See http://xcache.lighttpd.net/wiki/Faq"
+		=> "PHP_FCGI_CHILDREN 应该设为 >= 1 并且使用 1 组单父多子模型. 参见 http://xcache.lighttpd.net/wiki/Faq",
 		);
 
