@@ -32,8 +32,9 @@ static inline int TRACE(const char *fmt, ...)
 	return ret;
 }
 #	else
+const char *xc_trace_get_basename(const char *path);
 #		define TRACE(fmt, ...) \
-		xc_trace("%s:%d: " fmt "\r\n", __FILE__, __LINE__, __VA_ARGS__)
+		xc_trace("%s:%d: " fmt "\r\n", xc_trace_get_basename(__FILE__), __LINE__, __VA_ARGS__)
 #	endif /* ZEND_WIN32 */
 #   undef NDEBUG
 #   undef inline
