@@ -584,6 +584,10 @@ static int xc_incompatible_zend_extension_startup_hook(zend_extension *extension
 	int status;
 	zend_bool catched = 0;
 	zend_llist old_zend_extensions = zend_extensions;
+#if TODO
+	zend_llist_position lpos;
+	zend_extension *ext;
+#endif
 	TSRMLS_FETCH();
 
 	/* restore */
@@ -596,6 +600,15 @@ static int xc_incompatible_zend_extension_startup_hook(zend_extension *extension
 	zend_extensions.tail = NULL;
 	zend_extensions.count = 0;
 	zend_extensions.dtor = NULL;
+#if TODO
+	for (ext = (zend_extension *) zend_llist_get_first_ex(&old_zend_extensions, &lpos);
+			ext;
+			ext = (zend_extension *) zend_llist_get_next_ex(&old_zend_extensions, &lpos)) {
+		if (!(strcmp(ext->name, XCACHE_NAME) == 0 || strncmp(ext->name, XCACHE_NAME " ", sizeof(XCACHE_NAME " ") - 1) == 0)) {
+			zend_llist_add_element(&zend_extensions, ext);
+		}
+	}
+#endif
 	zend_llist_add_element(&zend_extensions, extension);
 	extension = zend_get_extension(extension->name);
 
@@ -607,7 +620,7 @@ static int xc_incompatible_zend_extension_startup_hook(zend_extension *extension
 	} zend_end_try();
 
 	/* restore */
-	zend_llist_remove_tail(&zend_extensions);
+	zend_llist_destroy(&zend_extensions);
 	zend_extensions = old_zend_extensions;
 	if (catched) {
 		zend_bailout();
