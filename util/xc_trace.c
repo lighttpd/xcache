@@ -1,7 +1,15 @@
+#include "php.h"
 #include "xc_trace.h"
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 
+const char *xc_trace_get_basename(const char *path) /* {{{ */
+{
+	const char *last_separator = strrchr(path, PHP_DIR_SEPARATOR);
+	return last_separator ? last_separator + 1 : path;
+}
+/* }}} */
 int xc_vtrace(const char *fmt, va_list args) /* {{{ */
 {
 	return vfprintf(stderr, fmt, args);
