@@ -47,10 +47,10 @@ $strings += array(
 		=> "PHP 编译时错误",
 		"warning"
 		=> "警告",
-		"Error happened when compiling at least one of your PHP code"
-		=> "至少在编译其中一个您的 PHP 代码时发生编译错误",
-		"This usually means there is syntax error in your PHP code. Enable PHP error_log to see what parser error is it, fix your code"
-		=> "这通常意味着您的 PHP 代码有语法错误. 请启用 error_log 调查具体错误原因并修复您的代码",
+		"Error happened when compiling one or some of your PHP code"
+		=> "至少在编译一个或多个您的 PHP 代码时发生编译错误",
+		"PHP code failed to be compiled cannot be cached. This usually means there was syntax error in your PHP code. Enable PHP error_log to see what parser error is it, fix your code. This warning won't go away until PHP is restarted"
+		=> "编译失败的 PHP 代码是无法缓存的. 这通常意味着您的 PHP 代码有语法错误. 请启用 error_log 调查具体错误原因并修复您的代码. 重启 PHP 前这个警告不会消失",
 		"No error happened"
 		=> "未发生过错误",
 		"Busy Compiling"
@@ -63,8 +63,8 @@ $strings += array(
 		=> "空闲",
 		"Enabling VAR Cacher"
 		=> "启用 VAR 缓存器",
-		"PHP code that use XCache caching backend have to use other caching backend instead. Set xcache.var_size to non-zero"
-		=> "使用 XCache 作为数据缓存器的 PHP 代码将不得不采用其他缓存器代替. 设置 xcache.var_size 为非 0",
+		"PHP code that use XCache caching backend have to use other caching backend instead. Set xcache.var_size to non-zero if you have any PHP code that can use XCache Data Caching API"
+		=> "支持使用 XCache 作为数据缓存器的 PHP 代码将不得不采用其他缓存器代替. 如果您有代码支持 XCache 缓存 API 的话, 您可以设置 xcache.var_size 为非 0",
 		"Using VAR Cacher"
 		=> "使用 VAR 缓存器",
 		"No variable data cached"
@@ -147,6 +147,10 @@ $strings += array(
 		=> "由于兼容性问题, 'Zend Optimizer' 的优化器已被 XCache 禁止; 其加载器依然可用, 可继续使用 Zend 加密的文件",
 		"SAPI Compatibility"
 		=> "Extension 兼容性",
+		"CGI is not supported"
+		=> "不支持 CGI",
+		"Use FastCGI or FPM instead"
+		=> "请改用 FastCGI 或者 FPM",
 		"PHP_FCGI_CHILDREN should be >= 1 and use 1 group of parent/childs model. See http://xcache.lighttpd.net/wiki/Faq"
 		=> "PHP_FCGI_CHILDREN 应该设为 >= 1 并且使用 1 组单父多子模型. 参见 http://xcache.lighttpd.net/wiki/Faq",
 		);
