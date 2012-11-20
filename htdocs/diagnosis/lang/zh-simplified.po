@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-11-13 18:17+0800\n"
+"POT-Creation-Date: 2012-11-20 10:32+0800\n"
 "Language: zh\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -55,8 +55,8 @@ msgstr "(参见上面)"
 msgid "Not loaded"
 msgstr "未载入"
 
-#: index.php:90 index.php:129 index.php:135 index.php:183 index.php:290
-#: index.php:308 index.php:373 index.php:396 index.php:399
+#: index.php:90 index.php:129 index.php:135 index.php:290 index.php:308
+#: index.php:373 index.php:396 index.php:399
 msgid "error"
 msgstr "错误"
 
@@ -109,22 +109,23 @@ msgstr "已启用"
 msgid "PHP Compile Time Error"
 msgstr "PHP 编译时错误"
 
-#: index.php:152 index.php:169 index.php:193 index.php:210 index.php:238
-#: index.php:246 index.php:261 index.php:329 index.php:346
+#: index.php:152 index.php:169 index.php:183 index.php:193 index.php:210
+#: index.php:238 index.php:246 index.php:261 index.php:329 index.php:346
 msgid "warning"
 msgstr "警告"
 
 #: index.php:153
-msgid "Error happened when compiling at least one of your PHP code"
-msgstr "至少在编译其中一个您的 PHP 代码时发生编译错误"
+msgid "Error happened when compiling one or some of your PHP code"
+msgstr "至少在编译一个或多个您的 PHP 代码时发生编译错误"
 
 #: index.php:154
 msgid ""
-"This usually means there is syntax error in your PHP code. Enable PHP "
-"error_log to see what parser error is it, fix your code"
+"PHP code failed to be compiled cannot be cached. This usually means there "
+"was syntax error in your PHP code. Enable PHP error_log to see what parser "
+"error is it, fix your code. This warning won't go away until PHP is restarted"
 msgstr ""
-"这通常意味着您的 PHP 代码有语法错误. 请启用 error_log 调查具体错误原因并修复"
-"您的代码"
+"编译失败的 PHP 代码是无法缓存的. 这通常意味着您的 PHP 代码有语法错误. 请启用 "
+"error_log 调查具体错误原因并修复您的代码. 重启 PHP 前这个警告不会消失"
 
 #: index.php:158
 msgid "No error happened"
@@ -155,12 +156,14 @@ msgid "Enabling VAR Cacher"
 msgstr "启用 VAR 缓存器"
 
 #: index.php:185
+#, fuzzy
 msgid ""
 "PHP code that use XCache caching backend have to use other caching backend "
-"instead. Set xcache.var_size to non-zero"
+"instead. Set xcache.var_size to non-zero if you have any PHP code that can "
+"use XCache Data Caching API"
 msgstr ""
-"使用 XCache 作为数据缓存器的 PHP 代码将不得不采用其他缓存器代替. 设置 xcache."
-"var_size 为非 0"
+"支持使用 XCache 作为数据缓存器的 PHP 代码将不得不采用其他缓存器代替. 如果您有"
+"代码支持 XCache 缓存 API 的话, 您可以设置 xcache.var_size 为非 0"
 
 #: index.php:191
 msgid "Using VAR Cacher"
@@ -364,17 +367,16 @@ msgstr ""
 "可继续使用 Zend 加密的文件"
 
 #: index.php:393
-#, fuzzy
 msgid "SAPI Compatibility"
 msgstr "Extension 兼容性"
 
 #: index.php:396
 msgid "CGI is not supported"
-msgstr ""
+msgstr "不支持 CGI"
 
 #: index.php:396
 msgid "Use FastCGI or FPM instead"
-msgstr ""
+msgstr "请改用 FastCGI 或者 FPM"
 
 #: index.php:401
 msgid ""

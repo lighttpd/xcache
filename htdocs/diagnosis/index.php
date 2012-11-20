@@ -150,8 +150,8 @@ else if (!$phpCacheCount) {
 }
 else if ($errors) {
 	result(N_("warning")
-		, _T("Error happened when compiling at least one of your PHP code")
-		, _T("This usually means there is syntax error in your PHP code. Enable PHP error_log to see what parser error is it, fix your code")
+		, _T("Error happened when compiling one or some of your PHP code")
+		, _T("PHP code failed to be compiled cannot be cached. This usually means there was syntax error in your PHP code. Enable PHP error_log to see what parser error is it, fix your code. This warning won't go away until PHP is restarted")
 		);
 }
 else {
@@ -180,9 +180,9 @@ if (!$xcacheLoaded) {
 	result(N_("skipped"), "XCache not loaded");
 }
 else if (!ini_get("xcache.var_size")) {
-	result(N_("error")
+	result(N_("warning")
 		, _T("Not enabled")
-		, _T("PHP code that use XCache caching backend have to use other caching backend instead. Set xcache.var_size to non-zero")
+		, _T("PHP code that use XCache caching backend have to use other caching backend instead. Set xcache.var_size to non-zero if you have any PHP code that can use XCache Data Caching API")
 		);
 }
 else {
