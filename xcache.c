@@ -348,6 +348,8 @@ PHP_FUNCTION(xcache_get_type)
 PHP_FUNCTION(xcache_coredump)
 {
 	if (xc_test) {
+		char *null_ptr = NULL;
+		*null_ptr = 0;
 		raise(SIGSEGV);
 	}
 	else {
