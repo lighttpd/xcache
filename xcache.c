@@ -36,6 +36,7 @@
 
 /* {{{ globals */
 static char *xc_coredump_dir = NULL;
+static zend_bool xc_coredump_type = 0;
 static zend_bool xc_disable_on_crash = 0;
 
 static zend_compile_file_t *old_compile_file = NULL;
@@ -429,6 +430,7 @@ static LONG WINAPI miniDumperFilter(struct _EXCEPTION_POINTERS *pExceptionInfo) 
 
 	if (fileHandle != INVALID_HANDLE_VALUE) {
 		MINIDUMP_EXCEPTION_INFORMATION exceptionInformation;
+		MINIDUMP_TYPE type = xc_coredump_type ? xc_coredump_type : (MiniDumpNormal|MiniDumpWithDataSegs|MiniDumpWithIndirectlyReferencedMemory);
 		BOOL ok;
 
 		exceptionInformation.ThreadId = GetCurrentThreadId();
@@ -436,7 +438,7 @@ static LONG WINAPI miniDumperFilter(struct _EXCEPTION_POINTERS *pExceptionInfo) 
 		exceptionInformation.ClientPointers = FALSE;
 
 		/* write the dump */
-		ok = dbghelp_MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), fileHandle, MiniDumpNormal|MiniDumpWithDataSegs|MiniDumpWithIndirectlyReferencedMemory, &exceptionInformation, NULL, NULL);
+		ok = dbghelp_MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), fileHandle, type, &exceptionInformation, NULL, NULL);
 		CloseHandle(fileHandle);
 		if (ok) {
 			zend_error(E_ERROR, "Saved dump file to '%s'", crash_dumpPath);
@@ -718,6 +720,7 @@ static zend_extension xc_zend_extension_entry = {
 /* {{{ PHP_INI */
 PHP_INI_BEGIN()
 	PHP_INI_ENTRY1     ("xcache.coredump_directory",      "", PHP_INI_SYSTEM, xcache_OnUpdateString,   &xc_coredump_dir)
+	PHP_INI_ENTRY1     ("xcache.coredump_type",          "0", PHP_INI_SYSTEM, xcache_OnUpdateULong,    &xc_coredump_type)
 	PHP_INI_ENTRY1_EX  ("xcache.disable_on_crash",       "0", PHP_INI_SYSTEM, xcache_OnUpdateBool,     &xc_disable_on_crash, zend_ini_boolean_displayer_cb)
 	PHP_INI_ENTRY1_EX  ("xcache.test",                   "0", PHP_INI_SYSTEM, xcache_OnUpdateBool,     &xc_test,             zend_ini_boolean_displayer_cb)
 	STD_PHP_INI_BOOLEAN("xcache.experimental",           "0", PHP_INI_ALL,    OnUpdateBool,        experimental,      zend_xcache_globals, xcache_globals)
