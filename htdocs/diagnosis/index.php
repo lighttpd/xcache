@@ -380,13 +380,22 @@ else {
 // }}}
 checking(_T("Extension Compatibility")); // {{{
 $loadedZendExtensions = get_loaded_extensions(true);
+$extensionGood = true;
 if (array_search("Zend Optimizer", $loadedZendExtensions) !== false) {
 	result(N_("info")
 		, _T("Zend Optimizer loaded")
 		, _T("Optimizer feature of 'Zend Optimizer' is disabled by XCache due to compatibility reason; the Loader of it is still available, encoded files are still supported")
 		);
+	$extensionGood = false;
 }
-else {
+if (array_search("the ionCube PHP Loader", $loadedZendExtensions) !== false) {
+	result(N_("info")
+		, _T("the ionCube PHP Loader loaded")
+		, _T("Compatibility with this the ionCube PHp Loader' is taken care of; But in case if there's any problem, report to ionCube team and/or XCache devs")
+		);
+	$extensionGood = false;
+}
+if (!$extensionGood) {
 	result(N_("info"), _T("Looks good"));
 }
 // }}}
