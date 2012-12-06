@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#ifdef ZEND_WIN32
+#	include <process.h>
+#endif
 
 #ifndef ZEND_WIN32
 typedef int HANDLE;

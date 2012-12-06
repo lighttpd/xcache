@@ -24,7 +24,10 @@
 #include "ext/standard/info.h"
 #include "ext/standard/md5.h"
 #ifdef ZEND_ENGINE_2_1
-#include "ext/date/php_date.h"
+#	include "ext/date/php_date.h"
+#endif
+#ifdef ZEND_WIN32
+#	include <process.h>
 #endif
 #include "ext/standard/php_math.h"
 #include "SAPI.h"
@@ -3467,11 +3470,7 @@ static int xc_cacher_zend_startup(zend_extension *extension) /* {{{ */
 		}
 		xc_initized = 1;
 		xc_init_time = time(NULL);
-#ifdef PHP_WIN32
-		xc_init_instance_id = GetCurrentProcessId();
-#else
 		xc_init_instance_id = getpid();
-#endif
 #ifdef ZTS
 		xc_init_instance_subid = tsrm_thread_id();
 #endif
