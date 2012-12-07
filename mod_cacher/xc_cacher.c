@@ -2253,7 +2253,7 @@ zend_bool xc_is_ro(const void *p) /* {{{ */
 	return 0;
 }
 /* }}} */
-zned_bool xc_is_shm(const void *p) /* {{{ */
+zend_bool xc_is_shm(const void *p) /* {{{ */
 {
 	return xc_is_ro(p) || xc_is_rw(p);
 }
