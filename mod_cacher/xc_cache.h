@@ -184,9 +184,9 @@ typedef struct xc_entry_hash_t { /* {{{ */
 } xc_entry_hash_t;
 /* }}} */
 
-int xc_is_rw(const void *p);
-int xc_is_ro(const void *p);
-int xc_is_shm(const void *p);
+zend_bool xc_is_rw(const void *p);
+zend_bool xc_is_ro(const void *p);
+zend_bool xc_is_shm(const void *p);
 /* {{{ xc_gc_op_array_t */
 typedef struct {
 #ifdef ZEND_ENGINE_2
