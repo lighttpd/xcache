@@ -223,7 +223,7 @@ static void xc_php_release_unlocked(xc_cache_t *cache, xc_entry_data_php_t *php)
 }
 /* }}} */
 
-static inline int xc_entry_equal_unlocked(xc_entry_type_t type, const xc_entry_t *entry1, const xc_entry_t *entry2 TSRMLS_DC) /* {{{ */
+static inline zend_bool xc_entry_equal_unlocked(xc_entry_type_t type, const xc_entry_t *entry1, const xc_entry_t *entry2 TSRMLS_DC) /* {{{ */
 {
 	/* this function isn't required but can be in unlocked */
 	switch (type) {
@@ -2203,7 +2203,7 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 /* }}} */
 
 /* gdb helper functions, but N/A for coredump */
-int xc_is_rw(const void *p) /* {{{ */
+zend_bool xc_is_rw(const void *p) /* {{{ */
 {
 	xc_shm_t *shm;
 	size_t i;
@@ -2228,7 +2228,7 @@ int xc_is_rw(const void *p) /* {{{ */
 	return 0;
 }
 /* }}} */
-int xc_is_ro(const void *p) /* {{{ */
+zend_bool xc_is_ro(const void *p) /* {{{ */
 {
 	xc_shm_t *shm;
 	size_t i;
@@ -2559,7 +2559,7 @@ typedef struct xc_namebuffer_t_ { /* {{{ */
 		xc_free_alloca(name##_buffer.buffer, name##_buffer.useheap); \
 	}
 
-static inline int xc_var_has_prefix(xc_entry_t *entry, zval *prefix TSRMLS_DC) /* {{{ */
+static inline zend_bool xc_var_has_prefix(xc_entry_t *entry, zval *prefix TSRMLS_DC) /* {{{ */
 {
 	zend_bool result = 0;
 	VAR_BUFFER_FLAGS(prefix);
@@ -2592,7 +2592,7 @@ static int xc_init_constant(int module_number TSRMLS_DC) /* {{{ */
 {
 	zend_register_long_constant(ZEND_STRS("XC_TYPE_PHP"), XC_TYPE_PHP, CONST_CS | CONST_PERSISTENT, module_number TSRMLS_CC);
 	zend_register_long_constant(ZEND_STRS("XC_TYPE_VAR"), XC_TYPE_VAR, CONST_CS | CONST_PERSISTENT, module_number TSRMLS_CC);
-	return 0;
+	return SUCCESS;
 }
 /* }}} */
 static xc_shm_t *xc_cache_destroy(xc_cache_t *caches, xc_hash_t *hcache) /* {{{ */
@@ -2736,7 +2736,7 @@ err:
 		xc_shm_destroy(shm);
 		shm = NULL;
 	}
-	return 0;
+	return FAILURE;
 }
 /* }}} */
 static void xc_request_init(TSRMLS_D) /* {{{ */
@@ -2808,7 +2808,7 @@ static void xc_request_shutdown(TSRMLS_D) /* {{{ */
 /* }}} */
 
 /* user functions */
-static int xcache_admin_auth_check(TSRMLS_D) /* {{{ */
+static zend_bool xcache_admin_auth_check(TSRMLS_D) /* {{{ */
 {
 	zval **server = NULL;
 	zval **user = NULL;
