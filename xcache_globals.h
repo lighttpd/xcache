@@ -28,6 +28,9 @@ ZEND_BEGIN_MODULE_GLOBALS(xcache)
 	zval var_namespace_soft;
 
 	zend_llist gc_op_arrays;
+#ifdef ZEND_ACC_ALIAS
+	zend_llist gc_class_entries;
+#endif
 
 #ifdef HAVE_XCACHE_CONSTANT
 	HashTable internal_constant_table;
