@@ -719,6 +719,11 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		/* really fast shallow copy */
 		memcpy(dst, src, sizeof(src[0]));
 		dst->refcount[0] = 1000;
+#ifdef ZEND_ACC_ALIAS
+		if ((processor->active_class_entry_src && (processor->active_class_entry_src->ce_flags & ZEND_ACC_TRAIT))) {
+			PROC_ZSTRING(, function_name)
+		}
+#endif
 		/* deep */
 		STRUCT_P(HashTable, static_variables, HashTable_zval_ptr)
 #ifdef ZEND_ENGINE_2

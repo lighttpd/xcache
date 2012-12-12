@@ -1,8 +1,9 @@
 3.0.1 2012-??-??
 ChangeLog
 ========
- * fixs crash when cache is too small on start up
- * fixs #290: workaround phpize vs fbsd make bug again
+ * fixes crash when cache is too small on start up
+ * fixes #295: crash using traits with PHP 5.4.8+
+ * fixes #290: workaround phpize vs fbsd make bug again
  * improve compatibility with "the ionCube PHP Loader", Zend Optimizer
  * fix random crash when cache is reinitialized yet failed (Thanks to Brad Baker for generating crash dump)
 
