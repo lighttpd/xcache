@@ -2610,7 +2610,9 @@ static xc_shm_t *xc_cache_destroy(xc_cache_t *caches, xc_hash_t *hcache) /* {{{ 
 			}
 			/* do NOT touch cached data */
 			shm = cache->shm;
-			cache->shm->handlers->memdestroy(cache->allocator);
+			if (shm) {
+				cache->shm->handlers->memdestroy(cache->allocator);
+			}
 		}
 	}
 	free(caches);
