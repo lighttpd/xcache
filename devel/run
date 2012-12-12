@@ -214,9 +214,10 @@ run() {
 	esac
 
 	rm -f php-src
-	find -L . -type l | xargs rm -fv
+	find -L . -type d -print0 | xargs -0 rmdir -p
+	find -L . -type l -print0 | xargs -0 rm -fv
 	lndir "$xcachesrcdir" >/dev/null || true
-	find . -iname .\*.swp | xargs rm -f
+	find . -iname .\*.swp -print0 | xargs -0 rm -f
 	ln -snf ~/src/php/$phpbasename php-src
 	for i in ~/src/php/$phpbasename/sapi/cgi/php{,-cgi}; do
 		if [[ -r $i ]]; then
