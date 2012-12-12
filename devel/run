@@ -214,7 +214,7 @@ run() {
 	esac
 
 	rm -f php-src
-	find -L . -type d -print0 | xargs -0 rmdir -p 2>/dev/null
+	find -L . -type d -print0 | xargs -0 rmdir -p 2>/dev/null || true
 	find -L . -type l -print0 | xargs -0 rm -fv
 	lndir "$xcachesrcdir" >/dev/null || true
 	find . -iname .\*.swp -print0 | xargs -0 rm -f
