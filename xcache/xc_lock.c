@@ -5,6 +5,10 @@
 #include <stdlib.h>
 #ifdef ZEND_WIN32
 #	include <process.h>
+#else
+#	include <unistd.h>
+#	include <fcntl.h>
+#	include <errno.h>
 #endif
 
 #ifndef ZEND_WIN32
@@ -22,22 +26,19 @@ typedef int HANDLE;
 		FILE_ATTRIBUTE_NORMAL, \
 		NULL)
 #endif
-#include "xc_lock.h"
 
-struct _xc_lock_t {
+typedef struct {
 	HANDLE fd;
 	char *pathname;
-};
+} xc_fcntl_lock_t;
 
+/* {{{ fcntl lock impl */
 #ifndef ZEND_WIN32
-#	include <unistd.h>
-#	include <fcntl.h>
-#	include <errno.h>
 #	define LCK_WR F_WRLCK
 #	define LCK_RD F_RDLCK
 #	define LCK_UN F_UNLCK
 #	define LCK_NB 0
-static inline int dolock(xc_lock_t *lck, int type) /* {{{ */
+static inline int dolock(xc_fcntl_lock_t *lck, int type)
 {
 	int ret;
 	struct flock lock;
@@ -53,7 +54,6 @@ static inline int dolock(xc_lock_t *lck, int type) /* {{{ */
 	} while (ret < 0 && errno == EINTR);
 	return ret;
 }
-/* }}} */
 #else
 
 #	include <win32/flock.h>
@@ -68,7 +68,7 @@ static inline int dolock(xc_lock_t *lck, int type) /* {{{ */
 #	define LCK_RD 0
 #	define LCK_UN 0
 #	define LCK_NB LOCKFILE_FAIL_IMMEDIATELY
-static inline int dolock(xc_lock_t *lck, int type) /* {{{ */
+static inline int dolock(xc_fcntl_lock_t *lck, int type)
 {
 	static OVERLAPPED offset = {0, 0, 0, 0, NULL};
 
@@ -79,13 +79,12 @@ static inline int dolock(xc_lock_t *lck, int type) /* {{{ */
 		return LockFileEx((HANDLE)lck->fd, type, 0, 1, 0, &offset);
 	}
 }
-/* }}} */
 #endif
+/* }}} */
 
-xc_lock_t *xc_fcntl_init(const char *pathname) /* {{{ */
+static zend_bool xc_fcntl_init(xc_fcntl_lock_t *lck, const char *pathname) /* {{{ */
 {
 	HANDLE fd;
-	xc_lock_t *lck;
 	int size;
 	char *myname;
 
@@ -113,7 +112,6 @@ xc_lock_t *xc_fcntl_init(const char *pathname) /* {{{ */
 	fd = open(pathname, O_RDWR|O_CREAT, 0666);
 
 	if (fd != INVALID_HANDLE_VALUE) {
-		lck = malloc(sizeof(lck[0]));
 
 #ifndef __CYGWIN__
 		unlink(pathname);
@@ -132,37 +130,168 @@ xc_lock_t *xc_fcntl_init(const char *pathname) /* {{{ */
 		free(myname);
 	}
 
-	return lck;
+	return lck ? 1 : 0;
 }
 /* }}} */
-void xc_fcntl_destroy(xc_lock_t *lck) /* {{{ */
+static void xc_fcntl_destroy(xc_fcntl_lock_t *lck) /* {{{ */
 {
 	close(lck->fd);
 #ifdef __CYGWIN__
 	unlink(lck->pathname);
 #endif
 	free(lck->pathname);
-	free(lck);
 }
 /* }}} */
-void xc_fcntl_lock(xc_lock_t *lck) /* {{{ */
+static void xc_fcntl_lock(xc_fcntl_lock_t *lck) /* {{{ */
 {
 	if (dolock(lck, LCK_WR) < 0) {
 		zend_error(E_ERROR, "xc_fcntl_lock failed errno:%d", errno);
 	}
 }
 /* }}} */
-void xc_fcntl_rdlock(xc_lock_t *lck) /* {{{ */
+static void xc_fcntl_rdlock(xc_fcntl_lock_t *lck) /* {{{ */
 {
 	if (dolock(lck, LCK_RD) < 0) {
 		zend_error(E_ERROR, "xc_fcntl_lock failed errno:%d", errno);
 	}
 }
 /* }}} */
-void xc_fcntl_unlock(xc_lock_t *lck) /* {{{ */
+static void xc_fcntl_unlock(xc_fcntl_lock_t *lck) /* {{{ */
 {
 	if (dolock(lck, LCK_UN) < 0) {
 		zend_error(E_ERROR, "xc_fcntl_unlock failed errno:%d", errno);
 	}
+}
+/* }}} */
+
+#undef XC_INTERPROCESS_LOCK_IMPLEMENTED
+#undef XC_LOCK_UNSUED
+
+#ifdef ZEND_WIN32
+#	define XC_INTERPROCESS_LOCK_IMPLEMENTED
+#	ifndef ZTS
+#		define XC_LOCK_UNSUED
+#	endif
+#endif
+
+#if defined(PTHREADS)
+#	define XC_INTERPROCESS_LOCK_IMPLEMENTED
+#endif
+
+struct _xc_lock_t {
+#ifdef XC_LOCK_UNSUED
+	int dummy;
+#else
+#	ifdef ZTS
+	MUTEX_T tsrm_mutex;
+#	endif
+
+#	ifndef XC_INTERPROCESS_LOCK_IMPLEMENTED
+#		ifdef ZTS
+	zend_bool use_fcntl;
+#		endif
+	xc_fcntl_lock_t fcntl_lock;
+#	endif
+#endif
+};
+
+xc_lock_t *xc_lock_init(const char *pathname, int interprocess) /* {{{ */
+{
+#ifdef XC_LOCK_UNSUED
+	return (xc_lock_t *) 1;
+#else
+#	ifdef ZTS
+	xc_lock_t *lck = malloc(sizeof(xc_lock_t));
+#		if defined(PTHREADS)
+	pthread_mutexattr_t psharedm;
+	pthread_mutexattr_init(&psharedm);
+	pthread_mutexattr_setpshared(&psharedm, PTHREAD_PROCESS_SHARED);
+	lck->tsrm_mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(lck->tsrm_mutex, &psharedm);
+#		else
+	lck->tsrm_mutex = tsrm_mutex_alloc();
+#		endif
+#	endif
+#	ifndef XC_INTERPROCESS_LOCK_IMPLEMENTED
+#		ifdef ZTS
+	lck->use_fcntl = interprocess;
+	if (lck->use_fcntl)
+#		endif
+		xc_fcntl_init(&lck->fcntl_lock, pathname);
+#	endif
+	return lck;
+#endif
+}
+/* }}} */
+void xc_lock_destroy(xc_lock_t *lck) /* {{{ */
+{
+#ifdef XC_LOCK_UNSUED
+	/* do nothing */
+#else
+#	ifdef ZTS
+	tsrm_mutex_free(lck->tsrm_mutex);
+#	endif
+#	ifndef XC_INTERPROCESS_LOCK_IMPLEMENTED
+#		ifdef ZTS
+	if (lck->use_fcntl)
+#		endif
+		xc_fcntl_destroy(&lck->fcntl_lock);
+#	endif
+	free(lck);
+#endif
+}
+/* }}} */
+void xc_lock(xc_lock_t *lck) /* {{{ */
+{
+#ifdef XC_LOCK_UNSUED
+#else
+#	ifdef ZTS
+	if (tsrm_mutex_lock(lck->tsrm_mutex) < 0) {
+		zend_error(E_ERROR, "xc_lock failed errno:%d", errno);
+	}
+#	endif
+#	ifndef XC_INTERPROCESS_LOCK_IMPLEMENTED
+#		ifdef ZTS
+	if (lck->use_fcntl)
+#		endif
+		xc_fcntl_lock(&lck->fcntl_lock);
+#	endif
+#endif
+}
+/* }}} */
+void xc_rdlock(xc_lock_t *lck) /* {{{ */
+{
+#ifdef XC_LOCK_UNSUED
+#else
+#	ifdef ZTS
+	if (tsrm_mutex_lock(lck->tsrm_mutex) < 0) {
+		zend_error(E_ERROR, "xc_rdlock failed errno:%d", errno);
+	}
+#	endif
+#	ifndef XC_INTERPROCESS_LOCK_IMPLEMENTED
+#		ifdef ZTS
+	if (lck->use_fcntl)
+#		endif
+		xc_fcntl_lock(&lck->fcntl_lock);
+#	endif
+#endif
+}
+/* }}} */
+void xc_unlock(xc_lock_t *lck) /* {{{ */
+{
+#ifdef XC_LOCK_UNSUED
+#else
+#	ifndef XC_INTERPROCESS_LOCK_IMPLEMENTED
+#		ifdef ZTS
+	if (lck->use_fcntl)
+#		endif
+		xc_fcntl_unlock(&lck->fcntl_lock);
+#	endif
+#endif
+#	ifdef ZTS
+	if (tsrm_mutex_unlock(lck->tsrm_mutex) < 0) {
+		zend_error(E_ERROR, "xc_unlock failed errno:%d", errno);
+	}
+#	endif
 }
 /* }}} */

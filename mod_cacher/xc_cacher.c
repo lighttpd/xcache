@@ -2655,7 +2655,7 @@ static xc_cache_t *xc_cache_init(xc_shm_t *shm, const char *allocator_name, xc_h
 		if (hphp) {
 			CHECK(cache->cached->phps = allocator->vtable->calloc(allocator, hphp->size, sizeof(xc_entry_data_php_t*)), "phps OOM");
 		}
-		CHECK(cache->lck              = xc_lock_init(NULL), "can't create lock");
+		CHECK(cache->lck              = xc_lock_init(NULL, 0), "can't create lock");
 
 		cache->hcache  = hcache;
 		cache->hentry  = hentry;
