@@ -89,11 +89,11 @@ endif
 
 ifeq (${PHP_DEVEL_DIR},)
 tags:
-	echo "* Making tags without php source files"
+	@echo "* Making tags without php source files"
 	"$(CTAGS)" -R .
 else
 tags:
-	echo "* Making tags with ${PHP_DEVEL_DIR}"
+	@echo "* Making tags with ${PHP_DEVEL_DIR}"
 	"$(CTAGS)" -R . "${PHP_DEVEL_DIR}/main" "${PHP_DEVEL_DIR}/Zend" "${PHP_DEVEL_DIR}/TSRM" "${PHP_DEVEL_DIR}/ext/standard"
 endif
 
