@@ -38,7 +38,7 @@ struct _xc_lock_t {
 #	define LCK_UN F_UNLCK
 #	define LCK_NB 0
 static inline int dolock(xc_lock_t *lck, int type) /* {{{ */
-{ 
+{
 	int ret;
 	struct flock lock;
 
@@ -69,7 +69,7 @@ static inline int dolock(xc_lock_t *lck, int type) /* {{{ */
 #	define LCK_UN 0
 #	define LCK_NB LOCKFILE_FAIL_IMMEDIATELY
 static inline int dolock(xc_lock_t *lck, int type) /* {{{ */
-{ 
+{
 	static OVERLAPPED offset = {0, 0, 0, 0, NULL};
 
 	if (type == LCK_UN) {
@@ -136,7 +136,7 @@ xc_lock_t *xc_fcntl_init(const char *pathname) /* {{{ */
 }
 /* }}} */
 void xc_fcntl_destroy(xc_lock_t *lck) /* {{{ */
-{   
+{
 	close(lck->fd);
 #ifdef __CYGWIN__
 	unlink(lck->pathname);
@@ -146,21 +146,21 @@ void xc_fcntl_destroy(xc_lock_t *lck) /* {{{ */
 }
 /* }}} */
 void xc_fcntl_lock(xc_lock_t *lck) /* {{{ */
-{   
+{
 	if (dolock(lck, LCK_WR) < 0) {
 		zend_error(E_ERROR, "xc_fcntl_lock failed errno:%d", errno);
 	}
 }
 /* }}} */
 void xc_fcntl_rdlock(xc_lock_t *lck) /* {{{ */
-{   
+{
 	if (dolock(lck, LCK_RD) < 0) {
 		zend_error(E_ERROR, "xc_fcntl_lock failed errno:%d", errno);
 	}
 }
 /* }}} */
 void xc_fcntl_unlock(xc_lock_t *lck) /* {{{ */
-{   
+{
 	if (dolock(lck, LCK_UN) < 0) {
 		zend_error(E_ERROR, "xc_fcntl_unlock failed errno:%d", errno);
 	}
