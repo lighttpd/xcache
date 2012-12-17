@@ -11,6 +11,25 @@
 #	include <errno.h>
 #endif
 
+/* {{{ detect what lock to use */
+#undef XC_INTERPROCESS_LOCK_IMPLEMENTED
+#undef XC_LOCK_UNSUED
+
+#ifdef ZEND_WIN32
+#	define XC_INTERPROCESS_LOCK_IMPLEMENTED
+#	ifndef ZTS
+#		define XC_LOCK_UNSUED
+#	endif
+#endif
+
+#ifdef _POSIX_THREAD_PROCESS_SHARED
+#	include "../mod_cacher/xc_cache.h"
+#	define XC_INTERPROCESS_LOCK_IMPLEMENTED
+#endif
+/* }}} */
+
+#ifndef XC_INTERPROCESS_LOCK_IMPLEMENTED
+
 #ifndef ZEND_WIN32
 typedef int HANDLE;
 #	ifndef INVALID_HANDLE_VALUE
@@ -73,10 +92,10 @@ static inline int dolock(xc_fcntl_lock_t *lck, int type)
 	static OVERLAPPED offset = {0, 0, 0, 0, NULL};
 
 	if (type == LCK_UN) {
-		return UnlockFileEx((HANDLE)lck->fd, 0, 1, 0, &offset);
+		return UnlockFileEx(lck->fd, 0, 1, 0, &offset);
 	}
 	else {
-		return LockFileEx((HANDLE)lck->fd, type, 0, 1, 0, &offset);
+		return LockFileEx(lck->fd, type, 0, 1, 0, &offset);
 	}
 }
 #endif
@@ -163,20 +182,7 @@ static void xc_fcntl_unlock(xc_fcntl_lock_t *lck) /* {{{ */
 	}
 }
 /* }}} */
-
-#undef XC_INTERPROCESS_LOCK_IMPLEMENTED
-#undef XC_LOCK_UNSUED
-
-#ifdef ZEND_WIN32
-#	define XC_INTERPROCESS_LOCK_IMPLEMENTED
-#	ifndef ZTS
-#		define XC_LOCK_UNSUED
-#	endif
-#endif
-
-#if defined(PTHREADS)
-#	define XC_INTERPROCESS_LOCK_IMPLEMENTED
-#endif
+#endif /* XC_INTERPROCESS_LOCK_IMPLEMENTED */
 
 struct _xc_lock_t {
 #ifdef XC_LOCK_UNSUED
@@ -186,6 +192,9 @@ struct _xc_lock_t {
 	MUTEX_T tsrm_mutex;
 #	endif
 
+#	ifdef _POSIX_THREAD_PROCESS_SHARED
+	pthread_mutex_t pthread_mutex;
+#	endif
 #	ifndef XC_INTERPROCESS_LOCK_IMPLEMENTED
 #		ifdef ZTS
 	zend_bool use_fcntl;
@@ -193,51 +202,62 @@ struct _xc_lock_t {
 	xc_fcntl_lock_t fcntl_lock;
 #	endif
 #endif
+
+#ifndef NDEBUG
+	zend_bool locked;
+#endif
 };
 
-xc_lock_t *xc_lock_init(const char *pathname, int interprocess) /* {{{ */
+size_t xc_lock_size(void) /* {{{ */
 {
-#ifdef XC_LOCK_UNSUED
-	return (xc_lock_t *) 1;
-#else
-	xc_lock_t *lck = malloc(sizeof(xc_lock_t));
-#	ifdef ZTS
-#		if defined(PTHREADS)
+	return sizeof(xc_lock_t);
+}
+/* }}} */
+xc_lock_t *xc_lock_init(xc_lock_t *lck, const char *pathname, unsigned char interprocess) /* {{{ */
+{
+#ifdef ZTS
+#	ifdef _POSIX_THREAD_PROCESS_SHARED
 	pthread_mutexattr_t psharedm;
 	pthread_mutexattr_init(&psharedm);
 	pthread_mutexattr_setpshared(&psharedm, PTHREAD_PROCESS_SHARED);
-	lck->tsrm_mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
-	pthread_mutex_init(lck->tsrm_mutex, &psharedm);
-#		else
+	pthread_mutex_init(&lck->pthread_mutex, &psharedm);
+	lck->tsrm_mutex = &lck->pthread_mutex;
+#	else
 	lck->tsrm_mutex = tsrm_mutex_alloc();
-#		endif
 #	endif
-#	ifndef XC_INTERPROCESS_LOCK_IMPLEMENTED
-#		ifdef ZTS
+#endif
+
+#ifndef XC_INTERPROCESS_LOCK_IMPLEMENTED
+#	ifdef ZTS
 	lck->use_fcntl = interprocess;
 	if (lck->use_fcntl)
-#		endif
-		xc_fcntl_init(&lck->fcntl_lock, pathname);
 #	endif
-	return lck;
+		xc_fcntl_init(&lck->fcntl_lock, pathname);
 #endif
+
+#ifndef NDEBUG
+	lck->locked = 0;
+#endif
+
+	return lck;
 }
 /* }}} */
 void xc_lock_destroy(xc_lock_t *lck) /* {{{ */
 {
-#ifdef XC_LOCK_UNSUED
-	/* do nothing */
-#else
-#	ifdef ZTS
+#ifdef ZTS
+#	ifdef _POSIX_THREAD_PROCESS_SHARED
+	pthread_mutex_destroy(&lck->pthread_mutex);
+#	else
 	tsrm_mutex_free(lck->tsrm_mutex);
 #	endif
-#	ifndef XC_INTERPROCESS_LOCK_IMPLEMENTED
-#		ifdef ZTS
+	lck->tsrm_mutex = NULL;
+#endif
+
+#ifndef XC_INTERPROCESS_LOCK_IMPLEMENTED
+#	ifdef ZTS
 	if (lck->use_fcntl)
-#		endif
-		xc_fcntl_destroy(&lck->fcntl_lock);
 #	endif
-	free(lck);
+		xc_fcntl_destroy(&lck->fcntl_lock);
 #endif
 }
 /* }}} */
@@ -257,6 +277,12 @@ void xc_lock(xc_lock_t *lck) /* {{{ */
 		xc_fcntl_lock(&lck->fcntl_lock);
 #	endif
 #endif
+
+#ifndef NDEBUG
+	assert(!lck->locked);
+	lck->locked = 1;
+	assert(lck->locked);
+#endif
 }
 /* }}} */
 void xc_rdlock(xc_lock_t *lck) /* {{{ */
@@ -275,10 +301,22 @@ void xc_rdlock(xc_lock_t *lck) /* {{{ */
 		xc_fcntl_lock(&lck->fcntl_lock);
 #	endif
 #endif
+
+#ifndef NDEBUG
+	assert(!lck->locked);
+	lck->locked = 1;
+	assert(lck->locked);
+#endif
 }
 /* }}} */
 void xc_unlock(xc_lock_t *lck) /* {{{ */
 {
+#ifndef NDEBUG
+	assert(lck->locked);
+	lck->locked = 0;
+	assert(!lck->locked);
+#endif
+
 #ifdef XC_LOCK_UNSUED
 #else
 #	ifndef XC_INTERPROCESS_LOCK_IMPLEMENTED
