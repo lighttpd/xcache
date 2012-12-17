@@ -80,7 +80,7 @@ if (!$xcacheLoaded) {
 	if ($loadedIni) {
 		echo sprintf(_T("Add extension=xcache.so (or xcache.dll) in %s"), $loadedIni);
 	}
-	else if (preg_match('!Configuration File \\(php.ini\\) Path *</td><td class="v">([^<]+)!', $info, $m)) {
+	else if (preg_match('!Configuration File \\(php.ini\\) Path *</td><td class="v">([^<]+)!', $loadedIni, $m)) {
 		echo sprintf(_T("Please put a php.ini in %s and add extension=xcache.so (or xcache.dll) in it"), $iniDirectory);
 	}
 	else {
