@@ -64,10 +64,10 @@ function getIniFileInfo() // {{{
 	$loadedIni = '';
 	$iniDirectory = '';
 	if (preg_match('!<td class="v">(.*?\\.ini)!', $info, $m)) {
-		$loadedIni = $m[1];
+		$loadedIni = trim($m[1]);
 	}
 	else if (preg_match('!Configuration File \\(php.ini\\) Path *</td><td class="v">([^<]+)!', $info, $m)) {
-		$iniDirectory = $m[1];
+		$iniDirectory = trim($m[1]);
 	}
 	return array($loadedIni, $iniDirectory, $iniInfo);
 }
@@ -80,7 +80,7 @@ if (!$xcacheLoaded) {
 	if ($loadedIni) {
 		echo sprintf(_T("Add extension=xcache.so (or xcache.dll) in %s"), $loadedIni);
 	}
-	else if (preg_match('!Configuration File \\(php.ini\\) Path *</td><td class="v">([^<]+)!', $loadedIni, $m)) {
+	else if ($iniDirectory) {
 		echo sprintf(_T("Please put a php.ini in %s and add extension=xcache.so (or xcache.dll) in it"), $iniDirectory);
 	}
 	else {
