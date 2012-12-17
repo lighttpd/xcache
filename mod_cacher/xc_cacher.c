@@ -410,7 +410,7 @@ static inline void xc_counters_inc(time_t *curtime, zend_uint *curslot, time_t i
 {
 	time_t n = XG(request_time) / interval;
 	if (*curtime != n) {
-		zend_uint target_slot = n % count;
+		zend_uint target_slot = ((zend_uint) n) % count;
 		zend_uint slot;
 		for (slot = advance_wrapped(*curslot, count);
 				slot != target_slot;
@@ -448,7 +448,7 @@ typedef XC_ENTRY_APPLY_FUNC((*cache_apply_unlocked_func_t));
 static void xc_entry_apply_unlocked(xc_entry_type_t type, xc_cache_t *cache, cache_apply_unlocked_func_t apply_func TSRMLS_DC) /* {{{ */
 {
 	xc_entry_t *p, **pp;
-	int i, c;
+	size_t i, c;
 
 	for (i = 0, c = cache->hentry->size; i < c; i ++) {
 		pp = &(cache->cached->entries[i]);
@@ -516,7 +516,7 @@ static void xc_gc_expires_php(TSRMLS_D) /* {{{ */
 /* }}} */
 static void xc_gc_expires_var(TSRMLS_D) /* {{{ */
 {
-	int i, c;
+	size_t i, c;
 
 	if (!xc_var_gc_interval || !xc_var_caches) {
 		return;
@@ -735,7 +735,7 @@ static void xc_fillentry_unlocked(xc_entry_type_t type, const xc_entry_t *entry,
 static void xc_filllist_unlocked(xc_entry_type_t type, xc_cache_t *cache, zval *return_value TSRMLS_DC) /* {{{ */
 {
 	zval* list;
-	int i, c;
+	size_t i, c;
 	xc_entry_t *e;
 
 	ALLOC_INIT_ZVAL(list);
@@ -933,7 +933,7 @@ static int xc_resolve_path(const char *filepath, char *path_buffer, xc_resolve_p
 	char *paths, *path;
 	char *tokbuf;
 	size_t path_buffer_len;
-	int size;
+	size_t size;
 	char tokens[] = { DEFAULT_DIR_SEPARATOR, '\0' };
 	int ret;
 	ALLOCA_FLAG(use_heap)
@@ -968,7 +968,7 @@ static int xc_resolve_path(const char *filepath, char *path_buffer, xc_resolve_p
 	/* fall back to current directory */
 	if (zend_is_executing(TSRMLS_C)) {
 		const char *executing_filename = zend_get_executed_filename(TSRMLS_C);
-		int dirname_len = strlen(executing_filename);
+		int dirname_len = (int) strlen(executing_filename);
 		size_t filename_len = strlen(filepath);
 
 		while ((--dirname_len >= 0) && !IS_SLASH(executing_filename[dirname_len]));
@@ -1065,7 +1065,7 @@ static XC_RESOLVE_PATH_CHECKER(xc_resolve_path_entry_checker) /* {{{ */
 	xc_compiler_t *compiler = entry_checker_data->compiler;
 
 	compiler->new_entry.entry.name.str.val = xc_expand_url(filepath, compiler->opened_path_buffer TSRMLS_CC);
-	compiler->new_entry.entry.name.str.len = strlen(compiler->new_entry.entry.name.str.val);
+	compiler->new_entry.entry.name.str.len = (int) strlen(compiler->new_entry.entry.name.str.val);
 
 	*entry_checker_data->stored_entry = (xc_entry_php_t *) xc_entry_find_unlocked(
 			XC_TYPE_PHP
@@ -1143,7 +1143,7 @@ static int xc_entry_php_resolve_opened_path(xc_compiler_t *compiler, struct stat
 	/* fall back to real stat call */
 	else {
 #ifdef ZEND_ENGINE_2_3
-		char *opened_path = php_resolve_path(compiler->filename, compiler->filename_len, PG(include_path) TSRMLS_CC);
+		char *opened_path = php_resolve_path(compiler->filename, (int) compiler->filename_len, PG(include_path) TSRMLS_CC);
 		if (opened_path) {
 			strcpy(compiler->opened_path_buffer, opened_path);
 			efree(opened_path);
@@ -1181,7 +1181,7 @@ static int xc_entry_php_init_key(xc_compiler_t *compiler TSRMLS_DC) /* {{{ */
 		}
 
 		delta = XG(request_time) - buf.st_mtime;
-		if (abs(delta) < 2 && !xc_test) {
+		if (abs((int) delta) < 2 && !xc_test) {
 			return FAILURE;
 		}
 
@@ -1213,7 +1213,7 @@ static int xc_entry_php_init_key(xc_compiler_t *compiler TSRMLS_DC) /* {{{ */
 			/* get back to basename_begin */
 			++basename_begin;
 
-			basename_hash_value = HASH_STR_L(basename_begin, filename_end - basename_begin);
+			basename_hash_value = HASH_STR_L(basename_begin, (uint) (filename_end - basename_begin));
 		}
 
 		compiler->entry_hash.cacheid = xc_php_hcache.size > 1 ? xc_hash_fold(basename_hash_value, &xc_php_hcache) : 0;
@@ -1253,7 +1253,7 @@ static int xc_entry_data_php_init_md5(xc_cache_t *cache, xc_compiler_t *compiler
 	}
 
 	PHP_MD5Init(&context);
-	while ((n = php_stream_read(stream, (char *) buf, sizeof(buf))) > 0) {
+	while ((n = php_stream_read(stream, (char *) buf, (int) sizeof(buf))) > 0) {
 		PHP_MD5Update(&context, buf, n);
 	}
 	PHP_MD5Final((unsigned char *) compiler->new_php.md5.digest, &context);

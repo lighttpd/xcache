@@ -154,12 +154,12 @@ typedef struct {
 	zend_ulong refcount;    /* count of php instances holding this entry */
 	time_t file_mtime;
 	size_t file_size;
-	int file_device;
-	int file_inode;
+	size_t file_device;
+	size_t file_inode;
 
-	int    filepath_len;
+	size_t filepath_len;
 	ZEND_24(NOTHING, const) char *filepath;
-	int    dirpath_len;
+	size_t dirpath_len;
 	char  *dirpath;
 #ifdef IS_UNICODE
 	int    ufilepath_len;

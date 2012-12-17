@@ -206,7 +206,7 @@ foreach(`i', `($1)', `popdef(`item_'defn(`i'))')dnl
 dnl }}}
 dnl {{{ DONE_*
 define(`DONE_SIZE', `IFAUTOCHECK(`dnl
-	xc_autocheck_done_size += $1`';
+	xc_autocheck_done_size += (int) $1`';
 	xc_autocheck_done_count ++;
 ')')
 define(`DONE', `

@@ -39,7 +39,7 @@ static void xc_destroy_coverage(void *pDest) /* {{{ */
 	efree(cov);
 }
 /* }}} */
-static void xcache_mkdirs_ex(char *root, int rootlen, char *path, int pathlen TSRMLS_DC) /* {{{ */
+static void xcache_mkdirs_ex(char *root, long rootlen, char *path, long pathlen TSRMLS_DC) /* {{{ */
 {
 	char *fullpath;
 	struct stat st;
@@ -75,7 +75,7 @@ static void xc_coverager_save_cov(char *srcfile, char *outfilename, coverager_t 
 	long *buf = NULL, *p;
 	long covlines, *phits;
 	int fd = -1;
-	int size;
+	size_t size;
 	int newfile;
 	struct stat srcstat, outstat;
 	HashPosition pos;
@@ -276,7 +276,7 @@ static void xc_coverager_autodump(TSRMLS_D) /* {{{ */
 	coverager_t *pcov;
 	zstr s;
 	char *outfilename;
-	int dumpdir_len, outfilelen, alloc_len = 0;
+	size_t dumpdir_len, outfilelen, alloc_len = 0;
 	uint size;
 	HashPosition pos;
 
@@ -333,7 +333,7 @@ static void xc_coverager_dump(zval *return_value TSRMLS_DC) /* {{{ */
 				add_index_long(lines, pos2->h, hits >= 0 ? hits : 0);
 				zend_hash_move_forward_ex(cov, &pos2);
 			}
-			add_assoc_zval_ex(return_value, ZSTR_S(filename), strlen(ZSTR_S(filename)) + 1, lines);
+			add_assoc_zval_ex(return_value, ZSTR_S(filename), (uint) strlen(ZSTR_S(filename)) + 1, lines);
 
 			zend_hash_move_forward_ex(XG(coverages), &pos);
 		}
@@ -356,7 +356,7 @@ static PHP_RSHUTDOWN_FUNCTION(xcache_coverager) /* {{{ */
 /* helper func to store hits into coverages */
 static coverager_t xc_coverager_get(const char *filename TSRMLS_DC) /* {{{ */
 {
-	int len = strlen(filename) + 1;
+	uint len = (uint) strlen(filename) + 1;
 	coverager_t cov, *pcov;
 
 	if (zend_u_hash_find(XG(coverages), IS_STRING, filename, len, (void **) &pcov) == SUCCESS) {
@@ -472,7 +472,7 @@ static void xc_coverager_handle_ext_stmt(zend_op_array *op_array, zend_uchar op)
 
 	if (XG(coverages) && XG(coverager_started)) {
 		int size = xc_coverager_get_op_array_size_no_tail(op_array);
-		int oplineno = (*EG(opline_ptr)) - op_array->opcodes;
+		int oplineno = (int) ((*EG(opline_ptr)) - op_array->opcodes);
 		if (oplineno < size) {
 			xc_coverager_add_hits(xc_coverager_get(op_array->filename TSRMLS_CC), (*EG(opline_ptr))->lineno, 1 TSRMLS_CC);
 		}
@@ -497,7 +497,7 @@ PHP_FUNCTION(xcache_coverager_decode)
 	array_init(return_value);
 
 	p = (long*) str;
-	len -= sizeof(long);
+	len -= (int) sizeof(long);
 	if (len < 0) {
 		return;
 	}
@@ -506,7 +506,7 @@ PHP_FUNCTION(xcache_coverager_decode)
 		return;
 	}
 
-	for (; len >= (int) sizeof(long) * 2; len -= sizeof(long) * 2, p += 2) {
+	for (; len >= (int) sizeof(long) * 2; len -= (int) sizeof(long) * 2, p += 2) {
 		add_index_long(return_value, p[0], p[1] < 0 ? 0 : p[1]);
 	}
 }
@@ -657,7 +657,7 @@ static PHP_MINIT_FUNCTION(xcache_coverager) /* {{{ */
 	REGISTER_INI_ENTRIES();
 
 	if (cfg_get_string("xcache.coveragedump_directory", &xc_coveragedump_dir) == SUCCESS && xc_coveragedump_dir) {
-		int len;
+		size_t len;
 		xc_coveragedump_dir = pestrdup(xc_coveragedump_dir, 1);
 		len = strlen(xc_coveragedump_dir);
 		if (len) {
