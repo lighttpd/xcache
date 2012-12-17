@@ -40,7 +40,7 @@
 #define UNLOCK(x) xc_unlock((x)->lck)
 
 #define ENTER_LOCK_EX(x) \
-	xc_lock((x)->lck); \
+	LOCK((x)); \
 	zend_try { \
 		do
 #define LEAVE_LOCK_EX(x) \
@@ -48,7 +48,7 @@
 	} zend_catch { \
 		catched = 1; \
 	} zend_end_try(); \
-	xc_unlock((x)->lck)
+	UNLOCK((x))
 
 #define ENTER_LOCK(x) do { \
 	int catched = 0; \
@@ -2650,12 +2650,13 @@ static xc_cache_t *xc_cache_init(xc_shm_t *shm, const char *allocator_name, xc_h
 			goto err;
 		}
 		CHECK(allocator->vtable->init(shm, allocator, memsize), "Failed init allocator");
-		CHECK(cache->cached           = allocator->vtable->calloc(allocator, 1, sizeof(xc_cached_t)), "cache OOM");
-		CHECK(cache->cached->entries  = allocator->vtable->calloc(allocator, hentry->size, sizeof(xc_entry_t*)), "entries OOM");
+		CHECK(cache->cached           = allocator->vtable->calloc(allocator, 1, sizeof(xc_cached_t)), "create cache OOM");
+		CHECK(cache->cached->entries  = allocator->vtable->calloc(allocator, hentry->size, sizeof(xc_entry_t*)), "create entries OOM");
 		if (hphp) {
-			CHECK(cache->cached->phps = allocator->vtable->calloc(allocator, hphp->size, sizeof(xc_entry_data_php_t*)), "phps OOM");
+			CHECK(cache->cached->phps = allocator->vtable->calloc(allocator, hphp->size, sizeof(xc_entry_data_php_t*)), "create phps OOM");
 		}
-		CHECK(cache->lck              = xc_lock_init(NULL, 0), "can't create lock");
+		CHECK(cache->lck              = allocator->vtable->calloc(allocator, 1, xc_lock_size()), "create lock OOM");
+		CHECK(xc_lock_init(cache->lck, NULL, 1), "can't create lock");
 
 		cache->hcache  = hcache;
 		cache->hentry  = hentry;
