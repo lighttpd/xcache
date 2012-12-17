@@ -200,8 +200,8 @@ xc_lock_t *xc_lock_init(const char *pathname, int interprocess) /* {{{ */
 #ifdef XC_LOCK_UNSUED
 	return (xc_lock_t *) 1;
 #else
-#	ifdef ZTS
 	xc_lock_t *lck = malloc(sizeof(xc_lock_t));
+#	ifdef ZTS
 #		if defined(PTHREADS)
 	pthread_mutexattr_t psharedm;
 	pthread_mutexattr_init(&psharedm);
