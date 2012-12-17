@@ -6,7 +6,7 @@ ChangeLog
  * fixes #290: workaround phpize vs fbsd make bug again
  * improve compatibility with "the ionCube PHP Loader", Zend Optimizer
  * fix random crash when cache is reinitialized yet failed (Thanks to Brad Baker for generating crash dump)
- * fix locking impl: improve stability on threaded env
+ * fix locking impl: improve stability on threaded env (Thanks to Mircea Nicolae for reproducing the bug)
  * diagnosis: undefined variable when ini is not found
 
 3.0.0 2012-10-29

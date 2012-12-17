@@ -2,9 +2,9 @@
 ChangeLog
 ========
  * bug fixes
- * improve stability on threaded env
  * improve compatibility with "the ionCube PHP Loader", Zend Optimizer
  * improve stability
+ * improve stability on threaded env
 
 3.0.0 2012-10-29
 ========
