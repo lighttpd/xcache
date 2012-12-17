@@ -71,7 +71,7 @@ define(`DEF_HASH_TABLE_FUNC', `
 		zend_bool first = 1;
 		dnl only used for copy
 		IFCOPY(`uint n;')
-		IFCALCCOPY(`int bucketsize;')
+		IFCALCCOPY(`size_t bucketsize;')
 
 #if defined(HARDENING_PATCH_HASH_PROTECT) && HARDENING_PATCH_HASH_PROTECT
 		IFASM(`dst->canary = zend_hash_canary; DONE(canary)', `

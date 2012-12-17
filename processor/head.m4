@@ -88,7 +88,7 @@ dnl }}}
 /* export: typedef struct _xc_processor_t xc_processor_t; :export {{{ */
 struct _xc_processor_t {
 	char *p;
-	zend_uint size;
+	size_t size;
 	HashTable strings;
 	HashTable zvalptrs;
 	zend_bool reference; /* enable if to deal with reference */
@@ -158,20 +158,20 @@ static void xc_dprint_str_len(const char *str, int len) /* {{{ */
 /* }}} */
 #endif
 /* {{{ xc_zstrlen_char */
-static inline int xc_zstrlen_char(const_zstr s)
+static inline size_t xc_zstrlen_char(const_zstr s)
 {
 	return strlen(ZSTR_S(s));
 }
 /* }}} */
 #ifdef IS_UNICODE
 /* {{{ xc_zstrlen_uchar */
-static inline int xc_zstrlen_uchar(zstr s)
+static inline size_t xc_zstrlen_uchar(zstr s)
 {
 	return u_strlen(ZSTR_U(s));
 }
 /* }}} */
 /* {{{ xc_zstrlen */
-static inline int xc_zstrlen(int type, const_zstr s)
+static inline size_t xc_zstrlen(int type, const_zstr s)
 {
 	return type == IS_UNICODE ? xc_zstrlen_uchar(s) : xc_zstrlen_char(s);
 }
@@ -191,13 +191,13 @@ IFAUTOCHECK(`
 ')
 static inline void xc_calc_string_n(xc_processor_t *processor, zend_uchar type, const_zstr str, long size IFAUTOCHECK(`, int relayline')) {
 	pushdef(`__LINE__', `relayline')
-	int realsize = UNISW(size, (type == IS_UNICODE) ? UBYTES(size) : size);
+	size_t realsize = UNISW(size, (type == IS_UNICODE) ? UBYTES(size) : size);
 	long dummy = 1;
 
 	if (realsize > MAX_DUP_STR_LEN) {
 		ALLOC(, char, realsize)
 	}
-	else if (zend_u_hash_add(&processor->strings, type, str, size, (void *) &dummy, sizeof(dummy), NULL) == SUCCESS) {
+	else if (zend_u_hash_add(&processor->strings, type, str, (uint) size, (void *) &dummy, sizeof(dummy), NULL) == SUCCESS) {
 		/* new string */
 		ALLOC(, char, realsize)
 	} 
@@ -213,7 +213,7 @@ static inline void xc_calc_string_n(xc_processor_t *processor, zend_uchar type, 
 REDEF(`PROCESSOR_TYPE', `store')
 static inline zstr xc_store_string_n(xc_processor_t *processor, zend_uchar type, const_zstr str, long size IFAUTOCHECK(`, int relayline')) {
 	pushdef(`__LINE__', `relayline')
-	int realsize = UNISW(size, (type == IS_UNICODE) ? UBYTES(size) : size);
+	size_t realsize = UNISW(size, (type == IS_UNICODE) ? UBYTES(size) : size);
 	zstr ret, *pret;
 
 	if (realsize > MAX_DUP_STR_LEN) {
@@ -222,14 +222,14 @@ static inline zstr xc_store_string_n(xc_processor_t *processor, zend_uchar type,
 		return ret;
 	}
 
-	if (zend_u_hash_find(&processor->strings, type, str, size, (void **) &pret) == SUCCESS) {
+	if (zend_u_hash_find(&processor->strings, type, str, (uint) size, (void **) &pret) == SUCCESS) {
 		return *pret;
 	}
 
 	/* new string */
 	ALLOC(ZSTR_V(ret), char, realsize)
 	memcpy(ZSTR_V(ret), ZSTR_V(str), realsize);
-	zend_u_hash_add(&processor->strings, type, str, size, (void *) &ret, sizeof(zstr), NULL);
+	zend_u_hash_add(&processor->strings, type, str, (uint) size, (void *) &ret, sizeof(zstr), NULL);
 	return ret;
 
 	popdef(`__LINE__')
@@ -238,8 +238,8 @@ static inline zstr xc_store_string_n(xc_processor_t *processor, zend_uchar type,
 /* {{{ xc_get_class_num
  * return class_index + 1
  */
-static zend_ulong xc_get_class_num(xc_processor_t *processor, zend_class_entry *ce) {
-	zend_ulong i;
+static zend_uint xc_get_class_num(xc_processor_t *processor, zend_class_entry *ce) {
+	zend_uint i;
 	const xc_entry_data_php_t *php = processor->php_src;
 	zend_class_entry *ceptr;
 
@@ -356,15 +356,15 @@ static void xc_zend_extension_op_array_ctor_handler(zend_extension *extension, z
 /* }}} */
 /* {{{ field name checker */
 IFAUTOCHECK(`dnl
-static int xc_check_names(const char *file, int line, const char *functionName, const char **assert_names, int assert_names_count, HashTable *done_names)
+static int xc_check_names(const char *file, int line, const char *functionName, const char **assert_names, size_t assert_names_count, HashTable *done_names)
 {
 	int errors = 0;
 	if (assert_names_count) {
-		int i;
+		size_t i;
 		Bucket *b;
 
 		for (i = 0; i < assert_names_count; ++i) {
-			if (!zend_u_hash_exists(done_names, IS_STRING, assert_names[i], strlen(assert_names[i]) + 1)) {
+			if (!zend_u_hash_exists(done_names, IS_STRING, assert_names[i], (uint) strlen(assert_names[i]) + 1)) {
 				fprintf(stderr
 					, "Error: missing field at %s `#'%d %s`' : %s\n"
 					, file, line, functionName

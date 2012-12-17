@@ -1177,12 +1177,12 @@ DEF_STRUCT_P_FUNC(`xc_entry_php_t', , `dnl {{{
 	IFSTORE(`dst->refcount = 0; DONE(refcount)', `PROCESS(long, refcount)')
 	PROCESS(time_t, file_mtime)
 	PROCESS(size_t, file_size)
-	PROCESS(int, file_device)
-	PROCESS(int, file_inode)
+	PROCESS(size_t, file_device)
+	PROCESS(size_t, file_inode)
 
-	PROCESS(int, filepath_len)
+	PROCESS(size_t, filepath_len)
 	IFRESTORE(`COPY(filepath)', `PROC_STRING_L(filepath, filepath_len)')
-	PROCESS(int, dirpath_len)
+	PROCESS(size_t, dirpath_len)
 	IFRESTORE(`COPY(dirpath)', `PROC_STRING_L(dirpath, dirpath_len)')
 #ifdef IS_UNICODE
 	PROCESS(int, ufilepath_len)

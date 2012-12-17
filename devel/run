@@ -170,7 +170,7 @@ do_phpize() { # {{{1
 	esac
 	phpize --clean \
 	&& phpize \
-	&& CFLAGS="-g -O0 $pedanti -Wno-variadic-macros -Wno-long-long -Wall -Wno-unused-parameter -Wno-unused-function -W -Wshadow -Werror=implicit-function-declaration -std=c89 -D_GNU_SOURCE -D_POSIX_SOURCE -Dinline=" ./configure \
+	&& CFLAGS="-g -O0 $pedantic -Wno-variadic-macros -Wno-long-long -Wall -Wno-unused-parameter -Wno-unused-function -W -Wshadow -Werror=implicit-function-declaration -Wconversion -std=c89 -D_GNU_SOURCE -D_POSIX_SOURCE -Dinline=" ./configure \
 		--enable-xcache-cacher \
 		--enable-xcache-optimizer \
 		--enable-xcache-encoder \

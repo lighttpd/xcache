@@ -247,7 +247,7 @@ static void xc_call_getter(xc_name_getter_t getter, int count, INTERNAL_FUNCTION
 		name = getter((zend_uchar) spec);
 		if (name) {
 			/* RETURN_STRING */
-			int len = strlen(name);
+			int len = (int) strlen(name);
 			return_value->value.str.len = len;
 			return_value->value.str.val = estrndup(name, len);
 			return_value->type = IS_STRING; 
@@ -753,7 +753,7 @@ static PHP_MINIT_FUNCTION(xcache) /* {{{ */
 	if (strcmp(sapi_module.name, "cli") == 0) {
 		char *env;
 		if ((env = getenv("XCACHE_TEST")) != NULL) {
-			xc_test = atoi(env);
+			xc_test = (zend_bool) atoi(env);
 		}
 	}
 
