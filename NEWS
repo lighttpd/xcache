@@ -2,6 +2,7 @@
 ChangeLog
 ========
  * bug fixes
+ * fix ZTS thead safe
  * improve compatibility with "the ionCube PHP Loader", Zend Optimizer
  * improve stability
 
