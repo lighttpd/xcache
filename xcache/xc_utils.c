@@ -248,6 +248,9 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 #ifdef ZEND_JMP_SET
 			case ZEND_JMP_SET:
 #endif
+#ifdef ZEND_JMP_SET_VAR
+			case ZEND_JMP_SET_VAR:
+#endif
 				assert(Z_OP(opline->op2).opline_num < op_array->last);
 				Z_OP(opline->op2).jmp_addr = op_array->opcodes + Z_OP(opline->op2).opline_num;
 				break;
@@ -356,6 +359,9 @@ int xc_foreach_early_binding_class(zend_op_array *op_array, xc_foreach_early_bin
 			case ZEND_JMPNZ_EX:
 #ifdef ZEND_JMP_SET
 			case ZEND_JMP_SET:
+#endif
+#ifdef ZEND_JMP_SET_VAR
+			case ZEND_JMP_SET_VAR:
 #endif
 				next = begin + Z_OP(opline->op2).opline_num;
 				break;
