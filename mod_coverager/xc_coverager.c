@@ -183,7 +183,7 @@ static void xc_coverager_save_cov(char *srcfile, char *outfilename, coverager_t 
 		goto bailout;
 	}
 	lseek(fd, 0, SEEK_SET);
-	if (write(fd, (char *) buf, size) != size) {
+	if (write(fd, (char *) buf, size) != (ssize_t) size) {
 		goto bailout;
 	}
 
