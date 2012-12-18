@@ -183,6 +183,9 @@ static int op_get_flowinfo(op_flowinfo_t *fi, zend_op *opline) /* {{{ */
 #ifdef ZEND_JMP_SET
 	case ZEND_JMP_SET:
 #endif
+#ifdef ZEND_JMP_SET_VAR
+	case ZEND_JMP_SET_VAR:
+#endif
 #ifdef ZEND_JMP_NO_CTOR
 	case ZEND_JMP_NO_CTOR:
 #endif
