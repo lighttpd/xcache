@@ -11,25 +11,43 @@
 #	include <errno.h>
 #endif
 
-/* {{{ detect what lock to use */
-#undef XC_INTERPROCESS_LOCK_IMPLEMENTED
-#undef XC_LOCK_UNSUED
-
-#ifdef ZEND_WIN32
-#	define XC_INTERPROCESS_LOCK_IMPLEMENTED
-#	ifndef ZTS
-#		define XC_LOCK_UNSUED
-#	endif
+/* {{{ detect what type of lock is needed */
+#ifdef ZTS
+#	define XC_LOCK_NEED_TS
 #endif
 
-#ifdef _POSIX_THREAD_PROCESS_SHARED
-#	include "../mod_cacher/xc_cache.h"
-#	define XC_INTERPROCESS_LOCK_IMPLEMENTED
+#ifndef ZEND_WIN32
+#	define XC_LOCK_NEED_INTERPROCESS
+#endif
+
+#if defined(XC_LOCK_NEED_TS) && defined(XC_LOCK_NEED_INTERPROCESS)
+/* allow switching off interprocess support */
+#	define XC_LOCK_HAVE_INTERPROCESS_SWITCH
 #endif
 /* }}} */
 
-#ifndef XC_INTERPROCESS_LOCK_IMPLEMENTED
+/* {{{ detect which lock is needed */
+#if defined(XC_LOCK_NEED_TS) && defined(XC_LOCK_NEED_INTERPROCESS)
+#	ifdef PTHREAD
+#		define XC_LOCK_USE_PTHREAD
+#		ifndef _POSIX_THREAD_PROCESS_SHARED
+#			define XC_LOCK_USE_FCNTL
+#		endif
+#	else
+#		define XC_LOCK_USE_TSRM
+#		define XC_LOCK_USE_FCNTL
+#	endif
+#elif defined(XC_LOCK_NEED_TS)
+#	define XC_LOCK_USE_TSRM
+#elif defined(XC_LOCK_NEED_INTERPROCESS)
+#	define XC_LOCK_USE_FCNTL
+#else
+#	define XC_LOCK_USE_NOOP
+#endif
+/* }}} */
 
+/* {{{ fcntl lock impl */
+#ifdef XC_LOCK_USE_FCNTL
 #ifndef ZEND_WIN32
 typedef int HANDLE;
 #	ifndef INVALID_HANDLE_VALUE
@@ -51,7 +69,6 @@ typedef struct {
 	char *pathname;
 } xc_fcntl_lock_t;
 
-/* {{{ fcntl lock impl */
 #ifndef ZEND_WIN32
 #	define LCK_WR F_WRLCK
 #	define LCK_RD F_RDLCK
@@ -182,31 +199,39 @@ static void xc_fcntl_unlock(xc_fcntl_lock_t *lck) /* {{{ */
 	}
 }
 /* }}} */
-#endif /* XC_INTERPROCESS_LOCK_IMPLEMENTED */
+#endif /* XC_LOCK_USE_FCNTL */
 
 struct _xc_lock_t {
-#ifdef XC_LOCK_UNSUED
+#ifdef XC_LOCK_USE_NOOP
 	int dummy;
-#else
-#	ifdef ZTS
-	MUTEX_T tsrm_mutex;
-#	endif
+#endif
 
-#	ifdef _POSIX_THREAD_PROCESS_SHARED
+#ifdef XC_LOCK_USE_TSRM
+	MUTEX_T tsrm_mutex;
+#endif
+
+#ifdef XC_LOCK_HAVE_INTERPROCESS_SWITCH
+	zend_bool interprocess;
+#endif
+
+#ifdef XC_LOCK_USE_PTHREAD
 	pthread_mutex_t pthread_mutex;
-#	endif
-#	ifndef XC_INTERPROCESS_LOCK_IMPLEMENTED
-#		ifdef ZTS
-	zend_bool use_fcntl;
-#		endif
+#endif
+
+#ifdef XC_LOCK_USE_FCNTL
 	xc_fcntl_lock_t fcntl_lock;
-#	endif
 #endif
 
 #ifndef NDEBUG
 	zend_bool locked;
 #endif
 };
+
+#ifdef XC_LOCK_HAVE_INTERPROCESS_SWITCH
+#	define XC_LOCK_INTERPROCESS (lck->interprocess)
+#else
+#	define XC_LOCK_INTERPROCESS 1
+#endif
 
 size_t xc_lock_size(void) /* {{{ */
 {
@@ -215,24 +240,27 @@ size_t xc_lock_size(void) /* {{{ */
 /* }}} */
 xc_lock_t *xc_lock_init(xc_lock_t *lck, const char *pathname, unsigned char interprocess) /* {{{ */
 {
-#ifdef ZTS
-#	ifdef _POSIX_THREAD_PROCESS_SHARED
-	pthread_mutexattr_t psharedm;
-	pthread_mutexattr_init(&psharedm);
-	pthread_mutexattr_setpshared(&psharedm, PTHREAD_PROCESS_SHARED);
-	pthread_mutex_init(&lck->pthread_mutex, &psharedm);
-	lck->tsrm_mutex = &lck->pthread_mutex;
-#	else
-	lck->tsrm_mutex = tsrm_mutex_alloc();
-#	endif
+#ifdef XC_LOCK_HAVE_INTERPROCESS_SWITCH
+	lck->interprocess = interprocess;
 #endif
 
-#ifndef XC_INTERPROCESS_LOCK_IMPLEMENTED
-#	ifdef ZTS
-	lck->use_fcntl = interprocess;
-	if (lck->use_fcntl)
-#	endif
+#ifdef XC_LOCK_USE_PTHREAD
+	{
+		pthread_mutexattr_t psharedm;
+		pthread_mutexattr_init(&psharedm);
+		pthread_mutexattr_setpshared(&psharedm, XC_LOCK_INTERPROCESS ? PTHREAD_PROCESS_PRIVATE : PTHREAD_PROCESS_SHARED);
+		pthread_mutex_init(&lck->pthread_mutex, &psharedm);
+	}
+#endif
+
+#ifdef XC_LOCK_USE_TSRM
+	lck->tsrm_mutex = tsrm_mutex_alloc();
+#endif
+
+#ifdef XC_LOCK_USE_FCNTL
+	if (XC_LOCK_INTERPROCESS) {
 		xc_fcntl_init(&lck->fcntl_lock, pathname);
+	}
 #endif
 
 #ifndef NDEBUG
@@ -244,38 +272,40 @@ xc_lock_t *xc_lock_init(xc_lock_t *lck, const char *pathname, unsigned char inte
 /* }}} */
 void xc_lock_destroy(xc_lock_t *lck) /* {{{ */
 {
-#ifdef ZTS
-#	ifdef _POSIX_THREAD_PROCESS_SHARED
+#ifdef XC_LOCK_USE_PTHREAD
 	pthread_mutex_destroy(&lck->pthread_mutex);
-#	else
+#endif
+
+#ifdef XC_LOCK_USE_TSRM
 	tsrm_mutex_free(lck->tsrm_mutex);
-#	endif
 	lck->tsrm_mutex = NULL;
 #endif
 
-#ifndef XC_INTERPROCESS_LOCK_IMPLEMENTED
-#	ifdef ZTS
-	if (lck->use_fcntl)
-#	endif
+#ifdef XC_LOCK_USE_FCNTL
+	if (XC_LOCK_INTERPROCESS) {
 		xc_fcntl_destroy(&lck->fcntl_lock);
+	}
 #endif
 }
 /* }}} */
 void xc_lock(xc_lock_t *lck) /* {{{ */
 {
-#ifdef XC_LOCK_UNSUED
-#else
-#	ifdef ZTS
+#ifdef XC_LOCK_USE_PTHREAD
+	if (pthread_mutex_lock(&lck->pthread_mutex) < 0) {
+		zend_error(E_ERROR, "xc_lock failed errno:%d", errno);
+	}
+#endif
+
+#ifdef XC_LOCK_USE_TSRM
 	if (tsrm_mutex_lock(lck->tsrm_mutex) < 0) {
 		zend_error(E_ERROR, "xc_lock failed errno:%d", errno);
 	}
-#	endif
-#	ifndef XC_INTERPROCESS_LOCK_IMPLEMENTED
-#		ifdef ZTS
-	if (lck->use_fcntl)
-#		endif
+#endif
+
+#ifdef XC_LOCK_USE_FCNTL
+	if (XC_LOCK_INTERPROCESS) {
 		xc_fcntl_lock(&lck->fcntl_lock);
-#	endif
+	}
 #endif
 
 #ifndef NDEBUG
@@ -287,19 +317,22 @@ void xc_lock(xc_lock_t *lck) /* {{{ */
 /* }}} */
 void xc_rdlock(xc_lock_t *lck) /* {{{ */
 {
-#ifdef XC_LOCK_UNSUED
-#else
-#	ifdef ZTS
+#ifdef XC_LOCK_USE_PTHREAD
+	if (pthread_mutex_lock(&lck->pthread_mutex) < 0) {
+		zend_error(E_ERROR, "xc_rdlock failed errno:%d", errno);
+	}
+#endif
+
+#ifdef XC_LOCK_USE_TSRM
 	if (tsrm_mutex_lock(lck->tsrm_mutex) < 0) {
 		zend_error(E_ERROR, "xc_rdlock failed errno:%d", errno);
 	}
-#	endif
-#	ifndef XC_INTERPROCESS_LOCK_IMPLEMENTED
-#		ifdef ZTS
-	if (lck->use_fcntl)
-#		endif
+#endif
+
+#ifdef XC_LOCK_USE_FCNTL
+	if (XC_LOCK_INTERPROCESS) {
 		xc_fcntl_lock(&lck->fcntl_lock);
-#	endif
+	}
 #endif
 
 #ifndef NDEBUG
@@ -317,19 +350,22 @@ void xc_unlock(xc_lock_t *lck) /* {{{ */
 	assert(!lck->locked);
 #endif
 
-#ifdef XC_LOCK_UNSUED
-#else
-#	ifndef XC_INTERPROCESS_LOCK_IMPLEMENTED
-#		ifdef ZTS
-	if (lck->use_fcntl)
-#		endif
+#ifdef XC_LOCK_USE_FCNTL
+	if (XC_LOCK_INTERPROCESS) {
 		xc_fcntl_unlock(&lck->fcntl_lock);
-#	endif
+	}
 #endif
-#	ifdef ZTS
+
+#ifdef XC_LOCK_USE_TSRM
 	if (tsrm_mutex_unlock(lck->tsrm_mutex) < 0) {
 		zend_error(E_ERROR, "xc_unlock failed errno:%d", errno);
 	}
-#	endif
+#endif
+
+#ifdef XC_LOCK_USE_PTHREAD
+	if (pthread_mutex_unlock(&lck->pthread_mutex) < 0) {
+		zend_error(E_ERROR, "xc_unlock failed errno:%d", errno);
+	}
+#endif
 }
 /* }}} */
