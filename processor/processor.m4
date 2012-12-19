@@ -883,7 +883,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 
 	PROCESS(zend_uint, T)
 
-#ifdef ZEND_ENGINE_2_4
+#ifdef ZEND_ENGINE_2_5
 	PROCESS(zend_uint, nested_calls)
 	PROCESS(zend_uint, used_stack)
 #endif
