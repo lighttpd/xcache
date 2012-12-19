@@ -48,6 +48,10 @@ dnl }}}
 DEF_STRUCT_P_FUNC(`zend_try_catch_element', , `dnl {{{
 	PROCESS(zend_uint, try_op)
 	PROCESS(zend_uint, catch_op)
+#ifdef ZEND_ENGINE_2_5
+	PROCESS(zend_uint, finally_op)
+	PROCESS(zend_uint, finally_end)
+#endif
 ')
 dnl }}}
 #endif
@@ -653,6 +657,9 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 			case ZEND_GOTO:
 #endif
 			case ZEND_JMP:
+#ifdef ZEND_FAST_CALL
+			case ZEND_FAST_CALL:
+#endif
 #ifdef ZEND_ENGINE_2
 				assert(Z_OP(src->op1).jmp_addr >= processor->active_op_array_src->opcodes && Z_OP(src->op1).jmp_addr - processor->active_op_array_src->opcodes < processor->active_op_array_src->last);
 				Z_OP(dst->op1).jmp_addr = processor->active_op_array_dst->opcodes + (Z_OP(src->op1).jmp_addr - processor->active_op_array_src->opcodes);
@@ -761,6 +768,9 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 					case ZEND_GOTO:
 #endif
 					case ZEND_JMP:
+#ifdef ZEND_FAST_CALL
+					case ZEND_FAST_CALL:
+#endif
 #ifdef ZEND_ENGINE_2
 						Z_OP(opline->op1).jmp_addr = &dst->opcodes[Z_OP(opline->op1).jmp_addr - src->opcodes];
 #endif
@@ -873,6 +883,11 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 
 	PROCESS(zend_uint, T)
 
+#ifdef ZEND_ENGINE_2_4
+	PROCESS(zend_uint, nested_calls)
+	PROCESS(zend_uint, used_stack)
+#endif
+
 	STRUCT_ARRAY(last_brk_cont_t, last_brk_cont, zend_brk_cont_element, brk_cont_array)
 	PROCESS(last_brk_cont_t, last_brk_cont)
 #ifndef ZEND_ENGINE_2_4
@@ -885,6 +900,9 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 #ifdef ZEND_ENGINE_2
 	STRUCT_ARRAY(int, last_try_catch, zend_try_catch_element, try_catch_array)
 	PROCESS(int, last_try_catch)
+#endif
+#ifdef ZEND_ENGINE_2_5
+	PROCESS(zend_bool, has_finally_block)
 #endif
 
 	STRUCT_P(HashTable, static_variables, HashTable_zval_ptr)

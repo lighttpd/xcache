@@ -164,10 +164,22 @@ static int op_get_flowinfo(op_flowinfo_t *fi, zend_op *opline) /* {{{ */
 	case ZEND_HANDLE_EXCEPTION:
 #endif
 	case ZEND_RETURN:
+#ifdef ZEND_FAST_RET
+	case ZEND_FAST_RET:
+#endif
+#ifdef ZEND_GENERATOR_RETURN
+	case ZEND_GENERATOR_RETURN:
+#endif
 	case ZEND_EXIT:
 		return SUCCESS; /* no fall */
 
+#ifdef ZEND_GOTO
+	case ZEND_GOTO:
+#endif
 	case ZEND_JMP:
+#ifdef ZEND_FAST_CALL
+	case ZEND_FAST_CALL:
+#endif
 		fi->jmpout_op1 = Z_OP(opline->op1).opline_num;
 		return SUCCESS; /* no fall */
 
