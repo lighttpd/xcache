@@ -151,6 +151,9 @@ int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 			case ZEND_GOTO:
 #endif
 			case ZEND_JMP:
+#ifdef ZEND_FAST_CALL
+			case ZEND_FAST_CALL:
+#endif
 				assert(Z_OP(opline->op1).jmp_addr >= op_array->opcodes && (zend_uint) (Z_OP(opline->op1).jmp_addr - op_array->opcodes) < op_array->last);
 				Z_OP(opline->op1).opline_num = Z_OP(opline->op1).jmp_addr - op_array->opcodes;
 				break;
@@ -238,6 +241,9 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 			case ZEND_GOTO:
 #endif
 			case ZEND_JMP:
+#ifdef ZEND_FAST_CALL
+			case ZEND_FAST_CALL:
+#endif
 				assert(Z_OP(opline->op1).opline_num < op_array->last);
 				Z_OP(opline->op1).jmp_addr = op_array->opcodes + Z_OP(opline->op1).opline_num;
 				break;
@@ -346,6 +352,9 @@ int xc_foreach_early_binding_class(zend_op_array *op_array, xc_foreach_early_bin
 			case ZEND_GOTO:
 #endif
 			case ZEND_JMP:
+#ifdef ZEND_FAST_CALL
+			case ZEND_FAST_CALL:
+#endif
 				next = begin + Z_OP(opline->op1).opline_num;
 				break;
 

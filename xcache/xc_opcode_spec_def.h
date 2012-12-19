@@ -237,17 +237,20 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 151 UNDEF                          */
 	OPSPEC(    UNUSED,        STD,    JMPADDR,        TMP) /* 152 JMP_SET                        */
 	OPSPEC(    UNUSED,        STD,        STD,        TMP) /* 153 DECLARE_LAMBDA_FUNCTION        */
-#  ifdef ZEND_ENGINE_2_4
+# endif
+# ifdef ZEND_ENGINE_2_4
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 154 ADD_TRAIT                      */
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 155 BIND_TRAITS                    */
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 156 SEPARATE                       */
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 157 QM_ASSIGN_VAR                  */
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 158 JMP_SET_VAR                    */
-#  endif
-# else
-	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 151 UNDEF                          */
-	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 152 UNDEF                          */
-	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 153 UNDEF                          */
+# endif
+# ifdef ZEND_ENGINE_2_5
+	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 159 DISCARD_EXCEPTION              */
+	OPSPEC(    UNUSED,        STD,        STD,     UNUSED) /* 160 YIELD                          */
+	OPSPEC(    UNUSED,        STD,     UNUSED,     UNUSED) /* 161 GENERATOR_RETURN               */
+	OPSPEC(    UNUSED,    JMPADDR,     UNUSED,     UNUSED) /* 162 FAST_CALL                      */
+	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 163 FAST_RET                       */
 # endif
 #else
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 107 UNDEF                          */
