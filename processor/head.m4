@@ -100,7 +100,7 @@ struct _xc_processor_t {
 	xc_shm_t                  *shm;
 	xc_allocator_t            *allocator;
 	const zend_class_entry *cache_ce;
-	zend_uint cache_class_index;
+	zend_ulong cache_class_index;
 
 	const zend_op_array    *active_op_array_src;
 	zend_op_array          *active_op_array_dst;
@@ -238,7 +238,7 @@ static inline zstr xc_store_string_n(xc_processor_t *processor, zend_uchar type,
 /* {{{ xc_get_class_num
  * return class_index + 1
  */
-static zend_uint xc_get_class_num(xc_processor_t *processor, zend_class_entry *ce) {
+static zend_ulong xc_get_class_num(xc_processor_t *processor, zend_class_entry *ce) {
 	zend_uint i;
 	const xc_entry_data_php_t *php = processor->php_src;
 	zend_class_entry *ceptr;
