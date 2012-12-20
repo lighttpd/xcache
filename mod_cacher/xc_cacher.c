@@ -2559,31 +2559,23 @@ typedef struct xc_namebuffer_t_ { /* {{{ */
 		xc_free_alloca(name##_buffer.buffer, name##_buffer.useheap); \
 	}
 
-static inline zend_bool xc_var_has_prefix(xc_entry_t *entry, zval *prefix TSRMLS_DC) /* {{{ */
+static inline zend_bool xc_var_has_prefix(const xc_entry_t *entry, zval *prefix, const xc_namebuffer_t *prefix_buffer TSRMLS_DC) /* {{{ */
 {
 	zend_bool result = 0;
-	VAR_BUFFER_FLAGS(prefix);
 
 	if (UNISW(IS_STRING, entry->name_type) != prefix->type) {
 		return 0;
 	}
-	VAR_BUFFER_INIT(prefix);
 
 #ifdef IS_UNICODE
 	if (Z_TYPE(prefix) == IS_UNICODE) {
-		result = entry->name.ustr.len >= prefix_buffer.len
-		 && memcmp(entry->name.ustr.val, prefix_buffer.buffer, prefix_buffer.len * sizeof(Z_USTRVAL_P(prefix)[0])) == 0;
-		goto finish;
+		return result = entry->name.ustr.len >= prefix_buffer->len
+		 && memcmp(entry->name.ustr.val, prefix_buffer->buffer, prefix_buffer->len * sizeof(Z_USTRVAL_P(prefix)[0])) == 0;
 	}
 #endif
 
-	result = entry->name.str.len >= prefix_buffer.len
-	 && memcmp(entry->name.str.val, prefix_buffer.buffer, prefix_buffer.len) == 0;
-	goto finish;
-
-finish:
-	VAR_BUFFER_FREE(prefix);
-	return result;
+	return result = entry->name.str.len >= prefix_buffer->len
+	 && memcmp(entry->name.str.val, prefix_buffer->buffer, prefix_buffer->len) == 0;
 }
 /* }}} */
 
@@ -3319,6 +3311,7 @@ PHP_FUNCTION(xcache_unset_by_prefix)
 {
 	zval *prefix;
 	int i, iend;
+	VAR_BUFFER_FLAGS(prefix);
 
 	if (!xc_var_caches) {
 		VAR_CACHE_NOT_INITIALIZED();
@@ -3329,6 +3322,7 @@ PHP_FUNCTION(xcache_unset_by_prefix)
 		return;
 	}
 
+	VAR_BUFFER_INIT(prefix);
 	for (i = 0, iend = xc_var_hcache.size; i < iend; i ++) {
 		xc_cache_t *cache = &xc_var_caches[i];
 		if (cache->cached->disabled) {
@@ -3341,13 +3335,14 @@ PHP_FUNCTION(xcache_unset_by_prefix)
 				xc_entry_t *entry, *next;
 				for (entry = cache->cached->entries[entryslotid]; entry; entry = next) {
 					next = entry->next;
-					if (xc_var_has_prefix(entry, prefix TSRMLS_CC)) {
+					if (xc_var_has_prefix(entry, prefix, &prefix_buffer TSRMLS_CC)) {
 						xc_entry_remove_unlocked(XC_TYPE_VAR, cache, entryslotid, entry TSRMLS_CC);
 					}
 				}
 			}
 		} LEAVE_LOCK(cache);
 	}
+	VAR_BUFFER_FREE(prefix);
 }
 /* }}} */
 static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ */
