@@ -1,5 +1,4 @@
 3.0.1 2012-??-??
-ChangeLog
 ========
  * bug fixes
  * improve compatibility with "the ionCube PHP Loader", Zend Optimizer
