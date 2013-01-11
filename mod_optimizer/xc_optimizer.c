@@ -168,7 +168,7 @@ static int op_get_flowinfo(op_flowinfo_t *fi, zend_op *opline) /* {{{ */
 		return SUCCESS; /* no fall */
 
 #ifdef ZEND_GOTO
-	case ZEND_JMP_SET:
+	case ZEND_GOTO:
 #endif
 	case ZEND_JMP:
 		fi->jmpout_op1 = Z_OP(opline->op1).opline_num;
