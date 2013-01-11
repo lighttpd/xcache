@@ -1,4 +1,4 @@
-3.0.1 2012-??-??
+3.0.1 2013-01-11
 ChangeLog
 ========
  * fixes crash when cache is too small on start up
