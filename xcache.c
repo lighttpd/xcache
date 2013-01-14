@@ -36,7 +36,9 @@
 
 /* {{{ globals */
 static char *xc_coredump_dir = NULL;
-static zend_bool xc_coredump_type = 0;
+#ifdef ZEND_WIN32
+static zend_ulong xc_coredump_type = 0;
+#endif
 static zend_bool xc_disable_on_crash = 0;
 
 static zend_compile_file_t *old_compile_file = NULL;
@@ -720,7 +722,9 @@ static zend_extension xc_zend_extension_entry = {
 /* {{{ PHP_INI */
 PHP_INI_BEGIN()
 	PHP_INI_ENTRY1     ("xcache.coredump_directory",      "", PHP_INI_SYSTEM, xcache_OnUpdateString,   &xc_coredump_dir)
+#ifdef ZEND_WIN32
 	PHP_INI_ENTRY1     ("xcache.coredump_type",          "0", PHP_INI_SYSTEM, xcache_OnUpdateULong,    &xc_coredump_type)
+#endif
 	PHP_INI_ENTRY1_EX  ("xcache.disable_on_crash",       "0", PHP_INI_SYSTEM, xcache_OnUpdateBool,     &xc_disable_on_crash, zend_ini_boolean_displayer_cb)
 	PHP_INI_ENTRY1_EX  ("xcache.test",                   "0", PHP_INI_SYSTEM, xcache_OnUpdateBool,     &xc_test,             zend_ini_boolean_displayer_cb)
 	STD_PHP_INI_BOOLEAN("xcache.experimental",           "0", PHP_INI_ALL,    OnUpdateBool,        experimental,      zend_xcache_globals, xcache_globals)
