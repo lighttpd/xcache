@@ -218,7 +218,7 @@ run() {
 	find -L . -type l -print0 | xargs -0 rm -fv
 	lndir "$xcachesrcdir" >/dev/null || true
 	find . -iname .\*.swp -print0 | xargs -0 rm -f
-	ln -snf ~/src/php/$phpbasename php-src
+	ln -snf ~/src/php/${phpbasename%%-*} php-src
 	for i in ~/src/php/$phpbasename/sapi/cgi/php{,-cgi}; do
 		if [[ -r $i ]]; then
 			ln -snf "$i" php-cgi
