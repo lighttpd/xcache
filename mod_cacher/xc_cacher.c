@@ -156,6 +156,9 @@ zend_bool xc_have_op_array_ctor = 0;
 
 typedef enum { XC_TYPE_PHP, XC_TYPE_VAR } xc_entry_type_t;
 
+static void xc_holds_init(TSRMLS_D);
+static void xc_holds_destroy(TSRMLS_D);
+
 /* any function in *_unlocked is only safe be called within locked (single thread access) area */
 
 static void xc_php_add_unlocked(xc_cached_t *cached, xc_entry_data_php_t *php) /* {{{ */
@@ -394,6 +397,12 @@ static xc_entry_t *xc_entry_find_unlocked(xc_entry_type_t type, xc_cache_t *cach
 static void xc_entry_hold_php_unlocked(xc_cache_t *cache, xc_entry_php_t *entry TSRMLS_DC) /* {{{ */
 {
 	TRACE("hold %d:%s", entry->file_inode, entry->entry.name.str.val);
+#ifndef ZEND_WIN32
+	if (XG(holds_pid) != getpid()) {
+		xc_holds_destroy(TSRMLS_C);
+		xc_holds_init(TSRMLS_C);
+	}
+#endif
 	entry->refcount ++;
 	xc_stack_push(&XG(php_holds)[cache->cacheid], (void *)entry);
 }
@@ -2670,6 +2679,8 @@ err:
 /* }}} */
 static void xc_destroy() /* {{{ */
 {
+	TSRMLS_FETCH();
+
 	xc_shm_t *shm = NULL;
 	if (old_compile_file && zend_compile_file == xc_compile_file) {
 		zend_compile_file = old_compile_file;
@@ -2689,6 +2700,8 @@ static void xc_destroy() /* {{{ */
 	if (shm) {
 		xc_shm_destroy(shm);
 	}
+
+	xc_holds_destroy(TSRMLS_C);
 
 	xc_initized = 0;
 }
@@ -2734,10 +2747,56 @@ err:
 	return FAILURE;
 }
 /* }}} */
-static void xc_request_init(TSRMLS_D) /* {{{ */
+static void xc_holds_init(TSRMLS_D) /* {{{ */
 {
 	size_t i;
 
+#ifndef ZEND_WIN32
+	XG(holds_pid) = getpid();
+#endif
+
+	if (xc_php_caches && !XG(php_holds)) {
+		XG(php_holds_size) = xc_php_hcache.size;
+		XG(php_holds) = calloc(XG(php_holds_size), sizeof(xc_stack_t));
+		for (i = 0; i < xc_php_hcache.size; i ++) {
+			xc_stack_init(&XG(php_holds[i]));
+		}
+	}
+
+	if (xc_var_caches && !XG(var_holds)) {
+		XG(var_holds_size) = xc_var_hcache.size;
+		XG(var_holds) = calloc(XG(var_holds_size), sizeof(xc_stack_t));
+		for (i = 0; i < xc_var_hcache.size; i ++) {
+			xc_stack_init(&XG(var_holds[i]));
+		}
+	}
+}
+/* }}} */
+static void xc_holds_destroy(TSRMLS_D) /* {{{ */
+{
+	size_t i;
+
+	if (xc_php_caches && XG(php_holds)) {
+		for (i = 0; i < XG(php_holds_size); i ++) {
+			xc_stack_destroy(&XG(php_holds[i]));
+		}
+		free(XG(php_holds));
+		XG(php_holds) = NULL;
+		XG(php_holds_size) = 0;
+	}
+
+	if (xc_var_caches && XG(var_holds)) {
+		for (i = 0; i < XG(var_holds_size); i ++) {
+			xc_stack_destroy(&XG(var_holds[i]));
+		}
+		free(XG(var_holds));
+		XG(var_holds) = NULL;
+		XG(var_holds_size) = 0;
+	}
+}
+/* }}} */
+static void xc_request_init(TSRMLS_D) /* {{{ */
+{
 	if (!XG(internal_table_copied)) {
 		zend_function tmp_func;
 		xc_cest_t tmp_cest;
@@ -2762,21 +2821,7 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 
 		XG(internal_table_copied) = 1;
 	}
-	if (xc_php_caches && !XG(php_holds)) {
-		XG(php_holds_size) = xc_php_hcache.size;
-		XG(php_holds) = calloc(XG(php_holds_size), sizeof(xc_stack_t));
-		for (i = 0; i < xc_php_hcache.size; i ++) {
-			xc_stack_init(&XG(php_holds[i]));
-		}
-	}
-
-	if (xc_var_caches && !XG(var_holds)) {
-		XG(var_holds_size) = xc_var_hcache.size;
-		XG(var_holds) = calloc(XG(var_holds_size), sizeof(xc_stack_t));
-		for (i = 0; i < xc_var_hcache.size; i ++) {
-			xc_stack_init(&XG(var_holds[i]));
-		}
-	}
+	xc_holds_init(TSRMLS_C);
 	xc_var_namespace_init(TSRMLS_C);
 #ifdef ZEND_ENGINE_2
 	zend_llist_init(&XG(gc_op_arrays), sizeof(xc_gc_op_array_t), xc_gc_op_array, 0);
@@ -2791,7 +2836,12 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 /* }}} */
 static void xc_request_shutdown(TSRMLS_D) /* {{{ */
 {
-	xc_entry_unholds(TSRMLS_C);
+#ifndef ZEND_WIN32
+	if (XG(holds_pid) == getpid())
+#endif
+	{
+		xc_entry_unholds(TSRMLS_C);
+	}
 	xc_gc_expires_php(TSRMLS_C);
 	xc_gc_expires_var(TSRMLS_C);
 	xc_gc_deletes(TSRMLS_C);
