@@ -14,6 +14,9 @@ ZEND_BEGIN_MODULE_GLOBALS(xcache)
 	zend_bool coverager_started;
 	HashTable *coverages;  /* coverages[file][line] = times */
 #endif
+#ifndef ZEND_WIN32
+	pid_t holds_pid;
+#endif
 	xc_stack_t *php_holds;
 	zend_uint php_holds_size;
 	xc_stack_t *var_holds;
