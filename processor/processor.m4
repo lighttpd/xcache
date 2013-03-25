@@ -312,13 +312,17 @@ DEF_STRUCT_P_FUNC(`zend_trait_alias', , `dnl {{{
 	PROCESS(unsigned int, alias_len)
 	PROC_STRING_L(alias, alias_len)
 	PROCESS(zend_uint, modifiers)
+#ifndef ZEND_ENGINE_2_5
 	COPYNULL(function)
+#endif
 ')
 dnl }}}
 DEF_STRUCT_P_FUNC(`zend_trait_precedence', , `dnl {{{
 	STRUCT_P(zend_trait_method_reference, trait_method)
 	PROCESS_ARRAY(, xc_ztstring, exclude_from_classes, zend_class_entry*)
+#ifndef ZEND_ENGINE_2_5
 	COPYNULL(function)
+#endif
 ')
 dnl }}}
 DEF_STRUCT_P_FUNC(`zend_trait_alias_ptr', , `dnl {{{
