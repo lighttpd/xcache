@@ -7,6 +7,7 @@ ChangeLog
 3.0.2 2013-??-??
 ChangeLog
 ========
+ * fixes #303: tablesort.js not found in Diagnosis and Coverager
  * fixes #297: segv on startup under sparc, ini setting overflow
 
 3.0.1 2013-01-11
