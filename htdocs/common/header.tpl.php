@@ -3,7 +3,7 @@
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=<?php echo $GLOBALS['config']['charset']; ?>" />
 	<meta http-equiv="Content-Language" content="<?php echo $GLOBALS['config']['lang']; ?>" />
-	<script type="text/javascript" src="tablesort.js"></script>
+	<script type="text/javascript" src="../common/tablesort.js"></script>
 
 	<link rel="stylesheet" type="text/css" href="../common/common.css" />
 	<link rel="stylesheet" type="text/css" href="<?php echo $GLOBALS['module']; ?>.css" />
