@@ -6,6 +6,7 @@
 3.0.2 2013-??-??
 ========
  * bug fixes
+ * "cannot redeclare class" errors is now gone. Can also be avoid by using readonly_protection (unavailable with /dev/zero).
 
 3.0.1 2013-01-11
 ========

@@ -193,6 +193,9 @@ typedef struct {
 	zend_uint num_args;
 	zend_arg_info *arg_info;
 #endif
+#ifdef ZEND_ENGINE_2_4
+	zend_literal *literals;
+#endif
 	zend_op *opcodes;
 } xc_gc_op_array_t;
 /* }}} */

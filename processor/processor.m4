@@ -727,6 +727,9 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	if (shallow_copy) {
 		zend_bool gc_arg_info = 0;
 		zend_bool gc_opcodes  = 0;
+#ifdef ZEND_ENGINE_2_4
+		zend_bool gc_literals = 0;
+#endif
 		/* really fast shallow copy */
 		memcpy(dst, src, sizeof(src[0]));
 		dst->refcount[0] = 1000;
@@ -743,12 +746,21 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 #endif
 		dst->filename = processor->entry_php_src->filepath;
 #ifdef ZEND_ENGINE_2_4
-		if (src->literals /* || op_array_info->literalsinfo_cnt */) {
+		if (src->literals) {
 			gc_opcodes = 1;
+			if (op_array_info->literalinfo_cnt) {
+				gc_literals = 1;
+			}
 		}
 #else
 		if (op_array_info->oplineinfo_cnt) {
 			gc_opcodes = 1;
+		}
+#endif
+#ifdef ZEND_ENGINE_2_4
+		if (gc_literals) {
+			dnl used when copying opcodes
+			COPY_N_EX(last_literal, zend_literal, literals)
 		}
 #endif
 		if (gc_opcodes) {
@@ -800,13 +812,16 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 				}
 			}
 		}
-		if (gc_arg_info || gc_opcodes) {
+		if (gc_arg_info || gc_opcodes || gc_literals) {
 			xc_gc_op_array_t gc_op_array;
 #ifdef ZEND_ENGINE_2
 			gc_op_array.num_args = gc_arg_info ? dst->num_args : 0;
 			gc_op_array.arg_info = gc_arg_info ? dst->arg_info : NULL;
 #endif
 			gc_op_array.opcodes  = gc_opcodes ? dst->opcodes : NULL;
+#ifdef ZEND_ENGINE_2_4
+			gc_op_array.literals = gc_literals ? dst->literals : NULL;
+#endif
 			xc_gc_add_op_array(&gc_op_array TSRMLS_CC);
 		}
 		IFAUTOCHECK(`xc_autocheck_skip = 1;')
