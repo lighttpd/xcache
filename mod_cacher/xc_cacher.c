@@ -2291,6 +2291,11 @@ static void xc_gc_op_array(void *pDest) /* {{{ */
 	if (op_array->opcodes) {
 		efree(op_array->opcodes);
 	}
+#ifdef ZEND_ENGINE_2_4
+	if (op_array->literals) {
+		efree(op_array->literals);
+	}
+#endif
 }
 /* }}} */
 
