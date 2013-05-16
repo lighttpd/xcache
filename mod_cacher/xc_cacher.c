@@ -16,7 +16,6 @@
 #include "xcache/xc_ini.h"
 #include "xcache/xc_utils.h"
 #include "xcache/xc_sandbox.h"
-#include "xcache/xc_shm.h"
 #include "util/xc_trace.h"
 #include "util/xc_vector.h"
 #include "util/xc_align.h"
