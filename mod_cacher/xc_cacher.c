@@ -101,8 +101,8 @@ typedef struct { /* {{{ xc_cache_t: only cache info, not in shm */
 	int cacheid;
 	xc_hash_t  *hcache; /* hash to cacheid */
 
-	struct _xc_lock_t  *lck;
-	struct _xc_shm_t   *shm; /* which shm contains us */
+	xc_lock_t *lck;
+	xc_shm_t  *shm; /* which shm contains us */
 	xc_allocator_t *allocator;
 
 	xc_hash_t  *hentry; /* hash settings to entry */
@@ -2685,9 +2685,9 @@ err:
 /* }}} */
 static void xc_destroy() /* {{{ */
 {
+	xc_shm_t *shm = NULL;
 	TSRMLS_FETCH();
 
-	xc_shm_t *shm = NULL;
 	if (old_compile_file && zend_compile_file == xc_compile_file) {
 		zend_compile_file = old_compile_file;
 		old_compile_file = NULL;
