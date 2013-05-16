@@ -812,7 +812,11 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 				}
 			}
 		}
-		if (gc_arg_info || gc_opcodes || gc_literals) {
+		if (gc_arg_info || gc_opcodes
+#ifdef ZEND_ENGINE_2_4
+		 || gc_literals
+#endif
+		) {
 			xc_gc_op_array_t gc_op_array;
 #ifdef ZEND_ENGINE_2
 			gc_op_array.num_args = gc_arg_info ? dst->num_args : 0;
