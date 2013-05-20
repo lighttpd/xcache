@@ -28,7 +28,7 @@
 
 /* {{{ detect which lock is needed */
 #if defined(XC_LOCK_NEED_TS) && defined(XC_LOCK_NEED_INTERPROCESS)
-#	ifdef PTHREAD
+#	ifdef PTHREADS
 #		define XC_LOCK_USE_PTHREAD
 #		ifndef _POSIX_THREAD_PROCESS_SHARED
 #			define XC_LOCK_USE_FCNTL
@@ -278,7 +278,6 @@ void xc_lock_destroy(xc_lock_t *lck) /* {{{ */
 
 #ifdef XC_LOCK_USE_TSRM
 	tsrm_mutex_free(lck->tsrm_mutex);
-	lck->tsrm_mutex = NULL;
 #endif
 
 #ifdef XC_LOCK_USE_FCNTL
