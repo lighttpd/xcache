@@ -10,6 +10,7 @@ ChangeLog
  * fixes #303: tablesort.js not found in Diagnosis and Coverager
  * fixes #297: segv on startup under sparc, ini setting overflow
  * fixes #296: Multiple instances of the same software causes PHP "cannot redeclare class" errors when readonly_protection is not in use
+ * fixes #301: refix locking impl
 
 3.0.1 2013-01-11
 ChangeLog
