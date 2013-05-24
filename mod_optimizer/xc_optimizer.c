@@ -68,7 +68,7 @@ static int op_array_convert_switch(zend_op_array *op_array) /* {{{ */
 		zend_op *opline = &op_array->opcodes[i];
 		zend_brk_cont_element *jmp_to;
 		zend_bool can_convert = 1;
-		int array_offset, nest_levels, original_nest_levels;
+		int array_offset, nest_levels;
 
 		switch (opline->opcode) {
 		case ZEND_BRK:
@@ -90,14 +90,10 @@ static int op_array_convert_switch(zend_op_array *op_array) /* {{{ */
 		}
 
 		nest_levels = Z_OP_CONSTANT(opline->op2).value.lval;
-		original_nest_levels = nest_levels;
 
 		array_offset = Z_OP(opline->op1).opline_num;
 		do {
 			if (array_offset == -1) {
-				/* this is a runtime error in ZE
-				zend_error(E_ERROR, "Cannot break/continue %d level%s", original_nest_levels, (original_nest_levels == 1) ? "" : "s");
-				*/
 				return FAILURE;
 			}
 			jmp_to = &op_array->brk_cont_array[array_offset];
