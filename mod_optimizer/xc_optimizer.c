@@ -13,7 +13,6 @@
 #include "ext/standard/info.h"
 
 #ifdef XCACHE_DEBUG
-#error 1
 #	include "xc_processor.h"
 #	include "xcache/xc_const_string.h"
 #	include "ext/standard/php_var.h"
@@ -253,7 +252,7 @@ static void op_snprint(char *buf, int size, zend_uchar op_type, znode_op *op) /*
 
 	case IS_UNUSED:
 		if (Z_OP(*op).opline_num) {
-			snprintf(buf, size, "u#%d", Z_OP(op).opline_num);
+			snprintf(buf, size, "u#%d", Z_OP(*op).opline_num);
 		}
 		else {
 			snprintf(buf, size, "-");
@@ -261,7 +260,7 @@ static void op_snprint(char *buf, int size, zend_uchar op_type, znode_op *op) /*
 		break;
 
 	default:
-		snprintf(buf, size, "%d %d", op->op_type, Z_OP(op).var);
+		snprintf(buf, size, "%d %d", op->op_type, Z_OP(*op).var);
 	}
 }
 /* }}} */
