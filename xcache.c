@@ -56,6 +56,21 @@ static zend_op_array *xc_check_initial_compile_file(zend_file_handle *h, int typ
 }
 /* }}} */
 
+/* devel helper function */
+#if 0
+static void xc_list_extensions() /* {{{ */
+{
+	zend_llist_element *element;
+	zend_extension *ext;
+	fprintf(stderr, "extensions:\n");
+	for (element = zend_extensions.head; element; element = element->next) {
+		ext = (zend_extension *) element->data;
+		fprintf(stderr, " - %s\n", ext->name);
+	}
+}
+/* }}} */
+#endif
+
 /* module helper function */
 static int xc_init_constant(int module_number TSRMLS_DC) /* {{{ */
 {
@@ -566,10 +581,10 @@ typedef struct {
 	startup_func_t old_startup;
 } xc_incompatible_zend_extension_info_t;
 static xc_incompatible_zend_extension_info_t xc_incompatible_zend_extensions[] = {
+	{ "Zend Extension Manager", NULL },
 	{ "Zend Optimizer", NULL },
 	{ "the ionCube PHP Loader", NULL }
 };
-zend_llist_element **xc_zend_extension_elements;
 
 static xc_incompatible_zend_extension_info_t *xc_get_incompatible_zend_extension_info(const char *name)
 {
@@ -602,23 +617,25 @@ static int xc_incompatible_zend_extension_startup_hook(zend_extension *extension
 	xc_incompatible_zend_extension_info_t *incompatible_zend_extension_info = xc_get_incompatible_zend_extension_info(extension->name);
 	int status;
 	zend_bool catched = 0;
-	zend_llist old_zend_extensions;
+	zend_llist saved_zend_extensions_container; /* without elements */
+	zend_llist_element **saved_zend_extensions_elments;
+	size_t new_zend_extensions_elments_count;
+	zend_llist_element **new_zend_extensions_elments;
 	zend_extension *ext;
 	size_t i;
 	zend_llist_element *element;
 	TSRMLS_FETCH();
 
-	/* restore */
+	/* restore startup hack */
 	extension->startup = incompatible_zend_extension_info->old_startup;
 	incompatible_zend_extension_info->old_startup = NULL;
 	assert(extension->startup);
 
-	/* save */
-	assert(!xc_zend_extension_elements);
-	old_zend_extensions = zend_extensions;
-	xc_zend_extension_elements = malloc(sizeof(zend_llist_element *) * old_zend_extensions.count);
-	for (i = 0, element = old_zend_extensions.head; element; ++i, element = element->next) {
-		xc_zend_extension_elements[i] = element;
+	/* save extensions list */
+	saved_zend_extensions_container = zend_extensions;
+	saved_zend_extensions_elments = malloc(sizeof(zend_llist_element *) * saved_zend_extensions_container.count);
+	for (i = 0, element = saved_zend_extensions_container.head; element; ++i, element = element->next) {
+		saved_zend_extensions_elments[i] = element;
 	}
 
 	/* hide all XCache extensions from it */
@@ -626,8 +643,8 @@ static int xc_incompatible_zend_extension_startup_hook(zend_extension *extension
 	zend_extensions.tail = NULL;
 	zend_extensions.count = 0;
 
-	for (i = 0; i < old_zend_extensions.count; ++i) {
-		element = xc_zend_extension_elements[i];
+	for (i = 0; i < saved_zend_extensions_container.count; ++i) {
+		element = saved_zend_extensions_elments[i];
 		element->next = element->prev = NULL;
 
 		ext = (zend_extension *) element->data;
@@ -645,21 +662,46 @@ static int xc_incompatible_zend_extension_startup_hook(zend_extension *extension
 		catched = 1;
 	} zend_end_try();
 
-	/* restore */
-	zend_extensions = old_zend_extensions;
+	/* save newly added extensions added by this extension*/
+	new_zend_extensions_elments_count = zend_extensions.count - 1;
+	new_zend_extensions_elments = NULL;
+	if (new_zend_extensions_elments_count) {
+		new_zend_extensions_elments = malloc(sizeof(zend_llist_element *) * new_zend_extensions_elments_count);
+		element = zend_extensions.head;
+		for (i = 0, element = element->next; element; ++i, element = element->next) {
+			new_zend_extensions_elments[i] = element;
+		}
+	}
+
+	/* restore original extension list*/
+	zend_extensions = saved_zend_extensions_container;
 	zend_extensions.head = NULL;
 	zend_extensions.tail = NULL;
 	zend_extensions.count = 0;
-	for (i = 0; i < old_zend_extensions.count; ++i) {
-		element = xc_zend_extension_elements[i];
+	for (i = 0; i < saved_zend_extensions_container.count; ++i) {
+		element = saved_zend_extensions_elments[i];
 		element->next = element->prev = NULL;
 
 		xc_zend_llist_add_element(&zend_extensions, element);
 		++zend_extensions.count;
-	}
 
-	free(xc_zend_extension_elements);
-	xc_zend_extension_elements = NULL;
+		ext = (zend_extension *) element->data;
+		if (ext == extension && new_zend_extensions_elments_count) {
+			/* add new created extension */
+			size_t j;
+			for (j = 0; j < new_zend_extensions_elments_count; ++j) {
+				element = new_zend_extensions_elments[j];
+				element->next = element->prev = NULL;
+
+				xc_zend_llist_add_element(&zend_extensions, element);
+				++zend_extensions.count;
+			}
+		}
+	}
+	free(saved_zend_extensions_elments);
+	if (new_zend_extensions_elments) {
+		free(new_zend_extensions_elments);
+	}
 
 	if (catched) {
 		zend_bailout();
