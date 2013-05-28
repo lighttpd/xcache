@@ -20,7 +20,6 @@ xc_const_string: \
 	xcache/xc_const_string_opcodes_php4.x.h \
 	xcache/xc_const_string_opcodes_php5.0.h \
 	xcache/xc_const_string_opcodes_php5.1.h \
-	xcache/xc_const_string_opcodes_php5.2.h \
 	xcache/xc_const_string_opcodes_php5.3.h \
 	xcache/xc_const_string_opcodes_php5.4.h \
 	xcache/xc_const_string_opcodes_php5.5.h \
@@ -58,15 +57,6 @@ xcache/xc_const_string_opcodes_php5.1.h: dummy
 	@echo "Skipped $@: PHP_5_1_DIR not set"
 else
 xcache/xc_const_string_opcodes_php5.1.h: ${PHP5_1_DIR}/Zend/zend_vm_def.h
-	$(AWK) -f ./devel/gen_const_string_opcodes.awk < "$<" > "$@.tmp"
-	mv "$@.tmp" "$@"
-endif
-
-ifeq (${PHP5_2_DIR},)
-xcache/xc_const_string_opcodes_php5.2.h: dummy
-	@echo "Skipped $@: PHP_5_2_DIR not set"
-else
-xcache/xc_const_string_opcodes_php5.2.h: ${PHP5_2_DIR}/Zend/zend_vm_def.h
 	$(AWK) -f ./devel/gen_const_string_opcodes.awk < "$<" > "$@.tmp"
 	mv "$@.tmp" "$@"
 endif
