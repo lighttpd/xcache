@@ -3,11 +3,11 @@
  * adds support for PHP_5_5
  * compatible with fcntl fork
 
-3.0.2 2013-??-??
+3.0.2 2013-06-10
 ========
- * bug fixes
  * (PHP5.4+ only bug) random "cannot redeclare class" errors is now gone. Can also be avoid by using readonly_protection (unavailable with /dev/zero).
  * fixes SEGV with Zend Debugger
+ * more bug fixes
 
 3.0.1 2013-01-11
 ========
