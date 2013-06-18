@@ -4,6 +4,10 @@ ChangeLog
  * adds support for PHP_5_5
  * compatible with fcntl fork
 
+3.0.3 2013-16.18
+========
+ * clean files in release (fix htdocs config)
+
 3.0.2 2013-06-10
 ChangeLog
 ========
