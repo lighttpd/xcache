@@ -248,11 +248,6 @@ run() {
 		./php-cli -c devel.ini ./bin/phpdc.phpr $@ | tee decompiled.php
 		return
 		;;
-	dop)
-		shift
-		./php-cli -c devel.ini ./bin/phpdop.phpr $@
-		return
-		;;
 	retest)
 		shift
 		$MAKE xcachetest "$@" TESTS="`grep '^/.*\.phpt$' php_test_results_*.txt | uniq | xargs`"
@@ -311,6 +306,11 @@ run() {
 		;;
 	*)
 		case "$1" in
+		dop)
+			shift
+			cmd=(./php-cli -c devel.ini)
+			set -- ./bin/phpdop.phpr "$@"
+			;;
 		fcgi)
 			shift
 			cmd=(./php-cgi -q -c devel.ini)
