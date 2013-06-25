@@ -1,6 +1,7 @@
 3.1.0 2013-??-??
 ChangeLog
 ========
+ * disassembler: fixes crash with nested sandbox
  * adds support for PHP_5_5
  * compatible with fcntl fork
 
