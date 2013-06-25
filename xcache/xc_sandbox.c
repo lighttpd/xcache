@@ -44,7 +44,7 @@ static void xc_free_zend_constant(zend_constant *c) /* {{{ */
 /* }}} */
 #endif
 
-typedef struct { /* sandbox {{{ */
+typedef struct _xc_sandbox_t { /* sandbox {{{ */
 	ZEND_24(NOTHING, const) char *filename;
 
 	HashTable orig_included_files;
@@ -76,6 +76,7 @@ typedef struct { /* sandbox {{{ */
 #ifdef ZEND_COMPILE_IGNORE_INTERNAL_CLASSES
 	zend_uint orig_compiler_options;
 #endif
+	struct _xc_sandbox_t *parent;
 } xc_sandbox_t;
 
 #undef TG
@@ -228,6 +229,7 @@ static xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, ZEND_24(NOTHING, con
 	CG(compiler_options) |= ZEND_COMPILE_IGNORE_INTERNAL_CLASSES | ZEND_COMPILE_NO_CONSTANT_SUBSTITUTION | ZEND_COMPILE_DELAYED_BINDING;
 #endif
 
+	sandbox->parent = XG(sandbox);
 	XG(sandbox) = (void *) sandbox;
 	XG(initial_compile_file_called) = 0;
 	return sandbox;
@@ -319,7 +321,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 /* }}} */
 static void xc_sandbox_free(xc_sandbox_t *sandbox, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
-	XG(sandbox) = NULL;
+	XG(sandbox) = sandbox->parent;
 #ifdef XCACHE_ERROR_CACHING
 	EG(user_error_handler_error_reporting) = sandbox->orig_user_error_handler_error_reporting;
 #endif
