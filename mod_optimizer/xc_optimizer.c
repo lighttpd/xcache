@@ -27,7 +27,7 @@
 #ifdef ZEND_ENGINE_2_4
 #	undef Z_OP_CONSTANT
 /* Z_OP_CONSTANT is used before pass_two is applied */
-#	define Z_OP_CONSTANT(op) op_array->literals[op.constant].constant
+#	define Z_OP_CONSTANT(op) op_array->literals[(op).constant].constant
 #endif
 
 typedef zend_uint bbid_t;
@@ -221,7 +221,7 @@ static int op_get_flowinfo(op_flowinfo_t *fi, zend_op *opline) /* {{{ */
 }
 /* }}} */
 #ifdef XCACHE_DEBUG
-static void op_snprint(char *buf, int size, zend_uchar op_type, znode_op *op) /* {{{ */
+static void op_snprint(zend_op_array *op_array, char *buf, int size, zend_uchar op_type, znode_op *op) /* {{{ */
 {
 	switch (op_type) {
 	case IS_CONST:
@@ -230,12 +230,11 @@ static void op_snprint(char *buf, int size, zend_uchar op_type, znode_op *op) /*
 			zval *zv = &Z_OP_CONSTANT(*op);
 			TSRMLS_FETCH();
 
-			/* TODO: update for PHP 6 */
-			php_start_ob_buffer(NULL, 0, 1 TSRMLS_CC);
+			php_output_start_default(TSRMLS_C);
 			php_var_export(&zv, 1 TSRMLS_CC);
+			php_output_get_contents(&result TSRMLS_CC); 
+			php_output_end(TSRMLS_C);
 
-			php_ob_get_buffer(&result TSRMLS_CC); 
-			php_end_ob_buffer(0, 0 TSRMLS_CC);
 			snprintf(buf, size, Z_STRVAL(result));
 			zval_dtor(&result);
 		}
@@ -260,24 +259,24 @@ static void op_snprint(char *buf, int size, zend_uchar op_type, znode_op *op) /*
 		break;
 
 	default:
-		snprintf(buf, size, "%d %d", op->op_type, Z_OP(*op).var);
+		snprintf(buf, size, "%d %d", op_type, Z_OP(*op).var);
 	}
 }
 /* }}} */
-static void op_print(int line, zend_op *first, zend_op *end) /* {{{ */
+static void op_print(zend_op_array *op_array, int line, zend_op *first, zend_op *end) /* {{{ */
 {
 	zend_op *opline;
 	for (opline = first; opline < end; opline ++) {
 		char buf_r[20];
 		char buf_1[20];
 		char buf_2[20];
-		op_snprint(buf_r, sizeof(buf_r), Z_OP_TYPE(opline->result), &opline->result);
-		op_snprint(buf_1, sizeof(buf_1), Z_OP_TYPE(opline->op1),    &opline->op1);
-		op_snprint(buf_2, sizeof(buf_2), Z_OP_TYPE(opline->op2),    &opline->op2);
+		op_snprint(op_array, buf_r, sizeof(buf_r), Z_OP_TYPE(opline->result), &opline->result);
+		op_snprint(op_array, buf_1, sizeof(buf_1), Z_OP_TYPE(opline->op1),    &opline->op1);
+		op_snprint(op_array, buf_2, sizeof(buf_2), Z_OP_TYPE(opline->op2),    &opline->op2);
 		fprintf(stderr,
-				"%3d %3d"
+				"%3d %3lu"
 				" %-25s%-5s%-20s%-20s%5lu\r\n"
-				, opline->lineno, opline - first + line
+				, opline->lineno, (long) (opline - first + line)
 				, xc_get_opcode(opline->opcode), buf_r, buf_1, buf_2, opline->extended_value);
 	}
 }
@@ -321,9 +320,9 @@ static void bb_destroy(bb_t *bb) /* {{{ */
 }
 /* }}} */
 #ifdef XCACHE_DEBUG
-static void bb_print(bb_t *bb, zend_op *opcodes) /* {{{ */
+static void bb_print(bb_t *bb, zend_op_array *op_array) /* {{{ */
 {
-	int line = bb->opcodes - opcodes;
+	int line = bb->opcodes - op_array->opcodes;
 	op_flowinfo_t fi;
 	zend_op *last = bb->opcodes + bb->count - 1;
 	bbid_t catchbbid;
@@ -343,7 +342,7 @@ static void bb_print(bb_t *bb, zend_op *opcodes) /* {{{ */
 			, bb->used ? 'U' : ' ', bb->alloc ? 'A' : ' '
 			, fi.jmpout_op1, fi.jmpout_op2, fi.jmpout_ext, bb->fall, catchbbid, xc_get_opcode(last->opcode)
 			);
-	op_print(line, bb->opcodes, last + 1);
+	op_print(op_array, line, bb->opcodes, last + 1);
 }
 /* }}} */
 #endif
@@ -369,11 +368,11 @@ static void bbs_destroy(bbs_t *bbs) /* {{{ */
 }
 /* }}} */
 #ifdef XCACHE_DEBUG
-static void bbs_print(bbs_t *bbs, zend_op *opcodes) /* {{{ */
+static void bbs_print(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
 {
 	int i;
 	for (i = 0; i < xc_stack_count(bbs); i ++) {
-		bb_print(bbs_get(bbs, i), opcodes);
+		bb_print(bbs_get(bbs, i), op_array);
 	}
 }
 /* }}} */
@@ -589,7 +588,7 @@ static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	TRACE("optimize file: %s", op_array->filename);
 	xc_dprint_zend_op_array(op_array, 0 TSRMLS_CC);
 #	endif
-	op_print(0, op_array->opcodes, op_array->opcodes + op_array->last);
+	op_print(op_array, 0, op_array->opcodes, op_array->opcodes + op_array->last);
 #endif
 
 	if (op_array_convert_switch(op_array) == SUCCESS) {
@@ -597,7 +596,7 @@ static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 		if (bbs_build_from(&bbs, op_array, op_array->last) == SUCCESS) {
 			int i;
 #ifdef XCACHE_DEBUG
-			bbs_print(&bbs, op_array->opcodes);
+			bbs_print(&bbs, op_array);
 #endif
 			/* TODO: calc opnum after basic block move */
 			for (i = 0; i < bbs_count(&bbs); i ++) {
@@ -614,7 +613,7 @@ static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	TRACE("%s", "after compiles");
 	xc_dprint_zend_op_array(op_array, 0 TSRMLS_CC);
 #	endif
-	op_print(0, op_array->opcodes, op_array->opcodes + op_array->last);
+	op_print(op_array, 0, op_array->opcodes, op_array->opcodes + op_array->last);
 #endif
 	return 0;
 }
