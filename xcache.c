@@ -809,7 +809,9 @@ static PHP_MINIT_FUNCTION(xcache) /* {{{ */
 	/* must be the first */
 	xcache_zend_extension_add(&xc_zend_extension_entry, 1);
 #ifdef HAVE_XCACHE_OPTIMIZER
+#	ifndef ZEND_ENGINE_2_5
 	xc_optimizer_startup_module();
+#	endif
 #endif
 #ifdef HAVE_XCACHE_CACHER
 	xc_cacher_startup_module();
