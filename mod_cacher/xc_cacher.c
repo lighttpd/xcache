@@ -237,17 +237,8 @@ static inline zend_bool xc_entry_equal_unlocked(xc_entry_type_t type, const xc_e
 				if (php_entry1->file_inode && php_entry2->file_inode) {
 					zend_bool inodeIsSame = php_entry1->file_inode == php_entry2->file_inode
 						                 && php_entry1->file_device == php_entry2->file_device;
-					if (XG(experimental)) {
-						/* new experimental behavior: quick check by inode, first */
-						if (!inodeIsSame) {
-							return 0;
-						}
-
-						/* and then opened_path compare */
-					}
-					else {
-						/* old behavior: inode check only */
-						return inodeIsSame;
+					if (!inodeIsSame) {
+						return 0;
 					}
 				}
 			}
