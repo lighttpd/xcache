@@ -3,6 +3,7 @@
  * disassembler now working again (fail since 3.0)
  * adds support for PHP_5_5
  * compatible with fcntl fork
+ * support for __FILE__ __DIR__ handling after files moved/hardlinked
 
 3.0.3 2013-16.18
 ========
