@@ -1,4 +1,4 @@
-#if 0
+#if 1
 #	define XCACHE_DEBUG
 #endif
 
@@ -174,11 +174,17 @@ static int op_get_flowinfo(op_flowinfo_t *fi, zend_op *opline) /* {{{ */
 	case ZEND_GOTO:
 #endif
 	case ZEND_JMP:
-#ifdef ZEND_FAST_CALL
-	case ZEND_FAST_CALL:
-#endif
 		fi->jmpout_op1 = Z_OP(opline->op1).opline_num;
 		return SUCCESS; /* no fall */
+
+#ifdef ZEND_FAST_CALL
+	case ZEND_FAST_CALL:
+		fi->jmpout_op1 = Z_OP(opline->op1).opline_num;
+		if (opline->extended_value) {
+			fi->jmpout_op2 = Z_OP(opline->op2).opline_num;
+		}
+		return SUCCESS; /* no fall */
+#endif
 
 	case ZEND_JMPZNZ:
 		fi->jmpout_op2 = Z_OP(opline->op2).opline_num;
@@ -342,10 +348,10 @@ static void bb_print(bb_t *bb, zend_op_array *op_array) /* {{{ */
 	fprintf(stderr,
 			"\r\n==== #%-3d cnt:%-3d lno:%-3d"
 			" %c%c"
-			" op1:%-3d op2:%-3d ext:%-3d fal:%-3d cat:%-3d %s ====\r\n"
+			" op1:%-3d op2:%-3d ext:%-3d fal:%-3d cat:%-3d fnl:%-3d %s ====\r\n"
 			, bb->id, bb->count, bb->alloc ? -1 : line
 			, bb->used ? 'U' : ' ', bb->alloc ? 'A' : ' '
-			, fi.jmpout_op1, fi.jmpout_op2, fi.jmpout_ext, bb->fall, catchbbid, xc_get_opcode(last->opcode)
+			, fi.jmpout_op1, fi.jmpout_op2, fi.jmpout_ext, bb->fall, catchbbid, finallybbid, xc_get_opcode(last->opcode)
 			);
 	op_print(op_array, line, bb->opcodes, last + 1);
 }
@@ -398,84 +404,92 @@ static bb_t *bbs_new_bb_ex(bbs_t *bbs, zend_op *opcodes, int count) /* {{{ */
 static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{ */
 {
 	int i, start;
-	bb_t *pbb;
+	bb_t *bb;
 	bbid_t id;
 	op_flowinfo_t fi;
 	zend_op *opline;
-	ALLOCA_FLAG(use_heap_bbids)
+	ALLOCA_FLAG(opline_infos_use_heap)
+	typedef struct {
+		zend_bool isbbhead;
+		bbid_t bbid;
 #ifdef ZEND_ENGINE_2
-	ALLOCA_FLAG(use_heap_catchbbids)
+		bbid_t catchbbid;
 #endif
 #ifdef ZEND_ENGINE_2_5
-	ALLOCA_FLAG(use_heap_finallybbids)
+		bbid_t finallybbid;
 #endif
-	ALLOCA_FLAG(use_heap_markbbhead)
-	bbid_t *bbids          = xc_do_alloca(count * sizeof(bbid_t),    use_heap_bbids);
-#ifdef ZEND_ENGINE_2
-	bbid_t *catchbbids     = xc_do_alloca(count * sizeof(bbid_t),    use_heap_catchbbids);
-#endif
-#ifdef ZEND_ENGINE_2_5
-	bbid_t *finallybbids   = xc_do_alloca(count * sizeof(bbid_t),    use_heap_finallybbids);
-#endif
-	zend_bool *markbbhead  = xc_do_alloca(count * sizeof(zend_bool), use_heap_markbbhead);
+	} oplineinfo_t;
+	oplineinfo_t *oplineinfos = xc_do_alloca(count * sizeof(oplineinfo_t), opline_infos_use_heap);
+
+	memset(oplineinfos, 0, count * sizeof(oplineinfo_t));
 
 	/* {{{ mark jmpin/jumpout */
-	memset(markbbhead,  0, count * sizeof(zend_bool));
-
-	markbbhead[0] = 1;
+	oplineinfos[0].isbbhead = 1;
 	for (i = 0; i < count; i ++) {
 		if (op_get_flowinfo(&fi, &op_array->opcodes[i]) == SUCCESS) {
 			if (fi.jmpout_op1 != XC_OPNUM_INVALID) {
-				markbbhead[fi.jmpout_op1] = 1;
+				oplineinfos[fi.jmpout_op1].isbbhead = 1;
 			}
 			if (fi.jmpout_op2 != XC_OPNUM_INVALID) {
-				markbbhead[fi.jmpout_op2] = 1;
+				oplineinfos[fi.jmpout_op2].isbbhead = 1;
 			}
 			if (fi.jmpout_ext != XC_OPNUM_INVALID) {
-				markbbhead[fi.jmpout_ext] = 1;
+				oplineinfos[fi.jmpout_ext].isbbhead = 1;
 			}
 			if (i + 1 < count) {
-				markbbhead[i + 1] = 1;
+				oplineinfos[i + 1].isbbhead = 1;
 			}
 		}
 	}
 #ifdef ZEND_ENGINE_2
 	/* mark try start */
 	for (i = 0; i < op_array->last_try_catch; i ++) {
-		markbbhead[op_array->try_catch_array[i].try_op] = 1;
+		oplineinfos[op_array->try_catch_array[i].try_op].isbbhead = 1;
 	}
 #endif
 	/* }}} */
 	/* {{{ fill op lines with newly allocated id */
 	for (i = 0; i < count; i ++) {
-		bbids[i] = BBID_INVALID;
+		oplineinfos[i].bbid = BBID_INVALID;
 	}
 
 	id = -1;
 	for (i = 0; i < count; i ++) {
-		if (markbbhead[i]) {
+		if (oplineinfos[i].isbbhead) {
 			id ++;
 		}
-		bbids[i] = id;
+		oplineinfos[i].bbid = id;
 		TRACE("bbids[%d] = %d", i, id);
 	}
 	/* }}} */
 #ifdef ZEND_ENGINE_2
 	/* {{{ fill op lines with catch id */
 	for (i = 0; i < count; i ++) {
-		catchbbids[i] = BBID_INVALID;
+		oplineinfos[i].catchbbid = BBID_INVALID;
+#	ifdef ZEND_ENGINE_2_5
+		oplineinfos[i].finallybbid = BBID_INVALID;
+#	endif
 	}
 
 	for (i = 0; i < op_array->last_try_catch; i ++) {
 		zend_uint j;
 		zend_try_catch_element *e = &op_array->try_catch_array[i];
 		for (j = e->try_op; j < e->catch_op; j ++) {
-			catchbbids[j] = bbids[e->catch_op];
+			oplineinfos[j].catchbbid = oplineinfos[e->catch_op].bbid;
 		}
+#	ifdef ZEND_ENGINE_2_5
+		for (j = e->finally_op; j < e->finally_end; j ++) {
+			oplineinfos[j].finallybbid = oplineinfos[e->finally_op].bbid;
+		}
+#	endif
 	}
 #ifdef XCACHE_DEBUG
 	for (i = 0; i < count; i ++) {
-		TRACE("catchbbids[%d] = %d", i, catchbbids[i]);
+#	ifdef ZEND_ENGINE_2_5
+		TRACE("catch/finallybbids[%d] = %d, %d", i, oplineinfos[i].catchbbid, oplineinfos[i].finallybbid);
+#	else
+		TRACE("catchbbids[%d] = %d", i, oplineinfos[i].catchbbid);
+#	endif
 	}
 #endif
 	/* }}} */
@@ -485,53 +499,49 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 	id = 0;
 	/* loop over to deal with the last block */
 	for (i = 1; i <= count; i ++) {
-		if (i < count && id == bbids[i]) {
+		if (i < count && id == oplineinfos[i].bbid) {
 			continue;
 		}
 
 		opline = op_array->opcodes + start;
-		pbb = bbs_new_bb_ex(bbs, opline, i - start);
+		bb = bbs_new_bb_ex(bbs, opline, i - start);
 #ifdef ZEND_ENGINE_2
-		pbb->catch = catchbbids[start];
+		bb->catch = oplineinfos[start].catchbbid;
+#endif
+#ifdef ZEND_ENGINE_2_5
+		bb->finally = oplineinfos[start].finallybbid;
 #endif
 
 		/* last */
-		opline = pbb->opcodes + pbb->count - 1;
+		opline = bb->opcodes + bb->count - 1;
 		if (op_get_flowinfo(&fi, opline) == SUCCESS) {
 			if (fi.jmpout_op1 != XC_OPNUM_INVALID) {
-				Z_OP(opline->op1).opline_num = bbids[fi.jmpout_op1];
+				Z_OP(opline->op1).opline_num = oplineinfos[fi.jmpout_op1].bbid;
 				assert(Z_OP(opline->op1).opline_num != BBID_INVALID);
 			}
 			if (fi.jmpout_op2 != XC_OPNUM_INVALID) {
-				Z_OP(opline->op2).opline_num = bbids[fi.jmpout_op2];
+				Z_OP(opline->op2).opline_num = oplineinfos[fi.jmpout_op2].bbid;
 				assert(Z_OP(opline->op2).opline_num != BBID_INVALID);
 			}
 			if (fi.jmpout_ext != XC_OPNUM_INVALID) {
-				opline->extended_value = bbids[fi.jmpout_ext];
+				opline->extended_value = oplineinfos[fi.jmpout_ext].bbid;
 				assert(opline->extended_value != BBID_INVALID);
 			}
 			if (fi.fall && i + 1 < count) {
-				pbb->fall = bbids[i + 1];
-				TRACE("fall %d", pbb->fall);
-				assert(pbb->fall != BBID_INVALID);
+				bb->fall = oplineinfos[i + 1].bbid;
+				TRACE("fall %d", bb->fall);
+				assert(bb->fall != BBID_INVALID);
 			}
 		}
 		if (i >= count) {
 			break;
 		}
 		start = i;
-		id = bbids[i];
+		id = oplineinfos[i].bbid;
 	}
 	/* }}} */
 
-	xc_free_alloca(markbbhead, use_heap_markbbhead);
-#ifdef ZEND_ENGINE_2
-	xc_free_alloca(catchbbids, use_heap_catchbbids);
-#endif
-#ifdef ZEND_ENGINE_2_5
-	xc_free_alloca(finallybbids, use_heap_finallybbids);
-#endif
-	xc_free_alloca(bbids,      use_heap_bbids);
+	xc_free_alloca(oplineinfos, opline_infos_use_heap);
 	return SUCCESS;
 }
 /* }}} */
@@ -584,6 +594,7 @@ static void bbs_restore_opnum(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
 				op_array->try_catch_array = erealloc(op_array->try_catch_array, sizeof(zend_try_catch_element) * op_array->last_try_catch);
 				op_array->try_catch_array[try_catch_offset].try_op = bbs_get(bbs, lasttrybbid)->opnum;
 				op_array->try_catch_array[try_catch_offset].catch_op = lastcatchbbid != BBID_INVALID ? bbs_get(bbs, lastcatchbbid)->opnum : 0;
+				assert(lastcatchbbid != BBID_INVALID);
 #ifdef ZEND_ENGINE_2_5
 				op_array->try_catch_array[try_catch_offset].finally_op = lastfinallybbid != BBID_INVALID ? bbs_get(bbs, lastfinallybbid)->opnum : 0;
 #endif
