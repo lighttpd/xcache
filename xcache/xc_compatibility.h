@@ -113,7 +113,7 @@ typedef znode znode_op;
 
 static inline int php_output_start_default(TSRMLS_D) { php_start_ob_buffer(NULL, 0, 1 TSRMLS_CC); }
 static inline int php_output_get_contents(zval *p TSRMLS_DC) { php_ob_get_buffer(p TSRMLS_CC); }
-static inline int php_output_end(TSRMLS_D) { php_end_ob_buffer(0, 0 TSRMLS_CC); }
+static inline int php_output_discard(TSRMLS_D) { php_end_ob_buffer(0, 0 TSRMLS_CC); }
 #endif
 
 /* unicode */

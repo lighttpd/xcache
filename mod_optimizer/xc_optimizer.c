@@ -240,7 +240,7 @@ static void op_snprint(zend_op_array *op_array, char *buf, int size, zend_uchar 
 			php_output_start_default(TSRMLS_C);
 			php_var_export(&zv, 1 TSRMLS_CC);
 			php_output_get_contents(&result TSRMLS_CC); 
-			php_output_end(TSRMLS_C);
+			php_output_discard(TSRMLS_C);
 
 			snprintf(buf, size, Z_STRVAL(result));
 			zval_dtor(&result);
