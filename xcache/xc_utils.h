@@ -39,7 +39,7 @@ int xc_foreach_early_binding_class(zend_op_array *op_array, xc_foreach_early_bin
 void xc_install_constant(ZEND_24(NOTHING, const) char *filename, zend_constant *constant, zend_uchar type, const24_zstr key, uint len, ulong h TSRMLS_DC);
 #endif
 void xc_install_function(ZEND_24(NOTHING, const) char *filename, zend_function *func, zend_uchar type, const24_zstr key, uint len, ulong h TSRMLS_DC);
-ZESW(xc_cest_t *, void) xc_install_class(ZEND_24(NOTHING, const) char *filename, xc_cest_t *cest, int oplineno, zend_uchar type, const24_zstr key, uint len, ulong h TSRMLS_DC);
+void xc_install_class(ZEND_24(NOTHING, const) char *filename, zend_class_entry *class_entry, int oplineno, zend_uchar type, const24_zstr key, uint len, ulong h TSRMLS_DC);
 
 typedef zend_bool (*xc_if_func_t)(void *data);
 

@@ -1407,9 +1407,6 @@ class Decompiler
 				$EX['object'] = (int) $res['var'];
 				$EX['called_scope'] = null;
 				$EX['fbc'] = 'new ' . unquoteName($this->getOpVal($op1, $EX), $EX);
-				if (!ZEND_ENGINE_2) {
-					$resvar = '$new object$';
-				}
 				break;
 				// }}}
 			case XC_THROW: // {{{
@@ -1480,7 +1477,7 @@ class Decompiler
 					$fetchtype = ($ext & ZEND_FETCH_TYPE_MASK);
 				}
 				else {
-					$fetchtype = $op2[!ZEND_ENGINE_2 ? 'fetch_type' : 'EA.type'];
+					$fetchtype = $op2['EA.type'];
 				}
 				switch ($fetchtype) {
 				case ZEND_FETCH_STATIC_MEMBER:
@@ -1701,7 +1698,7 @@ class Decompiler
 					}
 				}
 
-				switch ((!ZEND_ENGINE_2 ? $op['op2']['var'] /* constant */ : $ext) & (ZEND_ISSET|ZEND_ISEMPTY)) {
+				switch (($ext & (ZEND_ISSET|ZEND_ISEMPTY))) {
 				case ZEND_ISSET:
 					$rvalue = "isset(" . str($rvalue) . ")";
 					break;
@@ -1754,9 +1751,6 @@ class Decompiler
 			case XC_INIT_NS_FCALL_BY_NAME:
 			case XC_INIT_FCALL_BY_NAME: // {{{
 				array_push($EX['arg_types_stack'], array($EX['fbc'], $EX['object'], $EX['called_scope']));
-				if (!ZEND_ENGINE_2 && ($ext & ZEND_CTOR_CALL)) {
-					break;
-				}
 				$EX['object'] = null;
 				$EX['called_scope'] = null;
 				$EX['fbc'] = $this->getOpVal($op2, $EX);
@@ -2475,10 +2469,7 @@ class Decompiler
 				}
 
 				$mangled = false;
-				if (!ZEND_ENGINE_2) {
-					echo 'var ';
-				}
-				else if (!isset($info)) {
+				if (!isset($info)) {
 					echo 'public ';
 				}
 				else {
@@ -2639,7 +2630,6 @@ define('ZEND_ENGINE_2_4', PHP_VERSION >= "5.3.99");
 define('ZEND_ENGINE_2_3', ZEND_ENGINE_2_4 || PHP_VERSION >= "5.3.");
 define('ZEND_ENGINE_2_2', ZEND_ENGINE_2_3 || PHP_VERSION >= "5.2.");
 define('ZEND_ENGINE_2_1', ZEND_ENGINE_2_2 || PHP_VERSION >= "5.1.");
-define('ZEND_ENGINE_2',   ZEND_ENGINE_2_1 || PHP_VERSION >= "5.0.");
 
 define('ZEND_ACC_STATIC',         0x01);
 define('ZEND_ACC_ABSTRACT',       0x02);
@@ -2737,10 +2727,10 @@ define('BYREF_FORCE_REST', 3);
 define('IS_NULL',     0);
 define('IS_LONG',     1);
 define('IS_DOUBLE',   2);
-define('IS_BOOL',     ZEND_ENGINE_2 ? 3 : 6);
+define('IS_BOOL',     3);
 define('IS_ARRAY',    4);
 define('IS_OBJECT',   5);
-define('IS_STRING',   ZEND_ENGINE_2 ? 6 : 3);
+define('IS_STRING',   6);
 define('IS_RESOURCE', 7);
 define('IS_CONSTANT', 8);
 define('IS_CONSTANT_ARRAY',   9);

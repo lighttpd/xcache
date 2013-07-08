@@ -151,7 +151,9 @@ static const char *const xc_opcode_names[] = {
 /* 148 */	"ISSET_ISEMPTY_PROP_OBJ",
 /* 149 */	"HANDLE_EXCEPTION",
 /* 150 */	"USER_OPCODE",
+#ifdef ZEND_ENGINE_2_3
 /* 151 */	"UNDEF",
 /* 152 */	"JMP_SET",
 /* 153 */	"DECLARE_LAMBDA_FUNCTION"
+#endif
 };

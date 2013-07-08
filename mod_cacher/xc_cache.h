@@ -36,16 +36,16 @@ typedef struct {
 /* {{{ xc_classinfo_t */
 typedef struct {
 #ifdef IS_UNICODE
-	zend_uchar   type;
+	zend_uchar          type;
 #endif
-	const24_zstr key;
-	zend_uint    key_size;
-	ulong        h;
-	zend_uint  methodinfo_cnt;
+	const24_zstr        key;
+	zend_uint           key_size;
+	ulong               h;
+	zend_uint           methodinfo_cnt;
 	xc_op_array_info_t *methodinfos;
-	xc_cest_t    cest;
+	zend_class_entry   *class_entry;
 #ifndef ZEND_COMPILE_DELAYED_BINDING
-	int          oplineno;
+	int                 oplineno;
 #endif
 } xc_classinfo_t;
 /* }}} */
@@ -189,10 +189,8 @@ zend_bool xc_is_ro(const void *p);
 zend_bool xc_is_shm(const void *p);
 /* {{{ xc_gc_op_array_t */
 typedef struct {
-#ifdef ZEND_ENGINE_2
 	zend_uint num_args;
 	zend_arg_info *arg_info;
-#endif
 #ifdef ZEND_ENGINE_2_4
 	zend_literal *literals;
 #endif
