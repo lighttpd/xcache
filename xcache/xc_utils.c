@@ -77,35 +77,20 @@ typedef struct {
 int xc_apply_method(zend_function *zf, xc_apply_method_info *mi TSRMLS_DC) /* {{{ */
 {
 	/* avoid duplicate apply for shadowed method */
-#ifdef ZEND_ENGINE_2
 	if (mi->ce != zf->common.scope) {
 		/* fprintf(stderr, "avoided duplicate %s\n", zf->common.function_name); */
 		return 0;
 	}
-#else
-	char *name = zf->common.function_name;
-	int name_s = strlen(name) + 1;
-	zend_class_entry *ce;
-	zend_function *ptr;
-
-	for (ce = mi->ce->parent; ce; ce = ce->parent) {
-		if (zend_hash_find(&ce->function_table, name, name_s, (void **) &ptr) == SUCCESS) {
-			if (ptr->op_array.refcount == zf->op_array.refcount) {
-				return 0;
-			}
-		}
-	}
-#endif
 	return xc_apply_function(zf, &mi->fi TSRMLS_CC);
 }
 /* }}} */
-static int xc_apply_cest(xc_cest_t *cest, xc_apply_func_info *fi TSRMLS_DC) /* {{{ */
+static int xc_apply_class(zend_class_entry **ce, xc_apply_func_info *fi TSRMLS_DC) /* {{{ */
 {
 	xc_apply_method_info mi;
 
 	mi.fi = *fi;
-	mi.ce = CestToCePtr(*cest);
-	zend_hash_apply_with_argument(&(CestToCePtr(*cest)->function_table), (apply_func_arg_t) xc_apply_method, &mi TSRMLS_CC);
+	mi.ce = *ce;
+	zend_hash_apply_with_argument(&((*ce)->function_table), (apply_func_arg_t) xc_apply_method, &mi TSRMLS_CC);
 	return 0;
 }
 /* }}} */
@@ -114,7 +99,7 @@ int xc_apply_op_array(xc_compile_result_t *cr, apply_func_t applyer TSRMLS_DC) /
 	xc_apply_func_info fi;
 	fi.applyer = applyer;
 	zend_hash_apply_with_argument(cr->function_table, (apply_func_arg_t) xc_apply_function, &fi TSRMLS_CC);
-	zend_hash_apply_with_argument(cr->class_table, (apply_func_arg_t) xc_apply_cest, &fi TSRMLS_CC);
+	zend_hash_apply_with_argument(cr->class_table, (apply_func_arg_t) xc_apply_class, &fi TSRMLS_CC);
 
 	return applyer(cr->op_array TSRMLS_CC);
 }
@@ -277,7 +262,6 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 
 static void xc_fix_opcode_ex_znode(int tofix, xc_op_spec_t spec, Z_OP_TYPEOF_TYPE *op_type, znode_op *op, int type TSRMLS_DC) /* {{{ */
 {
-#ifdef ZEND_ENGINE_2
 	if ((*op_type != IS_UNUSED && (spec == OPSPEC_UCLASS || spec == OPSPEC_CLASS)) ||
 			spec == OPSPEC_FETCH) {
 		if (tofix) {
@@ -303,7 +287,6 @@ static void xc_fix_opcode_ex_znode(int tofix, xc_op_spec_t spec, Z_OP_TYPEOF_TYP
 			Z_OP(*op).var *= sizeof(temp_variable);
 		}
 	}
-#endif
 }
 /* }}} */
 
@@ -379,17 +362,9 @@ int xc_foreach_early_binding_class(zend_op_array *op_array, xc_foreach_early_bin
 				opline = opline_end;
 				break;
 
-#ifdef ZEND_ENGINE_2
 			case ZEND_DECLARE_INHERITED_CLASS:
 				callback(opline, opline - begin, data TSRMLS_CC);
 				break;
-#else
-			case ZEND_DECLARE_FUNCTION_OR_CLASS:
-				if (opline->extended_value == ZEND_DECLARE_INHERITED_CLASS) {
-					callback(opline, opline - begin, data TSRMLS_CC);
-				}
-				break;
-#endif
 		}
 
 		if (opline < next) {
@@ -414,7 +389,6 @@ int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, int opl
 	opline = &(op_array->opcodes[oplineno]);
 
 	switch (opline->opcode) {
-#ifdef ZEND_ENGINE_2
 	case ZEND_DECLARE_INHERITED_CLASS:
 		{
 			zval *parent_name;
@@ -463,12 +437,6 @@ int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, int opl
 			abstract_op->opcode = ZEND_NOP;
 			ZEND_VM_SET_OPCODE_HANDLER(abstract_op);
 		}
-#else
-	case ZEND_DECLARE_FUNCTION_OR_CLASS:
-		if (do_bind_function_or_class(opline, NULL, class_table, 1) == FAILURE) {
-			return FAILURE;
-		}
-#endif
 		break;
 
 	default:
@@ -530,7 +498,7 @@ void xc_install_function(ZEND_24(NOTHING, const) char *filename, zend_function *
 					func, sizeof(zend_op_array),
 					NULL
 					) == FAILURE) {
-			CG(zend_lineno) = ZESW(func->op_array.opcodes[0].lineno, func->op_array.line_start);
+			CG(zend_lineno) = func->op_array.line_start;
 #ifdef IS_UNICODE
 			zend_error(E_ERROR, "Cannot redeclare %R()", type, key);
 #else
@@ -540,11 +508,9 @@ void xc_install_function(ZEND_24(NOTHING, const) char *filename, zend_function *
 	}
 }
 /* }}} */
-ZESW(xc_cest_t *, void) xc_install_class(ZEND_24(NOTHING, const) char *filename, xc_cest_t *cest, int oplineno, zend_uchar type, const24_zstr key, uint len, ulong h TSRMLS_DC) /* {{{ */
+void xc_install_class(ZEND_24(NOTHING, const) char *filename, zend_class_entry *ce, int oplineno, zend_uchar type, const24_zstr key, uint len, ulong h TSRMLS_DC) /* {{{ */
 {
 	zend_bool istmpkey;
-	zend_class_entry *cep = CestToCePtr(*cest);
-	ZESW(void *stored_ce_ptr, NOTHING);
 
 #ifdef IS_UNICODE
 	istmpkey = (type == IS_STRING && ZSTR_S(key)[0] == 0) || ZSTR_U(key)[0] == 0;
@@ -553,8 +519,8 @@ ZESW(xc_cest_t *, void) xc_install_class(ZEND_24(NOTHING, const) char *filename,
 #endif
 	if (istmpkey) {
 		zend_u_hash_quick_update(CG(class_table), type, key, len, h,
-					cest, sizeof(xc_cest_t),
-					ZESW(&stored_ce_ptr, NULL)
+					ce, sizeof(zend_class_entry *),
+					NULL
 					);
 #ifndef ZEND_COMPILE_DELAYED_BINDING
 		if (oplineno != -1) {
@@ -563,18 +529,17 @@ ZESW(xc_cest_t *, void) xc_install_class(ZEND_24(NOTHING, const) char *filename,
 #endif
 	}
 	else if (zend_u_hash_quick_add(CG(class_table), type, key, len, h,
-				cest, sizeof(xc_cest_t),
-				ZESW(&stored_ce_ptr, NULL)
+				ce, sizeof(zend_class_entry *),
+				NULL
 				) == FAILURE) {
-		CG(zend_lineno) = ZESW(0, Z_CLASS_INFO(*cep).line_start);
+		CG(zend_lineno) = Z_CLASS_INFO(*ce).line_start;
 #ifdef IS_UNICODE
-		zend_error(E_ERROR, "Cannot redeclare class %R", type, cep->name);
+		zend_error(E_ERROR, "Cannot redeclare class %R", type, ce->name);
 #else
-		zend_error(E_ERROR, "Cannot redeclare class %s", cep->name);
+		zend_error(E_ERROR, "Cannot redeclare class %s", ce->name);
 #endif
 		assert(oplineno == -1);
 	}
-	ZESW(return (xc_cest_t *) stored_ce_ptr, NOTHING);
 }
 /* }}} */
 

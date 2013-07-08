@@ -5,7 +5,7 @@
  * compatible with fcntl fork
  * support for __FILE__ __DIR__ handling after files moved/hardlinked
 
-3.0.3 2013-16.18
+3.0.3 2013-16-18
 ========
  * clean files in release (fix htdocs config)
 

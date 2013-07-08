@@ -75,7 +75,7 @@ static void xc_dasm(zval *output, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 
 		ALLOC_INIT_ZVAL(zv);
 		array_init(zv);
-		xc_dasm_zend_class_entry(&dasm, zv, CestToCePtr(*(xc_cest_t *)b->pData) TSRMLS_CC);
+		xc_dasm_zend_class_entry(&dasm, zv, *(zend_class_entry **)b->pData TSRMLS_CC);
 
 		keysize = BUCKET_KEY_SIZE(b) + 2;
 		if (keysize > bufsize) {
@@ -150,11 +150,7 @@ zend_op_array *xc_dasm_sandboxed(void *data TSRMLS_DC) /* {{{ */
 	xc_dasm(sandboxed_dasm->output, op_array TSRMLS_CC);
 
 	/* free */
-#ifdef ZEND_ENGINE_2
 	destroy_op_array(op_array TSRMLS_CC);
-#else
-	destroy_op_array(op_array);
-#endif
 	efree(op_array);
 
 	return NULL;
@@ -250,12 +246,7 @@ static zend_module_entry xcache_disassembler_module_entry = { /* {{{ */
 #ifdef PHP_GINIT
 	NO_MODULE_GLOBALS,
 #endif
-#ifdef ZEND_ENGINE_2
 	NULL,
-#else
-	NULL,
-	NULL,
-#endif
 	STANDARD_MODULE_PROPERTIES_EX
 };
 /* }}} */

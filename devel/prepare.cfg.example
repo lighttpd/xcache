@@ -1,5 +1,4 @@
 # copy this file as prepare.cfg before modifying
-PHP4_x_DIR=
 PHP5_0_DIR=
 PHP5_1_DIR=
 PHP5_3_DIR=

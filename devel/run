@@ -96,6 +96,12 @@ updatedeps() { # {{{1
 				esac
 
 				case "$dependency" in
+				*xc_const_string_opcodes_php*)
+					for dependency in xcache/xc_const_string_*.h; do
+						echo '$(srcdir)/'$dependency
+					done
+					;;
+
 				/*) ;;
 				$sourceFile) ;;
 

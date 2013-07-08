@@ -4,11 +4,7 @@
 
 /* {{{ opcode_spec */
 #define OPSPEC(ext, op1, op2, res) { OPSPEC_##ext, OPSPEC_##op1, OPSPEC_##op2, OPSPEC_##res },
-#ifdef ZEND_ENGINE_2
-#	define OPSPEC_VAR_2 OPSPEC_STD
-#else
-#	define OPSPEC_VAR_2 OPSPEC_VAR
-#endif
+#define OPSPEC_VAR_2 OPSPEC_STD
 #include "xc_opcode_spec_def.h"
 
 zend_uchar xc_get_opcode_spec_count()

@@ -194,8 +194,8 @@ static xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, ZEND_24(NOTHING, con
 	zend_hash_init_ex(&TG(class_table),     16, NULL, ZEND_CLASS_DTOR, h->persistent, h->bApplyProtection);
 #if 0 && TODO
 	{
-		xc_cest_t tmp_cest;
-		zend_hash_copy(&TG(class_table), &XG(internal_class_table), NULL, (void *) &tmp_cest, sizeof(tmp_cest));
+		zend_class_entry *dummy_class_entry;
+		zend_hash_copy(&TG(class_table), &XG(internal_class_table), NULL, (void *) &dummy_class_entry, sizeof(dummy_class_entry));
 	}
 #endif
 	TG(internal_class_tail) = TG(class_table).pListTail;
@@ -277,7 +277,7 @@ static void xc_sandbox_install(xc_sandbox_t *sandbox TSRMLS_DC) /* {{{ */
 	b = TG(internal_class_tail) ? TG(internal_class_tail)->pListNext : TG(class_table).pListHead;
 	/* install class */
 	while (b != NULL) {
-		xc_install_class(sandbox->filename, (xc_cest_t*) b->pData, -1,
+		xc_install_class(sandbox->filename, *(zend_class_entry **)b->pData, -1,
 				BUCKET_KEY_TYPE(b), ZSTR(BUCKET_KEY_S(b)), b->nKeyLength, b->h TSRMLS_CC);
 		b = b->pListNext;
 	}
