@@ -519,7 +519,7 @@ void xc_install_class(ZEND_24(NOTHING, const) char *filename, zend_class_entry *
 #endif
 	if (istmpkey) {
 		zend_u_hash_quick_update(CG(class_table), type, key, len, h,
-					ce, sizeof(zend_class_entry *),
+					&ce, sizeof(zend_class_entry *),
 					NULL
 					);
 #ifndef ZEND_COMPILE_DELAYED_BINDING
@@ -529,7 +529,7 @@ void xc_install_class(ZEND_24(NOTHING, const) char *filename, zend_class_entry *
 #endif
 	}
 	else if (zend_u_hash_quick_add(CG(class_table), type, key, len, h,
-				ce, sizeof(zend_class_entry *),
+				&ce, sizeof(zend_class_entry *),
 				NULL
 				) == FAILURE) {
 		CG(zend_lineno) = Z_CLASS_INFO(*ce).line_start;
