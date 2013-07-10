@@ -2568,6 +2568,7 @@ class Decompiler
 			echo "error compling string\n";
 			return false;
 		}
+		return true;
 	}
 	// }}}
 	function decompileFile($file) // {{{
@@ -2577,11 +2578,13 @@ class Decompiler
 			echo "error compling $file\n";
 			return false;
 		}
+		return true;
 	}
 	// }}}
 	function decompileDasm($content) // {{{
 	{
 		$this->dc = $content;
+		return true;
 	}
 	// }}}
 	function output() // {{{

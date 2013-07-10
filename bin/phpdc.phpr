@@ -14,10 +14,12 @@ if (!isset($argv)) {
 
 $dc = new Decompiler();
 if (isset($argv[2])) {
-	eval('$dc->dc = ' . file_get_contents($argv[2]) . ';');
+	eval('$dc->decompileDasm(' . file_get_contents($argv[2]) . ');');
 }
 else if (isset($argv[1])) {
-	$dc->decompileFile($argv[1]);
+	if ($dc->decompileFile($argv[1]) === false) {
+		exit(2);
+	}
 }
 else {
 	$phpcode = '';
@@ -27,7 +29,9 @@ else {
 	while (!feof(stdin)) {
 		$phpcode .= fgets(stdin);
 	}
-	$dc->decompileString($phpcode);
+	if ($dc->decompileString($phpcode) === false) {
+		exit(2);
+	}
 }
 $dc->output();
 
