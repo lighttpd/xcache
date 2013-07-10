@@ -84,7 +84,7 @@ updatedeps() { # {{{1
 			esac
 			echo ${sourceFile%.c}.lo '$(builddir)/'${sourceFile%.c}.lo:
 			hiecho "Checking $sourceFile ..." >&2
-			for dependency in $(gcc -MM $sourceFile -I$HOME/test/php5-debug-zts/include/php/{,main,Zend,TSRM} -I. -I${builddir} -MG | sed 's#.*:##g' | sed 's#\\##g'); do
+			for dependency in $(gcc -DHAVE_XCACHE_TEST -DHAVE_XCACHE_DPRINT -DXCACHE_DEBUG -MM $sourceFile -I$HOME/test/php5-debug-zts/include/php/{,main,Zend,TSRM} -I. -I${builddir} -MG | sed 's#.*:##g' | sed 's#\\##g'); do
 				dependency=$(readlink -f "$dependency")
 				case "$dependency" in
 				$pwd/*)
@@ -184,6 +184,7 @@ do_phpize() { # {{{1
 		--enable-xcache-disassembler \
 		--enable-xcache-coverager \
 		--enable-xcache-test \
+		--enable-xcache-dprint \
 		--enable-xcache-constant
 }
 do_make() { # {{{1
