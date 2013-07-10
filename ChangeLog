@@ -3,6 +3,7 @@ ChangeLog
 ========
  * drop support for PHP_4 in source code
  * disassembler: fixes crash with nested sandbox
+ * disassembler, Decompiler: improves support for PHP_5_4
  * adds support for PHP_5_5
  * compatible with fcntl fork
  * support for __FILE__ __DIR__ handling after files moved/hardlinked (without xcache.experimental)
