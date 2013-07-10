@@ -1542,6 +1542,7 @@ class Decompiler
 				}
 				$dim = &$dimbox->obj;
 				$dim->offsets[] = $this->getOpVal($op2, $EX);
+				/* TODO: use type mask */
 				if ($ext == ZEND_FETCH_ADD_LOCK) {
 					$src->obj->everLocked = true;
 				}
@@ -1676,7 +1677,7 @@ class Decompiler
 					if ($op1['op_type'] == XC_IS_CONST) {
 						$rvalue = '$' . unquoteVariableName($this->getOpVal($op1, $EX));
 					}
-					if ($op2['EA.type'] == ZEND_FETCH_STATIC_MEMBER) {
+					if (!ZEND_ENGINE_2_4 && $op2['EA.type'] == ZEND_FETCH_STATIC_MEMBER) {
 						$class = $this->getOpVal($op2, $EX);
 						$rvalue = $class . '::' . $rvalue;
 					}
@@ -1698,7 +1699,8 @@ class Decompiler
 					}
 				}
 
-				switch (($ext & (ZEND_ISSET|ZEND_ISEMPTY))) {
+				/* TODO: use type mask */
+				switch (($ext & ZEND_ISSET_ISEMPTY_MASK)) {
 				case ZEND_ISSET:
 					$rvalue = "isset(" . str($rvalue) . ")";
 					break;
@@ -2022,7 +2024,7 @@ class Decompiler
 				break;
 			case XC_RECV_INIT:
 			case XC_RECV:
-				$offset = $this->getOpVal($op1, $EX);
+				$offset = $op1['var'];
 				$lvalue = $this->getOpVal($op['result'], $EX);
 				if ($opc == XC_RECV_INIT) {
 					$default = value($op['op2']['constant']);
@@ -2030,7 +2032,7 @@ class Decompiler
 				else {
 					$default = null;
 				}
-				$EX['recvs'][str($offset)] = array($lvalue, $default);
+				$EX['recvs'][$offset] = array($lvalue, $default);
 				break;
 			case XC_POST_DEC:
 			case XC_POST_INC:
@@ -2278,13 +2280,13 @@ class Decompiler
 			$arg = $EX['recvs'][$i + 1];
 			if (isset($op_array['arg_info'])) {
 				$ai = $op_array['arg_info'][$i];
-				if (!empty($ai['class_name'])) {
+				if (isset($ai['type_hint']) ? ($ai['type_hint'] == IS_CALLABLE || $ai['type_hint'] == IS_OBJECT) : !empty($ai['class_name'])) {
 					echo $this->stripNamespace($ai['class_name']), ' ';
 					if (!ZEND_ENGINE_2_2 && $ai['allow_null']) {
 						echo 'or NULL ';
 					}
 				}
-				else if (!empty($ai['array_type_hint'])) {
+				else if (isset($ai['type_hint']) ? $ai['type_hint'] == IS_ARRAY : !empty($ai['array_type_hint'])) {
 					echo 'array ';
 					if (!ZEND_ENGINE_2_2 && $ai['allow_null']) {
 						echo 'or NULL ';
@@ -2629,7 +2631,7 @@ class Decompiler
 }
 
 // {{{ defines
-define('ZEND_ENGINE_2_4', PHP_VERSION >= "5.3.99");
+define('ZEND_ENGINE_2_4', PHP_VERSION >= "5.4");
 define('ZEND_ENGINE_2_3', ZEND_ENGINE_2_4 || PHP_VERSION >= "5.3.");
 define('ZEND_ENGINE_2_2', ZEND_ENGINE_2_3 || PHP_VERSION >= "5.2.");
 define('ZEND_ENGINE_2_1', ZEND_ENGINE_2_2 || PHP_VERSION >= "5.1.");
@@ -2671,6 +2673,10 @@ if (ZEND_ENGINE_2_4) {
 	define('ZEND_FETCH_LEXICAL',          0x50000000);
 
 	define('ZEND_FETCH_TYPE_MASK',        0x70000000);
+
+	define('ZEND_FETCH_STANDARD',         0x00000000);
+	define('ZEND_FETCH_ADD_LOCK',         0x08000000);
+	define('ZEND_FETCH_MAKE_REF',         0x04000000);
 }
 else {
 	define('ZEND_FETCH_GLOBAL',           0);
@@ -2678,6 +2684,22 @@ else {
 	define('ZEND_FETCH_STATIC',           2);
 	define('ZEND_FETCH_STATIC_MEMBER',    3);
 	define('ZEND_FETCH_GLOBAL_LOCK',      4);
+
+	define('ZEND_FETCH_STANDARD',         0);
+	define('ZEND_FETCH_ADD_LOCK',         1);
+}
+
+if (ZEND_ENGINE_2_4) {
+	define('ZEND_ISSET',                  0x02000000);
+	define('ZEND_ISEMPTY',                0x01000000);
+	define('ZEND_ISSET_ISEMPTY_MASK',     (ZEND_ISSET | ZEND_ISEMPTY));
+	define('ZEND_QUICK_SET',              0x00800000);
+}
+else {
+	define('ZEND_ISSET',                  (1<<0));
+	define('ZEND_ISEMPTY',                (1<<1));
+
+	define('ZEND_ISSET_ISEMPTY_MASK',     (ZEND_ISSET | ZEND_ISEMPTY));
 }
 
 define('ZEND_FETCH_CLASS_DEFAULT',    0);
@@ -2701,17 +2723,12 @@ define('ZEND_INCLUDE_ONCE',       (1<<2));
 define('ZEND_REQUIRE',            (1<<3));
 define('ZEND_REQUIRE_ONCE',       (1<<4));
 
-define('ZEND_ISSET',              (1<<0));
-define('ZEND_ISEMPTY',            (1<<1));
 if (ZEND_ENGINE_2_4) {
 	define('EXT_TYPE_UNUSED',     (1<<5));
 }
 else {
 	define('EXT_TYPE_UNUSED',     (1<<0));
 }
-
-define('ZEND_FETCH_STANDARD',     0);
-define('ZEND_FETCH_ADD_LOCK',     1);
 
 define('ZEND_FE_FETCH_BYREF',     1);
 define('ZEND_FE_FETCH_WITH_KEY',  2);
@@ -2737,6 +2754,9 @@ define('IS_STRING',   6);
 define('IS_RESOURCE', 7);
 define('IS_CONSTANT', 8);
 define('IS_CONSTANT_ARRAY',   9);
+if (ZEND_ENGINE_2_4) {
+	define('IS_CALLABLE', 10);
+}
 /* Ugly hack to support constants as static array indices */
 define('IS_CONSTANT_TYPE_MASK',   0x0f);
 define('IS_CONSTANT_UNQUALIFIED', 0x10);
