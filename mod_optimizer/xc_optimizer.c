@@ -15,6 +15,7 @@
 #ifdef XCACHE_DEBUG
 #	include "xc_processor.h"
 #	include "xcache/xc_const_string.h"
+#	include "xcache/xc_opcode_spec.h"
 #	include "ext/standard/php_var.h"
 #endif
 
@@ -226,9 +227,9 @@ static int op_get_flowinfo(op_flowinfo_t *fi, zend_op *opline) /* {{{ */
 }
 /* }}} */
 #ifdef XCACHE_DEBUG
-static void op_snprint(zend_op_array *op_array, char *buf, int size, zend_uchar op_type, znode_op *op) /* {{{ */
+static void op_snprint(zend_op_array *op_array, char *buf, int size, zend_uchar op_type, znode_op *op, xc_op_spec_t op_spec) /* {{{ */
 {
-	switch (op_type) {
+	switch ((op_spec & OPSPEC_UNUSED) ? IS_UNUSED : op_type) {
 	case IS_CONST:
 		{
 			zval result;
@@ -275,14 +276,28 @@ static void op_print(zend_op_array *op_array, int line, zend_op *first, zend_op 
 		char buf_r[20];
 		char buf_1[20];
 		char buf_2[20];
-		op_snprint(op_array, buf_r, sizeof(buf_r), Z_OP_TYPE(opline->result), &opline->result);
-		op_snprint(op_array, buf_1, sizeof(buf_1), Z_OP_TYPE(opline->op1),    &opline->op1);
-		op_snprint(op_array, buf_2, sizeof(buf_2), Z_OP_TYPE(opline->op2),    &opline->op2);
+		const xc_opcode_spec_t *opcode_spec = xc_get_opcode_spec(opline->opcode);
+		op_snprint(op_array, buf_r, sizeof(buf_r), Z_OP_TYPE(opline->result), &opline->result, opcode_spec->res);
+		op_snprint(op_array, buf_1, sizeof(buf_1), Z_OP_TYPE(opline->op1),    &opline->op1,    opcode_spec->op1);
+		op_snprint(op_array, buf_2, sizeof(buf_2), Z_OP_TYPE(opline->op2),    &opline->op2,    opcode_spec->op2);
 		fprintf(stderr,
 				"%3d %3lu"
-				" %-25s%-5s%-20s%-20s%5lu\r\n"
+				" %-25s%-8s%-20s%-20s%5lu\n"
 				, opline->lineno, (long) (opline - first + line)
 				, xc_get_opcode(opline->opcode), buf_r, buf_1, buf_2, opline->extended_value);
+	}
+}
+/* }}} */
+static void op_array_print_try_catch(zend_op_array *op_array TSRMLS_DC) /* {{{ */
+{
+	int i;
+	for (i = 0; i < op_array->last_try_catch; i ++) {
+		zend_try_catch_element *element = &op_array->try_catch_array[i];
+#	ifdef ZEND_ENGINE_2_5
+		fprintf(stderr, "try_catch[%d] = %u, %u, %u, %u\n", i, element->try_op, element->catch_op, element->finally_op, element->finally_end);
+#	else
+		fprintf(stderr, "try_catch[%d] = %u, %u\n", i, element->try_op, element->catch_op);
+#	endif
 	}
 }
 /* }}} */
@@ -342,9 +357,9 @@ static void bb_print(bb_t *bb, zend_op_array *op_array) /* {{{ */
 	op_get_flowinfo(&fi, last);
 
 	fprintf(stderr,
-			"\r\n==== #%-3d cnt:%-3d lno:%-3d"
+			"\n==== #%-3d cnt:%-3d lno:%-3d"
 			" %c%c"
-			" op1:%-3d op2:%-3d ext:%-3d fal:%-3d cat:%-3d fnl:%-3d %s ====\r\n"
+			" op1:%-3d op2:%-3d ext:%-3d fal:%-3d cat:%-3d fnl:%-3d %s ====\n"
 			, bb->id, bb->count, bb->alloc ? -1 : line
 			, bb->used ? 'U' : ' ', bb->alloc ? 'A' : ' '
 			, fi.jmpout_op1, fi.jmpout_op2, fi.jmpout_ext, bb->fall, catchbbid, finallybbid, xc_get_opcode(last->opcode)
@@ -467,12 +482,10 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 		zend_try_catch_element *e = &op_array->try_catch_array[i];
 		for (j = e->try_op; j < e->catch_op; j ++) {
 			oplineinfos[j].catchbbid = oplineinfos[e->catch_op].bbid;
-		}
 #	ifdef ZEND_ENGINE_2_5
-		for (j = e->finally_op; j < e->finally_end; j ++) {
 			oplineinfos[j].finallybbid = oplineinfos[e->finally_op].bbid;
-		}
 #	endif
+		}
 	}
 #ifdef XCACHE_DEBUG
 	for (i = 0; i < count; i ++) {
@@ -535,16 +548,16 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 /* }}} */
 static void bbs_restore_opnum(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
 {
-	int i;
+	int bbid;
 	bbid_t lasttrybbid;
 	bbid_t lastcatchbbid;
 #ifdef ZEND_ENGINE_2_5
 	bbid_t lastfinallybbid;
 #endif
 
-	for (i = 0; i < bbs_count(bbs); i ++) {
+	for (bbid = 0; bbid < bbs_count(bbs); bbid ++) {
 		op_flowinfo_t fi;
-		bb_t *bb = bbs_get(bbs, i);
+		bb_t *bb = bbs_get(bbs, bbid);
 		zend_op *last = bb->opcodes + bb->count - 1;
 
 		if (op_get_flowinfo(&fi, last) == SUCCESS) {
@@ -569,22 +582,52 @@ static void bbs_restore_opnum(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
 	lastfinallybbid = BBID_INVALID;
 #endif
 	op_array->last_try_catch = 0;
-	for (i = 0; i < bbs_count(bbs); i ++) {
-		bb_t *bb = bbs_get(bbs, i);
+	for (bbid = 0; bbid < bbs_count(bbs); bbid ++) {
+		bb_t *bb = bbs_get(bbs, bbid);
 
-		if (lastcatchbbid != bb->catch) {
-			if (lasttrybbid != BBID_INVALID) {
-				int try_catch_offset = op_array->last_try_catch ++;
-
-				op_array->try_catch_array = erealloc(op_array->try_catch_array, sizeof(zend_try_catch_element) * op_array->last_try_catch);
-				op_array->try_catch_array[try_catch_offset].try_op = bbs_get(bbs, lasttrybbid)->opnum;
-				op_array->try_catch_array[try_catch_offset].catch_op = lastcatchbbid != BBID_INVALID ? bbs_get(bbs, lastcatchbbid)->opnum : 0;
-				assert(lastcatchbbid != BBID_INVALID);
+		if (lastcatchbbid != bb->catch
 #ifdef ZEND_ENGINE_2_5
-				op_array->try_catch_array[try_catch_offset].finally_op = lastfinallybbid != BBID_INVALID ? bbs_get(bbs, lastfinallybbid)->opnum : 0;
+		 || lastfinallybbid != bb->finally
 #endif
+		) {
+			if (bb->catch != BBID_INVALID
+#ifdef ZEND_ENGINE_2_5
+			 && bb->finally != BBID_INVALID
+#endif
+			) {
+				int try_op = bbs_get(bbs, bbid)->opnum;
+				int catch_op = bbs_get(bbs, bb->catch)->opnum;
+#ifdef ZEND_ENGINE_2_5
+				int finally_op = bbs_get(bbs, bb->finally)->opnum;
+#endif
+
+				zend_bool already_in_try_catch = 0;
+				zend_uint j;
+
+				for (j = 0; j < op_array->last_try_catch; ++j) {
+					zend_try_catch_element *element = &op_array->try_catch_array[j];
+					if (try_op >= element->try_op && try_op < element->catch_op
+					 && catch_op == element->catch_op
+#ifdef ZEND_ENGINE_2_5
+					 && finally_op == element->finally_op
+#endif
+					) {
+						already_in_try_catch = 1;
+						break;
+					}
+				}
+				if (!already_in_try_catch) {
+					int try_catch_offset = op_array->last_try_catch ++;
+
+					op_array->try_catch_array = erealloc(op_array->try_catch_array, sizeof(zend_try_catch_element) * op_array->last_try_catch);
+					op_array->try_catch_array[try_catch_offset].try_op = try_op;
+					op_array->try_catch_array[try_catch_offset].catch_op = catch_op;
+#ifdef ZEND_ENGINE_2_5
+					op_array->try_catch_array[try_catch_offset].finally_op = finally_op;
+#endif
+				}
 			}
-			lasttrybbid   = i;
+			lasttrybbid   = bbid;
 			lastcatchbbid = bb->catch;
 #ifdef ZEND_ENGINE_2_5
 			lastfinallybbid = bb->finally;
@@ -607,11 +650,11 @@ static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	}
 
 #ifdef XCACHE_DEBUG
-	xc_fix_opcode(op_array TSRMLS_CC);
-#	if 0
 	TRACE("optimize file: %s", op_array->filename);
+#	if 0 && HAVE_XCACHE_DPRINT
 	xc_dprint_zend_op_array(op_array, 0 TSRMLS_CC);
 #	endif
+	op_array_print_try_catch(op_array TSRMLS_CC);
 	op_print(op_array, 0, op_array->opcodes, op_array->opcodes + op_array->last);
 #endif
 
@@ -633,12 +676,12 @@ static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	}
 
 #ifdef XCACHE_DEBUG
-#	if 0
 	TRACE("%s", "after compiles");
+#	if 0
 	xc_dprint_zend_op_array(op_array, 0 TSRMLS_CC);
 #	endif
+	op_array_print_try_catch(op_array TSRMLS_CC);
 	op_print(op_array, 0, op_array->opcodes, op_array->opcodes + op_array->last);
-	xc_undo_fix_opcode(op_array TSRMLS_CC);
 #endif
 	return 0;
 }
