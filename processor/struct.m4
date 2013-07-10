@@ -132,24 +132,28 @@ define(`STRUCT_P_EX', `
 	ifdef(`DEFINED_'ifelse(`$5', `', `$1', `$5'), `', `m4_errprint(`AUTOCHECK ERROR: Unknown struct "'ifelse(`$5', `', `$1', `$5')`"')define(`EXIT_PENDING', 1)')
 	assert(sizeof($1) == sizeof(($6 $3)[0]));
 	ifelse(`$6', `', `ALLOC(`$2', `$1')')
+ifdef(`DASM_STRUCT_DIRECT', `', `
 	IFDASM(`do {
 		zval *zv;
 		ALLOC_INIT_ZVAL(zv);
 		array_init(zv);
 	')
+')
 	FUNC_NAME`'(
 		IFDPRINT( `           $6 $3, indent')
 		IFCALC(   `processor, $6 $3')
 		IFSTORE(  `processor, $6 $2, $6 $3')
 		IFRESTORE(`processor, $6 $2, $6 $3')
-		IFDASM(   `dasm, zv, $6 $3')
+		IFDASM(   `dasm, ifdef(`DASM_STRUCT_DIRECT', `dst', `zv'), $6 $3')
 		IFASM(    `$6 $2, $6 $3')
 		TSRMLS_CC
 	);
+ifdef(`DASM_STRUCT_DIRECT', `', `
 	IFDASM(`
 		add_assoc_zval_ex(dst, ZEND_STRS("$4"), zv);
 	} while (0);
 	')
+')
 	popdef(`FUNC_NAME')
 	ifelse(`$6', , `FIXPOINTER_EX(`$1', `$2')')
 ')

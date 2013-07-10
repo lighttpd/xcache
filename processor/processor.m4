@@ -194,7 +194,9 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 dnl }}}
 DEF_STRUCT_P_FUNC(`zval_ptr_nullable', , `dnl {{{
 	if (src[0]) {
+		pushdef(`DASM_STRUCT_DIRECT')
 		STRUCT_P_EX(zval_ptr, dst, src, `', `', ` ')
+		popdef(`DASM_STRUCT_DIRECT')
 	}
 	else {
 		IFCOPY(`COPYNULL_EX(src[0], src)')
