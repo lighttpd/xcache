@@ -1931,7 +1931,8 @@ class Decompiler
 				}
 				break;
 				// }}}
-			case XC_QM_ASSIGN: // {{{
+			case XC_QM_ASSIGN:
+			case XC_QM_ASSIGN_VAR: // {{{
 				if (isset($curResVar) && is_a($curResVar, 'Decompiler_Binop')) {
 					$curResVar->op2 = $this->getOpVal($op1, $EX);
 				}
