@@ -132,7 +132,11 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 104 EXT_NOP                        */
 	OPSPEC(    UNUSED,        STD,     UNUSED,     UNUSED) /* 105 TICKS                          */
 	OPSPEC(SEND_NOREF,        VAR,        ARG,     UNUSED) /* 106 SEND_VAR_NO_REF                */
+#ifdef ZEND_ENGINE_2_4
+	OPSPEC(    OPLINE,        STD,        STD,     UNUSED) /* 107 CATCH                          */
+#else
 	OPSPEC(    OPLINE,      CLASS,        STD,     UNUSED) /* 107 CATCH                          */
+#endif
 	OPSPEC(    UNUSED,        STD,     OPLINE,     UNUSED) /* 108 THROW                          */
 	OPSPEC(    FCLASS,        STD,        STD,      CLASS) /* 109 FETCH_CLASS                    */
 	OPSPEC(    UNUSED,        STD,     UNUSED,        VAR) /* 110 CLONE                          */
