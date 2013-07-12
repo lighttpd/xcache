@@ -211,7 +211,7 @@ DEF_STRUCT_P_FUNC(`zend_arg_info', , `dnl {{{
 	PROC_ZSTRING_L(, class_name, class_name_len)
 #ifdef ZEND_ENGINE_2_4
 	PROCESS(zend_uchar, type_hint)
-#else
+#elif defined(ZEND_ENGINE_2_1)
 	PROCESS(zend_bool, array_type_hint)
 #endif
 	PROCESS(zend_bool, allow_null)
@@ -406,15 +406,15 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	IFRESTORE(`dst->filename = processor->entry_php_src->filepath;DONE(filename)', `PROC_STRING(filename)')
 	PROCESS(zend_uint, line_start)
 	PROCESS(zend_uint, line_end)
-#		ifdef ZEND_ENGINE_2_1
 	PROCESS(zend_uint, doc_comment_len)
 	PROC_ZSTRING_L(, doc_comment, doc_comment_len)
-#		endif
 #	endif
 
 	/* # NOT DONE */
+#	ifdef ZEND_ENGINE_2_1
 	COPY(serialize_func)
 	COPY(unserialize_func)
+#	endif
 	COPY(iterator_funcs)
 	COPY(create_object)
 	COPY(get_iterator)
@@ -422,8 +422,10 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 #	ifdef ZEND_ENGINE_2_3
 	COPY(get_static_method)
 #	endif
+#	ifdef ZEND_ENGINE_2_1
 	COPY(serialize)
 	COPY(unserialize)
+#	endif
 	/* deal with it inside xc_fix_method */
 	SETNULL(constructor)
 	COPY(destructor)
@@ -585,7 +587,6 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 #endif
 	PROCESS(ulong, extended_value)
 	PROCESS(uint, lineno)
-#ifdef ZEND_ENGINE_2_1
 #ifdef ZEND_ENGINE_2_4
 	PROCESS(zend_uchar, op1_type)
 	PROCESS(zend_uchar, op2_type)
@@ -638,7 +639,6 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 		}
 	')
 	PROCESS(opcode_handler_t, handler)
-#endif
 ')
 dnl }}}
 #ifdef ZEND_ENGINE_2_4

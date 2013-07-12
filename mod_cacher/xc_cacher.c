@@ -995,7 +995,6 @@ static int xc_stat(const char *filepath, struct stat *statbuf TSRMLS_DC) /* {{{ 
 
 		wrapper = php_stream_locate_url_wrapper(filepath, &path_for_open, 0 TSRMLS_CC); 
 		if (wrapper && wrapper->wops->url_stat
-		 && wrapper != &php_plain_files_wrapper
 		 && wrapper->wops->url_stat(wrapper, path_for_open, PHP_STREAM_URL_STAT_QUIET, &ssb, NULL TSRMLS_CC) == SUCCESS) {
 			*statbuf = ssb.sb;
 			return SUCCESS;
