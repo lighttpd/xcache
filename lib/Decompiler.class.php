@@ -476,6 +476,7 @@ class Decompiler
 {
 	public $namespace;
 	public $namespaceDecided;
+	public $activeFile;
 	public $activeClass;
 	public $activeMethod;
 	public $activeFunction;
@@ -1363,6 +1364,9 @@ class Decompiler
 		$EX['uses'] = array();
 		$EX['lastBlock'] = null;
 		$EX['value2constant'] = array();
+		if (isset($this->activeFile)) {
+			$EX['value2constant'][$this->activeFile] = '__FILE__';
+		}
 		if (isset($this->activeClass)) {
 			$EX['value2constant'][$this->activeClass] = '__CLASS__';
 		}
@@ -2591,6 +2595,7 @@ class Decompiler
 			echo "error compling string\n";
 			return false;
 		}
+		$this->activeFile = null;
 		return true;
 	}
 	// }}}
@@ -2601,12 +2606,14 @@ class Decompiler
 			echo "error compling $file\n";
 			return false;
 		}
+		$this->activeFile = realpath($file);
 		return true;
 	}
 	// }}}
 	function decompileDasm($content) // {{{
 	{
 		$this->dc = $content;
+		$this->activeFile = null;
 		return true;
 	}
 	// }}}
