@@ -1464,7 +1464,7 @@ class Decompiler
 				$resvar = str($resvar) . '::' . unquoteName($this->getOpVal($op2, $EX));
 				break;
 				// }}}
-				// {{{ case XC_FETCH_*
+				// {{{ case FETCH_*
 			case XC_FETCH_R:
 			case XC_FETCH_W:
 			case XC_FETCH_RW:
@@ -1499,7 +1499,7 @@ class Decompiler
 				}
 				break;
 				// }}}
-				// {{{ case XC_FETCH_DIM_*
+				// {{{ case FETCH_DIM_*
 			case XC_FETCH_DIM_TMP_VAR:
 			case XC_FETCH_DIM_R:
 			case XC_FETCH_DIM_W:
@@ -1643,7 +1643,7 @@ class Decompiler
 				$resvar = new Decompiler_Binop($this, $lvalue, XC_ASSIGN_REF, $rvalue);
 				break;
 				// }}}
-			// {{{ case XC_FETCH_OBJ_*
+			// {{{ case FETCH_OBJ_*
 			case XC_FETCH_OBJ_R:
 			case XC_FETCH_OBJ_W:
 			case XC_FETCH_OBJ_RW:
@@ -1692,10 +1692,10 @@ class Decompiler
 						if (!isset($container)) {
 							$container = '$this';
 						}
-						$rvalue = $container . "->" . unquoteVariableName($dim);
+						$rvalue = str($container, $EX) . "->" . unquoteVariableName($dim);
 					}
 					else {
-						$rvalue = $container . '[' . str($dim) .']';
+						$rvalue = str($container, $EX) . '[' . str($dim) .']';
 					}
 				}
 
@@ -2777,51 +2777,19 @@ if (preg_match_all('!XC_[A-Z_]+!', file_get_contents(__FILE__), $ms)) {
 		}
 	}
 	var_export($verdiff);
+	exit;
 }
-/*/
+//*/
 foreach (array (
-	'XC_HANDLE_EXCEPTION' => -1,
-	'XC_FETCH_CLASS' => -1,
-	'XC_FETCH_' => -1,
-	'XC_FETCH_DIM_' => -1,
-	'XC_ASSIGN_DIM' => -1,
-	'XC_UNSET_DIM' => -1,
-	'XC_UNSET_OBJ' => -1,
-	'XC_ASSIGN_OBJ' => -1,
-	'XC_ISSET_ISEMPTY_DIM_OBJ' => -1,
-	'XC_ISSET_ISEMPTY_PROP_OBJ' => -1,
-	'XC_ISSET_ISEMPTY_VAR' => -1,
-	'XC_INIT_STATIC_METHOD_CALL' => -1,
-	'XC_INIT_METHOD_CALL' => -1,
-	'XC_VERIFY_ABSTRACT_CLASS' => -1,
-	'XC_DECLARE_CLASS' => -1,
-	'XC_DECLARE_INHERITED_CLASS' => -1,
-	'XC_DECLARE_INHERITED_CLASS_DELAYED' => -1,
-	'XC_ADD_INTERFACE' => -1,
-	'XC_POST_DEC_OBJ' => -1,
-	'XC_POST_INC_OBJ' => -1,
-	'XC_PRE_DEC_OBJ' => -1,
-	'XC_PRE_INC_OBJ' => -1,
-	'XC_UNSET_OBJ' => -1,
-	'XC_JMP_NO_CTOR' => -1,
-	'XC_FETCH_' => -1,
-	'XC_FETCH_DIM_' => -1,
-	'XC_UNSET_DIM_OBJ' => -1,
-	'XC_ISSET_ISEMPTY' => -1,
-	'XC_INIT_FCALL_BY_FUNC' => -1,
-	'XC_DO_FCALL_BY_FUNC' => -1,
 	'XC_DECLARE_FUNCTION_OR_CLASS' => -1,
-	'XC_INIT_NS_FCALL_BY_NAME' => -1,
-	'XC_GOTO' => -1,
-	'XC_CATCH' => -1,
-	'XC_THROW' => -1,
-	'XC_INSTANCEOF' => -1,
-	'XC_DECLARE_FUNCTION' => -1,
-	'XC_RAISE_ABSTRACT_ERROR' => -1,
-	'XC_DECLARE_CONST' => -1,
-	'XC_USER_OPCODE' => -1,
-	'XC_JMP_SET' => -1,
 	'XC_DECLARE_LAMBDA_FUNCTION' => -1,
+	'XC_DO_FCALL_BY_FUNC' => -1,
+	'XC_INIT_FCALL_BY_FUNC' => -1,
+	'XC_ISSET_ISEMPTY' => -1,
+	'XC_JMP_NO_CTOR' => -1,
+	'XC_JMP_SET' => -1,
+	'XC_QM_ASSIGN_VAR' => -1,
+	'XC_UNSET_DIM_OBJ' => -1,
 ) as $k => $v) {
 	if (!defined($k)) {
 		define($k, $v);
