@@ -1,6 +1,6 @@
 <?php
 
-//* >= PHP 5.3
+/* >= PHP 5.3
 namespace ns;
 // */
 
@@ -416,7 +416,7 @@ include_once 'include_once.php';
 echo __FILE__;
 echo __LINE__;
 
-//*
+/*
 echo 'PHP 5.3+ code testing';
 const CONST_VALUE = 1;
 echo $this::CONST_VALUE;
