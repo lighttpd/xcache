@@ -36,7 +36,7 @@ abstract class ClassName
 	{
 		echo CONST_VALUE;
 		echo ClassName::CONST_VALUE;
-		unset(t::$classProp1);
+		unset(ClassName::$classProp1);
 		unset($obj->objProp);
 		unset($this->thisProp);
 		unset($array['index']->valueProp);
@@ -45,6 +45,9 @@ abstract class ClassName
 		isset($GLOBALS['a']);
 		empty($GLOBALS['a']);
 		unset($GLOBALS['a']);
+		isset(ClassName::$a);
+		empty(ClassName::$a);
+		unset(ClassName::$a);
 		echo $GLOBALS['a'];
 		$obj->objProp = 1;
 		$this->thisProp = 1;
@@ -57,7 +60,7 @@ abstract class ClassName
 	abstract public function abastractMethod();
 
 	/** doc */
-	public function method(array $a = NULL, $b = NULL)
+	public function method($a = NULL, $b = NULL)
 	{
 	}
 
@@ -109,6 +112,7 @@ final class Child extends ClassName implements IInterface
 		ClassName::__construct();
 		echo __CLASS__;
 		echo __METHOD__;
+		echo __FUNCTION__;
 		throw new Exception();
 		$this->methodCall();
 	}
@@ -121,10 +125,12 @@ final class Child extends ClassName implements IInterface
 
 	static public function __callStatic($name, $args)
 	{
+		parent::__callStatic($name, $args);
 	}
 
 	public function __toString()
 	{
+		parent::__toString();
 	}
 
 	public function __set($name, $value)
@@ -168,6 +174,7 @@ if ($late) {
 	function lateBindingFunction($arg)
 	{
 		echo 'lateFunction';
+		return new lateBindingFunction();
 	}
 }
 
