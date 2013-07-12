@@ -1473,23 +1473,17 @@ class Decompiler
 			case XC_FETCH_IS:
 			case XC_UNSET_VAR:
 				$rvalue = $this->getOpVal($op1, $EX);
-				if (defined('ZEND_FETCH_TYPE_MASK')) {
-					$fetchtype = ($ext & ZEND_FETCH_TYPE_MASK);
-				}
-				else {
-					$fetchtype = $op2['EA.type'];
-				}
-				switch ($fetchtype) {
-				case ZEND_FETCH_STATIC_MEMBER:
+				$fetchtype = defined('ZEND_FETCH_TYPE_MASK') ? ($ext & ZEND_FETCH_TYPE_MASK) : $op2['EA.type'];
+				if ($fetchtype == ZEND_FETCH_STATIC_MEMBER) {
 					$class = $this->getOpVal($op2, $EX);
-					$rvalue = str($class) . '::$' . unquoteName($rvalue, $EX);
-					break;
-				default:
+					$rvalue = unquoteName(str($class)) . '::$' . unquoteName($rvalue, $EX);
+				}
+				else if ($opc != XC_UNSET_VAR) {
 					$name = unquoteName($rvalue, $EX);
 					$globalname = xcache_is_autoglobal($name) ? "\$$name" : "\$GLOBALS[" . str($rvalue) . "]";
 					$rvalue = new Decompiler_Fetch($rvalue, $fetchtype, $globalname);
-					break;
 				}
+
 				if ($opc == XC_UNSET_VAR) {
 					$op['php'] = "unset(" . str($rvalue, $EX) . ")";
 					$lastphpop = &$op;
@@ -1677,9 +1671,10 @@ class Decompiler
 					if ($op1['op_type'] == XC_IS_CONST) {
 						$rvalue = '$' . unquoteVariableName($this->getOpVal($op1, $EX));
 					}
-					if (!ZEND_ENGINE_2_4 && $op2['EA.type'] == ZEND_FETCH_STATIC_MEMBER) {
+					$fetchtype = defined('ZEND_FETCH_TYPE_MASK') ? ($ext & ZEND_FETCH_TYPE_MASK) : $op2['EA.type'];
+					if ($fetchtype == ZEND_FETCH_STATIC_MEMBER) {
 						$class = $this->getOpVal($op2, $EX);
-						$rvalue = $class . '::' . $rvalue;
+						$rvalue = unquoteName(str($class)) . '::' . unquoteName($rvalue, $EX);
 					}
 				}
 				else if ($opc == XC_ISSET_ISEMPTY) {
@@ -2025,7 +2020,7 @@ class Decompiler
 				break;
 			case XC_RECV_INIT:
 			case XC_RECV:
-				$offset = $op1['var'];
+				$offset = isset($op1['var']) ? $op1['var'] : $op1['constant'];
 				$lvalue = $this->getOpVal($op['result'], $EX);
 				if ($opc == XC_RECV_INIT) {
 					$default = value($op['op2']['constant']);

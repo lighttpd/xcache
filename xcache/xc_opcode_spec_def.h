@@ -149,7 +149,11 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
 #else
 	OPSPEC(    UNUSED,     UCLASS,        STD,     UNUSED) /* 113 INIT_STATIC_METHOD_CALL        */
 #endif
+#ifdef ZEND_ENGINE_2_4
+	OPSPEC(     ISSET,        STD,        STD,        TMP) /* 114 ISSET_ISEMPTY_VAR              */
+#else
 	OPSPEC(     ISSET,        STD,      FETCH,        TMP) /* 114 ISSET_ISEMPTY_VAR              */
+#endif
 	OPSPEC(     ISSET,        STD,        STD,        TMP) /* 115 ISSET_ISEMPTY_DIM_OBJ          */
 
 	OPSPEC(    UNUSED,      CLASS,        STD,     UNUSED) /* 116 IMPORT_FUNCTION                */
