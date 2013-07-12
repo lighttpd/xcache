@@ -39,11 +39,11 @@ stopfpm() { # {{{1
 }
 
 xtest() { # {{{1
-	$MAKE -f devel/test.mak
+	$MAKE ${MAKEOPTS} -f devel/test.mak
 }
 
 prep() { # {{{1
-	$MAKE -f devel/prepare.mak "$@"
+	$MAKE ${MAKEOPTS} -f devel/prepare.mak "$@"
 }
 
 mergepo() { # {{{1
@@ -215,7 +215,7 @@ run() {
 	case "$1" in
 	phpize)
 		if [[ -r Makefile ]]; then
-			$MAKE xcachesvnclean || true
+			$MAKE $MAKEOPTS xcachesvnclean || true
 		fi
 		;;
 	esac
@@ -257,22 +257,22 @@ run() {
 		;;
 	retest)
 		shift
-		$MAKE xcachetest "$@" TESTS="`grep '^/.*\.phpt$' php_test_results_*.txt | uniq | xargs`"
+		$MAKE $MAKEOPTS xcachetest "$@" TESTS="`grep '^/.*\.phpt$' php_test_results_*.txt | uniq | xargs`"
 		return
 		;;
 	test)
 		shift
 		case "$1" in
 		*.phpt)
-			$MAKE xcachetest TEST_ARGS=-v TESTS="$*"
+			$MAKE $MAKEOPTS xcachetest TEST_ARGS=-v TESTS="$*"
 			return
 			;;
 		*/)
-			$MAKE xcachetest TESTS="$*"
+			$MAKE $MAKEOPTS xcachetest TESTS="$*"
 			return
 			;;
 		*)
-			$MAKE xcachetest
+			$MAKE $MAKEOPTS xcachetest
 			return
 			;;
 		esac
