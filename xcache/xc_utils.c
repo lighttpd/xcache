@@ -323,6 +323,7 @@ int xc_undo_fix_opcode(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
+#ifndef ZEND_COMPILE_DELAYED_BINDING
 int xc_foreach_early_binding_class(zend_op_array *op_array, xc_foreach_early_binding_class_cb callback, void *data TSRMLS_DC) /* {{{ */
 {
 	zend_op *opline, *begin, *opline_end, *next = NULL;
@@ -377,7 +378,6 @@ int xc_foreach_early_binding_class(zend_op_array *op_array, xc_foreach_early_bin
 	return SUCCESS;
 }
 /* }}} */
-#ifndef ZEND_COMPILE_DELAYED_BINDING
 int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, int oplineno TSRMLS_DC) /* {{{ */
 {
 	zend_op *opline;
