@@ -100,7 +100,7 @@ class Decompiler_Object // {{{
 // }}}
 class Decompiler_Value extends Decompiler_Object // {{{
 {
-	var $value;
+	public $value;
 
 	function Decompiler_Value($value = null)
 	{
@@ -129,7 +129,7 @@ class Decompiler_Value extends Decompiler_Object // {{{
 // }}}
 class Decompiler_Code extends Decompiler_Object // {{{
 {
-	var $src;
+	public $src;
 
 	function Decompiler_Code($src)
 	{
@@ -145,10 +145,10 @@ class Decompiler_Code extends Decompiler_Object // {{{
 // }}}
 class Decompiler_Binop extends Decompiler_Code // {{{
 {
-	var $opc;
-	var $op1;
-	var $op2;
-	var $parent;
+	public $opc;
+	public $op1;
+	public $op2;
+	public $parent;
 
 	function Decompiler_Binop($parent, $op1, $opc, $op2)
 	{
@@ -186,9 +186,9 @@ class Decompiler_Binop extends Decompiler_Code // {{{
 // }}}
 class Decompiler_TriOp extends Decompiler_Code // {{{
 {
-	var $condition;
-	var $trueValue;
-	var $falseValue;
+	public $condition;
+	public $trueValue;
+	public $falseValue;
 
 	function Decompiler_TriOp($condition, $trueValue, $falseValue)
 	{
@@ -214,8 +214,8 @@ class Decompiler_TriOp extends Decompiler_Code // {{{
 // }}}
 class Decompiler_Fetch extends Decompiler_Code // {{{
 {
-	var $src;
-	var $fetchType;
+	public $src;
+	public $fetchType;
 
 	function Decompiler_Fetch($src, $type, $globalsrc)
 	{
@@ -247,7 +247,7 @@ class Decompiler_Fetch extends Decompiler_Code // {{{
 // }}}
 class Decompiler_Box // {{{
 {
-	var $obj;
+	public $obj;
 
 	function Decompiler_Box(&$obj)
 	{
@@ -262,10 +262,10 @@ class Decompiler_Box // {{{
 // }}}
 class Decompiler_Dim extends Decompiler_Value // {{{
 {
-	var $offsets = array();
-	var $isLast = false;
-	var $isObject = false;
-	var $assign = null;
+	public $offsets = array();
+	public $isLast = false;
+	public $isObject = false;
+	public $assign = null;
 
 	function toCode($indent)
 	{
@@ -294,9 +294,9 @@ class Decompiler_DimBox extends Decompiler_Box // {{{
 // }}}
 class Decompiler_List extends Decompiler_Code // {{{
 {
-	var $src;
-	var $dims = array();
-	var $everLocked = false;
+	public $src;
+	public $dims = array();
+	public $everLocked = false;
 
 	function toCode($indent)
 	{
@@ -452,7 +452,7 @@ class Decompiler_ConstArray extends Decompiler_Array // {{{
 // }}}
 class Decompiler_ForeachBox extends Decompiler_Box // {{{
 {
-	var $iskey;
+	public $iskey;
 
 	function toCode($indent)
 	{
@@ -463,8 +463,8 @@ class Decompiler_ForeachBox extends Decompiler_Box // {{{
 
 class Decompiler
 {
-	var $namespace;
-	var $namespaceDecided;
+	public $namespace;
+	public $namespaceDecided;
 
 	function Decompiler()
 	{
@@ -2781,10 +2781,14 @@ if (preg_match_all('!XC_[A-Z_]+!', file_get_contents(__FILE__), $ms)) {
 }
 //*/
 foreach (array (
+	'XC_DECLARE_CONST' => -1,
 	'XC_DECLARE_FUNCTION_OR_CLASS' => -1,
+	'XC_DECLARE_INHERITED_CLASS_DELAYED' => -1,
 	'XC_DECLARE_LAMBDA_FUNCTION' => -1,
 	'XC_DO_FCALL_BY_FUNC' => -1,
+	'XC_GOTO' => -1,
 	'XC_INIT_FCALL_BY_FUNC' => -1,
+	'XC_INIT_NS_FCALL_BY_NAME' => -1,
 	'XC_ISSET_ISEMPTY' => -1,
 	'XC_JMP_NO_CTOR' => -1,
 	'XC_JMP_SET' => -1,
