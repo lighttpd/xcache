@@ -36,12 +36,16 @@ abstract class ClassName
 	{
 		echo CONST_VALUE;
 		echo ClassName::CONST_VALUE;
-		unset(ClassName::$classProp);
+		unset(t::$classProp1);
 		unset($obj->objProp);
 		unset($this->thisProp);
 		unset($array['index']->valueProp);
 		unset($obj->array['index']);
 		unset($this->array['index']);
+		isset($GLOBALS['a']);
+		empty($GLOBALS['a']);
+		unset($GLOBALS['a']);
+		echo $GLOBALS['a'];
 		$obj->objProp = 1;
 		$this->thisProp = 1;
 		$array['index']->valueProp = 1;
