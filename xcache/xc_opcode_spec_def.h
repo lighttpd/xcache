@@ -203,7 +203,9 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
 	OPSPEC(    UNUSED,        STD,        STD,        VAR) /* 147 ASSIGN_DIM                     */
 	OPSPEC(     ISSET,        STD,        STD,        TMP) /* 148 ISSET_ISEMPTY_PROP_OBJ         */
 	OPSPEC(       STD,     UNUSED,     UNUSED,        STD) /* 149 HANDLE_EXCEPTION               */
+#ifdef ZEND_ENGINE_2_1
 	OPSPEC(       STD,     UNUSED,     UNUSED,        STD) /* 150 USER_OPCODE                    */
+#endif
 #ifdef ZEND_ENGINE_2_3
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 151 UNDEF                          */
 	OPSPEC(    UNUSED,        STD,    JMPADDR,        TMP) /* 152 JMP_SET                        */
