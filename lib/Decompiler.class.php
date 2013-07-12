@@ -676,7 +676,7 @@ class Decompiler
 				$op = array(
 					'op1' => array(),
 					'op2' => array(),
-					'op3' => array(),
+					'result' => array(),
 				);
 				foreach ($opcodes[$i] as $name => $value) {
 					if (preg_match('!^(op1|op2|result)\\.(.*)!', $name, $m)) {
@@ -978,7 +978,11 @@ class Decompiler
 				$catchBodyFirst = $catchOpLine + 1;
 				$this->dasmBasicBlock($EX, array($catchFirst, $catchOpLine));
 				$catchOp = &$opcodes[$catchOpLine];
-				echo $indent, 'catch (', str($this->getOpVal($catchOp['op1'], $EX)), ' ', str($this->getOpVal($catchOp['op2'], $EX)), ") {", PHP_EOL;
+				echo $indent, 'catch ('
+						, isset($catchOp['op1']['constant']) ? $catchOp['op1']['constant'] : str($this->getOpVal($catchOp['op1'], $EX))
+						, ' '
+						, str($this->getOpVal($catchOp['op2'], $EX))
+						, ") {", PHP_EOL;
 				unset($catchOp);
 
 				$EX['lastBlock'] = null;
@@ -1401,7 +1405,7 @@ class Decompiler
 			$op2 = $op['op2'];
 			$res = $op['result'];
 			$ext = $op['extended_value'];
-			$currentSourceLine = $op['line'];
+			$currentSourceLine = $op['lineno'];
 			$EX['value2constant'][$currentSourceLine] = '__LINE__';
 
 			$opname = xcache_get_opcode($opc);
@@ -1969,7 +1973,7 @@ class Decompiler
 				break;
 				// }}}
 			case XC_INCLUDE_OR_EVAL: // {{{
-				$type = $op2['var']; // hack
+				$type = ZEND_ENGINE_2_4 ? $ext : $op2['var']; // hack
 				$keyword = $this->includeTypes[$type];
 				$resvar = "$keyword " . str($this->getOpVal($op1, $EX));
 				break;
@@ -2128,7 +2132,7 @@ class Decompiler
 				/* always removed by compiler */
 				break;
 			case XC_TICKS:
-				$lastphpop['ticks'] = $this->getOpVal($op1, $EX);
+				$lastphpop['ticks'] = ZEND_ENGINE_2_4 ? $ext : $this->getOpVal($op1, $EX);
 				// $EX['tickschanged'] = true;
 				break;
 			case XC_RAISE_ABSTRACT_ERROR:
@@ -2245,14 +2249,7 @@ class Decompiler
 				break;
 
 			default:
-				if ($k == 'result') {
-					var_dump($op);
-					assert(0);
-					exit;
-				}
-				else {
-					$d[$kk] = $this->getOpVal($op[$k], $EX);
-				}
+				$d[$kk] = $this->getOpVal($op[$k], $EX);
 			}
 		}
 		$d[';'] = $op['extended_value'];
