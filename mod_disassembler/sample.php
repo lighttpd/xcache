@@ -411,7 +411,10 @@ default:
 
 declare (ticks=1) {
 	echo 1;
-	while (1) {
+}
+
+while (1) {
+	declare (ticks=1) {
 		echo 2;
 	}
 }
