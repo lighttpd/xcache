@@ -8,6 +8,37 @@ function color($str, $color = 33)
 	return "\x1B[{$color}m$str\x1B[0m";
 }
 
+function printBacktrace() // {{{
+{
+	$backtrace = debug_backtrace();
+	foreach ($backtrace as $stack) {
+		$args = array();
+		foreach ($stack['args'] as $arg) {
+			if (is_array($arg)) {
+				$array = array();
+				foreach ($arg as $key => $value) {
+					$array[] = var_export($key, true) . " => " . (is_scalar($value) ? var_export($value, true) : gettype($value));
+					if (count($array) >= 5) {
+						$array[] = '...';
+						break;
+					}
+				}
+				$args[] = 'array(' . implode(', ', $array) . ')';
+			}
+			else {
+				$args[] = (string) $arg;
+			}
+		}
+		printf("%d: %s::%s(%s)" . PHP_EOL
+				, $stack['line']
+				, isset($stack['class']) ? $stack['class'] : ''
+				, $stack['function']
+				, implode(', ', $args)
+				);
+	}
+}
+// }}}
+
 function str($code, $indent = '') // {{{
 {
 	if (is_array($code)) {
@@ -735,6 +766,9 @@ class Decompiler
 	function removeJmpInfo(&$EX, $line) // {{{
 	{
 		$opcodes = &$EX['opcodes'];
+		if (!isset($opcodes[$line]['jmpouts'])) {
+			printBacktrace();
+		}
 		foreach ($opcodes[$line]['jmpouts'] as $jmpTo) {
 			$jmpins = &$opcodes[$jmpTo]['jmpins'];
 			$jmpins = array_flip($jmpins);
@@ -943,7 +977,6 @@ class Decompiler
 			$tryRange = array($range[0], $catchFirst - 1);
 
 			// search for XC_CATCH
-			$this->removeJmpInfo($EX, $catchFirst);
 			for ($i = $catchFirst; $i <= $range[1]; ) {
 				if ($opcodes[$i]['opcode'] == XC_CATCH) {
 					$catchOpLine = $i;
