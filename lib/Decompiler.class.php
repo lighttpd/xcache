@@ -566,6 +566,7 @@ class Decompiler
 				XC_ASSIGN              => "=",
 				XC_ASSIGN_REF          => "= &",
 				XC_JMP_SET             => "?:",
+				XC_JMP_SET_VAR         => "?:",
 				XC_JMPZ_EX             => "&&",
 				XC_JMPNZ_EX            => "||",
 				);
@@ -595,6 +596,7 @@ class Decompiler
 	// }}}
 	function stripNamespace($name) // {{{
 	{
+		$name = str($name);
 		$len = strlen($this->namespace) + 1;
 		if (substr($name, 0, $len) == $this->namespace . '\\') {
 			return substr($name, $len);
@@ -663,6 +665,9 @@ class Decompiler
 		case XC_IS_VAR:
 		case XC_IS_TMP_VAR:
 			$T = &$EX['Ts'];
+			if (!isset($T[$op['var']])) {
+				printBacktrace();
+			}
 			$ret = $T[$op['var']];
 			if ($free && empty($this->keepTs)) {
 				unset($T[$op['var']]);
@@ -833,12 +838,12 @@ class Decompiler
 			return false;
 		}
 		// }}}
-		// {{{ ?: excluding JMP_SET
+		// {{{ ?: excluding JMP_SET/JMP_SET_VAR
 		if ($firstOp['opcode'] == XC_JMPZ && !empty($firstOp['jmpouts'])
 		 && $range[1] >= $range[0] + 3
-		 && $opcodes[$firstOp['jmpouts'][0] - 2]['opcode'] == XC_QM_ASSIGN
+		 && ($opcodes[$firstOp['jmpouts'][0] - 2]['opcode'] == XC_QM_ASSIGN || $opcodes[$firstOp['jmpouts'][0] - 2]['opcode'] == XC_QM_ASSIGN_VAR)
 		 && $opcodes[$firstOp['jmpouts'][0] - 1]['opcode'] == XC_JMP && $opcodes[$firstOp['jmpouts'][0] - 1]['jmpouts'][0] == $range[1] + 1
-		 && $lastOp['opcode'] == XC_QM_ASSIGN
+		 && ($lastOp['opcode'] == XC_QM_ASSIGN || $lastOp['opcode'] == XC_QM_ASSIGN_VAR)
 		) {
 			$trueRange = array($range[0] + 1, $firstOp['jmpouts'][0] - 2);
 			$falseRange = array($firstOp['jmpouts'][0], $range[1]);
@@ -1013,9 +1018,9 @@ class Decompiler
 				$this->dasmBasicBlock($EX, array($catchFirst, $catchOpLine));
 				$catchOp = &$opcodes[$catchOpLine];
 				echo $indent, 'catch ('
-						, isset($catchOp['op1']['constant']) ? $catchOp['op1']['constant'] : str($this->getOpVal($catchOp['op1'], $EX))
+						, $this->stripNamespace(isset($catchOp['op1']['constant']) ? $catchOp['op1']['constant'] : str($this->getOpVal($catchOp['op1'], $EX)))
 						, ' '
-						, str($this->getOpVal($catchOp['op2'], $EX))
+						, isset($catchOp['op2']['constant']) ? '$' . $catchOp['op2']['constant'] : str($this->getOpVal($catchOp['op2'], $EX))
 						, ") {", PHP_EOL;
 				unset($catchOp);
 
@@ -1314,6 +1319,7 @@ class Decompiler
 			case XC_JMPZ_EX:
 			case XC_JMPNZ_EX:
 			// case XC_JMP_SET:
+			// case XC_JMP_SET_VAR:
 			// case XC_FE_RESET:
 			case XC_FE_FETCH:
 			// case XC_JMP_NO_CTOR:
@@ -1474,7 +1480,7 @@ class Decompiler
 				array_push($EX['arg_types_stack'], array($EX['fbc'], $EX['object'], $EX['called_scope']));
 				$EX['object'] = (int) $res['var'];
 				$EX['called_scope'] = null;
-				$EX['fbc'] = 'new ' . unquoteName($this->getOpVal($op1, $EX), $EX);
+				$EX['fbc'] = 'new ' . $this->stripNamespace($this->getOpVal($op1, $EX));
 				break;
 				// }}}
 			case XC_THROW: // {{{
@@ -1489,7 +1495,7 @@ class Decompiler
 				break;
 				// }}}
 			case XC_INSTANCEOF: // {{{
-				$resvar = str($this->getOpVal($op1, $EX)) . ' instanceof ' . str($this->getOpVal($op2, $EX));
+				$resvar = str($this->getOpVal($op1, $EX)) . ' instanceof ' . $this->stripNamespace($this->getOpVal($op2, $EX));
 				break;
 				// }}}
 			case XC_FETCH_CLASS: // {{{
@@ -1536,25 +1542,35 @@ class Decompiler
 			case XC_FETCH_FUNC_ARG:
 			case XC_FETCH_UNSET:
 			case XC_FETCH_IS:
-			case XC_UNSET_VAR:
-				$rvalue = $this->getOpVal($op1, $EX);
-				$fetchtype = defined('ZEND_FETCH_TYPE_MASK') ? ($ext & ZEND_FETCH_TYPE_MASK) : $op2['EA.type'];
-				if ($fetchtype == ZEND_FETCH_STATIC_MEMBER) {
-					$rvalue = $this->stripNamespace($op2['constant']) . '::$' . unquoteName($rvalue, $EX);
+				$fetchType = defined('ZEND_FETCH_TYPE_MASK') ? ($ext & ZEND_FETCH_TYPE_MASK) : $op2['EA.type'];
+				$name = isset($op1['constant']) ? $op1['constant'] : unquoteName($this->getOpVal($op1, $EX), $EX);
+				if ($fetchType == ZEND_FETCH_STATIC_MEMBER) {
+					$class = isset($op2['constant']) ? $op2['constant'] : $this->getOpVal($op2, $EX);
+					$rvalue = $this->stripNamespace($class) . '::$' . $name;
 				}
-				else if ($opc != XC_UNSET_VAR) {
-					$name = unquoteName($rvalue, $EX);
+				else {
+					$rvalue = $this->getOpVal($op1, $EX);
 					$globalname = xcache_is_autoglobal($name) ? "\$$name" : "\$GLOBALS[" . str($rvalue) . "]";
-					$rvalue = new Decompiler_Fetch($rvalue, $fetchtype, $globalname);
+					$rvalue = new Decompiler_Fetch($rvalue, $fetchType, $globalname);
 				}
 
-				if ($opc == XC_UNSET_VAR) {
-					$op['php'] = "unset(" . str($rvalue, $EX) . ")";
-					$lastphpop = &$op;
-				}
-				else if ($res['op_type'] != XC_IS_UNUSED) {
+				if ($res['op_type'] != XC_IS_UNUSED) {
 					$resvar = $rvalue;
 				}
+				break;
+				// }}}
+			case XC_UNSET_VAR: // {{{
+				$fetchType = defined('ZEND_FETCH_TYPE_MASK') ? ($ext & ZEND_FETCH_TYPE_MASK) : $op2['EA.type'];
+				if ($fetchType == ZEND_FETCH_STATIC_MEMBER) {
+					$class = isset($op2['constant']) ? $op2['constant'] /* PHP5.3- */ : $this->getOpVal($op2, $EX);
+					$rvalue = $this->stripNamespace($class) . '::$' . $op1['constant'];
+				}
+				else {
+					$rvalue = $this->getOpVal($op1, $EX);
+				}
+
+				$op['php'] = "unset(" . str($rvalue, $EX) . ")";
+				$lastphpop = &$op;
 				break;
 				// }}}
 				// {{{ case FETCH_DIM_*
@@ -1737,7 +1753,8 @@ class Decompiler
 					}
 					$fetchtype = defined('ZEND_FETCH_TYPE_MASK') ? ($ext & ZEND_FETCH_TYPE_MASK) : $op2['EA.type'];
 					if ($fetchtype == ZEND_FETCH_STATIC_MEMBER) {
-						$rvalue = $this->stripNamespace($op2['constant']) . '::' . unquoteName($rvalue, $EX);
+						$class = isset($op2['constant']) ? $op2['constant'] : $this->getOpVal($op2, $EX);
+						$rvalue = $this->stripNamespace($class) . '::' . unquoteName($rvalue, $EX);
 					}
 				}
 				else if ($opc == XC_ISSET_ISEMPTY) {
@@ -2048,9 +2065,6 @@ class Decompiler
 				break;
 				// }}}
 			case XC_JMP_NO_CTOR:
-				break;
-			case XC_JMP_SET: // ?:
-				$resvar = new Decompiler_Binop($this, $this->getOpVal($op1, $EX), XC_JMP_SET, null);
 				break;
 			case XC_JMPZ_EX: // and
 			case XC_JMPNZ_EX: // or
@@ -2468,7 +2482,7 @@ class Decompiler
 		}
 		echo $isInterface ? 'interface ' : 'class ', $this->stripNamespace($class['name']);
 		if ($class['parent']) {
-			echo ' extends ', $class['parent'];
+			echo ' extends ', $this->stripNamespace($class['parent']);
 		}
 		/* TODO */
 		if (!empty($class['interfaces'])) {
@@ -2856,6 +2870,7 @@ foreach (array (
 	'XC_ISSET_ISEMPTY' => -1,
 	'XC_JMP_NO_CTOR' => -1,
 	'XC_JMP_SET' => -1,
+	'XC_JMP_SET_VAR' => -1,
 	'XC_QM_ASSIGN_VAR' => -1,
 	'XC_UNSET_DIM_OBJ' => -1,
 ) as $k => $v) {

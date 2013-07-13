@@ -79,11 +79,7 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
 	OPSPEC(    UNUSED,        STD,    INCLUDE,        VAR) /* 73 INCLUDE_OR_EVAL                */
 #ifdef ZEND_ENGINE_2_1
   /* php 5.1 and up */
-#	ifdef ZEND_ENGINE_2_4
-	OPSPEC(    UNUSED,        STD,        STD,     UNUSED) /* 74 UNSET_VAR                      */
-#	else
 	OPSPEC(    UNUSED,        STD,      FETCH,     UNUSED) /* 74 UNSET_VAR                      */
-#	endif
 	OPSPEC(       STD,        STD,        STD,     UNUSED) /* 75 UNSET_DIM                      */
 	OPSPEC(       STD,        STD,        STD,     UNUSED) /* 76 UNSET_OBJ                      */
 	OPSPEC(       BIT,        STD,     OPLINE,        VAR) /* 77 FE_RESET                       */
@@ -153,11 +149,7 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
 #else
 	OPSPEC(    UNUSED,     UCLASS,        STD,     UNUSED) /* 113 INIT_STATIC_METHOD_CALL        */
 #endif
-#ifdef ZEND_ENGINE_2_4
-	OPSPEC(     ISSET,        STD,        STD,        TMP) /* 114 ISSET_ISEMPTY_VAR              */
-#else
 	OPSPEC(     ISSET,        STD,      FETCH,        TMP) /* 114 ISSET_ISEMPTY_VAR              */
-#endif
 	OPSPEC(     ISSET,        STD,        STD,        TMP) /* 115 ISSET_ISEMPTY_DIM_OBJ          */
 
 	OPSPEC(    UNUSED,      CLASS,        STD,     UNUSED) /* 116 IMPORT_FUNCTION                */
