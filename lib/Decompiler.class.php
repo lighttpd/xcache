@@ -858,9 +858,10 @@ class Decompiler
 			return false;
 		}
 		// }}}
-		// {{{ goto
+		// {{{ goto (TODO: recognize XC_BRK)
 		if ($firstOp['opcode'] == XC_JMP && !empty($firstOp['jmpouts']) && $firstOp['jmpouts'][0] == $range[1] + 1) {
 			$this->removeJmpInfo($EX, $range[0]);
+			assert(XC_GOTO != -1);
 			$firstOp['opcode'] = XC_GOTO;
 			$target = $firstOp['op1']['var'];
 			$firstOp['goto'] = $target;
