@@ -453,6 +453,10 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 	/* mark try start */
 	for (i = 0; i < op_array->last_try_catch; i ++) {
 		oplineinfos[op_array->try_catch_array[i].try_op].isbbhead = 1;
+		oplineinfos[op_array->try_catch_array[i].catch_op].isbbhead = 1;
+#ifdef ZEND_ENGINE_2_5
+		oplineinfos[op_array->try_catch_array[i].finally_op].isbbhead = 1;
+#endif
 	}
 	/* }}} */
 	/* {{{ fill op lines with newly allocated id */
