@@ -14,7 +14,10 @@ function printBacktrace() // {{{
 	foreach ($backtrace as $stack) {
 		$args = array();
 		foreach ($stack['args'] as $arg) {
-			if (is_array($arg)) {
+			if (is_scalar($arg)) {
+				$args[] = var_export($arg, true);
+			}
+			else if (is_array($arg)) {
 				$array = array();
 				foreach ($arg as $key => $value) {
 					$array[] = var_export($key, true) . " => " . (is_scalar($value) ? var_export($value, true) : gettype($value));
@@ -26,7 +29,7 @@ function printBacktrace() // {{{
 				$args[] = 'array(' . implode(', ', $array) . ')';
 			}
 			else {
-				$args[] = (string) $arg;
+				$args[] = gettype($arg);
 			}
 		}
 		printf("%d: %s::%s(%s)" . PHP_EOL
@@ -986,7 +989,7 @@ class Decompiler
 			for ($i = $catchFirst; $i <= $range[1]; ) {
 				if ($opcodes[$i]['opcode'] == XC_CATCH) {
 					$catchOpLine = $i;
-					$this->removeJmpInfo($EX, $catchOpLine);
+					$this->removeJmpInfo($EX, $catchOpLine - 1);
 
 					$catchNext = $opcodes[$catchOpLine]['extended_value'];
 					$catchBodyLast = $catchNext - 1;
@@ -1013,6 +1016,10 @@ class Decompiler
 			$this->recognizeAndDecompileClosedBlocks($EX, $tryRange);
 			$this->endScope($EX);
 			echo $indent, '}', PHP_EOL;
+			if (!$catchBlocks) {
+				printBacktrace();
+				assert($catchBlocks);
+			}
 			foreach ($catchBlocks as $catchFirst => $catchInfo) {
 				list($catchOpLine, $catchBodyLast) = $catchInfo;
 				$catchBodyFirst = $catchOpLine + 1;
@@ -1352,8 +1359,9 @@ class Decompiler
 
 			case XC_CATCH:
 				$catchNext = $op['extended_value'];
-				$op['jmpouts'] = array($catchNext);
-				$opcodes[$catchNext]['jmpins'][] = $i;
+				assert($opcodes[$i - 1]['opcode'] == XC_FETCH_CLASS);
+				$opcodes[$i - 1]['jmpouts'] = array($catchNext);
+				$opcodes[$catchNext]['jmpins'][] = $i - 1;
 				break;
 			}
 			/*
@@ -1567,7 +1575,7 @@ class Decompiler
 					$rvalue = $this->stripNamespace($class) . '::$' . $op1['constant'];
 				}
 				else {
-					$rvalue = $this->getOpVal($op1, $EX);
+					$rvalue = isset($op1['constant']) ? '$' . $op1['constant'] /* PHP5.1- */ : $this->getOpVal($op1, $EX);
 				}
 
 				$op['php'] = "unset(" . str($rvalue, $EX) . ")";
