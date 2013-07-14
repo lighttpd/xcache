@@ -989,7 +989,7 @@ class Decompiler
 			for ($i = $catchFirst; $i <= $range[1]; ) {
 				if ($opcodes[$i]['opcode'] == XC_CATCH) {
 					$catchOpLine = $i;
-					$this->removeJmpInfo($EX, $catchOpLine - 1);
+					$this->removeJmpInfo($EX, $catchFirst);
 
 					$catchNext = $opcodes[$catchOpLine]['extended_value'];
 					$catchBodyLast = $catchNext - 1;
@@ -1359,9 +1359,9 @@ class Decompiler
 
 			case XC_CATCH:
 				$catchNext = $op['extended_value'];
-				assert($opcodes[$i - 1]['opcode'] == XC_FETCH_CLASS);
-				$opcodes[$i - 1]['jmpouts'] = array($catchNext);
-				$opcodes[$catchNext]['jmpins'][] = $i - 1;
+				$catchBegin = $opcodes[$i - 1]['opcode'] == XC_FETCH_CLASS ? $i - 1 : $i;
+				$opcodes[$catchBegin]['jmpouts'] = array($catchNext);
+				$opcodes[$catchNext]['jmpins'][] = $catchBegin;
 				break;
 			}
 			/*
