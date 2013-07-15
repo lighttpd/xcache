@@ -27,7 +27,12 @@
 #endif
 
 #define NOTHING
-/* ZendEngine version code Switcher */
+/* ZendEngine code Switcher */
+#ifndef ZEND_ENGINE_2
+#	define ZESW(v1, v2) v1
+#else
+#	define ZESW(v1, v2) v2
+#endif
 #ifdef ZEND_ENGINE_2_4
 #	define ZEND_24(pre24, v24) v24
 #else
@@ -207,9 +212,24 @@ typedef const zstr const_zstr;
 #endif
 /* }}} */
 
+/* the class entry type to be stored in class_table */
+typedef ZESW(zend_class_entry, zend_class_entry*) xc_cest_t;
+
+/* xc_cest_t to (zend_class_entry*) */
+#define CestToCePtr(st) (ZESW(\
+			&(st), \
+			st \
+			) )
+
+/* ZCEP=zend class entry ptr */
+#define ZCEP_REFCOUNT_PTR(pce) (ZESW( \
+			(pce)->refcount, \
+			&((pce)->refcount) \
+			))
+
 #ifndef ZEND_ENGINE_2_3
-#include "ext/standard/php_string.h"
-static inline size_t zend_dirname(char *path, size_t len) { return php_dirname(path, len); }
+size_t xc_dirname(char *path, size_t len);
+#define zend_dirname xc_dirname
 long xc_atol(const char *str, int len);
 #define zend_atol xc_atol
 #endif
@@ -219,7 +239,11 @@ long xc_atol(const char *str, int len);
 #endif
 
 #ifndef PHP_FE_END
-#	define PHP_FE_END {NULL, NULL, NULL, 0, 0}
+#	ifdef ZEND_ENGINE_2
+#		define PHP_FE_END {NULL, NULL, NULL, 0, 0}
+#	else
+#		define PHP_FE_END {NULL, NULL, NULL}
+#	endif
 #endif
 
 #endif /* XC_COMPATIBILITY_H_54F26ED90198353558718191D5EE244C */
