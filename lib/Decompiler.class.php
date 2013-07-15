@@ -1490,7 +1490,7 @@ class Decompiler
 			switch ($opc) {
 			case XC_NEW: // {{{
 				array_push($EX['arg_types_stack'], array($EX['fbc'], $EX['object'], $EX['called_scope']));
-				$EX['object'] = (int) $res['var'];
+				$EX['object'] = $istmpres ? (int) $res['var'] : null;
 				$EX['called_scope'] = null;
 				$EX['fbc'] = 'new ' . $this->stripNamespace(isset($op1['constant']) ? $op1['constant'] : $this->getOpVal($op1, $EX));
 				break;
