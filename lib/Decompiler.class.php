@@ -2525,36 +2525,27 @@ class Decompiler
 		}
 		// }}}
 		// {{{ properties
-		$default_static_members = $class[ZEND_ENGINE_2_1 ? 'default_static_members' : 'static_members'];
+		if (!ZEND_ENGINE_2_4) {
+			$default_static_members = $class[ZEND_ENGINE_2_1 ? 'default_static_members' : 'static_members'];
+		}
 		$member_variables = $class['properties_info'];
 		if ($member_variables) {
 			echo "\n";
-			foreach ($member_variables as $name => $dummy) {
-				$info = isset($class['properties_info'][$name]) ? $class['properties_info'][$name] : null;
-				if (isset($info)) {
-					if (!empty($info['doc_comment'])) {
-						echo $newindent;
-						echo $info['doc_comment'];
-						echo "\n";
-					}
+			foreach ($member_variables as $name => $info) {
+				if (!empty($info['doc_comment'])) {
+					echo $newindent;
+					echo $info['doc_comment'];
+					echo "\n";
 				}
 
 				echo $newindent;
-				$static = false;
-				if (isset($info)) {
-					if ($info['flags'] & ZEND_ACC_STATIC) {
-						$static = true;
-					}
-				}
-				else if (isset($default_static_members[$name])) {
-					$static = true;
-				}
+				$static = ($info['flags'] & ZEND_ACC_STATIC);
 
 				if ($static) {
 					echo "static ";
 				}
 
-				$mangled = false;
+				$mangleSuffix = '';
 				if (!isset($info)) {
 					echo 'public ';
 				}
@@ -2568,23 +2559,22 @@ class Decompiler
 						break;
 					case ZEND_ACC_PRIVATE:
 						echo "private ";
-						$mangled = true;
+						$mangleSuffix = "\000";
 						break;
 					case ZEND_ACC_PROTECTED:
 						echo "protected ";
-						$mangled = true;
+						$mangleSuffix = "\000";
 						break;
 					}
 				}
 
 				echo '$', $name;
 
-				if (isset($info['offset'])) {
+				if (ZEND_ENGINE_2_4) {
 					$value = $class[$static ? 'default_static_members_table' : 'default_properties_table'][$info['offset']];
 				}
 				else {
-					$key = isset($info) ? $info['name'] . ($mangled ? "\000" : "") : $name;
-
+					$key = $info['name'] . $mangleSuffix;
 					if ($static) {
 						$value = $default_static_members[$key];
 					}
