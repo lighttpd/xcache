@@ -861,7 +861,7 @@ class Decompiler
 			return false;
 		}
 		// }}}
-		// {{{ goto (TODO: recognize XC_BRK)
+		// {{{ goto (TODO: recognize BRK which is translated to JMP by optimizer)
 		if ($firstOp['opcode'] == XC_JMP && !empty($firstOp['jmpouts']) && $firstOp['jmpouts'][0] == $range[1] + 1) {
 			$this->removeJmpInfo($EX, $range[0]);
 			assert(XC_GOTO != -1);
@@ -2502,28 +2502,24 @@ class Decompiler
 		echo $indent, "{";
 		// }}}
 		$newindent = INDENT . $indent;
-		// {{{ const, static
-		foreach (array('constants_table' => 'const '
-					, 'static_members' => 'static $') as $type => $prefix) {
-			if (!empty($class[$type])) {
-				echo "\n";
-				// TODO: skip shadow?
-				foreach ($class[$type] as $name => $v) {
-					echo $newindent;
-					echo $prefix, $name, ' = ';
-					echo str(value($v, $EX), $newindent);
-					echo ";\n";
-				}
+		// {{{ const
+		if (!empty($class['constants_table'])) {
+			echo "\n";
+			foreach ($class['constants_table'] as $name => $v) {
+				echo $newindent;
+				echo 'const ', $name, ' = ';
+				echo str(value($v, $EX), $newindent);
+				echo ";\n";
 			}
 		}
 		// }}}
 		// {{{ properties
-		$member_variables = isset($class['properties_info']) ? $class['properties_info'] : ($class['default_static_members'] + $class['default_properties']);
+		$default_static_members = $class[ZEND_ENGINE_2_1 ? 'default_static_members' : 'static_members'];
+		$member_variables = $class['properties_info'];
 		if ($member_variables) {
 			echo "\n";
-			$infos = !empty($class['properties_info']) ? $class['properties_info'] : null;
 			foreach ($member_variables as $name => $dummy) {
-				$info = (isset($infos) && isset($infos[$name])) ? $infos[$name] : null;
+				$info = isset($class['properties_info'][$name]) ? $class['properties_info'][$name] : null;
 				if (isset($info)) {
 					if (!empty($info['doc_comment'])) {
 						echo $newindent;
@@ -2539,7 +2535,7 @@ class Decompiler
 						$static = true;
 					}
 				}
-				else if (isset($class['default_static_members'][$name])) {
+				else if (isset($default_static_members[$name])) {
 					$static = true;
 				}
 
@@ -2578,7 +2574,12 @@ class Decompiler
 				else {
 					$key = isset($info) ? $info['name'] . ($mangled ? "\000" : "") : $name;
 
-					$value = $class[$static ? 'default_static_members' : 'default_properties'][$key];
+					if ($static) {
+						$value = $default_static_members[$key];
+					}
+					else {
+						$value = $class['default_properties'][$key];
+					}
 				}
 				if (isset($value)) {
 					echo ' = ';
