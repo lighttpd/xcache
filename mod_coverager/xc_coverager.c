@@ -702,7 +702,12 @@ static zend_module_entry xcache_coverager_module_entry = { /* {{{ */
 #ifdef PHP_GINIT
 	NO_MODULE_GLOBALS,
 #endif
+#ifdef ZEND_ENGINE_2
 	NULL,
+#else
+	NULL,
+	NULL,
+#endif
 	STANDARD_MODULE_PROPERTIES_EX
 };
 /* }}} */

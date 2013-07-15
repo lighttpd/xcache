@@ -4,7 +4,11 @@
 
 /* {{{ opcode_spec */
 #define OPSPEC(ext, op1, op2, res) { OPSPEC_##ext, OPSPEC_##op1, OPSPEC_##op2, OPSPEC_##res },
-#define OPSPEC_VAR_2 OPSPEC_STD
+#ifdef ZEND_ENGINE_2
+#	define OPSPEC_VAR_2 OPSPEC_STD
+#else
+#	define OPSPEC_VAR_2 OPSPEC_VAR
+#endif
 #ifdef ZEND_ENGINE_2_4
 #undef OPSPEC_FETCH
 #define OPSPEC_FETCH OPSPEC_STD

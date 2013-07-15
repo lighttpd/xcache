@@ -247,8 +247,8 @@ static zend_ulong xc_get_class_num(xc_processor_t *processor, zend_class_entry *
 		return processor->cache_class_index + 1;
 	}
 	for (i = 0; i < php->classinfo_cnt; i ++) {
-		ceptr = php->classinfos[i].class_entry;
-		if (ceptr == ce) {
+		ceptr = CestToCePtr(php->classinfos[i].cest);
+		if (ZCEP_REFCOUNT_PTR(ceptr) == ZCEP_REFCOUNT_PTR(ce)) {
 			processor->cache_ce = ceptr;
 			processor->cache_class_index = i;
 			return i + 1;
@@ -260,13 +260,16 @@ static zend_ulong xc_get_class_num(xc_processor_t *processor, zend_class_entry *
 define(`xc_get_class_num', `xc_get_class_numNOTDEFINED')
 /* }}} */
 /* {{{ xc_get_class */
+#ifdef ZEND_ENGINE_2
 static zend_class_entry *xc_get_class(xc_processor_t *processor, zend_ulong class_num) {
 	/* must be parent or currrent class */
 	assert(class_num <= processor->active_class_index + 1);
-	return processor->php_dst->classinfos[class_num - 1].class_entry;
+	return CestToCePtr(processor->php_dst->classinfos[class_num - 1].cest);
 }
+#endif
 define(`xc_get_class', `xc_get_classNOTDEFINED')
 /* }}} */
+#ifdef ZEND_ENGINE_2
 /* fix method on store */
 static void xc_fix_method(xc_processor_t *processor, zend_op_array *dst TSRMLS_DC) /* {{{ */
 {
@@ -341,6 +344,7 @@ static void xc_fix_method(xc_processor_t *processor, zend_op_array *dst TSRMLS_D
 	}
 }
 /* }}} */
+#endif
 /* {{{ call op_array ctor handler */
 extern zend_bool xc_have_op_array_ctor;
 static void xc_zend_extension_op_array_ctor_handler(zend_extension *extension, zend_op_array *op_array TSRMLS_DC)

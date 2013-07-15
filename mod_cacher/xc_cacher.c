@@ -762,6 +762,11 @@ static zend_op_array *xc_entry_install(xc_entry_php_t *entry_php TSRMLS_DC) /* {
 	zend_uint i;
 	xc_entry_data_php_t *p = entry_php->php;
 	zend_op_array *old_active_op_array = CG(active_op_array);
+#ifndef ZEND_ENGINE_2
+	ALLOCA_FLAG(use_heap)
+	/* new ptr which is stored inside CG(class_table) */
+	xc_cest_t **new_cest_ptrs = (xc_cest_t **)xc_do_alloca(sizeof(xc_cest_t*) * p->classinfo_cnt, use_heap);
+#endif
 
 	CG(active_op_array) = p->op_array;
 
@@ -784,11 +789,21 @@ static zend_op_array *xc_entry_install(xc_entry_php_t *entry_php TSRMLS_DC) /* {
 	/* install class */
 	for (i = 0; i < p->classinfo_cnt; i ++) {
 		xc_classinfo_t *ci = &p->classinfos[i];
+#ifndef ZEND_ENGINE_2
+		zend_class_entry *ce = CestToCePtr(ci->cest);
+		/* fix pointer to the be which inside class_table */
+		if (ce->parent) {
+			zend_uint class_idx = (/* class_num */ (int) (long) ce->parent) - 1;
+			assert(class_idx < i);
+			ci->cest.parent = new_cest_ptrs[class_idx];
+		}
+		new_cest_ptrs[i] =
+#endif
 #ifdef ZEND_COMPILE_DELAYED_BINDING
-		xc_install_class(entry_php->entry.name.str.val, ci->class_entry, -1,
+		xc_install_class(entry_php->entry.name.str.val, &ci->cest, -1,
 				UNISW(0, ci->type), ci->key, ci->key_size, ci->h TSRMLS_CC);
 #else
-		xc_install_class(entry_php->entry.name.str.val, ci->class_entry, ci->oplineno,
+		xc_install_class(entry_php->entry.name.str.val, &ci->cest, ci->oplineno,
 				UNISW(0, ci->type), ci->key, ci->key_size, ci->h TSRMLS_CC);
 #endif
 	}
@@ -810,6 +825,14 @@ static zend_op_array *xc_entry_install(xc_entry_php_t *entry_php TSRMLS_DC) /* {
 	CG(zend_lineno) = 0;
 #endif
 
+	i = 1;
+#ifndef ZEND_ENGINE_2_2
+	zend_hash_add(&EG(included_files), entry_php->entry.name.str.val, entry_php->entry.name.str.len+1, (void *)&i, sizeof(int), NULL);
+#endif
+
+#ifndef ZEND_ENGINE_2
+	xc_free_alloca(new_cest_ptrs, use_heap);
+#endif
 	CG(active_op_array) = old_active_op_array;
 	return p->op_array;
 }
@@ -995,7 +1018,12 @@ static int xc_stat(const char *filepath, struct stat *statbuf TSRMLS_DC) /* {{{ 
 
 		wrapper = php_stream_locate_url_wrapper(filepath, &path_for_open, 0 TSRMLS_CC); 
 		if (wrapper && wrapper->wops->url_stat
-		 && wrapper->wops->url_stat(wrapper, path_for_open, PHP_STREAM_URL_STAT_QUIET, &ssb, NULL TSRMLS_CC) == SUCCESS) {
+#ifdef ZEND_ENGINE_2
+		 && wrapper->wops->url_stat(wrapper, path_for_open, PHP_STREAM_URL_STAT_QUIET, &ssb, NULL TSRMLS_CC) == SUCCESS
+#else
+		 && wrapper->wops->url_stat(wrapper, path_for_open, &ssb TSRMLS_CC) == SUCCESS
+#endif
+		) {
 			*statbuf = ssb.sb;
 			return SUCCESS;
 		}
@@ -1273,12 +1301,12 @@ static void xc_cache_early_binding_class_cb(zend_op *opline, int oplineno, void 
 	char *class_name;
 	zend_uint i;
 	int class_len;
-	zend_class_entry *class_entry;
+	xc_cest_t cest;
 	xc_entry_data_php_t *php = (xc_entry_data_php_t *) data;
 
 	class_name = Z_OP_CONSTANT(opline->op1).value.str.val;
 	class_len  = Z_OP_CONSTANT(opline->op1).value.str.len;
-	if (zend_hash_find(CG(class_table), class_name, class_len, (void **) &class_entry) == FAILURE) {
+	if (zend_hash_find(CG(class_table), class_name, class_len, (void **) &cest) == FAILURE) {
 		assert(0);
 	}
 	TRACE("got ZEND_DECLARE_INHERITED_CLASS: %s", class_name + 1);
@@ -1721,12 +1749,14 @@ static void xc_compile_php(xc_compiler_t *compiler, zend_file_handle *h, int typ
 } while(0)
 
 #ifdef HAVE_XCACHE_CONSTANT
-		b = EG(zend_constants)->pListHead; COPY_H(xc_constinfo_t, constinfos, constinfo_cnt, constant,    zend_constant);
+		b = EG(zend_constants)->pListHead; COPY_H(xc_constinfo_t, constinfos, constinfo_cnt, constant, zend_constant);
 #endif
-		b = CG(function_table)->pListHead; COPY_H(xc_funcinfo_t,  funcinfos,  funcinfo_cnt,  func,        zend_function);
-		b = CG(class_table)->pListHead;    COPY_H(xc_classinfo_t, classinfos, classinfo_cnt, class_entry, zend_class_entry *);
+		b = CG(function_table)->pListHead; COPY_H(xc_funcinfo_t,  funcinfos,  funcinfo_cnt,  func,     zend_function);
+		b = CG(class_table)->pListHead;    COPY_H(xc_classinfo_t, classinfos, classinfo_cnt, cest,     xc_cest_t);
 
 #undef COPY_H
+
+		/* for ZE1, cest need to be fixed inside store */
 
 #ifdef ZEND_ENGINE_2_1
 		/* scan for acatived auto globals */
@@ -1764,7 +1794,8 @@ static void xc_compile_php(xc_compiler_t *compiler, zend_file_handle *h, int typ
 
 		for (i = 0; i < compiler->new_php.classinfo_cnt; i ++) {
 			xc_classinfo_t *classinfo = &compiler->new_php.classinfos[i];
-			classinfo->methodinfo_cnt = classinfo->class_entry->function_table.nTableSize;
+			zend_class_entry *ce = CestToCePtr(classinfo->cest);
+			classinfo->methodinfo_cnt = ce->function_table.nTableSize;
 			if (classinfo->methodinfo_cnt) {
 				int j;
 
@@ -1773,7 +1804,7 @@ static void xc_compile_php(xc_compiler_t *compiler, zend_file_handle *h, int typ
 					goto err_alloc;
 				}
 
-				for (j = 0, b = classinfo->class_entry->function_table.pListHead; b; j ++, b = b->pListNext) {
+				for (j = 0, b = ce->function_table.pListHead; b; j ++, b = b->pListNext) {
 					xc_collect_op_array_info(compiler, &const_usage, &classinfo->methodinfos[j], (zend_op_array *) b->pData TSRMLS_CC);
 				}
 			}
@@ -1973,7 +2004,11 @@ static zend_op_array *xc_compile_file_sandboxed(void *data TSRMLS_DC) /* {{{ */
 		sandboxed_compiler->stored_php = stored_php;
 		/* discard newly compiled result, restore from stored one */
 		if (compiler->new_php.op_array) {
+#ifdef ZEND_ENGINE_2
 			destroy_op_array(compiler->new_php.op_array TSRMLS_CC);
+#else
+			destroy_op_array(compiler->new_php.op_array);
+#endif
 			efree(compiler->new_php.op_array);
 			compiler->new_php.op_array = NULL;
 		}
@@ -2147,7 +2182,6 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	if (!XG(cacher)
 	 || !h->filename
 	 || !SG(request_info).path_translated
-
 	) {
 		TRACE("%s", "cacher not enabled");
 		return old_compile_file(h, type TSRMLS_CC);
@@ -2236,8 +2270,9 @@ void xc_gc_add_op_array(xc_gc_op_array_t *gc_op_array TSRMLS_DC) /* {{{ */
 static void xc_gc_op_array(void *pDest) /* {{{ */
 {
 	xc_gc_op_array_t *op_array = (xc_gc_op_array_t *) pDest;
-	zend_uint i;
+#ifdef ZEND_ENGINE_2
 	if (op_array->arg_info) {
+		zend_uint i;
 		for (i = 0; i < op_array->num_args; i++) {
 			efree((char *) ZSTR_V(op_array->arg_info[i].name));
 			if (ZSTR_V(op_array->arg_info[i].class_name)) {
@@ -2246,6 +2281,7 @@ static void xc_gc_op_array(void *pDest) /* {{{ */
 		}
 		efree(op_array->arg_info);
 	}
+#endif
 	if (op_array->opcodes) {
 		efree(op_array->opcodes);
 	}
@@ -2761,8 +2797,8 @@ static void xc_holds_destroy(TSRMLS_D) /* {{{ */
 static void xc_request_init(TSRMLS_D) /* {{{ */
 {
 	if (!XG(internal_table_copied)) {
-		zend_function dummy_func;
-		zend_class_entry *dummy_class_entry;
+		zend_function tmp_func;
+		xc_cest_t tmp_cest;
 
 #ifdef HAVE_XCACHE_CONSTANT
 		zend_hash_destroy(&XG(internal_constant_table));
@@ -2779,14 +2815,16 @@ static void xc_request_init(TSRMLS_D) /* {{{ */
 #ifdef HAVE_XCACHE_CONSTANT
 		xc_copy_internal_zend_constants(&XG(internal_constant_table), EG(zend_constants));
 #endif
-		zend_hash_copy(&XG(internal_function_table), CG(function_table), NULL, &dummy_func, sizeof(dummy_func));
-		zend_hash_copy(&XG(internal_class_table), CG(class_table), NULL, &dummy_class_entry, sizeof(dummy_class_entry));
+		zend_hash_copy(&XG(internal_function_table), CG(function_table), NULL, &tmp_func, sizeof(tmp_func));
+		zend_hash_copy(&XG(internal_class_table), CG(class_table), NULL, &tmp_cest, sizeof(tmp_cest));
 
 		XG(internal_table_copied) = 1;
 	}
 	xc_holds_init(TSRMLS_C);
 	xc_var_namespace_init(TSRMLS_C);
+#ifdef ZEND_ENGINE_2
 	zend_llist_init(&XG(gc_op_arrays), sizeof(xc_gc_op_array_t), xc_gc_op_array, 0);
+#endif
 
 #if PHP_API_VERSION <= 20041225
 	XG(request_time) = time(NULL);
@@ -2807,7 +2845,9 @@ static void xc_request_shutdown(TSRMLS_D) /* {{{ */
 	xc_gc_expires_var(TSRMLS_C);
 	xc_gc_deletes(TSRMLS_C);
 	xc_var_namespace_destroy(TSRMLS_C);
+#ifdef ZEND_ENGINE_2
 	zend_llist_destroy(&XG(gc_op_arrays));
+#endif
 }
 /* }}} */
 
@@ -3738,10 +3778,16 @@ static PHP_RINIT_FUNCTION(xcache_cacher) /* {{{ */
 	return SUCCESS;
 }
 /* }}} */
-/* {{{ static ZEND_MODULE_POST_ZEND_DEACTIVATE_D(xcache_cacher) */
+/* {{{ static PHP_RSHUTDOWN_FUNCTION(xcache_cacher) */
+#ifndef ZEND_ENGINE_2
+static PHP_RSHUTDOWN_FUNCTION(xcache_cacher)
+#else
 static ZEND_MODULE_POST_ZEND_DEACTIVATE_D(xcache_cacher)
+#endif
 {
+#ifdef ZEND_ENGINE_2
 	TSRMLS_FETCH();
+#endif
 
 	xc_request_shutdown(TSRMLS_C);
 	return SUCCESS;
@@ -3754,13 +3800,22 @@ static zend_module_entry xcache_cacher_module_entry = { /* {{{ */
 	PHP_MINIT(xcache_cacher),
 	PHP_MSHUTDOWN(xcache_cacher),
 	PHP_RINIT(xcache_cacher),
+#ifndef ZEND_ENGINE_2
+	PHP_RSHUTDOWN(xcache_cacher),
+#else
 	NULL,
+#endif
 	PHP_MINFO(xcache_cacher),
 	XCACHE_VERSION,
 #ifdef PHP_GINIT
 	NO_MODULE_GLOBALS,
 #endif
+#ifdef ZEND_ENGINE_2
 	ZEND_MODULE_POST_ZEND_DEACTIVATE_N(xcache_cacher),
+#else
+	NULL,
+	NULL,
+#endif
 	STANDARD_MODULE_PROPERTIES_EX
 };
 /* }}} */

@@ -114,13 +114,17 @@ static int xc_init_constant(int module_number TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 /* {{{ PHP_GINIT_FUNCTION(xcache) */
-#define xcache_globals xcacheglobals
+#pragma GCC push_options
+#pragma GCC diagnostic ignored "-Wshadow"
+
 #ifdef PHP_GINIT_FUNCTION
 static PHP_GINIT_FUNCTION(xcache)
 #else
-static void xc_init_globals(zend_xcache_globals *xcache_globals TSRMLS_DC)
+static void xc_init_globals(zend_xcache_globals* xcache_globals TSRMLS_DC)
 #endif
 {
+#pragma GCC pop_options
+
 	memset(xcache_globals, 0, sizeof(zend_xcache_globals));
 
 #ifdef HAVE_XCACHE_CONSTANT
@@ -129,12 +133,10 @@ static void xc_init_globals(zend_xcache_globals *xcache_globals TSRMLS_DC)
 	zend_hash_init_ex(&xcache_globals->internal_function_table, 1, NULL, NULL, 1, 0);
 	zend_hash_init_ex(&xcache_globals->internal_class_table,    1, NULL, NULL, 1, 0);
 }
-#undef xcache_globals
 /* }}} */
 /* {{{ PHP_GSHUTDOWN_FUNCTION(xcache) */
 static
 #ifdef PHP_GSHUTDOWN_FUNCTION
-#define xcache_globals xcacheglobals
 PHP_GSHUTDOWN_FUNCTION(xcache)
 #else
 void xc_shutdown_globals(zend_xcache_globals* xcache_globals TSRMLS_DC)
@@ -168,7 +170,6 @@ void xc_shutdown_globals(zend_xcache_globals* xcache_globals TSRMLS_DC)
 		zend_hash_destroy(&xcache_globals->internal_class_table);
 	}
 }
-#undef xcache_globals
 /* }}} */
 
 /* {{{ proto int xcache_get_refcount(mixed variable)
@@ -884,7 +885,12 @@ zend_module_entry xcache_module_entry = {
 	PHP_GINIT(xcache),
 	PHP_GSHUTDOWN(xcache),
 #endif
+#ifdef ZEND_ENGINE_2
 	NULL /* ZEND_MODULE_POST_ZEND_DEACTIVATE_N */,
+#else
+	NULL,
+	NULL,
+#endif
 	STANDARD_MODULE_PROPERTIES_EX
 };
 

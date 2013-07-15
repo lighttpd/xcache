@@ -77,20 +77,35 @@ typedef struct {
 int xc_apply_method(zend_function *zf, xc_apply_method_info *mi TSRMLS_DC) /* {{{ */
 {
 	/* avoid duplicate apply for shadowed method */
+#ifdef ZEND_ENGINE_2
 	if (mi->ce != zf->common.scope) {
 		/* fprintf(stderr, "avoided duplicate %s\n", zf->common.function_name); */
 		return 0;
 	}
+#else
+	char *name = zf->common.function_name;
+	int name_s = strlen(name) + 1;
+	zend_class_entry *ce;
+	zend_function *ptr;
+
+	for (ce = mi->ce->parent; ce; ce = ce->parent) {
+		if (zend_hash_find(&ce->function_table, name, name_s, (void **) &ptr) == SUCCESS) {
+			if (ptr->op_array.refcount == zf->op_array.refcount) {
+				return 0;
+			}
+		}
+	}
+#endif
 	return xc_apply_function(zf, &mi->fi TSRMLS_CC);
 }
 /* }}} */
-static int xc_apply_class(zend_class_entry **ce, xc_apply_func_info *fi TSRMLS_DC) /* {{{ */
+static int xc_apply_cest(xc_cest_t *cest, xc_apply_func_info *fi TSRMLS_DC) /* {{{ */
 {
 	xc_apply_method_info mi;
 
 	mi.fi = *fi;
-	mi.ce = *ce;
-	zend_hash_apply_with_argument(&((*ce)->function_table), (apply_func_arg_t) xc_apply_method, &mi TSRMLS_CC);
+	mi.ce = CestToCePtr(*cest);
+	zend_hash_apply_with_argument(&(CestToCePtr(*cest)->function_table), (apply_func_arg_t) xc_apply_method, &mi TSRMLS_CC);
 	return 0;
 }
 /* }}} */
@@ -99,14 +114,16 @@ int xc_apply_op_array(xc_compile_result_t *cr, apply_func_t applyer TSRMLS_DC) /
 	xc_apply_func_info fi;
 	fi.applyer = applyer;
 	zend_hash_apply_with_argument(cr->function_table, (apply_func_arg_t) xc_apply_function, &fi TSRMLS_CC);
-	zend_hash_apply_with_argument(cr->class_table, (apply_func_arg_t) xc_apply_class, &fi TSRMLS_CC);
+	zend_hash_apply_with_argument(cr->class_table, (apply_func_arg_t) xc_apply_cest, &fi TSRMLS_CC);
 
 	return applyer(cr->op_array TSRMLS_CC);
 }
 /* }}} */
 int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
+#ifdef ZEND_ENGINE_2
 	zend_op *opline, *opline_end;
+#endif
 
 #ifdef ZEND_ENGINE_2_4
 	if (!(op_array->fn_flags & ZEND_ACC_DONE_PASS_TWO)) {
@@ -118,26 +135,27 @@ int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	}
 #endif
 
+#ifdef ZEND_ENGINE_2
 	opline = op_array->opcodes;
 	opline_end = opline + op_array->last;
 	while (opline < opline_end) {
-#ifdef ZEND_ENGINE_2_4
+#	ifdef ZEND_ENGINE_2_4
 		if (opline->op1_type == IS_CONST) {
 			opline->op1.constant = opline->op1.literal - op_array->literals;
 		}
 		if (opline->op2_type == IS_CONST) {
 			opline->op2.constant = opline->op2.literal - op_array->literals;
 		}
-#endif
+#	endif
 
 		switch (opline->opcode) {
-#ifdef ZEND_GOTO
+#	ifdef ZEND_GOTO
 			case ZEND_GOTO:
-#endif
+#	endif
 			case ZEND_JMP:
-#ifdef ZEND_FAST_CALL
+#	ifdef ZEND_FAST_CALL
 			case ZEND_FAST_CALL:
-#endif
+#	endif
 				assert(Z_OP(opline->op1).jmp_addr >= op_array->opcodes && (zend_uint) (Z_OP(opline->op1).jmp_addr - op_array->opcodes) < op_array->last);
 				Z_OP(opline->op1).opline_num = Z_OP(opline->op1).jmp_addr - op_array->opcodes;
 				break;
@@ -145,18 +163,20 @@ int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 			case ZEND_JMPNZ:
 			case ZEND_JMPZ_EX:
 			case ZEND_JMPNZ_EX:
-#ifdef ZEND_JMP_SET
+#	ifdef ZEND_JMP_SET
 			case ZEND_JMP_SET:
-#endif
-#ifdef ZEND_JMP_SET_VAR
+#	endif
+#	ifdef ZEND_JMP_SET_VAR
 			case ZEND_JMP_SET_VAR:
-#endif
+#	endif
 				assert(Z_OP(opline->op2).jmp_addr >= op_array->opcodes && (zend_uint) (Z_OP(opline->op2).jmp_addr - op_array->opcodes) < op_array->last);
 				Z_OP(opline->op2).opline_num = Z_OP(opline->op2).jmp_addr - op_array->opcodes;
 				break;
 		}
 		opline++;
 	}
+#endif /* ZEND_ENGINE_2 */
+
 #ifdef ZEND_ENGINE_2_4
 	op_array->fn_flags &= ~ZEND_ACC_DONE_PASS_TWO;
 #else
@@ -168,7 +188,9 @@ int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 /* }}} */
 int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
+#ifdef ZEND_ENGINE_2
 	zend_op *opline, *opline_end;
+#endif
 #ifdef ZEND_ENGINE_2_4
 	zend_literal *literal = op_array->literals;
 #endif
@@ -198,17 +220,18 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	}
 #endif
 
+#ifdef ZEND_ENGINE_2
 	opline = op_array->opcodes;
 	opline_end = opline + op_array->last;
 	while (opline < opline_end) {
-#ifdef ZEND_ENGINE_2_4
+#	ifdef ZEND_ENGINE_2_4
 		if (opline->op1_type == IS_CONST) {
 			opline->op1.literal = op_array->literals + opline->op1.constant;
 		}
 		if (opline->op2_type == IS_CONST) {
 			opline->op2.literal = op_array->literals + opline->op2.constant;
 		}
-#else
+#	else
 		if (Z_OP_TYPE(opline->op1) == IS_CONST) {
 			Z_SET_ISREF(Z_OP_CONSTANT(opline->op1));
 			Z_SET_REFCOUNT(Z_OP_CONSTANT(opline->op1), 2); /* Make sure is_ref won't be reset */
@@ -217,15 +240,15 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 			Z_SET_ISREF(Z_OP_CONSTANT(opline->op2));
 			Z_SET_REFCOUNT(Z_OP_CONSTANT(opline->op2), 2);
 		}
-#endif
+#	endif
 		switch (opline->opcode) {
-#ifdef ZEND_GOTO
+#	ifdef ZEND_GOTO
 			case ZEND_GOTO:
-#endif
+#	endif
 			case ZEND_JMP:
-#ifdef ZEND_FAST_CALL
+#	ifdef ZEND_FAST_CALL
 			case ZEND_FAST_CALL:
-#endif
+#	endif
 				assert(Z_OP(opline->op1).opline_num < op_array->last);
 				Z_OP(opline->op1).jmp_addr = op_array->opcodes + Z_OP(opline->op1).opline_num;
 				break;
@@ -233,12 +256,12 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 			case ZEND_JMPNZ:
 			case ZEND_JMPZ_EX:
 			case ZEND_JMPNZ_EX:
-#ifdef ZEND_JMP_SET
+#	ifdef ZEND_JMP_SET
 			case ZEND_JMP_SET:
-#endif
-#ifdef ZEND_JMP_SET_VAR
+#	endif
+#	ifdef ZEND_JMP_SET_VAR
 			case ZEND_JMP_SET_VAR:
-#endif
+#	endif
 				assert(Z_OP(opline->op2).opline_num < op_array->last);
 				Z_OP(opline->op2).jmp_addr = op_array->opcodes + Z_OP(opline->op2).opline_num;
 				break;
@@ -246,6 +269,7 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 		/* ZEND_VM_SET_OPCODE_HANDLER(opline); this is not undone, don't redo. only do this for loader */
 		opline++;
 	}
+#endif /* ZEND_ENGINE_2 */
 
 #ifdef ZEND_ENGINE_2_4
 	op_array->fn_flags |= ZEND_ACC_DONE_PASS_TWO;
@@ -258,6 +282,7 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 
 static void xc_fix_opcode_ex_znode(int tofix, xc_op_spec_t spec, Z_OP_TYPEOF_TYPE *op_type, znode_op *op, int type TSRMLS_DC) /* {{{ */
 {
+#ifdef ZEND_ENGINE_2
 	if ((*op_type != IS_UNUSED && (spec == OPSPEC_UCLASS || spec == OPSPEC_CLASS)) ||
 			spec == OPSPEC_FETCH) {
 		if (tofix) {
@@ -283,6 +308,7 @@ static void xc_fix_opcode_ex_znode(int tofix, xc_op_spec_t spec, Z_OP_TYPEOF_TYP
 			Z_OP(*op).var *= sizeof(temp_variable);
 		}
 	}
+#endif
 }
 /* }}} */
 
@@ -359,9 +385,17 @@ int xc_foreach_early_binding_class(zend_op_array *op_array, xc_foreach_early_bin
 				opline = opline_end;
 				break;
 
+#ifdef ZEND_ENGINE_2
 			case ZEND_DECLARE_INHERITED_CLASS:
 				callback(opline, opline - begin, data TSRMLS_CC);
 				break;
+#else
+			case ZEND_DECLARE_FUNCTION_OR_CLASS:
+				if (opline->extended_value == ZEND_DECLARE_INHERITED_CLASS) {
+					callback(opline, opline - begin, data TSRMLS_CC);
+				}
+				break;
+#endif
 		}
 
 		if (opline < next) {
@@ -385,6 +419,7 @@ int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, int opl
 	opline = &(op_array->opcodes[oplineno]);
 
 	switch (opline->opcode) {
+#ifdef ZEND_ENGINE_2
 	case ZEND_DECLARE_INHERITED_CLASS:
 		{
 			zval *parent_name;
@@ -433,6 +468,12 @@ int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, int opl
 			abstract_op->opcode = ZEND_NOP;
 			ZEND_VM_SET_OPCODE_HANDLER(abstract_op);
 		}
+#else
+	case ZEND_DECLARE_FUNCTION_OR_CLASS:
+		if (do_bind_function_or_class(opline, NULL, class_table, 1) == FAILURE) {
+			return FAILURE;
+		}
+#endif
 		break;
 
 	default:
@@ -494,7 +535,7 @@ void xc_install_function(ZEND_24(NOTHING, const) char *filename, zend_function *
 					func, sizeof(zend_op_array),
 					NULL
 					) == FAILURE) {
-			CG(zend_lineno) = func->op_array.line_start;
+			CG(zend_lineno) = ZESW(func->op_array.opcodes[0].lineno, func->op_array.line_start);
 #ifdef IS_UNICODE
 			zend_error(E_ERROR, "Cannot redeclare %R()", type, key);
 #else
@@ -504,9 +545,11 @@ void xc_install_function(ZEND_24(NOTHING, const) char *filename, zend_function *
 	}
 }
 /* }}} */
-void xc_install_class(ZEND_24(NOTHING, const) char *filename, zend_class_entry *ce, int oplineno, zend_uchar type, const24_zstr key, uint len, ulong h TSRMLS_DC) /* {{{ */
+ZESW(xc_cest_t *, void) xc_install_class(ZEND_24(NOTHING, const) char *filename, xc_cest_t *cest, int oplineno, zend_uchar type, const24_zstr key, uint len, ulong h TSRMLS_DC) /* {{{ */
 {
 	zend_bool istmpkey;
+	zend_class_entry *cep = CestToCePtr(*cest);
+	ZESW(void *stored_ce_ptr, NOTHING);
 
 #ifdef IS_UNICODE
 	istmpkey = (type == IS_STRING && ZSTR_S(key)[0] == 0) || ZSTR_U(key)[0] == 0;
@@ -515,8 +558,8 @@ void xc_install_class(ZEND_24(NOTHING, const) char *filename, zend_class_entry *
 #endif
 	if (istmpkey) {
 		zend_u_hash_quick_update(CG(class_table), type, key, len, h,
-					&ce, sizeof(zend_class_entry *),
-					NULL
+					cest, sizeof(xc_cest_t),
+					ZESW(&stored_ce_ptr, NULL)
 					);
 #ifndef ZEND_COMPILE_DELAYED_BINDING
 		if (oplineno != -1) {
@@ -525,17 +568,18 @@ void xc_install_class(ZEND_24(NOTHING, const) char *filename, zend_class_entry *
 #endif
 	}
 	else if (zend_u_hash_quick_add(CG(class_table), type, key, len, h,
-				&ce, sizeof(zend_class_entry *),
-				NULL
+				cest, sizeof(xc_cest_t),
+				ZESW(&stored_ce_ptr, NULL)
 				) == FAILURE) {
-		CG(zend_lineno) = Z_CLASS_INFO(*ce).line_start;
+		CG(zend_lineno) = ZESW(0, Z_CLASS_INFO(*cep).line_start);
 #ifdef IS_UNICODE
-		zend_error(E_ERROR, "Cannot redeclare class %R", type, ce->name);
+		zend_error(E_ERROR, "Cannot redeclare class %R", type, cep->name);
 #else
-		zend_error(E_ERROR, "Cannot redeclare class %s", ce->name);
+		zend_error(E_ERROR, "Cannot redeclare class %s", cep->name);
 #endif
 		assert(oplineno == -1);
 	}
+	ZESW(return (xc_cest_t *) stored_ce_ptr, NOTHING);
 }
 /* }}} */
 

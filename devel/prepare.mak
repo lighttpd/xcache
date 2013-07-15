@@ -17,6 +17,7 @@ clean_xc_const_string:
 
 .PHONY: xc_const_string
 xc_const_string: \
+	xcache/xc_const_string_opcodes_php4.x.h \
 	xcache/xc_const_string_opcodes_php5.0.h \
 	xcache/xc_const_string_opcodes_php5.1.h \
 	xcache/xc_const_string_opcodes_php5.3.h \
@@ -31,6 +32,15 @@ else
 xcache/xc_opcode_spec_def.h: ${EA_DIR}/opcodes.c
 	$(AWK) -f ./devel/gen_xc_opcode_spec.awk < "$<" > "$@".tmp
 	mv "$@".tmp "$@"
+endif
+
+ifeq (${PHP4_x_DIR},)
+xcache/xc_const_string_opcodes_php4.x.h: dummy
+	@echo "Skipped $@: PHP_4_x_DIR not set"
+else
+xcache/xc_const_string_opcodes_php4.x.h: ${PHP4_x_DIR}/Zend/zend_compile.h
+	$(AWK) -f ./devel/gen_const_string_opcodes.awk < "$<" > "$@.tmp"
+	mv "$@.tmp" "$@"
 endif
 
 ifeq (${PHP5_0_DIR},)
