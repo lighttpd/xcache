@@ -358,7 +358,7 @@ for (; $i < 10; ++$i) {
 	break;
 }
 
-foreach ($array as $key => $value) {
+foreach ($array as $value) {
 	foreach ($value as $key => $value) {
 		echo $key . ' = ' . $value . "\n";
 		break 2;
