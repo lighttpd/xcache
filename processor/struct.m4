@@ -71,9 +71,11 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 		IFDPRINT(`
 			fprintf(stderr, "%s", "{\n");
 			indent ++;
+			{
 		')
 		$3`'
 		IFDPRINT(`
+			}
 			indent --;
 			INDENT()fprintf(stderr, "}\n");
 		')
