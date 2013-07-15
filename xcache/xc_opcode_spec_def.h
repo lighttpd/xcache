@@ -84,14 +84,13 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
   /* php 5.1 and up */
 	OPSPEC(       STD,        STD,        STD,     UNUSED) /* 75 UNSET_DIM                      */
 	OPSPEC(       STD,        STD,        STD,     UNUSED) /* 76 UNSET_OBJ                      */
-	OPSPEC(       BIT,        STD,     OPLINE,        VAR) /* 77 FE_RESET                       */
 #else
   /* <= php 5.0 */
   /* though there is no ISSET_ISEMPTY in php 5.0 it's better to leave it here i guess */
 	OPSPEC(    UNUSED,        VAR,        STD,     UNUSED) /* 75 UNSET_DIM_OBJ                  */
-	OPSPEC(    UNUSED,        VAR,      ISSET,        TMP)
-	OPSPEC(       BIT,        STD,     UNUSED,        VAR)
+	OPSPEC(    UNUSED,        VAR,      ISSET,        TMP) /* 76 UNUSED                         */
 #endif
+	OPSPEC(       BIT,        STD,     UNUSED,        VAR) /* 77 FE_RESET                       */
 	OPSPEC(        FE,        STD,     OPLINE,        TMP) /* 78 FE_FETCH                       */
 	OPSPEC(    UNUSED,        STD,     UNUSED,     UNUSED) /* 79 EXIT                           */
 	OPSPEC(    UNUSED,        STD,      FETCH,        VAR) /* 80 FETCH_R                        */
