@@ -262,18 +262,18 @@ class Decompiler_Fetch extends Decompiler_Code // {{{
 	public $src;
 	public $fetchType;
 
-	function Decompiler_Fetch($src, $type, $globalsrc)
+	function Decompiler_Fetch($src, $type, $globalSrc)
 	{
 		$this->src = $src;
 		$this->fetchType = $type;
-		$this->globalsrc = $globalsrc;
+		$this->globalSrc = $globalSrc;
 	}
 
 	function toCode($indent)
 	{
 		switch ($this->fetchType) {
 		case ZEND_FETCH_LOCAL:
-			return '$' . substr($this->src, 1, -1);
+			return '$' . $this->src;
 		case ZEND_FETCH_STATIC:
 			if (ZEND_ENGINE_2_3) {
 				// closure local variable?
@@ -282,7 +282,7 @@ class Decompiler_Fetch extends Decompiler_Code // {{{
 			die('static fetch cant to string');
 		case ZEND_FETCH_GLOBAL:
 		case ZEND_FETCH_GLOBAL_LOCK:
-			return $this->globalsrc;
+			return $this->globalSrc;
 		default:
 			var_dump($this->fetchType);
 			assert(0);
@@ -1259,6 +1259,7 @@ class Decompiler
 				} while ($j <= $blockLast);
 				if (!assert('$blockLast <= $range[1]')) {
 					var_dump($blockLast, $range[1]);
+					printBacktrace();
 				}
 
 				if ($blockLast >= $blockFirst) {
@@ -1558,9 +1559,9 @@ class Decompiler
 					$rvalue = $this->stripNamespace($class) . '::$' . $name;
 				}
 				else {
-					$rvalue = $this->getOpVal($op1, $EX);
-					$globalname = xcache_is_autoglobal($name) ? "\$$name" : "\$GLOBALS[" . str($rvalue) . "]";
-					$rvalue = new Decompiler_Fetch($rvalue, $fetchType, $globalname);
+					$rvalue = isset($op1['constant']) ? $op1['constant'] : $this->getOpVal($op1, $EX);
+					$globalName = xcache_is_autoglobal($name) ? "\$$name" : "\$GLOBALS[" . $this->getOpVal($op1, $EX) . "]";
+					$rvalue = new Decompiler_Fetch($rvalue, $fetchType, $globalName);
 				}
 
 				if ($res['op_type'] != XC_IS_UNUSED) {
@@ -1591,7 +1592,6 @@ class Decompiler
 			case XC_FETCH_DIM_UNSET:
 			case XC_FETCH_DIM_IS:
 			case XC_ASSIGN_DIM:
-			case XC_UNSET_DIM_OBJ: // PHP 4 only
 			case XC_UNSET_DIM:
 			case XC_UNSET_OBJ:
 				$src = $this->getOpVal($op1, $EX);
@@ -2881,7 +2881,9 @@ foreach (array (
 	'XC_JMP_SET' => -1,
 	'XC_JMP_SET_VAR' => -1,
 	'XC_QM_ASSIGN_VAR' => -1,
-	'XC_UNSET_DIM_OBJ' => -1,
+	'XC_UNSET_DIM' => -1,
+	'XC_UNSET_OBJ' => -1,
+	'XC_USER_OPCODE' => -1,
 ) as $k => $v) {
 	if (!defined($k)) {
 		define($k, $v);

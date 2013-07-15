@@ -130,7 +130,6 @@ int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 		}
 #endif
 
-#ifdef ZEND_ENGINE_2_1
 		switch (opline->opcode) {
 #ifdef ZEND_GOTO
 			case ZEND_GOTO:
@@ -156,7 +155,6 @@ int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 				Z_OP(opline->op2).opline_num = Z_OP(opline->op2).jmp_addr - op_array->opcodes;
 				break;
 		}
-#endif
 		opline++;
 	}
 #ifdef ZEND_ENGINE_2_4
@@ -220,7 +218,6 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 			Z_SET_REFCOUNT(Z_OP_CONSTANT(opline->op2), 2);
 		}
 #endif
-#ifdef ZEND_ENGINE_2_1
 		switch (opline->opcode) {
 #ifdef ZEND_GOTO
 			case ZEND_GOTO:
@@ -247,7 +244,6 @@ int xc_redo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 				break;
 		}
 		/* ZEND_VM_SET_OPCODE_HANDLER(opline); this is not undone, don't redo. only do this for loader */
-#endif
 		opline++;
 	}
 
