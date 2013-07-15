@@ -70,6 +70,8 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
 	OPSPEC(    UNUSED,      CLASS,     UNUSED,        VAR) /* 68 NEW                            */
 #ifdef ZEND_ENGINE_2_3
 	OPSPEC(       STD,        STD,        STD,     UNUSED) /* 69 INIT_NS_FCALL_BY_NAME          */
+#elif defined(ZEND_ENGINE_2_1)
+	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED)
 #else
 	OPSPEC(    UNUSED,        STD,     OPLINE,     UNUSED) /* 69 JMP_NO_CTOR                    */
 #endif
@@ -77,17 +79,16 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
 	OPSPEC(       BIT,        STD,        STD,        TMP) /* 71 INIT_ARRAY                     */
 	OPSPEC(       BIT,        STD,        STD,        TMP) /* 72 ADD_ARRAY_ELEMENT              */
 	OPSPEC(    UNUSED,        STD,    INCLUDE,        VAR) /* 73 INCLUDE_OR_EVAL                */
+	OPSPEC(    UNUSED,        STD,      FETCH,     UNUSED) /* 74 UNSET_VAR                      */
 #ifdef ZEND_ENGINE_2_1
   /* php 5.1 and up */
-	OPSPEC(    UNUSED,        STD,      FETCH,     UNUSED) /* 74 UNSET_VAR                      */
 	OPSPEC(       STD,        STD,        STD,     UNUSED) /* 75 UNSET_DIM                      */
 	OPSPEC(       STD,        STD,        STD,     UNUSED) /* 76 UNSET_OBJ                      */
 	OPSPEC(       BIT,        STD,     OPLINE,        VAR) /* 77 FE_RESET                       */
 #else
   /* <= php 5.0 */
   /* though there is no ISSET_ISEMPTY in php 5.0 it's better to leave it here i guess */
-	OPSPEC(    UNUSED,        STD,     UNUSED,     UNUSED)
-	OPSPEC(    UNUSED,        VAR,        STD,     UNUSED)
+	OPSPEC(    UNUSED,        VAR,        STD,     UNUSED) /* 75 UNSET_DIM_OBJ                  */
 	OPSPEC(    UNUSED,        VAR,      ISSET,        TMP)
 	OPSPEC(       BIT,        STD,     UNUSED,        VAR)
 #endif

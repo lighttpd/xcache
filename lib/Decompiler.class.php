@@ -1593,6 +1593,7 @@ class Decompiler
 			case XC_FETCH_DIM_IS:
 			case XC_ASSIGN_DIM:
 			case XC_UNSET_DIM:
+			case XC_UNSET_DIM_OBJ:
 			case XC_UNSET_OBJ:
 				$src = $this->getOpVal($op1, $EX);
 				if (is_a($src, "Decompiler_ForeachBox")) {
@@ -2128,10 +2129,11 @@ class Decompiler
 			case XC_PRE_INC_OBJ: // {{{
 				$flags = array_flip(explode('_', $opname));
 				if (isset($flags['OBJ'])) {
-					$resvar = $this->getOpVal($op1, $EX) . '->' . unquoteVariableName($this->getOpVal($op2, $EX), $EX);
+					$name = isset($op2['constant']) ? $op2['constant'] : unquoteVariableName($this->getOpVal($op2, $EX), $EX);
+					$resvar = str($this->getOpVal($op1, $EX)) . '->' . $name;
 				}
 				else {
-					$resvar = $this->getOpVal($op1, $EX);
+					$resvar = str($this->getOpVal($op1, $EX));
 				}
 				$opstr = isset($flags['DEC']) ? '--' : '++';
 				if (isset($flags['POST'])) {
@@ -2165,13 +2167,14 @@ class Decompiler
 						);
 				assert(isset($type2cast[$type]));
 				$cast = $type2cast[$type];
-				$resvar = $cast . ' ' . $this->getOpVal($op1, $EX);
+				$resvar = $cast . ' ' . str($this->getOpVal($op1, $EX));
 				break;
 				// }}}
 			case XC_EXT_STMT:
 			case XC_EXT_FCALL_BEGIN:
 			case XC_EXT_FCALL_END:
 			case XC_EXT_NOP:
+			case XC_INIT_CTOR_CALL:
 				break;
 			case XC_DECLARE_FUNCTION:
 				$this->dfunction($this->dc['function_table'][$op1['constant']], $EX['indent']);
@@ -2836,10 +2839,10 @@ define('BYREF_FORCE_REST', 3);
 define('IS_NULL',     0);
 define('IS_LONG',     1);
 define('IS_DOUBLE',   2);
-define('IS_BOOL',     3);
+define('IS_BOOL',     ZEND_ENGINE_2_1 ? 3 : 6);
 define('IS_ARRAY',    4);
 define('IS_OBJECT',   5);
-define('IS_STRING',   6);
+define('IS_STRING',   ZEND_ENGINE_2_1 ? 6 : 3);
 define('IS_RESOURCE', 7);
 define('IS_CONSTANT', 8);
 define('IS_CONSTANT_ARRAY',   9);
@@ -2875,6 +2878,7 @@ foreach (array (
 	'XC_DECLARE_LAMBDA_FUNCTION' => -1,
 	'XC_DO_FCALL_BY_FUNC' => -1,
 	'XC_GOTO' => -1,
+	'XC_INIT_CTOR_CALL' => -1,
 	'XC_INIT_FCALL_BY_FUNC' => -1,
 	'XC_INIT_NS_FCALL_BY_NAME' => -1,
 	'XC_ISSET_ISEMPTY' => -1,
@@ -2883,6 +2887,7 @@ foreach (array (
 	'XC_JMP_SET_VAR' => -1,
 	'XC_QM_ASSIGN_VAR' => -1,
 	'XC_UNSET_DIM' => -1,
+	'XC_UNSET_DIM_OBJ' => -1,
 	'XC_UNSET_OBJ' => -1,
 	'XC_USER_OPCODE' => -1,
 ) as $k => $v) {
