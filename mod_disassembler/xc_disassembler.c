@@ -28,7 +28,7 @@ static void xc_dasm(zval *output, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 	ALLOC_INIT_ZVAL(zv);
 	array_init(zv);
 	xc_dasm_zend_op_array(&dasm, zv, op_array TSRMLS_CC);
-	add_assoc_zval_ex(output, ZEND_STRS("op_array"), zv);
+	add_assoc_zval_ex(output, XCACHE_STRS("op_array"), zv);
 
 	buf = emalloc(bufsize);
 
@@ -66,7 +66,7 @@ static void xc_dasm(zval *output, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 
 		add_u_assoc_zval_ex(list, BUCKET_KEY_TYPE(b), ZSTR(buf), keyLength, zv);
 	}
-	add_assoc_zval_ex(output, ZEND_STRS("function_table"), list);
+	add_assoc_zval_ex(output, XCACHE_STRS("function_table"), list);
 	
 	ALLOC_INIT_ZVAL(list);
 	array_init(list);
@@ -102,7 +102,7 @@ static void xc_dasm(zval *output, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 		add_u_assoc_zval_ex(list, BUCKET_KEY_TYPE(b), ZSTR(buf), keyLength, zv);
 	}
 	efree(buf);
-	add_assoc_zval_ex(output, ZEND_STRS("class_table"), list);
+	add_assoc_zval_ex(output, XCACHE_STRS("class_table"), list);
 
 	/*xc_apply_op_array(&cr, (apply_func_t) xc_redo_pass_two TSRMLS_CC);*/
 	xc_compile_result_free(&cr);

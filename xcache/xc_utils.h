@@ -1,6 +1,9 @@
 #include "xcache.h"
 #include "xc_compatibility.h"
 
+#define XCACHE_STRS(str) (str), sizeof(str)
+#define XCACHE_STRL(str) (str), (sizeof(str) - 1)
+
 typedef zend_op_array *(zend_compile_file_t)(zend_file_handle *h, int type TSRMLS_DC);
 
 typedef struct _xc_compilererror_t {

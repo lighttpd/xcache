@@ -486,7 +486,7 @@ define(`UNION_znode_op', `dnl {{{
 					ALLOC_INIT_ZVAL(zv);
 					*zv = dasm->active_op_array_src->literals[src->$1.constant].constant;
 					zval_copy_ctor(zv);
-					add_assoc_zval_ex(dst, ZEND_STRS("$1.constant"), zv);
+					add_assoc_zval_ex(dst, XCACHE_STRS("$1.constant"), zv);
 				}
 				', `
 					IFCOPY(`

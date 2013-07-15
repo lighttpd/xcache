@@ -602,46 +602,46 @@ static void xc_fillinfo_unlocked(int cachetype, xc_cache_t *cache, zval *return_
 		interval = xc_var_gc_interval;
 	}
 
-	add_assoc_long_ex(return_value, ZEND_STRS("slots"),     cache->hentry->size);
-	add_assoc_long_ex(return_value, ZEND_STRS("compiling"), cached->compiling);
-	add_assoc_long_ex(return_value, ZEND_STRS("disabled"),  cached->disabled);
-	add_assoc_long_ex(return_value, ZEND_STRS("updates"),   cached->updates);
-	add_assoc_long_ex(return_value, ZEND_STRS("misses"),    cached->updates); /* deprecated */
-	add_assoc_long_ex(return_value, ZEND_STRS("hits"),      cached->hits);
-	add_assoc_long_ex(return_value, ZEND_STRS("skips"),     cached->skips);
-	add_assoc_long_ex(return_value, ZEND_STRS("clogs"),     cached->skips); /* deprecated */
-	add_assoc_long_ex(return_value, ZEND_STRS("ooms"),      cached->ooms);
-	add_assoc_long_ex(return_value, ZEND_STRS("errors"),    cached->errors);
+	add_assoc_long_ex(return_value, XCACHE_STRS("slots"),     cache->hentry->size);
+	add_assoc_long_ex(return_value, XCACHE_STRS("compiling"), cached->compiling);
+	add_assoc_long_ex(return_value, XCACHE_STRS("disabled"),  cached->disabled);
+	add_assoc_long_ex(return_value, XCACHE_STRS("updates"),   cached->updates);
+	add_assoc_long_ex(return_value, XCACHE_STRS("misses"),    cached->updates); /* deprecated */
+	add_assoc_long_ex(return_value, XCACHE_STRS("hits"),      cached->hits);
+	add_assoc_long_ex(return_value, XCACHE_STRS("skips"),     cached->skips);
+	add_assoc_long_ex(return_value, XCACHE_STRS("clogs"),     cached->skips); /* deprecated */
+	add_assoc_long_ex(return_value, XCACHE_STRS("ooms"),      cached->ooms);
+	add_assoc_long_ex(return_value, XCACHE_STRS("errors"),    cached->errors);
 
-	add_assoc_long_ex(return_value, ZEND_STRS("cached"),    cached->entries_count);
-	add_assoc_long_ex(return_value, ZEND_STRS("deleted"),   cached->deletes_count);
+	add_assoc_long_ex(return_value, XCACHE_STRS("cached"),    cached->entries_count);
+	add_assoc_long_ex(return_value, XCACHE_STRS("deleted"),   cached->deletes_count);
 	if (interval) {
 		time_t gc = (cached->last_gc_expires + interval) - XG(request_time);
-		add_assoc_long_ex(return_value, ZEND_STRS("gc"),    gc > 0 ? gc : 0);
+		add_assoc_long_ex(return_value, XCACHE_STRS("gc"),    gc > 0 ? gc : 0);
 	}
 	else {
-		add_assoc_null_ex(return_value, ZEND_STRS("gc"));
+		add_assoc_null_ex(return_value, XCACHE_STRS("gc"));
 	}
 	MAKE_STD_ZVAL(hits);
 	array_init(hits);
 	for (i = 0; i < sizeof(cached->hits_by_hour) / sizeof(cached->hits_by_hour[0]); i ++) {
 		add_next_index_long(hits, (long) cached->hits_by_hour[i]);
 	}
-	add_assoc_zval_ex(return_value, ZEND_STRS("hits_by_hour"), hits);
+	add_assoc_zval_ex(return_value, XCACHE_STRS("hits_by_hour"), hits);
 
 	MAKE_STD_ZVAL(hits);
 	array_init(hits);
 	for (i = 0; i < sizeof(cached->hits_by_second) / sizeof(cached->hits_by_second[0]); i ++) {
 		add_next_index_long(hits, (long) cached->hits_by_second[i]);
 	}
-	add_assoc_zval_ex(return_value, ZEND_STRS("hits_by_second"), hits);
+	add_assoc_zval_ex(return_value, XCACHE_STRS("hits_by_second"), hits);
 
 	MAKE_STD_ZVAL(blocks);
 	array_init(blocks);
 
-	add_assoc_long_ex(return_value, ZEND_STRS("size"),  vtable->size(allocator));
-	add_assoc_long_ex(return_value, ZEND_STRS("avail"), vtable->avail(allocator));
-	add_assoc_bool_ex(return_value, ZEND_STRS("can_readonly"), xc_readonly_protection);
+	add_assoc_long_ex(return_value, XCACHE_STRS("size"),  vtable->size(allocator));
+	add_assoc_long_ex(return_value, XCACHE_STRS("avail"), vtable->avail(allocator));
+	add_assoc_bool_ex(return_value, XCACHE_STRS("can_readonly"), xc_readonly_protection);
 
 	for (b = vtable->freeblock_first(allocator); b; b = vtable->freeblock_next(b)) {
 		zval *bi;
@@ -649,14 +649,14 @@ static void xc_fillinfo_unlocked(int cachetype, xc_cache_t *cache, zval *return_
 		MAKE_STD_ZVAL(bi);
 		array_init(bi);
 
-		add_assoc_long_ex(bi, ZEND_STRS("size"),   vtable->block_size(b));
-		add_assoc_long_ex(bi, ZEND_STRS("offset"), vtable->block_offset(allocator, b));
+		add_assoc_long_ex(bi, XCACHE_STRS("size"),   vtable->block_size(b));
+		add_assoc_long_ex(bi, XCACHE_STRS("offset"), vtable->block_offset(allocator, b));
 		add_next_index_zval(blocks, bi);
 #ifndef NDEBUG
 		avail += vtable->block_size(b);
 #endif
 	}
-	add_assoc_zval_ex(return_value, ZEND_STRS("free_blocks"), blocks);
+	add_assoc_zval_ex(return_value, XCACHE_STRS("free_blocks"), blocks);
 #ifndef NDEBUG
 	assert(avail == vtable->avail(allocator));
 #endif
@@ -670,12 +670,12 @@ static void xc_fillentry_unlocked(xc_entry_type_t type, const xc_entry_t *entry,
 	ALLOC_INIT_ZVAL(ei);
 	array_init(ei);
 
-	add_assoc_long_ex(ei, ZEND_STRS("hits"),     entry->hits);
-	add_assoc_long_ex(ei, ZEND_STRS("ctime"),    entry->ctime);
-	add_assoc_long_ex(ei, ZEND_STRS("atime"),    entry->atime);
-	add_assoc_long_ex(ei, ZEND_STRS("hvalue"),   entryslotid);
+	add_assoc_long_ex(ei, XCACHE_STRS("hits"),     entry->hits);
+	add_assoc_long_ex(ei, XCACHE_STRS("ctime"),    entry->ctime);
+	add_assoc_long_ex(ei, XCACHE_STRS("atime"),    entry->atime);
+	add_assoc_long_ex(ei, XCACHE_STRS("hvalue"),   entryslotid);
 	if (del) {
-		add_assoc_long_ex(ei, ZEND_STRS("dtime"), entry->dtime);
+		add_assoc_long_ex(ei, XCACHE_STRS("dtime"), entry->dtime);
 	}
 #ifdef IS_UNICODE
 	do {
@@ -692,37 +692,37 @@ static void xc_fillentry_unlocked(xc_entry_type_t type, const xc_entry_t *entry,
 				assert(0);
 		}
 		zv->type = entry->name_type;
-		add_assoc_zval_ex(ei, ZEND_STRS("name"), zv);
+		add_assoc_zval_ex(ei, XCACHE_STRS("name"), zv);
 	} while (0);
 #else
-	add_assoc_stringl_ex(ei, ZEND_STRS("name"), entry->name.str.val, entry->name.str.len, 1);
+	add_assoc_stringl_ex(ei, XCACHE_STRS("name"), entry->name.str.val, entry->name.str.len, 1);
 #endif
 	switch (type) {
 		case XC_TYPE_PHP: {
 			xc_entry_php_t *entry_php = (xc_entry_php_t *) entry;
 			php = entry_php->php;
-			add_assoc_long_ex(ei, ZEND_STRS("size"),          entry->size + php->size);
-			add_assoc_long_ex(ei, ZEND_STRS("refcount"),      entry_php->refcount);
-			add_assoc_long_ex(ei, ZEND_STRS("phprefcount"),   php->refcount);
-			add_assoc_long_ex(ei, ZEND_STRS("file_mtime"),    entry_php->file_mtime);
-			add_assoc_long_ex(ei, ZEND_STRS("file_size"),     entry_php->file_size);
-			add_assoc_long_ex(ei, ZEND_STRS("file_device"),   entry_php->file_device);
-			add_assoc_long_ex(ei, ZEND_STRS("file_inode"),    entry_php->file_inode);
+			add_assoc_long_ex(ei, XCACHE_STRS("size"),          entry->size + php->size);
+			add_assoc_long_ex(ei, XCACHE_STRS("refcount"),      entry_php->refcount);
+			add_assoc_long_ex(ei, XCACHE_STRS("phprefcount"),   php->refcount);
+			add_assoc_long_ex(ei, XCACHE_STRS("file_mtime"),    entry_php->file_mtime);
+			add_assoc_long_ex(ei, XCACHE_STRS("file_size"),     entry_php->file_size);
+			add_assoc_long_ex(ei, XCACHE_STRS("file_device"),   entry_php->file_device);
+			add_assoc_long_ex(ei, XCACHE_STRS("file_inode"),    entry_php->file_inode);
 
 #ifdef HAVE_XCACHE_CONSTANT
-			add_assoc_long_ex(ei, ZEND_STRS("constinfo_cnt"), php->constinfo_cnt);
+			add_assoc_long_ex(ei, XCACHE_STRS("constinfo_cnt"), php->constinfo_cnt);
 #endif
-			add_assoc_long_ex(ei, ZEND_STRS("function_cnt"),  php->funcinfo_cnt);
-			add_assoc_long_ex(ei, ZEND_STRS("class_cnt"),     php->classinfo_cnt);
+			add_assoc_long_ex(ei, XCACHE_STRS("function_cnt"),  php->funcinfo_cnt);
+			add_assoc_long_ex(ei, XCACHE_STRS("class_cnt"),     php->classinfo_cnt);
 #ifdef ZEND_ENGINE_2_1
-			add_assoc_long_ex(ei, ZEND_STRS("autoglobal_cnt"),php->autoglobal_cnt);
+			add_assoc_long_ex(ei, XCACHE_STRS("autoglobal_cnt"),php->autoglobal_cnt);
 #endif
 			break;
 		}
 
 		case XC_TYPE_VAR:
-			add_assoc_long_ex(ei, ZEND_STRS("refcount"),      0); /* for BC only */
-			add_assoc_long_ex(ei, ZEND_STRS("size"),          entry->size);
+			add_assoc_long_ex(ei, XCACHE_STRS("refcount"),      0); /* for BC only */
+			add_assoc_long_ex(ei, XCACHE_STRS("size"),          entry->size);
 			break;
 
 		default:
@@ -2554,8 +2554,8 @@ static inline zend_bool xc_var_has_prefix(const xc_entry_t *entry, zval *prefix,
 /* module helper function */
 static int xc_init_constant(int module_number TSRMLS_DC) /* {{{ */
 {
-	zend_register_long_constant(ZEND_STRS("XC_TYPE_PHP"), XC_TYPE_PHP, CONST_CS | CONST_PERSISTENT, module_number TSRMLS_CC);
-	zend_register_long_constant(ZEND_STRS("XC_TYPE_VAR"), XC_TYPE_VAR, CONST_CS | CONST_PERSISTENT, module_number TSRMLS_CC);
+	zend_register_long_constant(XCACHE_STRS("XC_TYPE_PHP"), XC_TYPE_PHP, CONST_CS | CONST_PERSISTENT, module_number TSRMLS_CC);
+	zend_register_long_constant(XCACHE_STRS("XC_TYPE_VAR"), XC_TYPE_VAR, CONST_CS | CONST_PERSISTENT, module_number TSRMLS_CC);
 	return SUCCESS;
 }
 /* }}} */

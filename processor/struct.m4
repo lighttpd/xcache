@@ -150,7 +150,7 @@ ifdef(`DASM_STRUCT_DIRECT', `', `
 	);
 ifdef(`DASM_STRUCT_DIRECT', `', `
 	IFDASM(`
-		add_assoc_zval_ex(dst, ZEND_STRS("$4"), zv);
+		add_assoc_zval_ex(dst, XCACHE_STRS("$4"), zv);
 	} while (0);
 	')
 ')
@@ -204,7 +204,7 @@ define(`STRUCT_ARRAY', `
 				FUNC_NAME (dasm, zv, &(SRC(`$4[LOOPCOUNTER]')) TSRMLS_CC);
 				add_next_index_zval(arr, zv);
 			}
-			add_assoc_zval_ex(dst, ZEND_STRS("$4"), arr);
+			add_assoc_zval_ex(dst, XCACHE_STRS("$4"), arr);
 		', `
 			dnl find count with NULL
 			ifelse(`$2', `', `

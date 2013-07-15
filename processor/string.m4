@@ -28,7 +28,7 @@ define(`PROC_STRING_N_EX', `
 			DSTPTR = NULL;
 		')')
 		IFDASM(`
-			add_assoc_null_ex(dst, ZEND_STRS("$4"));
+			add_assoc_null_ex(dst, XCACHE_STRS("$4"));
 		')
 	}
 	else {
@@ -66,12 +66,12 @@ define(`PROC_STRING_N_EX', `
 		FIXPOINTER_EX(ifdef(`REALPTRTYPE', `REALPTRTYPE()', `PTRTYPE'), DSTPTR)
 		IFDASM(`
 			ifelse(STRTYPE,zstr_uchar, `
-				add_assoc_unicodel_ex(dst, ZEND_STRS("$4"), ZSTR_U($2), $3-1, 1);
+				add_assoc_unicodel_ex(dst, XCACHE_STRS("$4"), ZSTR_U($2), $3-1, 1);
 				', ` dnl else
 				ifelse(STRTYPE,zstr_char, `
-					add_assoc_stringl_ex(dst, ZEND_STRS("$4"), (char *) ZSTR_S($2), $3-1, 1);
+					add_assoc_stringl_ex(dst, XCACHE_STRS("$4"), (char *) ZSTR_S($2), $3-1, 1);
 					', `
-					add_assoc_stringl_ex(dst, ZEND_STRS("$4"), (char *) $2, $3-1, 1);
+					add_assoc_stringl_ex(dst, XCACHE_STRS("$4"), (char *) $2, $3-1, 1);
 				')
 			')
 		')
