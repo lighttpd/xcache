@@ -178,7 +178,9 @@ class Decompiler_Code extends Decompiler_Object // {{{
 
 	function Decompiler_Code($src)
 	{
-		assert('isset($src)');
+		if (!assert('isset($src)')) {
+			printBacktrace();
+		}
 		$this->src = $src;
 	}
 
@@ -501,7 +503,7 @@ class Decompiler_ForeachBox extends Decompiler_Box // {{{
 
 	function toCode($indent)
 	{
-		return 'foreach (' . '';
+		return '#foreachBox#';
 	}
 }
 // }}}
@@ -1212,9 +1214,9 @@ class Decompiler
 			$this->endScope($EX);
 			$body = ob_get_clean();
 
-			$as = foldToCode($firstJmpOp['fe_as'], $EX);
+			$as = str(foldToCode($firstJmpOp['fe_as'], $EX), $EX);
 			if (isset($firstJmpOp['fe_key'])) {
-				$as = str($firstJmpOp['fe_key'], $EX) . ' => ' . str($as);
+				$as = str($firstJmpOp['fe_key'], $EX) . ' => ' . $as;
 			}
 
 			echo $indent, 'foreach (', str($firstJmpOp['fe_src'], $EX), " as $as) {", PHP_EOL;
@@ -1560,7 +1562,7 @@ class Decompiler
 				}
 				else {
 					$rvalue = isset($op1['constant']) ? $op1['constant'] : $this->getOpVal($op1, $EX);
-					$globalName = xcache_is_autoglobal($name) ? "\$$name" : "\$GLOBALS[" . $this->getOpVal($op1, $EX) . "]";
+					$globalName = xcache_is_autoglobal($name) ? "\$$name" : "\$GLOBALS[" . str($this->getOpVal($op1, $EX), $EX) . "]";
 					$rvalue = new Decompiler_Fetch($rvalue, $fetchType, $globalName);
 				}
 
@@ -1597,7 +1599,9 @@ class Decompiler
 			case XC_UNSET_OBJ:
 				$src = $this->getOpVal($op1, $EX);
 				if (is_a($src, "Decompiler_ForeachBox")) {
-					$src->iskey = $this->getOpVal($op2, $EX);
+					assert($opc == XC_FETCH_DIM_TMP_VAR);
+					$src = clone $src;
+					$src->iskey = $op2['constant'];
 					$resvar = $src;
 					break;
 				}
@@ -2050,16 +2054,21 @@ class Decompiler
 				$op['fe_src'] = $this->getOpVal($op1, $EX, true);
 				$fe = new Decompiler_ForeachBox($op);
 				$fe->iskey = false;
-				$T[$res['var']] = $fe;
 
-				++ $i;
-				if (($ext & ZEND_FE_FETCH_WITH_KEY)) {
+				if (ZEND_ENGINE_2_1) {
+					// save current first
+					$T[$res['var']] = $fe;
+
+					// move to next opcode
+					++ $i;
+					assert($opcodes[$i]['opcode'] == XC_OP_DATA);
 					$fe = new Decompiler_ForeachBox($op);
 					$fe->iskey = true;
 
 					$res = $opcodes[$i]['result'];
-					$T[$res['var']] = $fe;
 				}
+
+				$resvar = $fe;
 				break;
 				// }}}
 			case XC_SWITCH_FREE: // {{{
@@ -2129,8 +2138,7 @@ class Decompiler
 			case XC_PRE_INC_OBJ: // {{{
 				$flags = array_flip(explode('_', $opname));
 				if (isset($flags['OBJ'])) {
-					$name = isset($op2['constant']) ? $op2['constant'] : unquoteVariableName($this->getOpVal($op2, $EX), $EX);
-					$resvar = str($this->getOpVal($op1, $EX)) . '->' . $name;
+					$resvar = str($this->getOpVal($op1, $EX)) . '->' . $op2['constant'];
 				}
 				else {
 					$resvar = str($this->getOpVal($op1, $EX));
@@ -2822,8 +2830,10 @@ else {
 	define('EXT_TYPE_UNUSED',     (1<<0));
 }
 
-define('ZEND_FE_FETCH_BYREF',     1);
-define('ZEND_FE_FETCH_WITH_KEY',  2);
+if (ZEND_ENGINE_2_1) {
+	define('ZEND_FE_FETCH_BYREF',     1);
+	define('ZEND_FE_FETCH_WITH_KEY',  2);
+}
 
 define('ZEND_MEMBER_FUNC_CALL',   1<<0);
 define('ZEND_CTOR_CALL',          1<<1);
