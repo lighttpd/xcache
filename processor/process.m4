@@ -6,8 +6,8 @@ define(`PROCESS_SCALAR', `dnl {{{ (1:elm, 2:format=%d, 3:type=)
 	')
 	IFDASM(`
 		ifelse(
-			`$3', `zend_bool', `add_assoc_bool_ex(dst, ZEND_STRS("$1"), SRC(`$1') ? 1 : 0);'
-		, `', `', `add_assoc_long_ex(dst, ZEND_STRS("$1"), SRC(`$1'));'
+			`$3', `zend_bool', `add_assoc_bool_ex(dst, XCACHE_STRS("$1"), SRC(`$1') ? 1 : 0);'
+		, `', `', `add_assoc_long_ex(dst, XCACHE_STRS("$1"), SRC(`$1'));'
 		)
 	')
 	DONE(`$1')
@@ -106,7 +106,7 @@ define(`PROCESS_ARRAY', `dnl {{{ (1:count, 2:type, 3:elm, [4:real_type])
 
 				++LOOPCOUNTER;
 			}
-			add_assoc_zval_ex(dst, ZEND_STRS("$3"), arr);
+			add_assoc_zval_ex(dst, XCACHE_STRS("$3"), arr);
 		', `
 			dnl find count with NULL
 			ifelse(`$1', `', `

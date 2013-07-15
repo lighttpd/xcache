@@ -17,8 +17,8 @@ ifdef(`len', `
 define(`m4_len', defn(`len'))
 undefine(`len')
 ')
-define(`ZEND_STRS', `($1), (sizeof($1))')
-define(`ZEND_STRL', `($1), (sizeof($1) - 1)')
+define(`XCACHE_STRS', `($1), (sizeof($1))')
+define(`XCACHE_STRL', `($1), (sizeof($1) - 1)')
 define(`DST', `dst->$1')
 define(`SRC', `src->$1')
 dnl ============
@@ -94,9 +94,9 @@ define(`PROC_CLASS_ENTRY_P_EX', `
 		IFSTORE(`$1 = (zend_class_entry *) xc_get_class_num(processor, $2);')
 		IFRESTORE(`$1 = xc_get_class(processor, (zend_ulong) $2);')
 #ifdef IS_UNICODE
-		IFDASM(`add_assoc_unicodel_ex(dst, ZEND_STRS("$3"), ZSTR_U($2->name), $2->name_length, 1);')
+		IFDASM(`add_assoc_unicodel_ex(dst, XCACHE_STRS("$3"), ZSTR_U($2->name), $2->name_length, 1);')
 #else
-		IFDASM(`add_assoc_stringl_ex(dst, ZEND_STRS("$3"), (char *) $2->name, $2->name_length, 1);')
+		IFDASM(`add_assoc_stringl_ex(dst, XCACHE_STRS("$3"), (char *) $2->name, $2->name_length, 1);')
 #endif
 	}
 	else {
@@ -165,7 +165,7 @@ define(`SETZERO', `SETZERO_EX(`dst->$1')DONE(`$1')')
 dnl }}}
 dnl {{{ COPYNULL_EX(1:dst, 2:elm-name)
 define(`COPYNULL_EX', `
-	IFDASM(`add_assoc_null_ex(dst, ZEND_STRS("$2"));')
+	IFDASM(`add_assoc_null_ex(dst, XCACHE_STRS("$2"));')
 	IFNOTMEMCPY(`IFCOPY(`$1 = NULL;')')
 	assert(patsubst($1, dst, src) == NULL);
 ')
@@ -177,7 +177,7 @@ define(`COPYNULL', `
 dnl }}}
 dnl {{{ COPYZERO_EX(1:dst, 2:elm-name)
 define(`COPYZERO_EX', `
-	IFDASM(`add_assoc_long_ex(dst, ZEND_STRS("$2"), 0);')
+	IFDASM(`add_assoc_long_ex(dst, XCACHE_STRS("$2"), 0);')
 	IFNOTMEMCPY(`IFCOPY(`$1 = 0;')')
 	assert(patsubst($1, dst, src) == 0);
 ')

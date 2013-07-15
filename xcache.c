@@ -107,9 +107,9 @@ static int xc_init_constant(int module_number TSRMLS_DC) /* {{{ */
 		}
 	}
 
-	zend_register_long_constant(ZEND_STRS("XC_SIZEOF_TEMP_VARIABLE"), sizeof(temp_variable), CONST_CS | CONST_PERSISTENT, module_number TSRMLS_CC);
-	zend_register_stringl_constant(ZEND_STRS("XCACHE_VERSION"), ZEND_STRL(XCACHE_VERSION), CONST_CS | CONST_PERSISTENT, module_number TSRMLS_CC);
-	zend_register_stringl_constant(ZEND_STRS("XCACHE_MODULES"), ZEND_STRL(XCACHE_MODULES), CONST_CS | CONST_PERSISTENT, module_number TSRMLS_CC);
+	zend_register_long_constant(XCACHE_STRS("XC_SIZEOF_TEMP_VARIABLE"), sizeof(temp_variable), CONST_CS | CONST_PERSISTENT, module_number TSRMLS_CC);
+	zend_register_stringl_constant(XCACHE_STRS("XCACHE_VERSION"), XCACHE_STRL(XCACHE_VERSION), CONST_CS | CONST_PERSISTENT, module_number TSRMLS_CC);
+	zend_register_stringl_constant(XCACHE_STRS("XCACHE_MODULES"), XCACHE_STRL(XCACHE_MODULES), CONST_CS | CONST_PERSISTENT, module_number TSRMLS_CC);
 	return 0;
 }
 /* }}} */
@@ -311,10 +311,10 @@ PHP_FUNCTION(xcache_get_opcode_spec)
 		opspec = xc_get_opcode_spec((zend_uchar) spec);
 		if (opspec) {
 			array_init(return_value);
-			add_assoc_long_ex(return_value, ZEND_STRS("ext"), opspec->ext);
-			add_assoc_long_ex(return_value, ZEND_STRS("op1"), opspec->op1);
-			add_assoc_long_ex(return_value, ZEND_STRS("op2"), opspec->op2);
-			add_assoc_long_ex(return_value, ZEND_STRS("res"), opspec->res);
+			add_assoc_long_ex(return_value, XCACHE_STRS("ext"), opspec->ext);
+			add_assoc_long_ex(return_value, XCACHE_STRS("op1"), opspec->op1);
+			add_assoc_long_ex(return_value, XCACHE_STRS("op2"), opspec->op2);
+			add_assoc_long_ex(return_value, XCACHE_STRS("res"), opspec->res);
 			return;
 		}
 	}
