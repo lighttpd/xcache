@@ -1640,6 +1640,9 @@ class Decompiler
 				if ($opc == XC_UNSET_OBJ) {
 					$dim->isObject = true;
 				}
+				else if ($opc == XC_UNSET_DIM_OBJ) {
+					$dim->isObject = $ext == ZEND_UNSET_OBJ;
+				}
 				unset($dim);
 				$rvalue = $dimbox;
 				unset($dimbox);
@@ -1650,7 +1653,7 @@ class Decompiler
 					$rvalue = $this->getOpVal($opcodes[$i]['op1'], $EX);
 					$resvar = str($lvalue, $EX) . ' = ' . str($rvalue);
 				}
-				else if ($opc == XC_UNSET_DIM || $opc == XC_UNSET_OBJ) {
+				else if ($opc == XC_UNSET_DIM || $opc == XC_UNSET_OBJ || $opc == XC_UNSET_DIM_OBJ) {
 					$op['php'] = "unset(" . str($rvalue, $EX) . ")";
 					$lastphpop = &$op;
 				}
@@ -2823,6 +2826,10 @@ else {
 if (ZEND_ENGINE_2_1) {
 	define('ZEND_FE_FETCH_BYREF',     1);
 	define('ZEND_FE_FETCH_WITH_KEY',  2);
+}
+else {
+	define('ZEND_UNSET_DIM',          1);
+	define('ZEND_UNSET_OBJ',          2);
 }
 
 define('ZEND_MEMBER_FUNC_CALL',   1<<0);
