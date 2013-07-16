@@ -224,8 +224,8 @@ run() {
 	ln -snf ~/src/php/$phpbasename/sapi/fpm/php-fpm php-fpm
 
 	case "$1" in
-	phpize) do_phpize; exit;;
-	make) shift; do_make "$@"; exit;;
+	phpize) do_phpize; return $?;;
+	make) shift; do_make "$@"; return $?;;
 	*) do_make;;
 	esac
 	# }}}1
