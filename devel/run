@@ -105,10 +105,10 @@ updatedeps() { # {{{1
 				/*) ;;
 				$sourceFile) ;;
 
-				\$\(builddir\)/xc_processor.h)
+				xc_processor.h|\$\(builddir\)/xc_processor.h)
 					echo '$(XCACHE_PROC_H)'
 					;;
-				\$\(builddir\)/xc_processor.c.h)
+				xc_processor.c.h|\$\(builddir\)/xc_processor.c.h)
 					echo '$(XCACHE_PROC_C)'
 					;;
 				*)
