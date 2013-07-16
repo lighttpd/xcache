@@ -40,10 +40,18 @@ static const char *const data_type_names[] = {
 	/* 0 */ "IS_NULL",
 	/* 1 */ "IS_LONG",
 	/* 2 */ "IS_DOUBLE",
+#ifdef ZEND_ENGINE_2_1
 	/* 3 */ "IS_BOOL",
+#else
+	/* 6 */ "IS_STRING",
+#endif
 	/* 4 */ "IS_ARRAY",
 	/* 5 */ "IS_OBJECT",
+#ifdef ZEND_ENGINE_2_1
 	/* 6 */ "IS_STRING",
+#else
+	/* 3 */ "IS_BOOL",
+#endif
 	/* 7 */ "IS_RESOURCE",
 	/* 8 */ "IS_CONSTANT",
 	/* 9 */ "IS_CONSTANT_ARRAY",
