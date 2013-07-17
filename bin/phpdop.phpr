@@ -40,7 +40,7 @@ function dump_opcodes($opcodes, $indent = '')
 	foreach ($decompiler->fixOpcode($opcodes) as $line => $op) {
 		echo $indent;
 		echo sprintf("%3d ", $op['lineno']);
-		echo sprintf("%3x ", $line);
+		echo sprintf("%3d ", $line);
 		$name = xcache_get_opcode($op['opcode']);
 
 		if (substr($name, 0, 5) == 'ZEND_') {
