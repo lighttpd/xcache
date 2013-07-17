@@ -1045,15 +1045,6 @@ class Decompiler
 		}
 		// }}}
 		// {{{ switch/case
-		if ($firstOp['opcode'] == XC_SWITCH_FREE && isset($T[$firstOp['op1']['var']])) {
-			// TODO: merge this code to CASE code. use SWITCH_FREE to detect begin of switch by using $Ts if possible
-			$this->beginComplexBlock($EX);
-			echo $indent, 'switch (', str($this->getOpVal($firstOp['op1'], $EX)), ") {", PHP_EOL;
-			echo $indent, '}', PHP_EOL;
-			$this->endComplexBlock($EX);
-			return;
-		}
-
 		if (
 			($firstOp['opcode'] == XC_CASE
 			|| $firstOp['opcode'] == XC_JMP && !empty($firstOp['jmpouts']) && $opcodes[$firstOp['jmpouts'][0]]['opcode'] == XC_CASE
@@ -1089,7 +1080,7 @@ class Decompiler
 
 			$this->beginComplexBlock($EX);
 
-			echo $indent, 'switch (', str($this->getOpVal($caseOp['op1'], $EX), $EX), ") {", PHP_EOL;
+			echo $indent, 'switch (', str($this->getOpVal($caseOp['op1'], $EX, true), $EX), ") {", PHP_EOL;
 			$caseIsOut = false;
 			foreach ($cases as $caseFirst => $caseLast) {
 				if ($caseIsOut && empty($lastCaseFall)) {
@@ -1236,9 +1227,6 @@ class Decompiler
 			echo $indent, '}', PHP_EOL;
 
 			$this->endComplexBlock($EX);
-			if ($lastOp['opcode'] == XC_SWITCH_FREE) {
-				$this->removeJmpInfo($EX, $range[1]);
-			}
 			return;
 		}
 		// }}}
@@ -1360,11 +1348,6 @@ class Decompiler
 				$op['jmpouts'] = array();
 				break;
 			*/
-
-			case XC_SWITCH_FREE:
-				$op['jmpins'] = array($i - 1);
-				$opcodes[$i - 1]['jmpouts'][] = $i;
-				break;
 
 			case XC_CASE:
 				// just to link together
@@ -2098,6 +2081,12 @@ class Decompiler
 				break;
 				// }}}
 			case XC_SWITCH_FREE: // {{{
+				if (isset($T[$op1['var']])) {
+					$this->beginComplexBlock($EX);
+					echo $EX['indent'], 'switch (', str($this->getOpVal($op1, $EX)), ") {", PHP_EOL;
+					echo $EX['indent'], '}', PHP_EOL;
+					$this->endComplexBlock($EX);
+				}
 				break;
 				// }}}
 			case XC_FREE: // {{{
