@@ -1163,7 +1163,7 @@ class Decompiler
 		// }}}
 
 		// {{{ search firstJmpOp
-		$firstJmp = null;
+		$firstJmp = -1;
 		$firstJmpOp = null;
 		for ($i = $range[0]; $i <= $range[1]; ++$i) {
 			if (!empty($opcodes[$i]['jmpouts'])) {
@@ -1173,13 +1173,24 @@ class Decompiler
 			}
 		}
 		// }}}
+		// {{{ search lastJmpOp
+		$lastJmp = -1;
+		$lastJmpOp = null;
+		for ($i = $range[1]; $i > $firstJmp; --$i) {
+			if (!empty($opcodes[$i]['jmpouts'])) {
+				$lastJmp = $i;
+				$lastJmpOp = &$opcodes[$lastJmp];
+				break;
+			}
+		}
+		// }}}
 
 		// {{{ while
 		if (isset($firstJmpOp)
 		 && $firstJmpOp['opcode'] == XC_JMPZ
 		 && $firstJmpOp['jmpouts'][0] > $range[1]
-		 && $lastOp['opcode'] == XC_JMP && !empty($lastOp['jmpouts'])
-		 && $lastOp['jmpouts'][0] == $range[0]) {
+		 && $lastOp['opcode'] == XC_JMP
+		 && !empty($lastOp['jmpouts']) && $lastOp['jmpouts'][0] == $range[0]) {
 			$this->removeJmpInfo($EX, $firstJmp);
 			$this->removeJmpInfo($EX, $range[1]);
 			$this->beginComplexBlock($EX);
@@ -1201,11 +1212,12 @@ class Decompiler
 		// {{{ foreach
 		if (isset($firstJmpOp)
 		 && $firstJmpOp['opcode'] == XC_FE_FETCH
-		 && $firstJmpOp['jmpouts'][0] > $range[1]
-		 && $lastOp['opcode'] == XC_JMP && !empty($lastOp['jmpouts'])
-		 && $lastOp['jmpouts'][0] == $firstJmp) {
+		 && !empty($firstJmpOp['jmpouts']) && $firstJmpOp['jmpouts'][0] > $lastJmp
+		 && isset($lastJmpOp)
+		 && $lastJmpOp['opcode'] == XC_JMP
+		 && !empty($lastJmpOp['jmpouts']) && $lastJmpOp['jmpouts'][0] == $firstJmp) {
 			$this->removeJmpInfo($EX, $firstJmp);
-			$this->removeJmpInfo($EX, $range[1]);
+			$this->removeJmpInfo($EX, $lastJmp);
 			$this->beginComplexBlock($EX);
 
 			ob_start();
@@ -1224,8 +1236,8 @@ class Decompiler
 			echo $indent, '}', PHP_EOL;
 
 			$this->endComplexBlock($EX);
-			if ($opcodes[$range[1] + 1]['opcode'] == XC_SWITCH_FREE) {
-				$this->removeJmpInfo($EX, $range[1] + 1);
+			if ($lastOp['opcode'] == XC_SWITCH_FREE) {
+				$this->removeJmpInfo($EX, $range[1]);
 			}
 			return;
 		}
@@ -1350,8 +1362,8 @@ class Decompiler
 			*/
 
 			case XC_SWITCH_FREE:
-				$op['jmpouts'] = array($i + 1);
-				$opcodes[$i + 1]['jmpins'][] = $i;
+				$op['jmpins'] = array($i - 1);
+				$opcodes[$i - 1]['jmpouts'][] = $i;
 				break;
 
 			case XC_CASE:
