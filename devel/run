@@ -221,7 +221,8 @@ run() {
 		fi
 	done
 	ln -snf ~/src/php/$phpbasename/sapi/cli/php php-cli
-	ln -snf ~/src/php/$phpbasename/sapi/fpm/php-fpm php-fpm
+	f=~/src/php/$phpbasename/sapi/cli/php; [ -f "$f" ] && ln -snf "$f" php-cli
+	f=~/src/php/$phpbasename/sapi/fpm/php-fpm; [ -f "$f" ] && ln -snf "$f" php-fpm
 
 	case "$1" in
 	phpize) do_phpize; return $?;;
