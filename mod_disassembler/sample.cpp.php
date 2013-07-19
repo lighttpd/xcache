@@ -176,13 +176,13 @@ function f1($f)
 {
 	echo __FUNCTION__;
 	echo $f;
-#if PHP_VERSION > 550
+#if PHP_VERSION >= 550
 
 	foreach ($a as $b) {
-		yield($b);
+		yield $b;
 	}
 
-	yield($f);
+	yield f1($b);
 #endif
 }
 #if PHP_VERSION >= 500
