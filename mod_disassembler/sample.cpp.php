@@ -1,11 +1,28 @@
 <?php
+#if PHP_VERSION >= 500
+#	define ClassClassName ClassName
+#	define PublicMethod public
+#else
+#	define ClassClassName classname
+#	define PublicMethod
+#	define abstract
+#	define innerIf_ innerif_
+#	define emptySwitch emptyswitch
+#	define defaultSwitch defaultswitch
+#endif
+#if PHP_VERSION >= 520
+#else
+#	define __callStatic __callstatic
+#	define __toString __tostring
+#endif
+#if PHP_VERSION >= 530
 
-/* >= PHP 5.3
 namespace ns;
-// */
+#endif
 
-abstract class ClassName
+abstract class ClassClassName
 {
+#if PHP_VERSION >= 500
 	const CONST_VALUE = 'A constant value';
 
 	/** doc */
@@ -30,28 +47,44 @@ abstract class ClassName
 	private $private_property = array(2, 'str');
 	/** doc */
 	protected $protected_property = array(2, 'str');
+#else
+	var $property = array(
+		array('array'),
+		'str'
+		);
+#endif
 
+#if PHP_VERSION >= 500
 	/** doc */
-	public function __construct($a, $b)
+#endif
+	PublicMethod function __construct($a, $b)
 	{
 		echo CONST_VALUE;
+#if PHP_VERSION >= 500
 		echo ClassName::CONST_VALUE;
 		empty(ClassName::$classProp);
 		isset(ClassName::$classProp);
 		unset(ClassName::$classProp);
 		ClassName::$classProp = 1;
 		echo ClassName::$classProp;
+#endif
 		empty($obj->objProp);
 		isset($obj->objProp);
+#if PHP_VERSION >= 500
 		unset($obj->objProp);
+#endif
 		$obj->objProp = 1;
 		echo $obj->objProp;
 		empty($this->thisProp);
 		isset($this->thisProp);
+#if PHP_VERSION >= 500
 		unset($this->thisProp);
+#endif
 		$this->thisProp = 1;
 		echo $this->thisProp;
+#if PHP_VERSION >= 500
 		unset($array['index']->valueProp);
+#endif
 		unset($obj->array['index']);
 		unset($this->array['index']);
 		empty($_GET['get']);
@@ -71,28 +104,41 @@ abstract class ClassName
 		echo $array['index'];
 		empty($array['index']->indexProp);
 		isset($array['index']->indexProp);
+#if PHP_VERSION >= 500
 		unset($array['index']->indexProp);
+#endif
 		$array['index']->indexProp = 1;
 		echo $array['index']->indexProp;
 		empty($GLOBALS['var']->indexProp);
 		isset($GLOBALS['var']->indexProp);
+#if PHP_VERSION >= 500
 		unset($GLOBALS['var']->indexProp);
+#endif
 		$GLOBALS['var']->indexProp = 1;
 		echo $GLOBALS['var']->indexProp;
+		ClassName::__construct();
+		echo __CLASS__;
+		echo __METHOD__;
+		echo __FUNCTION__;
+		$this->methodCall();
+#if PHP_VERSION >= 500
+		throw new Exception();
+		new Exception();
+#endif
 	}
+#if PHP_VERSION >= 500
 
 	/** doc */
 	abstract public function abastractMethod();
+#endif
 
+#if PHP_VERSION >= 500
 	/** doc */
-	public function method($a = NULL, $b = NULL)
+#endif
+	PublicMethod function method($a = NULL, $b = NULL)
 	{
 	}
-
-	/** doc */
-	public function publicMethod(ClassName $a = NULL, $b = 2)
-	{
-	}
+#if PHP_VERSION >= 500
 
 	/** doc */
 	protected function protectedMethod(ClassName $a, $b = array(
@@ -116,36 +162,36 @@ abstract class ClassName
 	{
 		return 'private';
 	}
+#endif
 }
+#if PHP_VERSION >= 500
 
 interface IInterface
 {
 	public function nothing();
 }
+#endif
 
 function f1($f)
 {
 	echo __FUNCTION__;
 	echo $f;
+#if PHP_VERSION > 550
 
 	foreach ($a as $b) {
 		yield($b);
 	}
 
 	yield($f);
+#endif
 }
+#if PHP_VERSION >= 500
 
 final class Child extends ClassName implements IInterface
 {
 	public function __construct()
 	{
 		parent::__construct();
-		ClassName::__construct();
-		echo __CLASS__;
-		echo __METHOD__;
-		echo __FUNCTION__;
-		throw new Exception();
-		$this->methodCall();
 	}
 
 	public function __destruct()
@@ -193,11 +239,12 @@ final class Child extends ClassName implements IInterface
 		return array();
 	}
 }
+#endif
 
 if ($late) {
 	class LateBindingClass
 	{
-		public function __construct()
+		PublicMethod function __construct()
 		{
 		}
 	}
@@ -215,8 +262,10 @@ echo "\n";
 echo str_replace(array('a' => 'a', 'b' => 'c'), 'b');
 $object = new ClassName();
 $object = new $className();
+#if PHP_VERSION >= 500
 $result = $object instanceof ClassName;
 $cloned = clone $object;
+#endif
 $a = 1;
 $a = $b + $c;
 $a = $b + 1;
@@ -283,13 +332,17 @@ $a = empty($array['index']);
 unset($array['index']);
 $a = isset($object->prop);
 $a = empty($object->prop);
+#if PHP_VERSION >= 500
 unset($object->prop);
+#endif
 $a = isset($this->prop);
 $a = empty($this->prop);
+#if PHP_VERSION >= 500
 unset($this->prop);
 $a = isset(ClassName::$prop);
 $a = empty(ClassName::$prop);
 unset(ClassName::$prop);
+#endif
 $a = (int) $b;
 $a = (double) $b;
 $a = (string) $b;
@@ -306,6 +359,7 @@ $a = (f1() ? f2() : f3());
 ($a = $b) or $c;
 $a = $b && $c;
 $a = $b || $c;
+#if PHP_VERSION >= 500
 
 do {
 	try {
@@ -317,13 +371,24 @@ do {
 		catch (InnerException $e) {
 			echo $e;
 		}
+#if PHP_VERSION >= 550
+		finally {
+			echo 'inner finally';
+		}
+#endif
 
 		echo 'outer try 2';
 	}
 	catch (OuterException $e) {
 		echo $e;
 	}
+#if PHP_VERSION >= 550
+	finally {
+		echo 'outer finally';
+	}
+#endif
 } while (0);
+#endif
 
 if (if_()) {
 	echo 'if';
@@ -434,7 +499,7 @@ case 'case2':
 switch (emptySwitch()) {
 }
 
-switch (emptySwitch()) {
+switch (defaultSwitch()) {
 default:
 }
 
@@ -452,10 +517,9 @@ require 'require.php';
 require_once 'require_once.php';
 include 'include.php';
 include_once 'include_once.php';
-echo __FILE__;
-echo __LINE__;
-
-/*
+echo ____FILE____;
+echo ____LINE____;
+#if PHP_VERSION >= 530
 echo 'PHP 5.3+ code testing';
 const CONST_VALUE = 1;
 echo $this::CONST_VALUE;
@@ -513,7 +577,7 @@ $callback = function($quantity, $product) use($tax, &$total) {
 	$pricePerItem = constant('PRICE_' . strtoupper($product));
 	$total += $pricePerItem * $quantity * ($tax + 1);
 };
-// */
+#endif
 exit();
 
 ?>
