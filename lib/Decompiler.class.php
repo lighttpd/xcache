@@ -744,7 +744,8 @@ class Decompiler
 				$opcodes[$last]['opcode'] = XC_NOP;
 				--$last;
 			}
-			if ($opcodes[$last]['opcode'] == XC_RETURN) {
+			if ($opcodes[$last]['opcode'] == XC_RETURN
+			 || $opcodes[$last]['opcode'] == XC_GENERATOR_RETURN) {
 				$op1 = $opcodes[$last]['op1'];
 				if ($op1['op_type'] == XC_IS_CONST && array_key_exists('constant', $op1) && $op1['constant'] === $defaultReturnValue) {
 					$opcodes[$last]['opcode'] = XC_NOP;
@@ -966,7 +967,8 @@ class Decompiler
 			return;
 		}
 		if ($firstOp['opcode'] == XC_JMPZ && !empty($firstOp['jmpouts'])
-		 && $firstOp['jmpouts'][0] - 1 == $range[1] && $opcodes[$firstOp['jmpouts'][0] - 1]['opcode'] == XC_RETURN) {
+		 && $firstOp['jmpouts'][0] - 1 == $range[1]
+		 && ($opcodes[$firstOp['jmpouts'][0] - 1]['opcode'] == XC_RETURN || $opcodes[$firstOp['jmpouts'][0] - 1]['opcode'] == XC_GENERATOR_RETURN)) {
 			$this->beginComplexBlock($EX);
 			$this->removeJmpInfo($EX, $range[0]);
 			$condition = $this->getOpVal($opcodes[$range[0]]['op1'], $EX);
@@ -2045,6 +2047,7 @@ class Decompiler
 				$resvar = /*'(bool) ' .*/ $this->getOpVal($op1, $EX);
 				break;
 				// }}}
+			case XC_GENERATOR_RETURN:
 			case XC_RETURN: // {{{
 				$resvar = "return " . str($this->getOpVal($op1, $EX));
 				break;
@@ -2078,6 +2081,10 @@ class Decompiler
 				}
 
 				$resvar = $fe;
+				break;
+				// }}}
+			case XC_YIELD: // {{{
+				$resvar = 'yield ' . str($this->getOpVal($op1, $EX));
 				break;
 				// }}}
 			case XC_SWITCH_FREE: // {{{
@@ -2915,6 +2922,7 @@ foreach (array (
 	'XC_DECLARE_LAMBDA_FUNCTION' => -1,
 	'XC_DO_FCALL_BY_FUNC' => -1,
 	'XC_FETCH_CLASS' => -1,
+	'XC_GENERATOR_RETURN' => -1,
 	'XC_GOTO' => -1,
 	'XC_HANDLE_EXCEPTION' => -1,
 	'XC_INIT_CTOR_CALL' => -1,
@@ -2943,6 +2951,7 @@ foreach (array (
 	'XC_UNSET_OBJ' => -1,
 	'XC_USER_OPCODE' => -1,
 	'XC_VERIFY_ABSTRACT_CLASS' => -1,
+	'XC_YIELD' => -1,
 ) as $k => $v) {
 	if (!defined($k)) {
 		define($k, $v);
