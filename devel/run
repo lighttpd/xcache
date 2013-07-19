@@ -241,7 +241,17 @@ run() {
 	case "$1" in
 	dc)
 		shift
-		./php-cli -c devel.ini ./bin/phpdc.phpr $@ | tee decompiled.php
+		case "$1" in
+		*.cpp.php)
+			cpp -C -P -traditional-cpp -DPHP_VERSION=$phpVersion $1 \
+			| sed -r -e 's#^ +##g' -e 's#\t +#\t#g' -e 's#____#__#g' > sample.php || exit $?
+			shift
+			./php-cli -c devel.ini ./bin/phpdc.phpr sample.php "$@" | tee decompiled.php
+			;;
+		*)
+			./php-cli -c devel.ini ./bin/phpdc.phpr "$@" | tee decompiled.php
+			;;
+		esac
 		return
 		;;
 	retest)
@@ -347,6 +357,14 @@ run() {
 }
 
 for phpbasename in "${dirs[@]}"; do
+	phpVersion=${phpbasename%%-*}
+	phpVersion=${phpVersion##php}
+	phpVersion=${phpVersion/./}
+	case "$phpVersion" in
+	??) phpVersion="${phpVersion}0";;
+	?) phpVersion="${phpVersion}00";;
+	esac
+
 	# devel actions
 	case "$1" in
 	prep*) shift; prep "$@"; exit;;
