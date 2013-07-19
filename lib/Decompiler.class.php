@@ -601,6 +601,10 @@ class Decompiler
 	// }}}
 	function stripNamespace($name) // {{{
 	{
+		if (!isset($name)) {
+			return $name;
+		}
+
 		$name = str($name);
 		$len = strlen($this->namespace) + 1;
 		if (substr($name, 0, $len) == $this->namespace . '\\') {
@@ -1819,30 +1823,24 @@ class Decompiler
 			case XC_INIT_STATIC_METHOD_CALL:
 			case XC_INIT_METHOD_CALL: // {{{
 				array_push($EX['arg_types_stack'], array($EX['fbc'], $EX['object'], $EX['called_scope']));
-				if ($opc == XC_INIT_STATIC_METHOD_CALL || $opc == XC_INIT_METHOD_CALL || $op1['op_type'] != XC_IS_UNUSED) {
+				if ($opc == XC_INIT_STATIC_METHOD_CALL) {
+					$EX['object'] = null;
+					$EX['called_scope'] = $this->stripNamespace(isset($op1['constant']) ? $op1['constant'] : $this->getOpVal($op1, $EX));
+				}
+				else {
 					$obj = $this->getOpVal($op1, $EX);
 					if (!isset($obj)) {
 						$obj = '$this';
 					}
-					if ($opc == XC_INIT_STATIC_METHOD_CALL || /* PHP4 */ isset($op1['constant'])) {
-						$EX['object'] = null;
-						$EX['called_scope'] = $this->stripNamespace(unquoteName($obj, $EX));
-					}
-					else {
-						$EX['object'] = $obj;
-						$EX['called_scope'] = null;
-					}
-					if ($res['op_type'] != XC_IS_UNUSED) {
-						$resvar = '$obj call$';
-					}
-				}
-				else {
-					$EX['object'] = null;
+					$EX['object'] = $obj;
 					$EX['called_scope'] = null;
+				}
+				if ($res['op_type'] != XC_IS_UNUSED) {
+					$resvar = '$obj call$';
 				}
 
 				$EX['fbc'] = isset($op2['constant']) ? $op2['constant'] : $this->getOpVal($op2, $EX);
-				if (($opc == XC_INIT_STATIC_METHOD_CALL || $opc == XC_INIT_METHOD_CALL) && !isset($EX['fbc'])) {
+				if (!isset($EX['fbc'])) {
 					$EX['fbc'] = '__construct';
 				}
 				break;
@@ -1853,9 +1851,21 @@ class Decompiler
 					break;
 				}
 				array_push($EX['arg_types_stack'], array($EX['fbc'], $EX['object'], $EX['called_scope']));
-				$EX['object'] = null;
-				$EX['called_scope'] = null;
-				$EX['fbc'] = $this->getOpVal($op2, $EX);
+				if (!ZEND_ENGINE_2 && ($ext & ZEND_MEMBER_FUNC_CALL)) {
+					if (isset($op1['constant'])) {
+						$EX['object'] = null;
+						$EX['called_scope'] = $this->stripNamespace($op1['constant']);
+					}
+					else {
+						$EX['object'] = $this->getOpVal($op1, $EX);
+						$EX['called_scope'] = null;
+					}
+				}
+				else {
+					$EX['object'] = null;
+					$EX['called_scope'] = null;
+				}
+				$EX['fbc'] = isset($op2['constant']) ? $op2['constant'] : $this->getOpVal($op2, $EX);
 				break;
 				// }}}
 			case XC_INIT_FCALL_BY_FUNC: // {{{ deprecated even in PHP 4?
@@ -1879,17 +1889,16 @@ class Decompiler
 			case XC_DO_FCALL_BY_NAME: // {{{
 				$object = null;
 
-				$fname = unquoteName($EX['fbc'], $EX);
 				if (!is_int($EX['object'])) {
 					$object = $EX['object'];
 				}
 
 				$args = $this->popargs($EX, $ext);
 
-				$prefix = (isset($object) ? $object . '->' : '' )
-					. (isset($EX['called_scope']) ? $EX['called_scope'] . '::' : '' );
+				$prefix = (isset($object) ? str($object) . '->' : '' )
+					. (isset($EX['called_scope']) ? str($EX['called_scope']) . '::' : '' );
 				$resvar = $prefix
-					. (!$prefix ? $this->stripNamespace($fname) : $fname)
+					. (!$prefix ? $this->stripNamespace($EX['fbc']) : str($EX['fbc']))
 					. "($args)";
 				unset($args);
 
