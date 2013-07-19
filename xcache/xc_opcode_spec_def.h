@@ -164,7 +164,14 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 104 EXT_NOP                        */
 	OPSPEC(    UNUSED,        STD,     UNUSED,     UNUSED) /* 105 TICKS                          */
 	OPSPEC(SEND_NOREF,        VAR,        ARG,     UNUSED) /* 106 SEND_VAR_NO_REF                */
-#ifdef ZEND_ENGINE_2
+#ifndef ZEND_ENGINE_2
+	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 107 UNDEF                          */
+	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 108 UNDEF                          */
+	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 109 UNDEF                          */
+	OPSPEC(     FCALL,        STD,     OPLINE,        VAR) /* 61 DO_FCALL_BY_FUNC                */
+	OPSPEC(INIT_FCALL,        STD,        STD,     UNUSED) /* 111 INIT_FCALL_BY_FUNC             */
+	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 112 UNDEF                          */
+#else /* ZEND_ENGINE_2 */
 #	ifdef ZEND_ENGINE_2_4
 	OPSPEC(    OPLINE,        STD,        STD,     UNUSED) /* 107 CATCH                          */
 #	else
@@ -236,34 +243,27 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
 	OPSPEC(    UNUSED,        STD,        STD,        VAR) /* 147 ASSIGN_DIM                     */
 	OPSPEC(     ISSET,        STD,        STD,        TMP) /* 148 ISSET_ISEMPTY_PROP_OBJ         */
 	OPSPEC(       STD,     UNUSED,     UNUSED,        STD) /* 149 HANDLE_EXCEPTION               */
-#	ifdef ZEND_ENGINE_2_1
+#endif /* ZEND_ENGINE_2 */
+#ifdef ZEND_ENGINE_2_1
 	OPSPEC(       STD,     UNUSED,     UNUSED,        STD) /* 150 USER_OPCODE                    */
-#	endif
-#	ifdef ZEND_ENGINE_2_3
+#endif
+#ifdef ZEND_ENGINE_2_3
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 151 UNDEF                          */
 	OPSPEC(    UNUSED,        STD,    JMPADDR,        TMP) /* 152 JMP_SET                        */
 	OPSPEC(    UNUSED,        STD,        STD,        TMP) /* 153 DECLARE_LAMBDA_FUNCTION        */
-#	endif
-#	ifdef ZEND_ENGINE_2_4
+#endif
+#ifdef ZEND_ENGINE_2_4
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 154 ADD_TRAIT                      */
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 155 BIND_TRAITS                    */
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 156 SEPARATE                       */
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 157 QM_ASSIGN_VAR                  */
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 158 JMP_SET_VAR                    */
-#	endif
-#	ifdef ZEND_ENGINE_2_5
+#endif
+#ifdef ZEND_ENGINE_2_5
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 159 DISCARD_EXCEPTION              */
 	OPSPEC(    UNUSED,        STD,        STD,     UNUSED) /* 160 YIELD                          */
 	OPSPEC(    UNUSED,        STD,     UNUSED,     UNUSED) /* 161 GENERATOR_RETURN               */
 	OPSPEC(    UNUSED,    JMPADDR,     UNUSED,     UNUSED) /* 162 FAST_CALL                      */
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 163 FAST_RET                       */
-#	endif
-#else /* ZEND_ENGINE_2 */
-	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 107 UNDEF                          */
-	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 108 UNDEF                          */
-	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 109 UNDEF                          */
-	OPSPEC(     FCALL,        STD,     OPLINE,        VAR) /* 61 DO_FCALL_BY_FUNC                */
-	OPSPEC(INIT_FCALL,        STD,        STD,     UNUSED) /* 111 INIT_FCALL_BY_FUNC             */
-	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 112 UNDEF                          */
-#endif /* ZEND_ENGINE_2 */
+#endif
 };
