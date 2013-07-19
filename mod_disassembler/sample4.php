@@ -1,57 +1,23 @@
 <?php
 
-/* >= PHP 5.3
-namespace ns;
-// */
-
-abstract class ClassName
+class classname
 {
-	const CONST_VALUE = 'A constant value';
-
-	/** doc */
-	static public $static = array(
+	var $property = array(
 		array('array'),
 		'str'
 		);
-	/** doc */
-	static public $public_static = array(2, 'str');
-	/** doc */
-	static private $private_static = array(2, 'str');
-	/** doc */
-	static protected $protected_static = array(2, 'str');
-	/** doc */
-	public $property = array(
-		array('array'),
-		'str'
-		);
-	/** doc */
-	public $public_property = array(2, 'str');
-	/** doc */
-	private $private_property = array(2, 'str');
-	/** doc */
-	protected $protected_property = array(2, 'str');
 
-	/** doc */
-	public function __construct($a, $b)
+	function __construct($a, $b)
 	{
 		echo CONST_VALUE;
-		echo ClassName::CONST_VALUE;
-		empty(ClassName::$classProp);
-		isset(ClassName::$classProp);
-		unset(ClassName::$classProp);
-		ClassName::$classProp = 1;
-		echo ClassName::$classProp;
 		empty($obj->objProp);
 		isset($obj->objProp);
-		unset($obj->objProp);
 		$obj->objProp = 1;
 		echo $obj->objProp;
 		empty($this->thisProp);
 		isset($this->thisProp);
-		unset($this->thisProp);
 		$this->thisProp = 1;
 		echo $this->thisProp;
-		unset($array['index']->valueProp);
 		unset($obj->array['index']);
 		unset($this->array['index']);
 		empty($_GET['get']);
@@ -71,33 +37,15 @@ abstract class ClassName
 		echo $array['index'];
 		empty($array['index']->indexProp);
 		isset($array['index']->indexProp);
-		unset($array['index']->indexProp);
 		$array['index']->indexProp = 1;
 		echo $array['index']->indexProp;
 		empty($GLOBALS['var']->indexProp);
 		isset($GLOBALS['var']->indexProp);
-		unset($GLOBALS['var']->indexProp);
 		$GLOBALS['var']->indexProp = 1;
 		echo $GLOBALS['var']->indexProp;
 	}
 
-	/** doc */
-	abstract public function abastractMethod();
-
-	/** doc */
-	public function method($a = NULL, $b = NULL)
-	{
-	}
-
-	/** doc */
-	public function publicMethod(ClassName $a = NULL, $b = 2)
-	{
-	}
-
-	/** doc */
-	protected function protectedMethod(ClassName $a, $b = array(
-			array('array')
-			))
+	function method($a = NULL, $b = NULL)
 	{
 		$runtimeArray = array('1');
 		$runtimeArray2 = array(
@@ -108,19 +56,62 @@ abstract class ClassName
 			'a' => '1',
 			2   => array()
 			);
-		return 'protected';
-	}
-
-	/** doc */
-	private function privateMethod(ClassName $a, $b = NULL)
-	{
-		return 'private';
+		return 'm';
 	}
 }
 
-interface IInterface
+class child extends classname
 {
-	public function nothing();
+	function __construct()
+	{
+		parent::__construct();
+		ClassName::__construct();
+		echo __CLASS__;
+		echo __METHOD__;
+		echo __FUNCTION__;
+		new Exception();
+		$this->methodCall();
+	}
+
+	function __destruct()
+	{
+		parent::__destruct();
+		functioncall();
+	}
+
+	function __tostring()
+	{
+		parent::__toString();
+	}
+
+	function __set($name, $value)
+	{
+	}
+
+	function __get($name)
+	{
+	}
+
+	function __isset($name)
+	{
+	}
+
+	function __unset($name)
+	{
+	}
+
+	function __sleep()
+	{
+	}
+
+	function __wakeup()
+	{
+	}
+
+	function __clone()
+	{
+		return array();
+	}
 }
 
 function f1($f)
@@ -129,69 +120,10 @@ function f1($f)
 	echo $f;
 }
 
-final class Child extends ClassName implements IInterface
-{
-	public function __construct()
-	{
-		parent::__construct();
-		ClassName::__construct();
-		echo __CLASS__;
-		echo __METHOD__;
-		echo __FUNCTION__;
-		throw new Exception();
-		$this->methodCall();
-	}
-
-	public function __destruct()
-	{
-		parent::__destruct();
-		functionCall();
-	}
-
-	static public function __callStatic($name, $args)
-	{
-		parent::__callStatic($name, $args);
-	}
-
-	public function __toString()
-	{
-		parent::__toString();
-	}
-
-	public function __set($name, $value)
-	{
-	}
-
-	public function __get($name)
-	{
-	}
-
-	public function __isset($name)
-	{
-	}
-
-	public function __unset($name)
-	{
-	}
-
-	public function __sleep()
-	{
-	}
-
-	public function __wakeup()
-	{
-	}
-
-	public function __clone()
-	{
-		return array();
-	}
-}
-
 if ($late) {
 	class LateBindingClass
 	{
-		public function __construct()
+		function __construct()
 		{
 		}
 	}
@@ -209,8 +141,6 @@ echo "\n";
 echo str_replace(array('a' => 'a', 'b' => 'c'), 'b');
 $object = new ClassName();
 $object = new $className();
-$result = $object instanceof ClassName;
-$cloned = clone $object;
 $a = 1;
 $a = $b + $c;
 $a = $b + 1;
@@ -263,7 +193,6 @@ $a = 'a' . 'b';
 $a = 'a' . 'abc';
 @f1();
 print('1');
-// ref(&$a);
 $a = $array['index'];
 $a = $object->prop;
 $a = $this->prop;
@@ -278,13 +207,8 @@ $a = empty($array['index']);
 unset($array['index']);
 $a = isset($object->prop);
 $a = empty($object->prop);
-unset($object->prop);
 $a = isset($this->prop);
 $a = empty($this->prop);
-unset($this->prop);
-$a = isset(ClassName::$prop);
-$a = empty(ClassName::$prop);
-unset(ClassName::$prop);
 $a = (int) $b;
 $a = (double) $b;
 $a = (string) $b;
@@ -294,7 +218,6 @@ $a = (bool) $b;
 $a = (unset) $b;
 $a = (array) $b;
 $a = (object) $b;
-// PHP6+ $a = (scalar) $b;
 $a = ($b ? $c : $d);
 $a = (f1() ? f2() : f3());
 ($a = $b) xor $c;
@@ -303,40 +226,22 @@ $a = (f1() ? f2() : f3());
 $a = $b && $c;
 $a = $b || $c;
 
-do {
-	try {
-		echo 'outer try 1';
-
-		try {
-			echo 'inner try';
-		}
-		catch (InnerException $e) {
-			echo $e;
-		}
-
-		echo 'outer try 2';
-	}
-	catch (OuterException $e) {
-		echo $e;
-	}
-} while (0);
-
 if (if_()) {
 	echo 'if';
 
-	if (innerIf_()) {
+	if (innerif_()) {
 		echo 'if innerIf';
 	}
 }
 else if (elseif_()) {
 	echo 'else if';
 
-	if (innerIf_()) {
+	if (innerif_()) {
 		echo 'if innerIf';
 	}
 }
 else {
-	if (innerIf_()) {
+	if (innerif_()) {
 		echo 'if innerIf';
 	}
 
@@ -427,10 +332,10 @@ case 'case2':
 	break;
 }
 
-switch (emptySwitch()) {
+switch (emptyswitch()) {
 }
 
-switch (emptySwitch()) {
+switch (emptyswitch()) {
 default:
 }
 
@@ -450,66 +355,6 @@ include 'include.php';
 include_once 'include_once.php';
 echo __FILE__;
 echo __LINE__;
-
-/*
-echo 'PHP 5.3+ code testing';
-const CONST_VALUE = 1;
-echo $this::CONST_VALUE;
-echo $a::CONST_VALUE;
-echo CONST_VALUE;
-$this::__construct();
-$obj::__construct();
-$a = $b ?: $d;
-$a = ($b ?: $d) + $c;
-$a = f1() ?: f2();
-$a = C::f1() ?: C::f2();
-$a = ($b ? $c : $d);
-$a = ($b ? $c : $d) + $c;
-$a = (f1() ? f3() : f2());
-
-if ($b ?: $d) {
-	echo 'if ($b ?: $d)';
-}
-
-if (($b ?: $d) + $c) {
-	echo 'if (($b ?: $d) + $c)';
-}
-
-if (f1() ?: f2()) {
-	echo 'if (f1() ?: f2())';
-}
-
-echo 'goto a';
-goto a;
-
-$i = 1;
-
-for (; $i <= 2; ++$i) {
-	goto a;
-}
-
-a:
-echo 'label a';
-echo preg_replace_callback('~-([a-z])~', function($match) {
-	return strtoupper($match[1]);
-}, 'hello-world');
-$greet = function($name) {
-	printf("Hello %s\r\n", $name);
-};
-$greet('World');
-$greet('PHP');
-$total = 0;
-$tax = 1;
-$callback = function($quantity, $product) use($tax, &$total) {
-	$tax = 'tax';
-	static $static1 = array(1);
-	static $static2;
-	$tax = 'tax';
-	$tax = --$tax;
-	$pricePerItem = constant('PRICE_' . strtoupper($product));
-	$total += $pricePerItem * $quantity * ($tax + 1);
-};
-// */
 exit();
 
 ?>
