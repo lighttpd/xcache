@@ -1,9 +1,8 @@
 <?php
 #if PHP_VERSION >= 500
-#	define ClassClassName ClassName
 #	define PublicMethod public
 #else
-#	define ClassClassName classname
+#	define ClassName classname
 #	define PublicMethod
 #	define abstract
 #	define innerIf_ innerif_
@@ -20,7 +19,7 @@
 namespace ns;
 #endif
 
-abstract class ClassClassName
+abstract class ClassName
 {
 #if PHP_VERSION >= 500
 	const CONST_VALUE = 'A constant value';
@@ -117,6 +116,7 @@ abstract class ClassClassName
 		$GLOBALS['var']->indexProp = 1;
 		echo $GLOBALS['var']->indexProp;
 		ClassName::__construct();
+		ClassName::$func();
 		echo __CLASS__;
 		echo __METHOD__;
 		echo __FUNCTION__;
