@@ -371,6 +371,9 @@ do {
 		catch (InnerException $e) {
 			echo $e;
 		}
+		catch (InnerException2 $e2) {
+			echo $e2;
+		}
 #if PHP_VERSION >= 550
 		finally {
 			echo 'inner finally';
@@ -381,6 +384,9 @@ do {
 	}
 	catch (OuterException $e) {
 		echo $e;
+	}
+	catch (OuterException2 $e2) {
+		echo $e2;
 	}
 #if PHP_VERSION >= 550
 	finally {
