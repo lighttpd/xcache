@@ -3722,7 +3722,7 @@ static PHP_MINIT_FUNCTION(xcache_cacher) /* {{{ */
 	if (strcmp(sapi_module.name, "cli") == 0) {
 		if (!xc_test) {
 			/* disable cache for cli except for testing */
-			xc_php_size = xc_var_size = 0;
+			xc_php_size = 0;
 		}
 	}
 
