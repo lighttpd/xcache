@@ -1,6 +1,7 @@
 3.1.0 2013-??-??
 ChangeLog
 ========
+ * cacher: enable var caching for cli
  * disassembler: fixes crash with nested sandbox
  * disassembler, Decompiler: improves support for PHP_5_4
  * adds support for PHP_5_5
