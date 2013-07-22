@@ -706,7 +706,7 @@ class Decompiler
 		return $ret;
 	}
 	// }}}
-	function &fixOpcode($opcodes, $removeTailing = false, $defaultReturnValue = null) // {{{
+	function fixOpCode(&$opcodes, $removeTailing = false, $defaultReturnValue = null) // {{{
 	{
 		$last = count($opcodes) - 1;
 		for ($i = 0; $i <= $last; $i ++) {
@@ -757,7 +757,6 @@ class Decompiler
 				}
 			}
 		}
-		return $opcodes;
 	}
 	// }}}
 	function decompileBasicBlock(&$EX, $range, $unhandled = false) // {{{
@@ -1296,12 +1295,10 @@ class Decompiler
 		}
 	}
 	// }}}
-	function &dop_array($op_array, $indent = '') // {{{
+	function buildJmpInfo(&$op_array) // {{{ build jmpins/jmpouts to op_array
 	{
-		$op_array['opcodes'] = $this->fixOpcode($op_array['opcodes'], true, $indent == '' ? 1 : null);
 		$opcodes = &$op_array['opcodes'];
 		$last = count($opcodes) - 1;
-		// {{{ build jmpins/jmpouts to op_array
 		for ($i = 0; $i <= $last; $i ++) {
 			$op = &$opcodes[$i];
 			$op['line'] = $i;
@@ -1384,7 +1381,15 @@ class Decompiler
 				$opcodes[$catch_op]['isCatchBegin'] = true;
 			}
 		}
-		// }}}
+	}
+	// }}}
+	function &dop_array($op_array, $indent = '') // {{{
+	{
+		$this->fixOpCode($op_array['opcodes'], true, $indent == '' ? 1 : null);
+		$this->buildJmpInfo($op_array);
+
+		$opcodes = &$op_array['opcodes'];
+		$last = count($opcodes) - 1;
 		// build semi-basic blocks
 		$nextbbs = array();
 		$starti = 0;
