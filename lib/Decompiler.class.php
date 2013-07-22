@@ -1375,10 +1375,24 @@ class Decompiler
 		if (isset($op_array['try_catch_array'])) {
 			foreach ($op_array['try_catch_array'] as $try_catch_element) {
 				$catch_op = $try_catch_element['catch_op'];
-				$try_op = $try_catch_element['try_op'];
-				$opcodes[$try_op]['jmpins'][] = $catch_op;
-				$opcodes[$catch_op]['jmpouts'][] = $try_op;
 				$opcodes[$catch_op]['isCatchBegin'] = true;
+			}
+			foreach ($op_array['try_catch_array'] as $try_catch_element) {
+				$catch_op = $try_catch_element['catch_op'];
+				$try_op = $try_catch_element['try_op'];
+				do {
+					$opcodes[$try_op]['jmpins'][] = $catch_op;
+					$opcodes[$catch_op]['jmpouts'][] = $try_op;
+					if ($opcodes[$catch_op]['opcode'] == XC_CATCH) {
+						$catch_op = $opcodes[$catch_op]['extended_value'];
+					}
+					else if ($opcodes[$catch_op + 1]['opcode'] == XC_CATCH) {
+						$catch_op = $opcodes[$catch_op + 1]['extended_value'];
+					}
+					else {
+						break;
+					}
+				} while ($catch_op <= $last && empty($opcodes[$catch_op]['isCatchBegin']));
 			}
 		}
 	}
