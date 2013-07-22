@@ -32,12 +32,15 @@ function get_op($op)
 	}
 }
 
-function dump_opcodes($opcodes, $indent = '')
+function dump_opcodes($op_array, $indent = '')
 {
 	global $decompiler;
 
 	$types = array('result' => 5, 'op1' => 20, 'op2' => 20);
-	foreach ($decompiler->fixOpcode($opcodes) as $line => $op) {
+	$opcodes = &$op_array['opcodes'];
+	$decompiler->fixOpcode($opcodes);
+	$decompiler->buildJmpInfo($op_array);
+	foreach ($opcodes as $line => $op) {
 		echo $indent;
 		echo sprintf("%3d ", $op['lineno']);
 		echo sprintf("%3d ", $line);
@@ -52,6 +55,15 @@ function dump_opcodes($opcodes, $indent = '')
 			echo str_pad(isset($op[$t]) ? get_op($op[$t]) : "", $len);
 		}
 		printf("%5s", isset($op['extended_value']) ?  $op['extended_value'] : "");
+		if (isset($op['jmpouts']) || isset($op['jmpins'])) {
+			printf("%10s %10s"
+					, (isset($op['jmpouts']) ? '>' . implode(',', $op['jmpouts']) : '')
+					, (isset($op['jmpins']) ? '<' . implode(',', $op['jmpins']) : '')
+					);
+		}
+		if (isset($op['isCatchBegin'])) {
+			echo 'CB';
+		}
 
 		echo "\n";
 	}
@@ -69,7 +81,7 @@ function dump_function($name, $func, $indent = '')
 	var_dump($func);
 	echo $indent, 'function ', $name, "\n";
 	if (isset($op_array)) {
-		dump_opcodes($op_array['opcodes'], "  " . $indent);
+		dump_opcodes($op_array, "  " . $indent);
 	}
 }
 
@@ -125,6 +137,6 @@ if (isset($funcs)) {
 	}
 }
 if (isset($op_array)) {
-	dump_opcodes($op_array['opcodes']);
+	dump_opcodes($op_array);
 }
 
