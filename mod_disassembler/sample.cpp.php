@@ -26,8 +26,9 @@ abstract class ClassName
 
 	/** doc */
 	static public $static = array(
-		array('array'),
-		'str'
+		0           => array('array'),
+		1           => 'str',
+		CONST_VALUE => CONST_VALUE
 		);
 	/** doc */
 	static public $public_static = array(2, 'str');
@@ -58,6 +59,13 @@ abstract class ClassName
 #endif
 	PublicMethod function __construct($a, $b)
 	{
+		static $array = array(
+			0           => array('array'),
+			1           => 'str',
+			CONST_VALUE => CONST_VALUE
+			);
+		static $a = 1;
+		static $str = 'string';
 		echo CONST_VALUE;
 #if PHP_VERSION >= 500
 		echo ClassName::CONST_VALUE;
