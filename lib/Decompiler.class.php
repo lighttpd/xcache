@@ -279,7 +279,11 @@ class Decompiler_Fetch extends Decompiler_Code // {{{
 		case ZEND_FETCH_STATIC:
 			if (ZEND_ENGINE_2_3) {
 				// closure local variable?
-				return str($this->src);
+				return 'STR' . str($this->src);
+			}
+			else {
+				$EX = array();
+				return str(value($this->src, $EX));
 			}
 			die('static fetch cant to string');
 		case ZEND_FETCH_GLOBAL:
@@ -491,7 +495,17 @@ class Decompiler_ConstArray extends Decompiler_Array // {{{
 	{
 		$elements = array();
 		foreach ($array as $key => $value) {
-			$elements[] = array(value($key, $EX), value($value, $EX));
+			if ((xcache_get_type($value) & IS_CONSTANT_INDEX)) {
+				$keyCode = $GLOBALS['__xcache_decompiler']->stripNamespace(
+						ZEND_ENGINE_2_3
+						? substr($key, 0, -2)
+						: $key
+						);
+			}
+			else {
+				$keyCode = value($key, $EX);
+			}
+			$elements[] = array($keyCode, value($value, $EX));
 		}
 		$this->value = $elements;
 	}
