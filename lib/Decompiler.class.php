@@ -94,7 +94,7 @@ function value($value, &$EX) // {{{
 		$value = $spec;
 		if (!is_array($value)) {
 			// constant
-			return $value;
+			return $GLOBALS['__xcache_decompiler']->stripNamespace($value);
 		}
 	}
 
@@ -519,6 +519,7 @@ class Decompiler
 
 	function Decompiler()
 	{
+		$GLOBALS['__xcache_decompiler'] = $this;
 		// {{{ testing
 		// XC_UNDEF XC_OP_DATA
 		$this->test = !empty($_ENV['XCACHE_DECOMPILER_TEST']);
