@@ -531,8 +531,8 @@ require 'require.php';
 require_once 'require_once.php';
 include 'include.php';
 include_once 'include_once.php';
-echo ____FILE____;
-echo ____LINE____;
+echo __FILE__;
+echo __LINE__;
 #if PHP_VERSION >= 530
 echo 'PHP 5.3+ code testing';
 const CONST_VALUE = 1;

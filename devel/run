@@ -244,7 +244,9 @@ run() {
 		shift
 		case "$1" in
 		*.cpp.php)
-			cpp -C -P -traditional-cpp -DPHP_VERSION=$phpVersion $1 \
+			< "$1" \
+			sed -r -e 's#__#____#g' \
+			| cpp -C -P -traditional-cpp -DPHP_VERSION=$phpVersion \
 			| sed -r -e 's#^ +##g' -e 's#\t +#\t#g' -e 's#____#__#g' > sample.php || exit $?
 			shift
 			./php-cli -c devel.ini ./bin/phpdc.phpr sample.php "$@" | tee decompiled.php
