@@ -14,7 +14,7 @@ AC_DEFUN([XCACHE_MODULE], [
 ])dnl
 
 PHP_ARG_ENABLE(xcache, for XCache support,
-[  --enable-xcache         Include XCache support.])
+[  --enable-xcache         XCache Extension.])
 
 if test "$PHP_XCACHE" != "no"; then
   PHP_ARG_ENABLE(xcache-constant, for XCache handle of compile time constant,
