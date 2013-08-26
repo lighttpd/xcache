@@ -207,6 +207,7 @@ PHP_FUNCTION(xcache_get_isref)
 #ifdef HAVE_XCACHE_DPRINT
 /* {{{ proto bool  xcache_dprint(mixed value)
    Prints variable (or value) internal struct (debug only) */
+#include "xc_processor.h"
 PHP_FUNCTION(xcache_dprint)
 {
 	zval *value;
