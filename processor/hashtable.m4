@@ -67,7 +67,7 @@ define(`DEF_HASH_TABLE_FUNC', `
 		', `
 		dnl }}}
 		Bucket *srcBucket;
-		Bucket *pnew = NULL, *prev = NULL;
+		IFCOPY(`Bucket *pnew = NULL, *prev = NULL;')
 		zend_bool first = 1;
 		dnl only used for copy
 		IFCOPY(`uint n;')
@@ -108,19 +108,17 @@ define(`DEF_HASH_TABLE_FUNC', `
 			ALLOC(pnew, char, bucketsize, , Bucket)
 			IFCOPY(`
 #ifdef ZEND_ENGINE_2_4
-			memcpy(pnew, srcBucket, BUCKET_HEAD_SIZE(Bucket));
-			if (BUCKET_KEY_SIZE(srcBucket)) {
-				memcpy((char *) (pnew + 1), srcBucket->arKey, BUCKET_KEY_SIZE(srcBucket));
-				pnew->arKey = (const char *) (pnew + 1);
-			}
-			else {
-				pnew->arKey = NULL;
-			}
+				memcpy(pnew, srcBucket, BUCKET_HEAD_SIZE(Bucket));
+				if (BUCKET_KEY_SIZE(srcBucket)) {
+					memcpy((char *) (pnew + 1), srcBucket->arKey, BUCKET_KEY_SIZE(srcBucket));
+					pnew->arKey = (const char *) (pnew + 1);
+				}
+				else {
+					pnew->arKey = NULL;
+				}
 #else
-			memcpy(pnew, srcBucket, bucketsize);
+				memcpy(pnew, srcBucket, bucketsize);
 #endif
-			')
-			IFCOPY(`
 				n = srcBucket->h & src->nTableMask;
 				/* pnew into hash node chain */
 				pnew->pLast = NULL;
@@ -158,8 +156,8 @@ define(`DEF_HASH_TABLE_FUNC', `
 				if (prev) {
 					prev->pListNext = pnew;
 				}
+				prev = pnew;
 			')
-			prev = pnew;
 		}
 		')
 #ifdef ZEND_ENGINE_2_4
