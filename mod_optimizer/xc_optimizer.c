@@ -13,7 +13,6 @@
 #include "ext/standard/info.h"
 
 #ifdef XCACHE_DEBUG
-#error 1
 #	include "xc_processor.h"
 #	include "xcache/xc_const_string.h"
 #	include "ext/standard/php_var.h"
