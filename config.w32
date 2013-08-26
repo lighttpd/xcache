@@ -1,7 +1,7 @@
 // vim:ft=javascript
 
 
-ARG_ENABLE("xcache", "Include XCache support", "yes,shared");
+ARG_ENABLE("xcache", "XCache Extension", "no");
 
 if (PHP_XCACHE != "no") {
 	EXTENSION("xcache", "xcache.c", null, "/I " + configure_module_dirname);
@@ -38,9 +38,9 @@ xc_cacher.c \
 
 	// {{{ add sources on enabled
 	ARG_ENABLE("xcache-optimizer",    "(N/A)", "no");
-	ARG_ENABLE("xcache-coverager",    "Enable code coverage dumper, useful for testing php scripts", "no");
+	ARG_ENABLE("xcache-coverager",    "Code coverage dumper, useful for testing php scripts", "no");
 	ARG_ENABLE("xcache-assembler",    "(N/A)", "no");
-	ARG_ENABLE("xcache-disassembler", "Enable opcode to php variable dumper, not for server usage", "no");
+	ARG_ENABLE("xcache-disassembler", "Opcode to php variable dumper, not for server usage", "no");
 	ARG_ENABLE("xcache-encoder",      "(N/A)", "no");
 	ARG_ENABLE("xcache-decoder",      "(N/A)", "no");
 
@@ -87,7 +87,7 @@ xc_cacher.c \
 	DEFINE("XCACHE_INDENT", indent);
 	// }}}
 	// {{{ check for xcache-test
-	ARG_ENABLE("xcache-test", "XCache: Enable self test - FOR DEVELOPERS ONLY!!", "no");
+	ARG_ENABLE("xcache-test", "XCache: Self test - FOR DEVELOPERS ONLY!!", "no");
 	if (PHP_XCACHE_TEST != "no") {
 		ADD_FLAG("XCACHE_ENABLE_TEST", "-DXCACHE_ENABLE_TEST");
 		ADD_SOURCES(configure_module_dirname + "/xcache", "xc_malloc.c", "xcache");
@@ -98,7 +98,7 @@ xc_cacher.c \
 	}
 	// }}}
 	// {{{ check for xcache-test
-	ARG_ENABLE("xcache-dprint", "XCache: Enable self debug print functions - FOR DEVELOPERS ONLY!!", "no");
+	ARG_ENABLE("xcache-dprint", "XCache: Debug print functions - FOR DEVELOPERS ONLY!!", "no");
 	if (PHP_XCACHE_DPRINT != "no") {
 		AC_DEFINE("HAVE_XCACHE_DPRINT", 1, "Define to enable XCache debug print functions");
 	}
