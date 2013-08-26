@@ -566,7 +566,6 @@ static void bbs_restore_opnum(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
 {
 	int bbid;
 #ifdef ZEND_ENGINE_2
-	bbid_t lasttrybbid;
 	bbid_t lastcatchbbid;
 #endif
 #ifdef ZEND_ENGINE_2_5
@@ -595,7 +594,6 @@ static void bbs_restore_opnum(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
 	}
 
 #ifdef ZEND_ENGINE_2
-	lasttrybbid   = BBID_INVALID;
 	lastcatchbbid = BBID_INVALID;
 #	ifdef ZEND_ENGINE_2_5
 	lastfinallybbid = BBID_INVALID;
