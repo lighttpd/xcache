@@ -114,8 +114,10 @@ static int xc_init_constant(int module_number TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 /* {{{ PHP_GINIT_FUNCTION(xcache) */
+#ifdef __GNUC__
 #pragma GCC push_options
 #pragma GCC diagnostic ignored "-Wshadow"
+#endif
 
 #ifdef PHP_GINIT_FUNCTION
 static PHP_GINIT_FUNCTION(xcache)
@@ -123,7 +125,9 @@ static PHP_GINIT_FUNCTION(xcache)
 static void xc_init_globals(zend_xcache_globals* xcache_globals TSRMLS_DC)
 #endif
 {
+#ifdef __GNUC__
 #pragma GCC pop_options
+#endif
 
 	memset(xcache_globals, 0, sizeof(zend_xcache_globals));
 
