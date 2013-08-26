@@ -39,11 +39,11 @@ stopfpm() { # {{{1
 }
 
 xtest() { # {{{1
-	$MAKE -f devel/test.mak
+	$MAKE ${MAKEOPTS} -f devel/test.mak
 }
 
 prep() { # {{{1
-	$MAKE -f devel/prepare.mak "$@"
+	$MAKE ${MAKEOPTS} -f devel/prepare.mak "$@"
 }
 
 mergepo() { # {{{1
@@ -84,7 +84,7 @@ updatedeps() { # {{{1
 			esac
 			echo ${sourceFile%.c}.lo '$(builddir)/'${sourceFile%.c}.lo:
 			hiecho "Checking $sourceFile ..." >&2
-			for dependency in $(gcc -MM $sourceFile -I$HOME/test/php5-debug-zts/include/php/{,main,Zend,TSRM} -I. -I${builddir} -MG | sed 's#.*:##g' | sed 's#\\##g'); do
+			for dependency in $(gcc -DHAVE_XCACHE_TEST -DHAVE_XCACHE_DPRINT -DXCACHE_DEBUG -MM $sourceFile -I$PHPSDIR/$phpbasename/include/php/{,main,Zend,TSRM} -I. -I${builddir} -MG | sed 's#.*:##g' | sed 's#\\##g'); do
 				dependency=$(readlink -f "$dependency")
 				case "$dependency" in
 				$pwd/*)
@@ -96,13 +96,19 @@ updatedeps() { # {{{1
 				esac
 
 				case "$dependency" in
+				*xc_const_string_opcodes_php*)
+					for dependency in xcache/xc_const_string_*.h; do
+						echo '$(srcdir)/'$dependency
+					done
+					;;
+
 				/*) ;;
 				$sourceFile) ;;
 
-				\$\(builddir\)/xc_processor.h)
+				xc_processor.h|\$\(builddir\)/xc_processor.h)
 					echo '$(XCACHE_PROC_H)'
 					;;
-				\$\(builddir\)/xc_processor.c.h)
+				xc_processor.c.h|\$\(builddir\)/xc_processor.c.h)
 					echo '$(XCACHE_PROC_C)'
 					;;
 				*)
@@ -125,17 +131,6 @@ PHPSDIR=${PHPSDIR:-$HOME/test}
 if [[ $# -eq 0 ]]; then
 	set -- $action "${args[@]}"
 fi
-
-# devel actions
-case "$1" in
-prep*) shift; prep "$@"; exit;;
-tags) shift; rm -f tags; prep tags "$@"; exit;;
-po2php) po2php; exit;;
-mergepo) mergepo; exit;;
-dep*) updatedeps; exit;;
-xtest) xtest; exit;;
-stopfpm) stopfpm devel.pid; exit;;
-esac
 
 basename=$(basename $(pwd))
 case "$basename" in
@@ -170,7 +165,7 @@ do_phpize() { # {{{1
 	esac
 	phpize --clean \
 	&& phpize \
-	&& CFLAGS="-g -O0 $pedantic -Wno-variadic-macros -Wno-long-long -Wall -Wno-unused-parameter -Wno-unused-function -W -Wshadow -Werror=implicit-function-declaration -Wconversion -std=c89 -D_GNU_SOURCE -D_POSIX_SOURCE -Dinline=" ./configure \
+	&& CFLAGS="$CFLAGS -g -O0 $pedantic -Wno-variadic-macros -Wno-long-long -Wall -Wno-unused-parameter -Wno-unused-function -W -Wshadow -Werror=implicit-function-declaration -std=c89 -D_GNU_SOURCE -D_POSIX_SOURCE -Dinline=" ./configure \
 		--enable-xcache-cacher \
 		--enable-xcache-optimizer \
 		--enable-xcache-encoder \
@@ -178,6 +173,7 @@ do_phpize() { # {{{1
 		--enable-xcache-disassembler \
 		--enable-xcache-coverager \
 		--enable-xcache-test \
+		--enable-xcache-dprint \
 		--enable-xcache-constant
 }
 do_make() { # {{{1
@@ -208,7 +204,7 @@ run() {
 	case "$1" in
 	phpize)
 		if [[ -r Makefile ]]; then
-			$MAKE xcachesvnclean || true
+			$MAKE $MAKEOPTS xcachesvnclean || true
 		fi
 		;;
 	esac
@@ -218,18 +214,19 @@ run() {
 	find -L . -type l -print0 | xargs -0 rm -fv
 	lndir "$xcachesrcdir" >/dev/null || true
 	find . -iname .\*.swp -print0 | xargs -0 rm -f
-	ln -snf ~/src/php/$phpbasename php-src
+	ln -snf ~/src/php/${phpbasename%%-*} php-src
 	for i in ~/src/php/$phpbasename/sapi/cgi/php{,-cgi}; do
 		if [[ -r $i ]]; then
 			ln -snf "$i" php-cgi
 		fi
 	done
 	ln -snf ~/src/php/$phpbasename/sapi/cli/php php-cli
-	ln -snf ~/src/php/$phpbasename/sapi/fpm/php-fpm php-fpm
+	f=~/src/php/$phpbasename/sapi/cli/php; [ -f "$f" ] && ln -snf "$f" php-cli
+	f=~/src/php/$phpbasename/sapi/fpm/php-fpm; [ -f "$f" ] && ln -snf "$f" php-fpm
 
 	case "$1" in
-	phpize) do_phpize; exit;;
-	make) shift; do_make "$@"; exit;;
+	phpize) do_phpize; return $?;;
+	make) shift; do_make "$@"; return $?;;
 	*) do_make;;
 	esac
 	# }}}1
@@ -245,32 +242,39 @@ run() {
 	case "$1" in
 	dc)
 		shift
-		./php-cli -c devel.ini ./bin/phpdc.phpr $@ | tee decompiled.php
-		return
-		;;
-	dop)
-		shift
-		./php-cli -c devel.ini ./bin/phpdop.phpr $@
+		case "$1" in
+		*.cpp.php)
+			< "$1" \
+			sed -r -e 's#__#____#g' \
+			| cpp -C -P -traditional-cpp -DPHP_VERSION=$phpVersion \
+			| sed -r -e 's#^ +##g' -e 's#\t +#\t#g' -e 's#____#__#g' > sample.php || exit $?
+			shift
+			./php-cli -c devel.ini ./bin/phpdc.phpr sample.php "$@" | tee decompiled.php
+			;;
+		*)
+			./php-cli -c devel.ini ./bin/phpdc.phpr "$@" | tee decompiled.php
+			;;
+		esac
 		return
 		;;
 	retest)
 		shift
-		$MAKE xcachetest "$@" TESTS="`grep '^/.*\.phpt$' php_test_results_*.txt | uniq | xargs`"
+		$MAKE $MAKEOPTS xcachetest "$@" TESTS="`grep '^/.*\.phpt$' php_test_results_*.txt | uniq | xargs`"
 		return
 		;;
 	test)
 		shift
 		case "$1" in
 		*.phpt)
-			$MAKE xcachetest TEST_ARGS=-v TESTS="$*"
+			$MAKE $MAKEOPTS xcachetest TEST_ARGS=-v TESTS="$*"
 			return
 			;;
 		*/)
-			$MAKE xcachetest TESTS="$*"
+			$MAKE $MAKEOPTS xcachetest TESTS="$*"
 			return
 			;;
 		*)
-			$MAKE xcachetest
+			$MAKE $MAKEOPTS xcachetest
 			return
 			;;
 		esac
@@ -311,6 +315,11 @@ run() {
 		;;
 	*)
 		case "$1" in
+		dop)
+			shift
+			cmd=(./php-cli -c devel.ini)
+			set -- ./bin/phpdop.phpr "$@"
+			;;
 		fcgi)
 			shift
 			cmd=(./php-cgi -q -c devel.ini)
@@ -351,6 +360,25 @@ run() {
 }
 
 for phpbasename in "${dirs[@]}"; do
+	phpVersion=${phpbasename%%-*}
+	phpVersion=${phpVersion##php}
+	phpVersion=${phpVersion/./}
+	case "$phpVersion" in
+	??) phpVersion="${phpVersion}0";;
+	?) phpVersion="${phpVersion}00";;
+	esac
+
+	# devel actions
+	case "$1" in
+	prep*) shift; prep "$@"; exit;;
+	tags) shift; rm -f tags; prep tags "$@"; exit;;
+	po2php) po2php; exit;;
+	mergepo) mergepo; exit;;
+	dep*) updatedeps; exit;;
+	xtest) xtest; exit;;
+	stopfpm) stopfpm devel.pid; exit;;
+	esac
+
 	mkdir -p ${xcachesrcdir}-${phpbasename}
 	cd ${xcachesrcdir}-${phpbasename} || exit
 	lndir ${xcachesrcdir} >/dev/null || true
