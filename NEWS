@@ -1,11 +1,11 @@
 3.1.0 2013-??-??
 ========
- * disassembler now working again (fail since 3.0)
  * adds support for PHP_5_5
- * compatible with fcntl fork
- * support for __FILE__ __DIR__ handling after files moved/hardlinked
+ * compatible with pcntl_fork()
+ * fixes support for __FILE__ __DIR__ on moved/hardlinked files
+ * disassembler now working again (fail since 3.0), supports PHP 4.x ~ PHP 5.5.x
 
-3.0.3 2013-16-18
+3.0.3 2013-06-18
 ========
  * clean files in release (fix htdocs config)
 

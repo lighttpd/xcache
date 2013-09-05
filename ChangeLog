@@ -1,14 +1,14 @@
 3.1.0 2013-??-??
 ChangeLog
 ========
- * cacher: enable var caching for cli
- * disassembler: fixes crash with nested sandbox
- * disassembler, Decompiler: improves support for PHP_5_4
  * adds support for PHP_5_5
- * compatible with fcntl fork
- * support for __FILE__ __DIR__ handling after files moved/hardlinked (without xcache.experimental)
+ * closes #228, cacher: allow using var caching for cli to share data between child processes
+ * cacher: compatible with pcntl_fork()
+ * cacher: fixes support for __FILE__ __DIR__ to correctly handle files that got moved/hardlinked (this fix is now move out of xcache.experimental)
+ * disassembler: fixes crash with nested sandbox
+ * disassembler, Decompiler: improves support for PHP_4 ~ PHP_5_4, adds support for PHP_5_5
 
-3.0.3 2013-16.18
+3.0.3 2013-06-18
 ========
  * clean files in release (fix htdocs config)
 
