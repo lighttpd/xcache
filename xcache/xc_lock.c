@@ -66,7 +66,10 @@ typedef int HANDLE;
 
 typedef struct {
 	HANDLE fd;
+#ifdef __CYGWIN__
+	/* store the path for unlink() later */
 	char *pathname;
+#endif
 } xc_fcntl_lock_t;
 
 #ifndef ZEND_WIN32
@@ -149,13 +152,14 @@ static zend_bool xc_fcntl_init(xc_fcntl_lock_t *lck, const char *pathname) /* {{
 
 	if (fd != INVALID_HANDLE_VALUE) {
 
-#ifndef __CYGWIN__
-		unlink(pathname);
-#endif
 		lck->fd = fd;
+#ifdef __CYGWIN__
 		size = strlen(pathname) + 1;
 		lck->pathname = malloc(size);
 		memcpy(lck->pathname, pathname, size);
+#else
+		unlink(pathname);
+#endif
 	}
 	else {
 		zend_error(E_ERROR, "xc_fcntl_create: open(%s, O_RDWR|O_CREAT, 0666) failed:", pathname);
@@ -174,8 +178,8 @@ static void xc_fcntl_destroy(xc_fcntl_lock_t *lck) /* {{{ */
 	close(lck->fd);
 #ifdef __CYGWIN__
 	unlink(lck->pathname);
-#endif
 	free(lck->pathname);
+#endif
 }
 /* }}} */
 static void xc_fcntl_lock(xc_fcntl_lock_t *lck) /* {{{ */
