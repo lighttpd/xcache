@@ -5,6 +5,10 @@
  * fixes support for __FILE__ __DIR__ on moved/hardlinked files
  * disassembler now working again (fail since 3.0), supports PHP 4.x ~ PHP 5.5.x
 
+3.0.4 2013-09-??
+========
+ * fixes #323: refix locking impl for threaded env
+
 3.0.3 2013-06-18
 ========
  * clean files in release (fix htdocs config)
