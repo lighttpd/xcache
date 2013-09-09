@@ -8,7 +8,13 @@ ChangeLog
  * disassembler: fixes crash with nested sandbox
  * disassembler, Decompiler: improves support for PHP_4 ~ PHP_5_4, adds support for PHP_5_5
 
+3.0.4 2013-09-??
+ChangeLog
+========
+ * fixes #323: refix locking impl for threaded env
+
 3.0.3 2013-06-18
+ChangeLog
 ========
  * clean files in release (fix htdocs config)
 

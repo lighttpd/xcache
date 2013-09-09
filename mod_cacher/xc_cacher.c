@@ -36,8 +36,8 @@
 #define ECALLOC_ONE(x) ECALLOC_N(x, 1)
 #define VAR_ENTRY_EXPIRED(pentry) ((pentry)->ttl && XG(request_time) > (pentry)->ctime + (time_t) (pentry)->ttl)
 #define CHECK(x, e) do { if ((x) == NULL) { zend_error(E_ERROR, "XCache: " e); goto err; } } while (0)
-#define LOCK(x) xc_lock((x)->lck)
-#define UNLOCK(x) xc_unlock((x)->lck)
+#define LOCK(x) xc_mutex_lock((x)->mutex)
+#define UNLOCK(x) xc_mutex_unlock((x)->mutex)
 
 #define ENTER_LOCK_EX(x) \
 	LOCK((x)); \
@@ -100,8 +100,8 @@ typedef struct { /* {{{ xc_cache_t: only cache info, not in shm */
 	int cacheid;
 	xc_hash_t  *hcache; /* hash to cacheid */
 
-	xc_lock_t *lck;
-	xc_shm_t  *shm; /* which shm contains us */
+	xc_mutex_t *mutex;
+	xc_shm_t   *shm; /* which shm contains us */
 	xc_allocator_t *allocator;
 
 	xc_hash_t  *hentry; /* hash settings to entry */
@@ -2605,10 +2605,10 @@ static xc_shm_t *xc_cache_destroy(xc_cache_t *caches, xc_hash_t *hcache) /* {{{ 
 	for (i = 0; i < hcache->size; i ++) {
 		xc_cache_t *cache = &caches[i];
 		if (cache) {
-			if (cache->lck) {
-				xc_lock_destroy(cache->lck);
+			/* do NOT touch cached data, do not release mutex shared inside cache */
+			if (cache->mutex) {
+				xc_mutex_destroy(cache->mutex);
 			}
-			/* do NOT touch cached data */
 			shm = cache->shm;
 			if (shm) {
 				cache->shm->handlers->memdestroy(cache->allocator);
@@ -2655,8 +2655,8 @@ static xc_cache_t *xc_cache_init(xc_shm_t *shm, const char *allocator_name, xc_h
 		if (hphp) {
 			CHECK(cache->cached->phps = allocator->vtable->calloc(allocator, hphp->size, sizeof(xc_entry_data_php_t*)), "create phps OOM");
 		}
-		CHECK(cache->lck              = allocator->vtable->calloc(allocator, 1, xc_lock_size()), "create lock OOM");
-		CHECK(xc_lock_init(cache->lck, NULL, 1), "can't create lock");
+		CHECK(cache->mutex            = allocator->vtable->calloc(allocator, 1, xc_mutex_size()), "create lock OOM");
+		CHECK(cache->mutex = xc_mutex_init(cache->mutex, NULL, 1), "can't create mutex");
 
 		cache->hcache  = hcache;
 		cache->hentry  = hentry;
