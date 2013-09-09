@@ -19,7 +19,7 @@
 #include <config.h>
 #endif
 #include "xcache/xc_shm.h"
-#include "xcache/xc_lock.h"
+#include "xcache/xc_mutex.h"
 #include "xcache/xc_compatibility.h"
 
 extern zend_module_entry xcache_module_entry;
