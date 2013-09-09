@@ -151,7 +151,6 @@ static zend_bool xc_fcntl_init(xc_fcntl_lock_t *lck, const char *pathname) /* {{
 	fd = open(pathname, O_RDWR|O_CREAT, 0666);
 
 	if (fd != INVALID_HANDLE_VALUE) {
-
 		lck->fd = fd;
 #ifdef __CYGWIN__
 		size = strlen(pathname) + 1;
