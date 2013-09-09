@@ -1,4 +1,10 @@
+3.0.4 2013-09-??
+ChangeLog
+========
+ * fixes #323: refix locking impl for threaded env
+
 3.0.3 2013-06-18
+ChangeLog
 ========
  * clean files in release (fix htdocs config)
 
