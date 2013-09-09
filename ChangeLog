@@ -2,16 +2,19 @@
 ChangeLog
 ========
  * adds support for PHP_5_5
- * closes #228, cacher: allow using var caching for cli to share data between child processes
- * cacher: compatible with pcntl_fork()
- * cacher: fixes support for __FILE__ __DIR__ to correctly handle files that got moved/hardlinked (this fix is now move out of xcache.experimental)
- * disassembler: fixes crash with nested sandbox
- * disassembler, Decompiler: improves support for PHP_4 ~ PHP_5_4, adds support for PHP_5_5
+ * cacher:
+   * closed #228: allow using var caching for cli to share data between child processes
+   * compatible with pcntl_fork()
+   * fixed support for __FILE__ __DIR__ to correctly handle files that got moved/hardlinked (this fix is now move out of xcache.experimental)
+ * disassembler:
+   * fixed crash with nested sandbox
+   * improved support for PHP_4 ~ PHP_5_4, adds support for PHP_5_5
 
 3.0.4 2013-09-??
 ChangeLog
 ========
- * fixes #323: refix locking impl for threaded env
+ * cacher
+   * fixed #323: refix locking impl for threaded env
 
 3.0.3 2013-06-18
 ChangeLog
@@ -21,24 +24,31 @@ ChangeLog
 3.0.2 2013-06-10
 ChangeLog
 ========
- * fixes #303: tablesort.js not found in Diagnosis and Coverager
- * fixes #297: segv on startup under sparc, ini setting overflow
- * fixes #296: (PHP5.4+ only bug), racecondition Multiple instances of the same software causes PHP "cannot redeclare class" errors when readonly_protection is not in use
- * fixes #301: refix locking impl
- * fixes #307: compatible with Zend Debugger which requires to be installed after Zend Extension Manager
+ * cacher:
+   * fixed #296: (PHP5.4+ only bug), racecondition Multiple instances of the same software causes PHP "cannot redeclare class" errors when readonly_protection is not in use
+   * fixed #301: refix locking impl
+   * fixed #307: compatible with Zend Debugger which requires to be installed after Zend Extension Manager
+ * admin
+   * fixed #303: tablesort.js not found in Diagnosis and Coverager
+ * misc
+   * fixed #297: segv on startup under sparc, ini setting overflow
 
 3.0.1 2013-01-11
 ChangeLog
 ========
- * fixes crash when cache is too small on start up
- * fixes #295: crash using traits with PHP 5.4.8+
- * fixes #290: workaround phpize vs fbsd make bug again
- * improve compatibility with "the ionCube PHP Loader", Zend Optimizer
- * fix random crash when cache is reinitialized yet failed (Thanks to Brad Baker for generating crash dump)
- * fix locking impl: improve stability on threaded env (Thanks to Mircea Nicolae for reproducing the bug)
- * diagnosis: undefined variable when ini is not found
- * PHP_5_4 optimizer: fix ZEND_JMP_SET_VAR
- * PHP_5_4 optimizer: fix for goto
+ * cacher:
+   * fixed crash when cache is too small on start up
+   * fixed #295: crash using traits with PHP 5.4.8+
+   * fix random crash when cache is reinitialized yet failed (Thanks to Brad Baker for generating crash dump)
+   * fix locking impl: improve stability on threaded env (Thanks to Mircea Nicolae for reproducing the bug)
+ * optimizer:
+   * (PHP_5_4) fix ZEND_JMP_SET_VAR
+   * (PHP_5_4) fix for goto
+ * diagnosis:
+   * undefined variable when ini is not found
+ * misc:
+   * fixed #290: workaround phpize vs fbsd make bug again
+   * improve compatibility with "the ionCube PHP Loader", Zend Optimizer
 
 3.0.0 2012-10-29
 API Changes
@@ -59,18 +69,22 @@ Ini Settings Changes
 
 ChangeLog
 ========
- * closes #2: auto disable caching on crash
- * closes #73: warn for improper PHP_FCGI_CHILDREN setting fcgi mode (>=PHP_5_3)
- * closes #174: updates api to support "clear all cache"
- * closes #198: support for caching protocol url
- * closes #287: namespace support
- * fixes #39: ini_set never work for xcache.coverager setting. use API instead
+ * cacher:
+   * closed #2 (auto disable caching on crash)
+   * closed #174 (updated api to support "clear all cache")
+   * closed #198 (support for caching protocol url)
+   * closed #287 (namespace support)
+   * cache can be enabled/disabled manually
+ * coverager:
+   * fixed #39 (ini_set never work for xcache.coverager setting. use API instead)
  * code refactor
-   * uses extension= to load XCache. loading via zend_extension= is unsupported
+   * use extension= to load XCache. loading via zend_extension= is unsupported
    * split XCache features into multiple sub modules
- * updates XCache admin page
- * adds an diagnosis module to give professional advise, accessable via htdocs pages
- * cache can be enabled/disabled manually
+ * admin:
+   * updated XCache admin page
+   * adds an diagnosis module to give professional advise, accessable via htdocs pages
+ * misc:
+   * (>=PHP_5_3) closed #73 (warn for improper PHP_FCGI_CHILDREN setting fcgi mode)
 
 2.0.1 2012-07-14
 ChangeLog
@@ -105,7 +119,7 @@ ChangeLog
 ========
  * avoid possible filename injection in admin page
  * adds 30 seconds timeout to "compiling" flag
- * decompiler: improves decompiling
+ * decompiler: improved decompiling
  * disassembler: improper handling of null field
  * disassembler: DECLARE_INHERITED_CLASS/DELAYED class not found
  * disassembler: don't dump builtin functions
