@@ -350,7 +350,14 @@ PHP_FUNCTION(xcache_get_special_value)
 		break;
 
 	default:
-		RETURN_NULL();
+		if ((Z_TYPE_P(value) & ~IS_CONSTANT_TYPE_MASK)) {
+			*return_value = *value;
+			zval_copy_ctor(return_value);
+			return_value->type &= IS_CONSTANT_TYPE_MASK;
+		}
+		else {
+			RETURN_NULL();
+		}
 	}
 }
 /* }}} */

@@ -30,7 +30,18 @@ abstract class ClassName
 		1           => 'str',
 		CONST_VALUE => CONST_VALUE
 		);
-	static public $static2 = array(self::CONST_VALUE => self::CONST_VALUE);
+	static public $static_const1 = CONST_VALUE;
+	static public $static_const2 = self::CONST_VALUE;
+	static public $static_const3 = ClassName::CONST_VALUE;
+	static public $static_const4 = array(CONST_VALUE => 'test');
+	static public $static_const5 = array(self::CONST_VALUE => 'test');
+	static public $static_const6 = array(ClassName::CONST_VALUE => 'test');
+	static public $static_const7 = array('test' => CONST_VALUE);
+	static public $static_const8 = array('test' => self::CONST_VALUE);
+	static public $static_const9 = array('test' => ClassName::CONST_VALUE);
+	static public $static_const10 = array(CONST_VALUE => CONST_VALUE);
+	static public $static_const11 = array(self::CONST_VALUE => self::CONST_VALUE);
+	static public $static_const12 = array(ClassName::CONST_VALUE => ClassName::CONST_VALUE);
 	/** doc */
 	static public $public_static = array(2, 'str');
 	/** doc */
