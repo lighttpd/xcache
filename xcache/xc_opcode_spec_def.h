@@ -113,36 +113,66 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
 	OPSPEC(       BIT,        STD,        STD,        TMP) /* 71 INIT_ARRAY                     */
 	OPSPEC(       BIT,        STD,        STD,        TMP) /* 72 ADD_ARRAY_ELEMENT              */
 	OPSPEC(    UNUSED,        STD,    INCLUDE,        VAR) /* 73 INCLUDE_OR_EVAL                */
-	OPSPEC(    UNUSED,        STD,      FETCH,     UNUSED) /* 74 UNSET_VAR                      */
 #ifdef ZEND_ENGINE_2_1
   /* php 5.1 and up */
+#	ifdef ZEND_ENGINE_2_4
+	OPSPEC( FETCHTYPE,        STD,        STD,     UNUSED) /* 74 UNSET_VAR                      */
+#	else
+	OPSPEC(    UNUSED,        STD,      FETCH,     UNUSED) /* 74 UNSET_VAR                      */
+#	endif
 	OPSPEC(       STD,        STD,        STD,     UNUSED) /* 75 UNSET_DIM                      */
 	OPSPEC(       STD,        STD,        STD,     UNUSED) /* 76 UNSET_OBJ                      */
+	OPSPEC(       BIT,        STD,     OPLINE,        VAR) /* 77 FE_RESET                       */
 #else
   /* <= php 5.0 */
+	OPSPEC(    UNUSED,        STD,     UNUSED,     UNUSED) /* 74 UNSET_VAR                      */
   /* though there is no ISSET_ISEMPTY in php 5.0 it's better to leave it here i guess */
-	OPSPEC(    UNUSED,        VAR,        STD,     UNUSED) /* 75 UNSET_DIM_OBJ                  */
-	OPSPEC(    UNUSED,        VAR,      ISSET,        TMP) /* 76 UNUSED                         */
-#endif
+	OPSPEC(    UNUSED,        VAR,        STD,     UNUSED)
+	OPSPEC(    UNUSED,        VAR,      ISSET,        TMP)
 	OPSPEC(       BIT,        STD,     UNUSED,        VAR) /* 77 FE_RESET                       */
+#endif
 	OPSPEC(        FE,        STD,     OPLINE,        TMP) /* 78 FE_FETCH                       */
 	OPSPEC(    UNUSED,        STD,     UNUSED,     UNUSED) /* 79 EXIT                           */
+#ifdef ZEND_ENGINE_2_4
+	OPSPEC( FETCHTYPE,        STD,        STD,        VAR) /* 80 FETCH_R                        */
+#else
 	OPSPEC(    UNUSED,        STD,      FETCH,        VAR) /* 80 FETCH_R                        */
+#endif
 	OPSPEC(     FETCH,        VAR,        STD,        VAR) /* 81 FETCH_DIM_R                    */
 	OPSPEC(    UNUSED,      VAR_2,        STD,        VAR) /* 82 FETCH_OBJ_R                    */
+#ifdef ZEND_ENGINE_2_4
+	OPSPEC( FETCHTYPE,        STD,        STD,        VAR) /* 83 FETCH_W                        */
+#else
 	OPSPEC(    UNUSED,        STD,      FETCH,        VAR) /* 83 FETCH_W                        */
+#endif
 	OPSPEC(    UNUSED,        VAR,        STD,        VAR) /* 84 FETCH_DIM_W                    */
 	OPSPEC(    UNUSED,      VAR_2,        STD,        VAR) /* 85 FETCH_OBJ_W                    */
+#ifdef ZEND_ENGINE_2_4
+	OPSPEC( FETCHTYPE,        STD,        STD,        VAR) /* 86 FETCH_RW                       */
+#else
 	OPSPEC(    UNUSED,        STD,      FETCH,        VAR) /* 86 FETCH_RW                       */
+#endif
 	OPSPEC(    UNUSED,        VAR,        STD,        VAR) /* 87 FETCH_DIM_RW                   */
 	OPSPEC(    UNUSED,      VAR_2,        STD,        VAR) /* 88 FETCH_OBJ_RW                   */
+#ifdef ZEND_ENGINE_2_4
+	OPSPEC( FETCHTYPE,        STD,        STD,        VAR) /* 89 FETCH_IS                        */
+#else
 	OPSPEC(    UNUSED,        STD,      FETCH,        VAR) /* 89 FETCH_IS                       */
+#endif
 	OPSPEC(    UNUSED,        VAR,        STD,        VAR) /* 90 FETCH_DIM_IS                   */
 	OPSPEC(    UNUSED,      VAR_2,        STD,        VAR) /* 91 FETCH_OBJ_IS                   */
+#ifdef ZEND_ENGINE_2_4
+	OPSPEC(       ARG,        STD,        STD,        VAR) /* 92 FETCH_FUNC_ARG                 */
+#else
 	OPSPEC(       ARG,        STD,      FETCH,        VAR) /* 92 FETCH_FUNC_ARG                 */
+#endif
 	OPSPEC(       ARG,        VAR,        STD,        VAR) /* 93 FETCH_DIM_FUNC_ARG             */
 	OPSPEC(       ARG,      VAR_2,        STD,        VAR) /* 94 FETCH_OBJ_FUNC_ARG             */
+#ifdef ZEND_ENGINE_2_4
+	OPSPEC( FETCHTYPE,        STD,        STD,        VAR) /* 95 FETCH_UNSET                    */
+#else
 	OPSPEC(    UNUSED,        STD,      FETCH,        VAR) /* 95 FETCH_UNSET                    */
+#endif
 	OPSPEC(    UNUSED,        VAR,        STD,        VAR) /* 96 FETCH_DIM_UNSET                */
 	OPSPEC(    UNUSED,      VAR_2,        STD,        VAR) /* 97 FETCH_OBJ_UNSET                */
 	OPSPEC(    UNUSED,        STD,        STD,        VAR) /* 98 FETCH_DIM_TMP_VAR              */
@@ -193,7 +223,11 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
 #	else
 	OPSPEC(    UNUSED,     UCLASS,        STD,     UNUSED) /* 113 INIT_STATIC_METHOD_CALL        */
 #	endif
+#	ifdef ZEND_ENGINE_2_4
+	OPSPEC(     ISSET,        STD,        STD,        TMP) /* 114 ISSET_ISEMPTY_VAR              */
+#	else
 	OPSPEC(     ISSET,        STD,      FETCH,        TMP) /* 114 ISSET_ISEMPTY_VAR              */
+#	endif
 	OPSPEC(     ISSET,        STD,        STD,        TMP) /* 115 ISSET_ISEMPTY_DIM_OBJ          */
 
 	OPSPEC(    UNUSED,      CLASS,        STD,     UNUSED) /* 116 IMPORT_FUNCTION                */
