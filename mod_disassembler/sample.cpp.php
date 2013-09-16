@@ -30,12 +30,15 @@ abstract class ClassName
 		1           => 'str',
 		CONST_VALUE => CONST_VALUE
 		);
+	static public $static2 = array(self::CONST_VALUE => self::CONST_VALUE);
 	/** doc */
 	static public $public_static = array(2, 'str');
 	/** doc */
 	static private $private_static = array(2, 'str');
+	static private $private_static2 = array(self::CONST_VALUE => self::CONST_VALUE);
 	/** doc */
 	static protected $protected_static = array(2, 'str');
+	static protected $protected_static2 = array(self::CONST_VALUE => self::CONST_VALUE);
 	/** doc */
 	public $property = array(
 		array('array'),
@@ -576,7 +579,7 @@ echo preg_replace_callback('~-([a-z])~', function($match) {
 	return strtoupper($match[1]);
 }, 'hello-world');
 $greet = function($name) {
-	printf("Hello %s\r\n", $name);
+	printf('Hello %s' . "\r\n" . '', $name);
 };
 $greet('World');
 $greet('PHP');
