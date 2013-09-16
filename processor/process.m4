@@ -103,8 +103,6 @@ define(`PROCESS_ARRAY', `dnl {{{ (1:count, 2:type, 3:elm, [4:real_type])
 				popdef(`add_assoc_bool_ex')
 				popdef(`SRC')
 				popdef(`dst')
-
-				++LOOPCOUNTER;
 			}
 			add_assoc_zval_ex(dst, XCACHE_STRS("$3"), arr);
 		', `
