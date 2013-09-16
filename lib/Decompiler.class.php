@@ -89,13 +89,14 @@ function foldToCode($src, $indent = '') // {{{ wrap or rewrap anything to Decomp
 // }}}
 function value($value, &$EX) // {{{
 {
-	$spec = xcache_get_special_value($value);
-	if (isset($spec)) {
-		$value = $spec;
-		if (!is_array($value)) {
+	$originalValue = xcache_get_special_value($value);
+	if (isset($originalValue)) {
+		if ((xcache_get_type($value) & IS_CONSTANT_TYPE_MASK) == IS_CONSTANT) {
 			// constant
-			return $GLOBALS['__xcache_decompiler']->stripNamespace($value);
+			return $GLOBALS['__xcache_decompiler']->stripNamespace($originalValue);
 		}
+
+		$value = $originalValue;
 	}
 
 	if (is_a($value, 'Decompiler_Object')) {
