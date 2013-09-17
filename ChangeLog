@@ -9,6 +9,8 @@ ChangeLog
  * disassembler:
    * fixed crash with nested sandbox
    * improved support for PHP_4 ~ PHP_5_4, adds support for PHP_5_5
+ * admin
+   * make mkpassword.php easier for noob
 
 3.0.4 2013-09-??
 ChangeLog
