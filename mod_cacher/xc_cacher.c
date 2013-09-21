@@ -1018,8 +1018,12 @@ static int xc_stat(const char *filepath, struct stat *statbuf TSRMLS_DC) /* {{{ 
 
 		wrapper = php_stream_locate_url_wrapper(filepath, &path_for_open, 0 TSRMLS_CC); 
 		if (wrapper && wrapper->wops->url_stat
-		 && wrapper != &php_plain_files_wrapper
-		 && wrapper->wops->url_stat(wrapper, path_for_open, PHP_STREAM_URL_STAT_QUIET, &ssb, NULL TSRMLS_CC) == SUCCESS) {
+#ifdef ZEND_ENGINE_2
+		 && wrapper->wops->url_stat(wrapper, path_for_open, PHP_STREAM_URL_STAT_QUIET, &ssb, NULL TSRMLS_CC) == SUCCESS
+#else
+		 && wrapper->wops->url_stat(wrapper, path_for_open, &ssb TSRMLS_CC) == SUCCESS
+#endif
+		) {
 			*statbuf = ssb.sb;
 			return SUCCESS;
 		}
@@ -2178,7 +2182,6 @@ static zend_op_array *xc_compile_file(zend_file_handle *h, int type TSRMLS_DC) /
 	if (!XG(cacher)
 	 || !h->filename
 	 || !SG(request_info).path_translated
-
 	) {
 		TRACE("%s", "cacher not enabled");
 		return old_compile_file(h, type TSRMLS_CC);
@@ -2267,9 +2270,9 @@ void xc_gc_add_op_array(xc_gc_op_array_t *gc_op_array TSRMLS_DC) /* {{{ */
 static void xc_gc_op_array(void *pDest) /* {{{ */
 {
 	xc_gc_op_array_t *op_array = (xc_gc_op_array_t *) pDest;
-	zend_uint i;
 #ifdef ZEND_ENGINE_2
 	if (op_array->arg_info) {
+		zend_uint i;
 		for (i = 0; i < op_array->num_args; i++) {
 			efree((char *) ZSTR_V(op_array->arg_info[i].name));
 			if (ZSTR_V(op_array->arg_info[i].class_name)) {
