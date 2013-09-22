@@ -734,7 +734,8 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 #endif
 		/* really fast shallow copy */
 		memcpy(dst, src, sizeof(src[0]));
-		DST(`refcount[0]') = 1000;
+		DST(`refcount') = &XG(op_array_dummy_refcount_holder);
+		DST(`refcount[0]') = -1;
 #ifdef ZEND_ACC_ALIAS
 		if ((processor->active_class_entry_src && (processor->active_class_entry_src->ce_flags & ZEND_ACC_TRAIT))) {
 			PROC_ZSTRING(, function_name)
@@ -877,8 +878,11 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 #endif
 
 	STRUCT_P(zend_uint, refcount)
-	UNFIXPOINTER(zend_uint, refcount)
-	IFSTORE(`DST(`refcount[0]') = 1;')
+	IFSTORE(`
+		UNFIXPOINTER(zend_uint, refcount)
+		DST(`refcount[0]') = 1;
+		FIXPOINTER(zend_uint, refcount)
+	')
 
 #ifdef ZEND_ENGINE_2_4
 	dnl used when copying opcodes
