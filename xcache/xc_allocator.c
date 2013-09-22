@@ -1,3 +1,4 @@
+#include "xcache.h"
 #include "xc_allocator.h"
 #include <string.h>
 #include <stdio.h>

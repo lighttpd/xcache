@@ -4,9 +4,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 #include "xc_shm.h"
 #include "xc_allocator.h"
 #ifndef TEST
