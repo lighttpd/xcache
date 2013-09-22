@@ -1,5 +1,9 @@
 --TEST--
 xcache_set/get test
+--SKIPIF--
+<?php
+require("skipif.inc");
+?>
 --FILE--
 <?php
 var_dump(xcache_isset("a"));
