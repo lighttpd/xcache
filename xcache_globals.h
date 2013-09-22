@@ -43,6 +43,7 @@ ZEND_BEGIN_MODULE_GLOBALS(xcache)
 	zend_bool internal_table_copied;
 
 	void *sandbox;
+	zend_uint op_array_dummy_refcount_holder;
 ZEND_END_MODULE_GLOBALS(xcache)
 
 ZEND_EXTERN_MODULE_GLOBALS(xcache)
