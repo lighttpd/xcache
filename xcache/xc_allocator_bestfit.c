@@ -192,7 +192,8 @@ static XC_ALLOCATOR_FREE(xc_allocator_bestfit_free) /* {{{ return block size fre
 	cur = (xc_allocator_bestfit_block_t *) (CHAR_PTR(p) - BLOCK_HEADER_SIZE());
 	TRACE("freeing: %p, size=%lu", p, cur->size);
 	xc_block_check(cur);
-	assert((char*)allocator < (char*)cur && (char*)cur < (char*)allocator + allocator->size);
+	assert((char*)allocator < (char*)cur);
+	assert((char*)cur < (char*)allocator + allocator->size);
 
 	/* find free block right before the p */
 	b = allocator->headblock;

@@ -668,9 +668,11 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 #	ifdef ZEND_FAST_CALL
 			case ZEND_FAST_CALL:
 #	endif
-				assert(Z_OP(SRC(`op1')).jmp_addr >= processor->active_op_array_src->opcodes && Z_OP(SRC(`op1')).jmp_addr - processor->active_op_array_src->opcodes < processor->active_op_array_src->last);
+				assert(Z_OP(SRC(`op1')).jmp_addr >= processor->active_op_array_src->opcodes);
+				assert(Z_OP(SRC(`op1')).jmp_addr - processor->active_op_array_src->opcodes < processor->active_op_array_src->last);
 				Z_OP(DST(`op1')).jmp_addr = processor->active_op_array_dst->opcodes + (Z_OP(SRC(`op1')).jmp_addr - processor->active_op_array_src->opcodes);
-				assert(Z_OP(DST(`op1')).jmp_addr >= processor->active_op_array_dst->opcodes && Z_OP(DST(`op1')).jmp_addr - processor->active_op_array_dst->opcodes < processor->active_op_array_dst->last);
+				assert(Z_OP(DST(`op1')).jmp_addr >= processor->active_op_array_dst->opcodes);
+				assert(Z_OP(DST(`op1')).jmp_addr - processor->active_op_array_dst->opcodes < processor->active_op_array_dst->last);
 				break;
 
 			case ZEND_JMPZ:
@@ -683,9 +685,11 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 #	ifdef ZEND_JMP_SET_VAR
 			case ZEND_JMP_SET_VAR:
 #	endif
-				assert(Z_OP(SRC(`op2')).jmp_addr >= processor->active_op_array_src->opcodes && Z_OP(SRC(`op2')).jmp_addr - processor->active_op_array_src->opcodes < processor->active_op_array_src->last);
+				assert(Z_OP(SRC(`op2')).jmp_addr >= processor->active_op_array_src->opcodes);
+				assert(Z_OP(SRC(`op2')).jmp_addr - processor->active_op_array_src->opcodes < processor->active_op_array_src->last);
 				Z_OP(DST(`op2')).jmp_addr = processor->active_op_array_dst->opcodes + (Z_OP(SRC(`op2')).jmp_addr - processor->active_op_array_src->opcodes);
-				assert(Z_OP(DST(`op2')).jmp_addr >= processor->active_op_array_dst->opcodes && Z_OP(DST(`op2')).jmp_addr - processor->active_op_array_dst->opcodes < processor->active_op_array_dst->last);
+				assert(Z_OP(DST(`op2')).jmp_addr >= processor->active_op_array_dst->opcodes);
+				assert(Z_OP(DST(`op2')).jmp_addr - processor->active_op_array_dst->opcodes < processor->active_op_array_dst->last);
 				break;
 
 			default:

@@ -27,19 +27,22 @@ void xc_stack_push(S stack, void *item)
 
 void* xc_stack_pop(S stack)
 {
-	assert(stack != NULL && stack->size > 0);
+	assert(stack != NULL);
+	assert(stack->size > 0);
 	return stack->data[--stack->cnt];
 }
 
 void* xc_stack_top(S stack)
 {
-	assert(stack != NULL && stack->cnt > 0);
+	assert(stack != NULL);
+	assert(stack->cnt > 0);
 	return stack->data[stack->cnt-1];
 }
 
 void* xc_stack_get(S stack, int n)
 {
-	assert(stack != NULL && stack->cnt > 0);
+	assert(stack != NULL);
+	assert(stack->cnt > 0);
 	return stack->data[n];
 }
 

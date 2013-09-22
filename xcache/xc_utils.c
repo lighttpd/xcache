@@ -156,7 +156,8 @@ int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 #	ifdef ZEND_FAST_CALL
 			case ZEND_FAST_CALL:
 #	endif
-				assert(Z_OP(opline->op1).jmp_addr >= op_array->opcodes && (zend_uint) (Z_OP(opline->op1).jmp_addr - op_array->opcodes) < op_array->last);
+				assert(Z_OP(opline->op1).jmp_addr >= op_array->opcodes);
+				assert((zend_uint) (Z_OP(opline->op1).jmp_addr - op_array->opcodes) < op_array->last);
 				Z_OP(opline->op1).opline_num = Z_OP(opline->op1).jmp_addr - op_array->opcodes;
 				break;
 			case ZEND_JMPZ:
@@ -169,7 +170,8 @@ int xc_undo_pass_two(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 #	ifdef ZEND_JMP_SET_VAR
 			case ZEND_JMP_SET_VAR:
 #	endif
-				assert(Z_OP(opline->op2).jmp_addr >= op_array->opcodes && (zend_uint) (Z_OP(opline->op2).jmp_addr - op_array->opcodes) < op_array->last);
+				assert(Z_OP(opline->op2).jmp_addr >= op_array->opcodes);
+				assert((zend_uint) (Z_OP(opline->op2).jmp_addr - op_array->opcodes) < op_array->last);
 				Z_OP(opline->op2).opline_num = Z_OP(opline->op2).jmp_addr - op_array->opcodes;
 				break;
 		}
