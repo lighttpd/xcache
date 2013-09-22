@@ -1,5 +1,9 @@
 --TEST--
 xcache_is_autoglobal
+--SKIPIF--
+<?php
+require("skipif.inc");
+?>
 --FILE--
 <?php
 var_dump(xcache_is_autoglobal("GLOBALS"));
