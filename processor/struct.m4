@@ -232,6 +232,7 @@ define(`STRUCT_ARRAY', `
 			dnl the end marker
 			ifelse(`$2', `', `IFCOPY(`DST(`$4[LOOPCOUNTER]') = NULL;')')
 		')dnl IFDASM
+		FIXPOINTER(`$3', `$4')
 		DONE(`$4')
 		popdef(`FUNC_NAME')
 		popdef(`LOOPCOUNTER')
