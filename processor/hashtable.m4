@@ -33,7 +33,7 @@ define(`DEF_HASH_TABLE_FUNC', `
 #endif
 
 			DISABLECHECK(`
-			for (srcBucket = src->pListHead; srcBucket != NULL; srcBucket = srcBucket->pListNext) {
+			for (srcBucket = SRC(`pListHead'); srcBucket != NULL; srcBucket = srcBucket->pListNext) {
 				ALLOC_INIT_ZVAL(zv);
 				array_init(zv);
 				FUNC_NAME (dasm, zv, (($2*)srcBucket->pData) TSRMLS_CC);
@@ -74,9 +74,9 @@ define(`DEF_HASH_TABLE_FUNC', `
 		IFCALCCOPY(`size_t bucketsize;')
 
 #if defined(HARDENING_PATCH_HASH_PROTECT) && HARDENING_PATCH_HASH_PROTECT
-		IFASM(`dst->canary = zend_hash_canary; DONE(canary)', `
+		IFASM(`DST(`canary') = zend_hash_canary; DONE(canary)', `
 		dnl elseif
-			IFRESTORE(`dst->canary = zend_hash_canary; DONE(canary)', `
+			IFRESTORE(`DST(`canary') = zend_hash_canary; DONE(canary)', `
 				dnl else
 				PROCESS(unsigned int, canary)
 			')
@@ -86,19 +86,19 @@ define(`DEF_HASH_TABLE_FUNC', `
 		PROCESS(uint, nTableMask)
 		PROCESS(uint, nNumOfElements)
 		PROCESS(ulong, nNextFreeElement)
-		IFCOPY(`dst->pInternalPointer = NULL;	/* Used for element traversal */') DONE(pInternalPointer)
-		IFCOPY(`dst->pListHead = NULL;') DONE(pListHead)
+		IFCOPY(`DST(`pInternalPointer') = NULL;	/* Used for element traversal */') DONE(pInternalPointer)
+		IFCOPY(`DST(`pListHead') = NULL;') DONE(pListHead)
 #ifdef ZEND_ENGINE_2_4
-		if (src->nTableMask) {
+		if (SRC(`nTableMask')) {
 #endif
-		CALLOC(dst->arBuckets, Bucket*, src->nTableSize)
+		CALLOC(`DST(`arBuckets')', Bucket*, SRC(`nTableSize'))
 		DONE(arBuckets)
 		DISABLECHECK(`
-		for (srcBucket = src->pListHead; srcBucket != NULL; srcBucket = srcBucket->pListNext) {
+		for (srcBucket = SRC(`pListHead'); srcBucket != NULL; srcBucket = srcBucket->pListNext) {
 			ifelse($4, `', `', `
 				pushdef(`BUCKET', `srcBucket')
 				if ($4 == ZEND_HASH_APPLY_REMOVE) {
-					IFCOPY(`dst->nNumOfElements --;')
+					IFCOPY(`DST(`nNumOfElements') --;')
 					continue;
 				}
 				popdef(`BUCKET')
@@ -119,14 +119,14 @@ define(`DEF_HASH_TABLE_FUNC', `
 #else
 				memcpy(pnew, srcBucket, bucketsize);
 #endif
-				n = srcBucket->h & src->nTableMask;
+				n = srcBucket->h & SRC(`nTableMask');
 				/* pnew into hash node chain */
 				pnew->pLast = NULL;
-				pnew->pNext = dst->arBuckets[n];
+				pnew->pNext = DST(`arBuckets[n]');
 				if (pnew->pNext) {
 					pnew->pNext->pLast = pnew;
 				}
-				dst->arBuckets[n] = pnew;
+				DST(`arBuckets[n]') = pnew;
 			')
 			IFDPRINT(`
 				INDENT()
@@ -145,7 +145,7 @@ define(`DEF_HASH_TABLE_FUNC', `
 			}
 
 			if (first) {
-				IFCOPY(`dst->pListHead = pnew;')
+				IFCOPY(`DST(`pListHead') = pnew;')
 				first = 0;
 			}
 
@@ -162,12 +162,12 @@ define(`DEF_HASH_TABLE_FUNC', `
 		')
 #ifdef ZEND_ENGINE_2_4
 	}
-	else { /* if (src->nTableMask) */
+	else { /* if (SRC(`nTableMask')) */
 		DONE(arBuckets)
 	}
 #endif
-		IFCOPY(`dst->pListTail = pnew;') DONE(pListTail)
-		IFCOPY(`dst->pDestructor = src->pDestructor;') DONE(pDestructor)
+		IFCOPY(`DST(`pListTail') = pnew;') DONE(pListTail)
+		IFCOPY(`DST(`pDestructor') = SRC(`pDestructor');') DONE(pDestructor)
 		PROCESS(zend_bool, persistent)
 #ifdef IS_UNICODE
 		PROCESS(zend_bool, unicode)

@@ -426,12 +426,12 @@ $1 *xc_processor_store_$1(xc_shm_t *shm, xc_allocator_t *allocator, $1 *src TSRM
 		}
 		zend_hash_destroy(&processor.strings);
 	}
-	src->ifelse(
-		`$1', `xc_entry_data_php_t', `',
-		`', `', entry.)size = processor.size;
 	ifelse(
-		`$1', `xc_entry_var_t', `src->have_references = processor.have_references;',
-		`$1', `xc_entry_data_php_t', `src->have_references = processor.have_references;'
+		`$1', `xc_entry_data_php_t', `SRC(`size')',
+		`', `', SRC(`entry.size')) = processor.size;
+	ifelse(
+		`$1', `xc_entry_var_t', `SRC(`have_references') = processor.have_references;',
+		`$1', `xc_entry_data_php_t', `SRC(`have_references') = processor.have_references;'
 	)
 
 	IFAUTOCHECK(`xc_stack_reverse(&processor.allocsizes);')
@@ -499,7 +499,7 @@ xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_php
 	memset(&processor, 0, sizeof(processor));
 	processor.readonly_protection = readonly_protection;
 	/* this function is used for php data only */
-	if (src->have_references) {
+	if (SRC(`have_references')) {
 		processor.reference = 1;
 	}
 	processor.entry_php_src = entry_php;

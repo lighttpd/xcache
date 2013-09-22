@@ -77,7 +77,7 @@ define(`PROCESS', `dnl PROCESS(1:type, 2:elm)
 	)
 ')
 define(`PROCESS_ARRAY', `dnl {{{ (1:count, 2:type, 3:elm, [4:real_type])
-	if (src->$3) {
+	if (SRC(`$3')) {
 		int LOOPCOUNTER;
 		IFDASM(`
 			zval *arr;
@@ -85,7 +85,7 @@ define(`PROCESS_ARRAY', `dnl {{{ (1:count, 2:type, 3:elm, [4:real_type])
 			array_init(arr);
 
 			for (LOOPCOUNTER = 0;
-					ifelse(`$1', `', `src->$3[LOOPCOUNTER]',
+					ifelse(`$1', `', `SRC(`$3[LOOPCOUNTER]')',
 					`', `', `LOOPCOUNTER < SRC(`$1')');
 					++LOOPCOUNTER) {
 				pushdef(`dst', `arr')
@@ -116,11 +116,11 @@ define(`PROCESS_ARRAY', `dnl {{{ (1:count, 2:type, 3:elm, [4:real_type])
 				pushdef(`STRUCT_COUNT', `count')
 			',
 			`', `', `pushdef(`STRUCT_COUNT', `SRC(`$1')')')
-			ALLOC(`dst->$3', `$2', `STRUCT_COUNT', , `$4')
+			ALLOC(`DST(`$3')', `$2', `STRUCT_COUNT', , `$4')
 			popdef(`STRUCT_COUNT')
 
 			for (LOOPCOUNTER = 0;
-					ifelse(`$1', `', `src->$3[LOOPCOUNTER]',
+					ifelse(`$1', `', `SRC(`$3[LOOPCOUNTER]')',
 					`', `', `LOOPCOUNTER < SRC(`$1')');
 					++LOOPCOUNTER) {
 				DISABLECHECK(`

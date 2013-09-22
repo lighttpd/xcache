@@ -165,11 +165,11 @@ define(`STRUCT_P', `
 	DBG(`$0($*)')
 	if (SRC(`$2')) {
 		IFDPRINT(`INDENT()`'fprintf(stderr, "$1:$2 ");')
-		STRUCT_P_EX(`$1', `dst->$2', `SRC(`$2')', `$2', `$3')
+		STRUCT_P_EX(`$1', `DST(`$2')', `SRC(`$2')', `$2', `$3')
 	}
 	else {
 		IFDPRINT(`INDENT()`'fprintf(stderr, "$1:$2:\tNULL\n");')
-		COPYNULL_EX(`dst->$2', `$2')
+		COPYNULL_EX(`DST(`$2')', `$2')
 	}
 	DONE(`$2')
 ')
@@ -179,7 +179,7 @@ define(`STRUCT', `
 	DBG(`$0($*)')
 	assert(sizeof($1) == sizeof(SRC(`$2')));
 	IFDPRINT(`INDENT()`'fprintf(stderr, "$1:$2 ");')
-	STRUCT_P_EX(`$1', `dst->$2', `SRC(`$2')', `$2', `$3', `&')
+	STRUCT_P_EX(`$1', `DST(`$2')', `SRC(`$2')', `$2', `$3', `&')
 	DONE(`$2')
 ')
 dnl }}}
@@ -218,7 +218,7 @@ define(`STRUCT_ARRAY', `
 				pushdef(`ARRAY_ELEMENT_COUNT', `count')
 			',
 			`', `', `pushdef(`ARRAY_ELEMENT_COUNT', `SRC(`$2')')')
-			ALLOC(`dst->$4', `$3', `ARRAY_ELEMENT_COUNT')
+			ALLOC(`DST(`$4')', `$3', `ARRAY_ELEMENT_COUNT')
 			popdef(`ARRAY_ELEMENT_COUNT')
 
 			for (LOOPCOUNTER = 0;
