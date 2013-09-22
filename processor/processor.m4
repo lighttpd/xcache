@@ -757,7 +757,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		}
 #else
 		if (op_array_info->oplineinfo_cnt) {
-			dnl gc_opcodes = 1;
+			gc_opcodes = 1;
 		}
 #endif
 #ifdef ZEND_ENGINE_2_4
