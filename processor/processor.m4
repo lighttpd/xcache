@@ -741,7 +741,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		/* really fast shallow copy */
 		memcpy(dst, src, sizeof(src[0]));
 		DST(`refcount') = &XG(op_array_dummy_refcount_holder);
-		DST(`refcount[0]') = -1;
+		XG(op_array_dummy_refcount_holder) = ((zend_uint) -1) / 2;
 #ifdef ZEND_ACC_ALIAS
 		if ((processor->active_class_entry_src && (processor->active_class_entry_src->ce_flags & ZEND_ACC_TRAIT))) {
 			PROC_ZSTRING(, function_name)
