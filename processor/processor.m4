@@ -261,7 +261,7 @@ dnl }}}
 #endif
 DEF_STRUCT_P_FUNC(`zend_function', , `dnl {{{
 	DISABLECHECK(`
-	switch (src->type) {
+	switch (SRC(`type')) {
 	case ZEND_INTERNAL_FUNCTION:
 	case ZEND_OVERLOADED_FUNCTION:
 		IFNOTMEMCPY(`IFCOPY(`memcpy(dst, src, sizeof(src[0]));')')
@@ -393,15 +393,15 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	PROCESS(int, default_properties_count)
 	STRUCT_ARRAY(int, default_static_members_count, zval_ptr_nullable, default_static_members_table)
 	PROCESS(int, default_static_members_count)
-	IFCOPY(`dst->static_members_table = dst->default_static_members_table;')
+	IFCOPY(`DST(`static_members_table') = DST(`default_static_members_table');')
 	DONE(static_members_table)
 #else
-	IFCOPY(`dst->builtin_functions = src->builtin_functions;')
+	IFCOPY(`DST(`builtin_functions') = SRC(`builtin_functions');')
 	DONE(builtin_functions)
 	STRUCT(HashTable, default_properties, HashTable_zval_ptr)
 #	ifdef ZEND_ENGINE_2_1
 	STRUCT(HashTable, default_static_members, HashTable_zval_ptr)
-	IFCOPY(`dst->static_members = &dst->default_static_members;')
+	IFCOPY(`DST(`static_members') = &DST(`default_static_members');')
 	DONE(static_members)
 #	elif defined(ZEND_ENGINE_2)
 	STRUCT_P(HashTable, static_members, HashTable_zval_ptr)
@@ -425,8 +425,8 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 #	endif
 #else
 	IFRESTORE(`
-		if (src->num_interfaces) {
-			CALLOC(dst->interfaces, zend_class_entry*, src->num_interfaces)
+		if (SRC(`num_interfaces')) {
+			CALLOC(DST(`interfaces'), zend_class_entry*, SRC(`num_interfaces'))
 			DONE(`interfaces')
 		}
 		else {
@@ -440,7 +440,7 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 
 #	ifdef ZEND_ENGINE_2_4
 	DISABLECHECK(`
-	IFRESTORE(`dst->info.user.filename = processor->entry_php_src->filepath;', `PROC_STRING(info.user.filename)')
+	IFRESTORE(`DST(`info.user.filename') = processor->entry_php_src->filepath;', `PROC_STRING(info.user.filename)')
 	PROCESS(zend_uint, info.user.line_start)
 	PROCESS(zend_uint, info.user.line_end)
 	PROCESS(zend_uint, info.user.doc_comment_len)
@@ -448,7 +448,7 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	')
 	DONE(info)
 #	else
-	IFRESTORE(`dst->filename = processor->entry_php_src->filepath;DONE(filename)', `PROC_STRING(filename)')
+	IFRESTORE(`DST(`filename') = processor->entry_php_src->filepath;DONE(filename)', `PROC_STRING(filename)')
 	PROCESS(zend_uint, line_start)
 	PROCESS(zend_uint, line_end)
 	PROCESS(zend_uint, doc_comment_len)
@@ -500,7 +500,7 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 #endif
 	dnl must do after SETNULL(constructor) and dst->parent
 	STRUCT(HashTable, function_table, HashTable_zend_function)
-	IFRESTORE(`dst->function_table.pDestructor = ZEND_FUNCTION_DTOR;')
+	IFRESTORE(`DST(`function_table.pDestructor') = ZEND_FUNCTION_DTOR;')
 	IFCALCCOPY(`
 		processor->active_class_entry_src = NULL;
 		IFCOPY(`processor->active_class_entry_dst = NULL;')
@@ -511,7 +511,7 @@ dnl }}}
 undefine(`UNION_znode_op')
 define(`UNION_znode_op', `dnl {{{
 #ifndef NDEBUG
-	switch ((src->$1_type ifelse($1, `result', & ~EXT_TYPE_UNUSED))) {
+	switch ((SRC(`$1_type') ifelse($1, `result', & ~EXT_TYPE_UNUSED))) {
 	case IS_CONST:
 	case IS_VAR:
 	case IS_CV:
@@ -526,7 +526,7 @@ define(`UNION_znode_op', `dnl {{{
 
 	dnl dirty dispatch
 	DISABLECHECK(`
-	switch ((src->$1_type ifelse($1, `result', & ~EXT_TYPE_UNUSED))) {
+	switch ((SRC(`$1_type') ifelse($1, `result', & ~EXT_TYPE_UNUSED))) {
 		case IS_CONST:
 			ifelse($1, `result', `
 				PROCESS(zend_uint, $1.constant)
@@ -534,13 +534,13 @@ define(`UNION_znode_op', `dnl {{{
 				IFDASM(`{
 					zval *zv;
 					ALLOC_INIT_ZVAL(zv);
-					*zv = dasm->active_op_array_src->literals[src->$1.constant].constant;
+					*zv = dasm->active_op_array_src->literals[SRC(`$1.constant')].constant;
 					zval_copy_ctor(zv);
 					add_assoc_zval_ex(dst, XCACHE_STRS("$1.constant"), zv);
 				}
 				', `
 					IFCOPY(`
-						dst->$1 = src->$1;
+						DST(`$1') = SRC(`$1');
 					', `
 						PROCESS(zend_uint, $1.constant)
 					')
@@ -578,21 +578,21 @@ DEF_STRUCT_P_FUNC(`znode', , `dnl {{{
 /* compatible with zend optimizer */
 #	define XCACHE_IS_CV 16
 #endif
-	assert(src->op_type == IS_CONST ||
-		src->op_type == IS_VAR ||
-		src->op_type == XCACHE_IS_CV ||
-		src->op_type == IS_TMP_VAR ||
-		src->op_type == IS_UNUSED);
+	assert(SRC(`op_type') == IS_CONST ||
+		SRC(`op_type') == IS_VAR ||
+		SRC(`op_type') == XCACHE_IS_CV ||
+		SRC(`op_type') == IS_TMP_VAR ||
+		SRC(`op_type') == IS_UNUSED);
 	dnl dirty dispatch
 	DISABLECHECK(`
-	switch (src->op_type) {
+	switch (SRC(`op_type')) {
 		case IS_CONST:
 			STRUCT(zval, u.constant)
 			break;
 		IFCOPY(`
 			IFNOTMEMCPY(`
 				default:
-					memcpy(&dst->u, &src->u, sizeof(src->u));
+					memcpy(&DST(`u'), &SRC(`u'), sizeof(SRC(`u')));
 			')
 		', `
 		case IS_VAR:
@@ -624,7 +624,7 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 	PROCESS(xc_opcode, opcode)
 #ifdef ZEND_ENGINE_2_4
 	IFRESTORE(`', `
-	switch (src->opcode) {
+	switch (SRC(`opcode')) {
 	case ZEND_BIND_TRAITS:
 		((zend_op *) src)->op2_type = IS_UNUSED;
 		break;
@@ -650,9 +650,9 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 		assert(processor->active_op_array_dst);
 #ifdef ZEND_ENGINE_2_4
 		pushdef(`UNION_znode_op_literal', `
-			if (src->$1_type == IS_CONST) {
-				dst->$1.constant = src->$1.literal - processor->active_op_array_src->literals;
-				dst->$1.literal = &processor->active_op_array_dst->literals[dst->$1.constant];
+			if (SRC(`$1_type') == IS_CONST) {
+				DST(`$1').constant = SRC(`$1.literal') - processor->active_op_array_src->literals;
+				DST(`$1').literal = &processor->active_op_array_dst->literals[DST(`$1').constant];
 			}
 		')
 		UNION_znode_op_literal(op1)
@@ -660,7 +660,7 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 #endif
 		popdef(`UNION_znode_op_literal')
 #ifdef ZEND_ENGINE_2
-		switch (src->opcode) {
+		switch (SRC(`opcode')) {
 #	ifdef ZEND_GOTO
 			case ZEND_GOTO:
 #	endif
@@ -668,9 +668,9 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 #	ifdef ZEND_FAST_CALL
 			case ZEND_FAST_CALL:
 #	endif
-				assert(Z_OP(src->op1).jmp_addr >= processor->active_op_array_src->opcodes && Z_OP(src->op1).jmp_addr - processor->active_op_array_src->opcodes < processor->active_op_array_src->last);
-				Z_OP(dst->op1).jmp_addr = processor->active_op_array_dst->opcodes + (Z_OP(src->op1).jmp_addr - processor->active_op_array_src->opcodes);
-				assert(Z_OP(dst->op1).jmp_addr >= processor->active_op_array_dst->opcodes && Z_OP(dst->op1).jmp_addr - processor->active_op_array_dst->opcodes < processor->active_op_array_dst->last);
+				assert(Z_OP(SRC(`op1')).jmp_addr >= processor->active_op_array_src->opcodes && Z_OP(SRC(`op1')).jmp_addr - processor->active_op_array_src->opcodes < processor->active_op_array_src->last);
+				Z_OP(DST(`op1')).jmp_addr = processor->active_op_array_dst->opcodes + (Z_OP(SRC(`op1')).jmp_addr - processor->active_op_array_src->opcodes);
+				assert(Z_OP(DST(`op1')).jmp_addr >= processor->active_op_array_dst->opcodes && Z_OP(DST(`op1')).jmp_addr - processor->active_op_array_dst->opcodes < processor->active_op_array_dst->last);
 				break;
 
 			case ZEND_JMPZ:
@@ -683,9 +683,9 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 #	ifdef ZEND_JMP_SET_VAR
 			case ZEND_JMP_SET_VAR:
 #	endif
-				assert(Z_OP(src->op2).jmp_addr >= processor->active_op_array_src->opcodes && Z_OP(src->op2).jmp_addr - processor->active_op_array_src->opcodes < processor->active_op_array_src->last);
-				Z_OP(dst->op2).jmp_addr = processor->active_op_array_dst->opcodes + (Z_OP(src->op2).jmp_addr - processor->active_op_array_src->opcodes);
-				assert(Z_OP(dst->op2).jmp_addr >= processor->active_op_array_dst->opcodes && Z_OP(dst->op2).jmp_addr - processor->active_op_array_dst->opcodes < processor->active_op_array_dst->last);
+				assert(Z_OP(SRC(`op2')).jmp_addr >= processor->active_op_array_src->opcodes && Z_OP(SRC(`op2')).jmp_addr - processor->active_op_array_src->opcodes < processor->active_op_array_src->last);
+				Z_OP(DST(`op2')).jmp_addr = processor->active_op_array_dst->opcodes + (Z_OP(SRC(`op2')).jmp_addr - processor->active_op_array_src->opcodes);
+				assert(Z_OP(DST(`op2')).jmp_addr >= processor->active_op_array_dst->opcodes && Z_OP(DST(`op2')).jmp_addr - processor->active_op_array_dst->opcodes < processor->active_op_array_dst->last);
 				break;
 
 			default:
@@ -734,7 +734,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 #endif
 		/* really fast shallow copy */
 		memcpy(dst, src, sizeof(src[0]));
-		dst->refcount[0] = 1000;
+		DST(`refcount[0]') = 1000;
 #ifdef ZEND_ACC_ALIAS
 		if ((processor->active_class_entry_src && (processor->active_class_entry_src->ce_flags & ZEND_ACC_TRAIT))) {
 			PROC_ZSTRING(, function_name)
@@ -746,9 +746,9 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		STRUCT_ARRAY(zend_uint, num_args, zend_arg_info, arg_info)
 		gc_arg_info = 1;
 #endif
-		dst->filename = processor->entry_php_src->filepath;
+		DST(`filename') = processor->entry_php_src->filepath;
 #ifdef ZEND_ENGINE_2_4
-		if (src->literals) {
+		if (SRC(`literals')) {
 			gc_opcodes = 1;
 			if (op_array_info->literalinfo_cnt) {
 				gc_literals = 1;
@@ -756,7 +756,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		}
 #else
 		if (op_array_info->oplineinfo_cnt) {
-			gc_opcodes = 1;
+			dnl gc_opcodes = 1;
 		}
 #endif
 #ifdef ZEND_ENGINE_2_4
@@ -769,11 +769,11 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 			zend_op *opline, *end;
 			COPY_N_EX(last, zend_op, opcodes)
 
-			for (opline = dst->opcodes, end = opline + src->last; opline < end; ++opline) {
+			for (opline = DST(`opcodes'), end = opline + SRC(`last'); opline < end; ++opline) {
 #ifdef ZEND_ENGINE_2_4
 				pushdef(`UNION_znode_op_literal', `
 					if (opline->$1_type == IS_CONST) {
-						opline->$1.literal = &dst->literals[opline->$1.literal - src->literals];
+						opline->$1.literal = &DST(`literals[opline->$1.literal - SRC(`literals')]');
 					}
 				')
 				UNION_znode_op_literal(op1)
@@ -790,7 +790,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 					case ZEND_FAST_CALL:
 #endif
 #ifdef ZEND_ENGINE_2
-						Z_OP(opline->op1).jmp_addr = &dst->opcodes[Z_OP(opline->op1).jmp_addr - src->opcodes];
+						Z_OP(opline->op1).jmp_addr = &DST(`opcodes[Z_OP(opline->op1).jmp_addr') - SRC(`opcodes')];
 #endif
 						break;
 
@@ -805,7 +805,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 			case ZEND_JMP_SET_VAR:
 #endif
 #ifdef ZEND_ENGINE_2
-						Z_OP(opline->op2).jmp_addr = &dst->opcodes[Z_OP(opline->op2).jmp_addr - src->opcodes];
+						Z_OP(opline->op2).jmp_addr = &DST(`opcodes[Z_OP(opline->op2).jmp_addr') - SRC(`opcodes')];
 #endif
 						break;
 
@@ -821,12 +821,12 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		) {
 			xc_gc_op_array_t gc_op_array;
 #ifdef ZEND_ENGINE_2
-			gc_op_array.num_args = gc_arg_info ? dst->num_args : 0;
-			gc_op_array.arg_info = gc_arg_info ? dst->arg_info : NULL;
+			gc_op_array.num_args = gc_arg_info ? DST(`num_args') : 0;
+			gc_op_array.arg_info = gc_arg_info ? DST(`arg_info') : NULL;
 #endif
-			gc_op_array.opcodes  = gc_opcodes ? dst->opcodes : NULL;
+			gc_op_array.opcodes  = gc_opcodes ? DST(`opcodes') : NULL;
 #ifdef ZEND_ENGINE_2_4
-			gc_op_array.literals = gc_literals ? dst->literals : NULL;
+			gc_op_array.literals = gc_literals ? DST(`literals') : NULL;
 #endif
 			xc_gc_add_op_array(&gc_op_array TSRMLS_CC);
 		}
@@ -849,16 +849,16 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	PROCESS(zend_bool, pass_rest_by_reference)
 #	endif
 #else
-	if (src->arg_types) {
-		ALLOC(dst->arg_types, zend_uchar, src->arg_types[0] + 1)
-		IFCOPY(`memcpy(dst->arg_types, src->arg_types, sizeof(src->arg_types[0]) * (src->arg_types[0]+1));')
+	if (SRC(`arg_types')) {
+		ALLOC(`DST(`arg_types')', zend_uchar, SRC(`arg_types[0]') + 1)
+		IFCOPY(`memcpy(DST(`arg_types'), SRC(`arg_types'), sizeof(SRC(`arg_types[0]')) * (SRC(`arg_types[0]')+1));')
 		IFDASM(`do {
 			int i;
 			zval *zv;
 			ALLOC_INIT_ZVAL(zv);
 			array_init(zv);
-			for (i = 0; i < src->arg_types[0]; i ++) {
-				add_next_index_long(zv, src->arg_types[i + 1]);
+			for (i = 0; i < SRC(`arg_types[0]'); i ++) {
+				add_next_index_long(zv, SRC(`arg_types[i + 1]'));
 			}
 			add_assoc_zval_ex(dst, ZEND_STRS("arg_types"), zv);
 		} while (0);')
@@ -878,7 +878,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 
 	STRUCT_P(zend_uint, refcount)
 	UNFIXPOINTER(zend_uint, refcount)
-	IFSTORE(`dst->refcount[0] = 1;')
+	IFSTORE(`DST(`refcount[0]') = 1;')
 
 #ifdef ZEND_ENGINE_2_4
 	dnl used when copying opcodes
@@ -890,14 +890,14 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	STRUCT_ARRAY(zend_uint, last, zend_op, opcodes)
 	PROCESS(zend_uint, last)
 #ifndef ZEND_ENGINE_2_4
-	IFCOPY(`dst->size = src->last;DONE(size)', `PROCESS(zend_uint, size)')
+	IFCOPY(`DST(`size') = SRC(`last');DONE(size)', `PROCESS(zend_uint, size)')
 #endif
 
 #ifdef IS_CV
 	STRUCT_ARRAY(int, last_var, zend_compiled_variable, vars)
 	PROCESS(int, last_var)
 #	ifndef ZEND_ENGINE_2_4
-	IFCOPY(`dst->size_var = src->last_var;DONE(size_var)', `PROCESS(zend_uint, size_var)')
+	IFCOPY(`DST(`size_var') = SRC(`last_var');DONE(size_var)', `PROCESS(zend_uint, size_var)')
 #	endif
 #else
 	dnl zend_cv.m4 is illegal to be made public, don not ask me for it
@@ -948,7 +948,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	PROCESS(zend_bool, uses_this)
 #endif
 
-	IFRESTORE(`dst->filename = processor->entry_php_src->filepath;DONE(filename)', `PROC_STRING(filename)')
+	IFRESTORE(`DST(`filename') = processor->entry_php_src->filepath;DONE(filename)', `PROC_STRING(filename)')
 #ifdef IS_UNICODE
 	IFRESTORE(`
 		COPY(script_encoding)
@@ -980,27 +980,27 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 
 #ifdef ZEND_ENGINE_2
 	dnl mark it as -1 on store, and lookup parent on restore
-	IFSTORE(`dst->prototype = (processor->active_class_entry_src && src->prototype) ? (zend_function *) -1 : NULL;', `
+	IFSTORE(`DST(`prototype') = (processor->active_class_entry_src && SRC(`prototype')) ? (zend_function *) -1 : NULL;', `
 		IFRESTORE(`do {
 			zend_function *parent;
-			if (src->prototype != NULL
+			if (SRC(`prototype') != NULL
 			 && zend_u_hash_find(&(processor->active_class_entry_dst->parent->function_table),
 					UG(unicode) ? IS_UNICODE : IS_STRING,
-					src->function_name, xc_zstrlen(UG(unicode) ? IS_UNICODE : IS_STRING, src->function_name) + 1,
+					SRC(`function_name'), xc_zstrlen(UG(unicode) ? IS_UNICODE : IS_STRING, SRC(`function_name')) + 1,
 					(void **) &parent) == SUCCESS) {
 				/* see do_inherit_method_check() */
 				if ((parent->common.fn_flags & ZEND_ACC_ABSTRACT)) {
-					dst->prototype = parent;
+					DST(`prototype') = parent;
 				} else if (!(parent->common.fn_flags & ZEND_ACC_CTOR) || (parent->common.prototype && (parent->common.prototype->common.scope->ce_flags & ZEND_ACC_INTERFACE))) {
 					/* ctors only have a prototype if it comes from an interface */
-					dst->prototype = parent->common.prototype ? parent->common.prototype : parent;
+					DST(`prototype') = parent->common.prototype ? parent->common.prototype : parent;
 				}
 				else {
-					dst->prototype = NULL;
+					DST(`prototype') = NULL;
 				}
 			}
 			else {
-				dst->prototype = NULL;
+				DST(`prototype') = NULL;
 			}
 		} while (0);
 		')
@@ -1012,7 +1012,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 #ifdef ZEND_ENGINE_2
 	PROC_CLASS_ENTRY_P(scope)
 	IFCOPY(`
-		if (src->scope) {
+		if (SRC(`scope')) {
 			xc_fix_method(processor, dst TSRMLS_CC);
 		}
 	')
@@ -1078,7 +1078,7 @@ DEF_STRUCT_P_FUNC(`xc_funcinfo_t', , `dnl {{{
 		STRUCT(xc_op_array_info_t, op_array_info)
 	')
 	IFRESTORE(`
-		processor->active_op_array_infos_src = &src->op_array_info;
+		processor->active_op_array_infos_src = &SRC(`op_array_info');
 		processor->active_op_array_index = 0;
 	')
 	STRUCT(zend_function, func)
@@ -1098,7 +1098,7 @@ DEF_STRUCT_P_FUNC(`xc_classinfo_t', , `dnl {{{
 		STRUCT_ARRAY(zend_uint, methodinfo_cnt, xc_op_array_info_t, methodinfos)
 	')
 	IFRESTORE(`
-		processor->active_op_array_infos_src = src->methodinfos;
+		processor->active_op_array_infos_src = SRC(`methodinfos');
 		processor->active_op_array_index = 0;
 	')
 #ifdef ZEND_ENGINE_2
@@ -1156,7 +1156,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 		STRUCT(xc_op_array_info_t, op_array_info)
 	')
 	IFRESTORE(`
-		processor->active_op_array_infos_src = &dst->op_array_info;
+		processor->active_op_array_infos_src = &DST(`op_array_info');
 		processor->active_op_array_index = 0;
 	')
 	STRUCT_P(zend_op_array, op_array)
@@ -1217,7 +1217,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_php_t', , `dnl {{{
 
 	IFCALCCOPY(`COPY(php)', `STRUCT_P(xc_entry_data_php_t, php)')
 
-	IFSTORE(`dst->refcount = 0; DONE(refcount)', `PROCESS(long, refcount)')
+	IFSTORE(`DST(`refcount') = 0; DONE(refcount)', `PROCESS(long, refcount)')
 	PROCESS(time_t, file_mtime)
 	PROCESS(size_t, file_size)
 	PROCESS(size_t, file_device)
@@ -1244,7 +1244,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_var_t', , `dnl {{{
 	dnl {{{ entry.name
 	DISABLECHECK(`
 #ifdef IS_UNICODE
-		if (src->name_type == IS_UNICODE) {
+		if (SRC(`name_type') == IS_UNICODE) {
 			PROCESS(int32_t, entry.name.ustr.len)
 		}
 		else {
@@ -1264,7 +1264,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_var_t', , `dnl {{{
 	dnl }}}
 
 	IFDPRINT(`INDENT()`'fprintf(stderr, "zval:value");')
-	STRUCT_P_EX(zval_ptr, dst->value, src->value, `value', `', `&')
+	STRUCT_P_EX(zval_ptr, DST(`value'), SRC(`value'), `value', `', `&')
 	PROCESS(zend_bool, have_references)
 	DONE(value)
 ')

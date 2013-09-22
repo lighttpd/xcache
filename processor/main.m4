@@ -87,7 +87,7 @@ dnl CALLOC(1:dst, 2:type [, 3:count=1, 4:realtype=$2 ])
 define(`CALLOC', `ALLOC(`$1', `$2', `$3', `1', `$4')')
 dnl }}}
 dnl {{{ PROC_CLASS_ENTRY_P(1:elm)
-define(`PROC_CLASS_ENTRY_P', `PROC_CLASS_ENTRY_P_EX(`dst->$1', `SRC(`$1')', `$1')`'DONE(`$1')')
+define(`PROC_CLASS_ENTRY_P', `PROC_CLASS_ENTRY_P_EX(`DST(`$1')', `SRC(`$1')', `$1')`'DONE(`$1')')
 dnl PROC_CLASS_ENTRY_P_EX(1:dst, 2:src, 3:elm-name)
 define(`PROC_CLASS_ENTRY_P_EX', `
 	if ($2) {
@@ -123,23 +123,23 @@ dnl {{{ EXPORT
 define(`EXPORT', `define(`EXPORT_$1')')
 dnl }}}
 dnl {{{ FIXPOINTER
-define(`FIXPOINTER', `FIXPOINTER_EX(`$1', `dst->$2')')
+define(`FIXPOINTER', `FIXPOINTER_EX(`$1', `DST(`$2')')')
 define(`FIXPOINTER_EX', `IFSTORE(`
 	$2 = ($1 *) processor->shm->handlers->to_readonly(processor->shm, (char *)$2);
 ')')
-define(`UNFIXPOINTER', `UNFIXPOINTER_EX(`$1', `dst->$2')')
+define(`UNFIXPOINTER', `UNFIXPOINTER_EX(`$1', `DST(`$2')')')
 define(`UNFIXPOINTER_EX', `IFSTORE(`
 	$2 = ($1 *) processor->shm->handlers->to_readwrite(processor->shm, (char *)$2);
 ')')
 dnl }}}
 dnl {{{ COPY
-define(`COPY', `IFNOTMEMCPY(`IFCOPY(`dst->$1 = SRC(`$1');')')DONE(`$1')')
+define(`COPY', `IFNOTMEMCPY(`IFCOPY(`DST(`$1') = SRC(`$1');')')DONE(`$1')')
 dnl }}}
 dnl {{{ COPY_N_EX
 define(`COPY_N_EX', `
-	ALLOC(`dst->$3', `$2', `SRC(`$1')')
+	ALLOC(`DST(`$3')', `$2', `SRC(`$1')')
 	IFCOPY(`
-		memcpy(dst->$3, SRC(`$3'), sizeof(dst->$3[0]) * SRC(`$1'));
+		memcpy(DST(`$3'), SRC(`$3'), sizeof(DST(`$3[0]')) * SRC(`$1'));
 		')
 ')
 dnl }}}
@@ -150,18 +150,18 @@ dnl {{{ COPYPOINTER
 define(`COPYPOINTER', `COPY(`$1')')
 dnl }}}
 dnl {{{ COPYARRAY_EX
-define(`COPYARRAY_EX', `IFNOTMEMCPY(`IFCOPY(`memcpy(dst->$1, SRC(`$1'), sizeof(dst->$1));')')')
+define(`COPYARRAY_EX', `IFNOTMEMCPY(`IFCOPY(`memcpy(DST(`$1'), SRC(`$1'), sizeof(DST(`$1')));')')')
 dnl }}}
 dnl {{{ COPYARRAY
 define(`COPYARRAY', `COPYARRAY_EX(`$1',`$2')DONE(`$1')')
 dnl }}}
 dnl {{{ SETNULL_EX
 define(`SETNULL_EX', `IFCOPY(`$1 = NULL;')')
-define(`SETNULL', `SETNULL_EX(`dst->$1')DONE(`$1')')
+define(`SETNULL', `SETNULL_EX(`DST(`$1')')DONE(`$1')')
 dnl }}}
 dnl {{{ SETZERO_EX
 define(`SETZERO_EX', `IFCOPY(`$1 = 0;')')
-define(`SETZERO', `SETZERO_EX(`dst->$1')DONE(`$1')')
+define(`SETZERO', `SETZERO_EX(`DST(`$1')')DONE(`$1')')
 dnl }}}
 dnl {{{ COPYNULL_EX(1:dst, 2:elm-name)
 define(`COPYNULL_EX', `
@@ -172,7 +172,7 @@ define(`COPYNULL_EX', `
 dnl }}}
 dnl {{{ COPYNULL(1:elm)
 define(`COPYNULL', `
-	COPYNULL_EX(`dst->$1', `$1')DONE(`$1')
+	COPYNULL_EX(`DST(`$1')', `$1')DONE(`$1')
 ')
 dnl }}}
 dnl {{{ COPYZERO_EX(1:dst, 2:elm-name)
@@ -184,7 +184,7 @@ define(`COPYZERO_EX', `
 dnl }}}
 dnl {{{ COPYZERO(1:elm)
 define(`COPYZERO', `
-	COPYZERO_EX(`dst->$1', `$1')DONE(`$1')
+	COPYZERO_EX(`DST(`$1')', `$1')DONE(`$1')
 ')
 dnl }}}
 dnl {{{ LIST_DIFF(1:left-list, 2:right-list)
