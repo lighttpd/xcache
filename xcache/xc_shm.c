@@ -1,18 +1,17 @@
 #ifdef TEST
-#include <limits.h>
-#include <stdio.h>
+#	ifdef HAVE_CONFIG_H
+#		include <config.h>
+#	endif
+#	include <limits.h>
+#	include <stdio.h>
 #else
-#include <php.h>
+#	include "xcache.h"
 #endif
+#include "xc_shm.h"
 
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#include "xc_shm.h"
 
 struct _xc_shm_scheme_t {
 	const char              *name;
