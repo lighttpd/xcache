@@ -38,9 +38,8 @@ struct _xc_malloc_shm_t {
 static void *xc_add_to_blocks(xc_allocator_t *allocator, void *p, size_t size) /* {{{ */
 {
 	if (p) {
-#ifdef TEST
 		allocator->avail -= size;
-#else
+#ifndef TEST
 		zend_hash_add(&allocator->shm->blocks, (void *) &p, sizeof(p), (void *) &size, sizeof(size), NULL);
 #endif
 	}
@@ -59,6 +58,9 @@ static void xc_del_from_blocks(xc_allocator_t *allocator, void *p) /* {{{ */
 
 static XC_ALLOCATOR_MALLOC(xc_allocator_malloc_malloc) /* {{{ */
 {
+	if (allocator->avail < size) {
+		return NULL;
+	}
 	return xc_add_to_blocks(allocator, malloc(size), size);
 }
 /* }}} */
@@ -71,6 +73,9 @@ static XC_ALLOCATOR_FREE(xc_allocator_malloc_free) /* {{{ return block size free
 /* }}} */
 static XC_ALLOCATOR_CALLOC(xc_allocator_malloc_calloc) /* {{{ */
 {
+	if (allocator->avail < size) {
+		return NULL;
+	}
 	return xc_add_to_blocks(allocator, calloc(memb, size), size);
 }
 /* }}} */
