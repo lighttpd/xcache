@@ -89,7 +89,7 @@ define(`DEF_HASH_TABLE_FUNC', `
 		IFCOPY(`DST(`pInternalPointer') = NULL;	/* Used for element traversal */') DONE(pInternalPointer)
 		IFCOPY(`DST(`pListHead') = NULL;') DONE(pListHead)
 #ifdef ZEND_ENGINE_2_4
-		if (SRC(`nTableMask')) {
+	if (SRC(`nTableMask')) {
 #endif
 		CALLOC(`DST(`arBuckets')', Bucket*, SRC(`nTableSize'))
 		DONE(arBuckets)
@@ -160,6 +160,8 @@ define(`DEF_HASH_TABLE_FUNC', `
 			')
 		}
 		')
+		dnl TODO: fix pointer on arBuckets[n]
+		FIXPOINTER(Bucket, arBuckets)
 #ifdef ZEND_ENGINE_2_4
 	}
 	else { /* if (SRC(`nTableMask')) */
