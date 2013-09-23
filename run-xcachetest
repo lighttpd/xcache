@@ -21,7 +21,8 @@ fi
 
 TEST_PHP_EXECUTABLE="$php_cli"
 TEST_PHP_CGI_EXECUTABLE="$php_cgi"
-test -z "$TEST_PHP_SRCDIR" && TEST_PHP_SRCDIR=`getAbsolutePath ./php-src`
+real_php_src=`getAbsolutePath ./php-src`;
+test -z "$TEST_PHP_SRCDIR" && TEST_PHP_SRCDIR=$real_php_src
 
 export TEST_PHP_EXECUTABLE
 export TEST_PHP_CGI_EXECUTABLE
@@ -32,5 +33,10 @@ echo "TEST_PHP_CGI_EXECUTABLE: $TEST_PHP_CGI_EXECUTABLE"
 echo "TEST_PHP_EXECUTABLE:     $TEST_PHP_EXECUTABLE"
 echo "TEST_PHP_SRCDIR:         $TEST_PHP_SRCDIR"
 
-run_tests_php=$TEST_PHP_SRCDIR/run-tests.php
-exec "$php_cli" -d "open_basedir=" -d "safe_mode=0" -d "output_buffering=0" -d "memory_limit=-1" $run_tests_php "$@"
+run_tests_src=$real_php_src/run-tests.php
+if test -z "$TEST_EXT" ; then
+	sed "s#'ext',##g" < "$run_tests_src" > run-tests.php
+else
+	cp "$run_tests_src" run-tests.php
+fi
+exec "$php_cli" -d "open_basedir=" -d "safe_mode=0" -d "output_buffering=0" -d "memory_limit=-1" `getAbsolutePath ./run-tests.php` "$@"
