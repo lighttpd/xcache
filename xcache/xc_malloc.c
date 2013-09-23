@@ -221,7 +221,9 @@ static XC_SHM_MEMDESTROY(xc_malloc_memdestroy) /* {{{ */
 /* }}} */
 
 static xc_allocator_vtable_t xc_allocator_malloc_vtable = XC_ALLOCATOR_VTABLE(allocator_malloc);
+#ifndef TEST
 static xc_shm_handlers_t xc_shm_malloc_handlers = XC_SHM_HANDLERS(malloc);
+#endif
 void xc_allocator_malloc_register() /* {{{ */
 {
 	if (xc_allocator_register("malloc", &xc_allocator_malloc_vtable) == 0) {
