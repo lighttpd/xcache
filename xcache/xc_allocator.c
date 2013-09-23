@@ -1,4 +1,10 @@
-#include "xcache.h"
+#ifdef TEST
+#	ifdef HAVE_CONFIG_H
+#		include <config.h>
+#	endif
+#else
+#	include "xcache.h"
+#endif
 #include "xc_allocator.h"
 #include <string.h>
 #include <stdio.h>

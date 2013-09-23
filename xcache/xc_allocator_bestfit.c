@@ -53,13 +53,10 @@ typedef struct _xc_allocator_bestfit_t {
 	xc_allocator_bestfit_block_t headblock[1];  /* just as a pointer to first block*/
 } xc_allocator_bestfit_t;
 
-#ifndef XtOffsetOf
-#	include <linux/stddef.h>
-#	define XtOffsetOf(s_type, field) offsetof(s_type, field)
-#endif
+#include <stddef.h>
 
 #define SizeOf(type, field) sizeof( ((type *) 0)->field )
-#define BLOCK_HEADER_SIZE() (ALIGN( XtOffsetOf(xc_allocator_bestfit_block_t, size) + SizeOf(xc_allocator_bestfit_block_t, size) ))
+#define BLOCK_HEADER_SIZE() (ALIGN( offsetof(xc_allocator_bestfit_block_t, size) + SizeOf(xc_allocator_bestfit_block_t, size) ))
 
 #define BLOCK_MAGIC ((unsigned int) 0x87655678)
 

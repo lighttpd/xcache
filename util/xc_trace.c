@@ -1,4 +1,8 @@
-#include "php.h"
+#ifdef TEST
+#	define PHP_DIR_SEPARATOR '/'
+#else
+#	include "php.h"
+#endif
 #include "xc_trace.h"
 #include <stdio.h>
 #include <stdarg.h>
