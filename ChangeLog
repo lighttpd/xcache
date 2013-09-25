@@ -16,6 +16,7 @@ ChangeLog
 ChangeLog
 ========
  * cacher
+   * fixed #324: xcache.readonly_protection = Off cause SEGV under mass concurrent
    * fixed #323: refix locking impl for threaded env
 
 3.0.3 2013-06-18
