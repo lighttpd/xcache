@@ -30,6 +30,8 @@ xcachesvnclean: clean
 	cat .svnignore | grep -v devel | grep -v svnignore | grep -v ^Makefile | grep -v ^config.nice | xargs rm -rf
 
 xcachetest: all
-	$(SED) "s#\\./modules/#$(top_builddir)/modules/#" < $(srcdir)/xcache-test.ini > $(top_builddir)/tmp-php.ini
-	TEST_PHP_SRCDIR=$(srcdir) $(srcdir)/run-xcachetest $(TESTS) $(TEST_ARGS) -c $(top_builddir)/tmp-php.ini
+	$(SED) "s#\\./\\.libs/#$(top_builddir)/\\.libs/#" < $(srcdir)/xcache-test.ini > $(top_builddir)/tmp-php.ini
+	if test -z "$(TESTS)"; then \
+		TEST_PHP_SRCDIR=$(srcdir) $(srcdir)/run-xcachetest $(TEST_ARGS) -c $(top_builddir)/tmp-php.ini; \
+	fi
 	$(srcdir)/run-xcachetest $(TESTS) $(TEST_ARGS) -c $(top_builddir)/tmp-php.ini
