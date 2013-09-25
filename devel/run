@@ -300,7 +300,8 @@ run() {
 	val*)
 		shift
 		export USE_ZEND_ALLOC=0
-		tracer=(valgrind --gen-suppressions=all)
+		export ZEND_DONT_UNLOAD_MODULES=1
+		tracer=(valgrind -v --gen-suppressions=all)
 		;;
 	esac
 
