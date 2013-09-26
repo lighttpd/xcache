@@ -554,7 +554,7 @@ static void bbs_restore_opnum(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
 #	ifdef ZEND_ENGINE_2_5
 		BBID_TO_OPNUM(finally_op);
 #	endif
-#	undef BBID_TO_OPNUM(name)
+#	undef BBID_TO_OPNUM
 	}
 	/* }}} */
 #endif /* ZEND_ENGINE_2 */
