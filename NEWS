@@ -9,6 +9,7 @@
 ========
  * improve stability under massive concurrent
  * refix locking impl for threaded env
+ * fix out of source building
 
 3.0.3 2013-06-18
 ========
