@@ -161,7 +161,7 @@ define(`DEF_HASH_TABLE_FUNC', `
 		}
 		')
 		dnl TODO: fix pointer on arBuckets[n]
-		FIXPOINTER(Bucket, arBuckets)
+		FIXPOINTER(Bucket *, arBuckets)
 #ifdef ZEND_ENGINE_2_4
 	}
 	else { /* if (SRC(`nTableMask')) */
