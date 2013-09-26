@@ -80,9 +80,11 @@ done
   fi
 
   PHP_NEW_EXTENSION(xcache, $xcache_sources, $ext_shared)
+  for module in $XCACHE_MODULES; do
+    PHP_ADD_BUILD_DIR($ext_builddir/mod_$module)
+  done
   PHP_ADD_BUILD_DIR($ext_builddir/util)
   PHP_ADD_BUILD_DIR($ext_builddir/xcache)
-  PHP_ADD_BUILD_DIR($ext_builddir/submodules)
   PHP_ADD_MAKEFILE_FRAGMENT()
   PHP_ADD_MAKEFILE_FRAGMENT($ext_srcdir/Makefile.frag.deps)
 
