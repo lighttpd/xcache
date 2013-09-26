@@ -1,14 +1,14 @@
 3.1.0 2013-??-??
 ChangeLog
 ========
- * adds support for PHP_5_5
+ * added support for PHP_5_5 (cacher, optimizer, disassembler)
  * cacher:
    * closed #228: allow using var caching for cli to share data between child processes
    * compatible with pcntl_fork()
    * fixed support for __FILE__ __DIR__ to correctly handle files that got moved/hardlinked (this fix is now move out of xcache.experimental)
  * disassembler:
    * fixed crash with nested sandbox
-   * improved support for PHP_4 ~ PHP_5_4, adds support for PHP_5_5
+   * improved support for PHP_4 ~ PHP_5_4, also added support for PHP_5_5
  * admin
    * make mkpassword.php easier for noob
 

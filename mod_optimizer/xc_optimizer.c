@@ -493,10 +493,11 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 	for (i = 0; i < op_array->last_try_catch; i ++) {
 		zend_uint j;
 		zend_try_catch_element *e = &op_array->try_catch_array[i];
-		for (j = e->try_op; j < e->catch_op; j ++) {
-			oplineinfos[j].catchbbid = oplineinfos[e->catch_op].bbid;
+		zend_uint end = e->catch_op != 0 ? e->catch_op : e->finally_op;
+		for (j = e->try_op; j < end; j ++) {
+			oplineinfos[j].catchbbid   = e->catch_op   == 0 ? BBID_INVALID : oplineinfos[e->catch_op  ].bbid;
 #	ifdef ZEND_ENGINE_2_5
-			oplineinfos[j].finallybbid = oplineinfos[e->finally_op].bbid;
+			oplineinfos[j].finallybbid = e->finally_op == 0 ? BBID_INVALID : oplineinfos[e->finally_op].bbid;
 #	endif
 		}
 	}
@@ -609,13 +610,13 @@ static void bbs_restore_opnum(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
 		) {
 			if (bb->catch != BBID_INVALID
 #	ifdef ZEND_ENGINE_2_5
-			 && bb->finally != BBID_INVALID
+			 || bb->finally != BBID_INVALID
 #	endif
 			) {
 				zend_uint try_op = bbs_get(bbs, bbid)->opnum;
-				zend_uint catch_op = bbs_get(bbs, bb->catch)->opnum;
+				zend_uint catch_op   = bb->catch   == BBID_INVALID ? 0 : bbs_get(bbs, bb->catch )->opnum;
 #	ifdef ZEND_ENGINE_2_5
-				zend_uint finally_op = bbs_get(bbs, bb->finally)->opnum;
+				zend_uint finally_op = bb->finally == BBID_INVALID ? 0 : bbs_get(bbs, bb->finally)->opnum;
 #	endif
 
 				zend_bool already_in_try_catch = 0;
