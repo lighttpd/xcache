@@ -11,6 +11,8 @@ ChangeLog
    * improved support for PHP_4 ~ PHP_5_4, also added support for PHP_5_5
  * admin
    * make mkpassword.php easier for noob
+ * optimizer
+   * rewrite try/catch handling to fix nested try/catch
 
 3.0.4 2013-09-??
 ChangeLog

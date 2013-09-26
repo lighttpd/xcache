@@ -44,12 +44,6 @@ typedef struct _bb_t {
 	int        size;
 
 	bbid_t     fall;
-#ifdef ZEND_ENGINE_2
-	bbid_t     catch;
-#endif
-#ifdef ZEND_ENGINE_2_5
-	bbid_t     finally;
-#endif
 
 	zend_uint  opnum; /* opnum after joining basic block */
 } bb_t;
@@ -314,12 +308,6 @@ static bb_t *bb_new_ex(zend_op *opcodes, int count) /* {{{ */
 	bb_t *bb = (bb_t *) ecalloc(sizeof(bb_t), 1);
 
 	bb->fall       = BBID_INVALID;
-#ifdef ZEND_ENGINE_2
-	bb->catch      = BBID_INVALID;
-#endif
-#ifdef ZEND_ENGINE_2_5
-	bb->finally    = BBID_INVALID;
-#endif
 
 	if (opcodes) {
 		bb->alloc   = 0;
@@ -350,23 +338,16 @@ static void bb_print(bb_t *bb, zend_op_array *op_array) /* {{{ */
 	int line = bb->opcodes - op_array->opcodes;
 	op_flowinfo_t fi;
 	zend_op *last = bb->opcodes + bb->count - 1;
-	bbid_t catchbbid = ZESW(BBID_INVALID, bb->catch);
-	bbid_t finallybbid;
-#ifdef ZEND_ENGINE_2_5
-	finallybbid = BBID_INVALID;
-#else
-	finallybbid = bb->finally;
-#endif
 
 	op_get_flowinfo(&fi, last);
 
 	fprintf(stderr,
 			"\n==== #%-3d cnt:%-3d lno:%-3d"
 			" %c%c"
-			" op1:%-3d op2:%-3d ext:%-3d fal:%-3d cat:%-3d fnl:%-3d %s ====\n"
+			" op1:%-3d op2:%-3d ext:%-3d fal:%-3d %s ====\n"
 			, bb->id, bb->count, bb->alloc ? -1 : line
 			, bb->used ? 'U' : ' ', bb->alloc ? 'A' : ' '
-			, fi.jmpout_op1, fi.jmpout_op2, fi.jmpout_ext, bb->fall, catchbbid, finallybbid, xc_get_opcode(last->opcode)
+			, fi.jmpout_op1, fi.jmpout_op2, fi.jmpout_ext, bb->fall, xc_get_opcode(last->opcode)
 			);
 	op_print(op_array, line, bb->opcodes, last + 1);
 }
@@ -427,12 +408,6 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 	typedef struct {
 		zend_bool isbbhead;
 		bbid_t bbid;
-#ifdef ZEND_ENGINE_2
-		bbid_t catchbbid;
-#endif
-#ifdef ZEND_ENGINE_2_5
-		bbid_t finallybbid;
-#endif
 	} oplineinfo_t;
 	oplineinfo_t *oplineinfos = xc_do_alloca(count * sizeof(oplineinfo_t), opline_infos_use_heap);
 
@@ -459,11 +434,14 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 #ifdef ZEND_ENGINE_2
 	/* mark try start */
 	for (i = 0; i < op_array->last_try_catch; i ++) {
-		oplineinfos[op_array->try_catch_array[i].try_op].isbbhead = 1;
-		oplineinfos[op_array->try_catch_array[i].catch_op].isbbhead = 1;
-#ifdef ZEND_ENGINE_2_5
-		oplineinfos[op_array->try_catch_array[i].finally_op].isbbhead = 1;
-#endif
+#	define MARK_OP_BB_HEAD(name) \
+		oplineinfos[op_array->try_catch_array[i].name].isbbhead = 1
+		MARK_OP_BB_HEAD(try_op);
+		MARK_OP_BB_HEAD(catch_op);
+#	ifdef ZEND_ENGINE_2_5
+		MARK_OP_BB_HEAD(finally_op);
+#	endif
+#	undef MARK_OP_BB_HEAD
 	}
 #endif
 	/* }}} */
@@ -482,34 +460,17 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 	}
 	/* }}} */
 #ifdef ZEND_ENGINE_2
-	/* {{{ fill op lines with catch id */
-	for (i = 0; i < count; i ++) {
-		oplineinfos[i].catchbbid = BBID_INVALID;
-#	ifdef ZEND_ENGINE_2_5
-		oplineinfos[i].finallybbid = BBID_INVALID;
-#	endif
-	}
-
+	/* {{{ convert try_catch_array.* from oplinenum to bbid */
 	for (i = 0; i < op_array->last_try_catch; i ++) {
-		zend_uint j;
-		zend_try_catch_element *e = &op_array->try_catch_array[i];
-		zend_uint end = e->catch_op != 0 ? e->catch_op : e->finally_op;
-		for (j = e->try_op; j < end; j ++) {
-			oplineinfos[j].catchbbid   = e->catch_op   == 0 ? BBID_INVALID : oplineinfos[e->catch_op  ].bbid;
+#	define OPNUM_TO_BBID(name) \
+		op_array->try_catch_array[i].name = oplineinfos[op_array->try_catch_array[i].name].bbid;
+		OPNUM_TO_BBID(try_op);
+		OPNUM_TO_BBID(catch_op);
 #	ifdef ZEND_ENGINE_2_5
-			oplineinfos[j].finallybbid = e->finally_op == 0 ? BBID_INVALID : oplineinfos[e->finally_op].bbid;
+		OPNUM_TO_BBID(finally_op);
 #	endif
-		}
+#	undef OPNUM_TO_BBID
 	}
-#ifdef XCACHE_DEBUG
-	for (i = 0; i < count; i ++) {
-#	ifdef ZEND_ENGINE_2_5
-		TRACE("catch/finallybbids[%d] = %d, %d", i, oplineinfos[i].catchbbid, oplineinfos[i].finallybbid);
-#	else
-		TRACE("catchbbids[%d] = %d", i, oplineinfos[i].catchbbid);
-#	endif
-	}
-#endif
 	/* }}} */
 #endif
 	/* {{{ create basic blocks */
@@ -523,12 +484,6 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 
 		opline = op_array->opcodes + start;
 		bb = bbs_new_bb_ex(bbs, opline, i - start);
-#ifdef ZEND_ENGINE_2
-		bb->catch = oplineinfos[start].catchbbid;
-#endif
-#ifdef ZEND_ENGINE_2_5
-		bb->finally = oplineinfos[start].finallybbid;
-#endif
 
 		/* last */
 		opline = bb->opcodes + bb->count - 1;
@@ -566,12 +521,7 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 static void bbs_restore_opnum(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
 {
 	int bbid;
-#ifdef ZEND_ENGINE_2
-	bbid_t lastcatchbbid;
-#endif
-#ifdef ZEND_ENGINE_2_5
-	bbid_t lastfinallybbid;
-#endif
+	zend_uint i;
 
 	for (bbid = 0; bbid < bbs_count(bbs); bbid ++) {
 		op_flowinfo_t fi;
@@ -595,63 +545,18 @@ static void bbs_restore_opnum(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
 	}
 
 #ifdef ZEND_ENGINE_2
-	lastcatchbbid = BBID_INVALID;
+	/* {{{ convert try_catch_array from bbid to oplinenum */
+	for (i = 0; i < op_array->last_try_catch; i ++) {
+#	define BBID_TO_OPNUM(name) \
+		op_array->try_catch_array[i].name = bbs_get(bbs, op_array->try_catch_array[i].name)->opnum;
+		BBID_TO_OPNUM(try_op);
+		BBID_TO_OPNUM(catch_op);
 #	ifdef ZEND_ENGINE_2_5
-	lastfinallybbid = BBID_INVALID;
+		BBID_TO_OPNUM(finally_op);
 #	endif
-	op_array->last_try_catch = 0;
-	for (bbid = 0; bbid < bbs_count(bbs); bbid ++) {
-		bb_t *bb = bbs_get(bbs, bbid);
-
-		if (lastcatchbbid != bb->catch
-#	ifdef ZEND_ENGINE_2_5
-		 || lastfinallybbid != bb->finally
-#	endif
-		) {
-			if (bb->catch != BBID_INVALID
-#	ifdef ZEND_ENGINE_2_5
-			 || bb->finally != BBID_INVALID
-#	endif
-			) {
-				zend_uint try_op = bbs_get(bbs, bbid)->opnum;
-				zend_uint catch_op   = bb->catch   == BBID_INVALID ? 0 : bbs_get(bbs, bb->catch )->opnum;
-#	ifdef ZEND_ENGINE_2_5
-				zend_uint finally_op = bb->finally == BBID_INVALID ? 0 : bbs_get(bbs, bb->finally)->opnum;
-#	endif
-
-				zend_bool already_in_try_catch = 0;
-				int j;
-
-				for (j = 0; j < op_array->last_try_catch; ++j) {
-					zend_try_catch_element *element = &op_array->try_catch_array[j];
-					if (try_op >= element->try_op && try_op < element->catch_op
-					 && catch_op == element->catch_op
-#	ifdef ZEND_ENGINE_2_5
-					 && finally_op == element->finally_op
-#	endif
-					) {
-						already_in_try_catch = 1;
-						break;
-					}
-				}
-				if (!already_in_try_catch) {
-					int try_catch_offset = op_array->last_try_catch ++;
-
-					op_array->try_catch_array = erealloc(op_array->try_catch_array, sizeof(zend_try_catch_element) * op_array->last_try_catch);
-					op_array->try_catch_array[try_catch_offset].try_op = try_op;
-					op_array->try_catch_array[try_catch_offset].catch_op = catch_op;
-#	ifdef ZEND_ENGINE_2_5
-					op_array->try_catch_array[try_catch_offset].finally_op = finally_op;
-#	endif
-				}
-			}
-			lastcatchbbid = bb->catch;
-#	ifdef ZEND_ENGINE_2_5
-			lastfinallybbid = bb->finally;
-#	endif
-		}
+#	undef BBID_TO_OPNUM(name)
 	}
-	/* it is impossible to have last bb catched */
+	/* }}} */
 #endif /* ZEND_ENGINE_2 */
 }
 /* }}} */
