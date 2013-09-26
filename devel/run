@@ -74,7 +74,7 @@ updatedeps() { # {{{1
 		hiecho required ../trunk-php5-debug-zts not found
 		return 1
 	fi
-	find . -iname \*.c | sort | while read -r sourceFile; do
+	find . -iname \*.c | LANG=C sort | while read -r sourceFile; do
 		sourceFile=${sourceFile#./}
 		{
 			case "$sourceFile" in
@@ -118,7 +118,7 @@ updatedeps() { # {{{1
 						hiecho "$dependency not found" >&2
 					fi
 				esac
-			done | sort | uniq
+			done | LANG=C sort | uniq
 		} | xargs
 	done > Makefile.frag.deps
 }
@@ -259,7 +259,8 @@ run() {
 		;;
 	retest)
 		shift
-		$MAKE $MAKEOPTS xcachetest "$@" TESTS="`grep '^/.*\.phpt$' php_test_results_*.txt | uniq | xargs`"
+		lastResult=$(ls php_test_results_*.txt | LANG=C sort | tail -n1)
+		$MAKE $MAKEOPTS xcachetest "$@" TESTS="$(grep '^/.*\.phpt$' $lastResult | uniq | xargs)"
 		return
 		;;
 	test)
