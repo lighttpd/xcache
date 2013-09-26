@@ -33,10 +33,20 @@ echo "TEST_PHP_CGI_EXECUTABLE: $TEST_PHP_CGI_EXECUTABLE"
 echo "TEST_PHP_EXECUTABLE:     $TEST_PHP_EXECUTABLE"
 echo "TEST_PHP_SRCDIR:         $TEST_PHP_SRCDIR"
 
+patch_run_tests_ext() {
+	if test -z "$TEST_EXT" ; then
+		sed "s#'ext',##g"
+	else
+		cat
+	fi
+}
+patch_run_tests_report_leaks() {
+	if test -z "$TEST_REPORT_MEMLEAKS" ; then
+		sed "s#'report_memleaks=1',#'report_memleaks=0',#g"
+	else
+		cat
+	fi
+}
 run_tests_src=$real_php_src/run-tests.php
-if test -z "$TEST_EXT" ; then
-	sed "s#'ext',##g" < "$run_tests_src" > run-tests.php
-else
-	cp "$run_tests_src" run-tests.php
-fi
+patch_run_tests_ext < "$run_tests_src" | patch_run_tests_report_leaks > run-tests.php
 exec "$php_cli" -d "open_basedir=" -d "safe_mode=0" -d "output_buffering=0" -d "memory_limit=-1" `getAbsolutePath ./run-tests.php` "$@"
