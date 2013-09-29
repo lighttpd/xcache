@@ -242,7 +242,6 @@ define(`IFRESTORE', `ifelse(PROCESSOR_TYPE, `restore', `$1', `$2')')
 define(`IFCOPY', `IFSTORE(`$1', `IFRESTORE(`$1', `$2')')')
 define(`IFCALCCOPY', `IFCALC(`$1', `IFCOPY(`$1', `$2')')')
 define(`IFDPRINT', `ifelse(PROCESSOR_TYPE, `dprint', `$1', `$2')')
-define(`IFASM', `ifelse(PROCESSOR_TYPE, `asm', `$1', `$2')')
 define(`IFDASM', `ifelse(PROCESSOR_TYPE, `dasm', `$1', `$2')')
 dnl }}}
 EXPORT(`zend_op')
@@ -279,8 +278,5 @@ REDEF(`PROCESSOR_TYPE', `dprint') include(srcdir`/processor/processor.m4')
 #ifdef HAVE_XCACHE_DISASSEMBLER
 REDEF(`PROCESSOR_TYPE', `dasm') include(srcdir`/processor/processor.m4')
 #endif /* HAVE_XCACHE_DISASSEMBLER */
-#ifdef HAVE_XCACHE_ASSEMBLER
-REDEF(`PROCESSOR_TYPE', `asm') include(srcdir`/processor/processor.m4')
-#endif /* HAVE_XCACHE_ASSEMBLER */
 
 ifdef(`EXIT_PENDING', `m4exit(EXIT_PENDING)')
