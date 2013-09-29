@@ -12,7 +12,6 @@ define(`DECL_STRUCT_P_FUNC', `translit(
 		IFSTORE(  `xc_processor_t *processor, $1 *dst, const $1 * const src')
 		IFRESTORE(`xc_processor_t *processor, $1 *dst, const $1 * const src')
 		IFDASM(   `xc_dasm_t *dasm, zval *dst, const $1 * const src')
-		IFASM(    `$1 *dst, const $1 * const src')
 		TSRMLS_DC
 	)ifelse(`$3', `', `;')
 	popdef(`FUNC_NAME')dnl
@@ -145,7 +144,6 @@ define(`STRUCT_P_EX', `
 		IFSTORE(  `processor, $6 $2, $6 $3')
 		IFRESTORE(`processor, $6 $2, $6 $3')
 		IFDASM(   `dasm, zv, $6 $3')
-		IFASM(    `$6 $2, $6 $3')
 		TSRMLS_CC
 	);
 	IFDASM(`
