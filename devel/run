@@ -171,6 +171,7 @@ do_phpize() { # {{{1
 		--enable-xcache-encoder \
 		--enable-xcache-decoder \
 		--enable-xcache-disassembler \
+		--enable-xcache-assembler \
 		--enable-xcache-coverager \
 		--enable-xcache-test \
 		--enable-xcache-dprint \
