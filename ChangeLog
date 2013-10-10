@@ -1,4 +1,4 @@
-3.1.0 2013-??-??
+3.1.0 2013-10-10
 ChangeLog
 ========
  * added support for PHP_5_5 (cacher, optimizer, disassembler)
@@ -14,7 +14,7 @@ ChangeLog
  * optimizer
    * rewrite try/catch handling to fix nested try/catch
 
-3.0.4 2013-09-??
+3.0.4 2013-10-10
 ChangeLog
 ========
  * cacher
