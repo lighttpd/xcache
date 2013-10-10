@@ -20,6 +20,8 @@ ChangeLog
  * cacher
    * fixed #324: xcache.readonly_protection = Off cause SEGV under mass concurrent
    * fixed #323: refix locking impl for threaded env
+ * build
+   * win32: fix build with no indent.exe nor cat.exe
 
 3.0.3 2013-06-18
 ChangeLog

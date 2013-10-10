@@ -130,15 +130,15 @@ xc_cacher.c \
 	frag = frag.replace(/\$\(builddir\)/g,   builddir);
 	frag = frag.replace(/processor\//g,      "processor\\");
 	frag = frag.replace(/\.lo:/g, ".obj:");
-	frag = frag.replace(/.*\$\(CC\).* -E (.*) -o (.*)/, ccrule + " /E $1 > $2");
+	frag = frag.replace(/.*\$\(CC\).* -E (.*) -o (.*)/g, ccrule + " /E $1 > $2");
 	frag = frag.replace(/ -o /g, " /Fo");
 	frag = frag.replace(/cp /g, "copy ");
 	frag = frag.replace(/mv /g, "move ");
 	frag = frag.replace(/ \|\| /g, "\r\n\tif errorlevel 1 ");
 	frag = frag.replace(/ && /g, "\r\n\tif not errorlevel 1 ");
 	if (indent == '') {
-		frag = frag.replace(/\| +\$\(XCACHE_INDENT\)/, '');
-		frag = frag.replace(/\$\(XCACHE_INDENT\) < /, 'type ');
+		frag = frag.replace(/\| *\$\(XCACHE_INDENT\)/g, '');
+		frag = frag.replace(/\$\(XCACHE_INDENT\) *< */g, 'type ');
 	}
 	MFO.WriteLine(frag);
 	ADD_FLAG("CFLAGS_XCACHE", "/I " + builddir);
