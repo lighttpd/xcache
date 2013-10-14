@@ -1,11 +1,11 @@
-3.1.0 2013-??-??
+3.1.0 2013-10-10
 ========
  * adds support for PHP_5_5
  * compatible with pcntl_fork()
  * fixes support for __FILE__ __DIR__ on moved/hardlinked files
  * disassembler now working again (fail since 3.0), supports PHP 4.x ~ PHP 5.5.x
 
-3.0.4 2013-09-??
+3.0.4 2013-10-10
 ========
  * improve stability under massive concurrent
  * refix locking impl for threaded env
