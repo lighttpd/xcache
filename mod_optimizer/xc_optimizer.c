@@ -521,7 +521,7 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 static void bbs_restore_opnum(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
 {
 	int bbid;
-	zend_uint i;
+	int i;
 
 	for (bbid = 0; bbid < bbs_count(bbs); bbid ++) {
 		op_flowinfo_t fi;
