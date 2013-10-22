@@ -728,11 +728,8 @@ static int xc_zend_startup(zend_extension *extension) /* {{{ */
 
 	ext = (zend_extension *) zend_extensions.head->data;
 	if (strcmp(ext->name, XCACHE_NAME) != 0) {
-		zend_error(E_WARNING, "XCache failed to load itself to before \"%s\". compatibility downgraded", ext->name);
+		zend_error(E_WARNING, "XCache failed to load itself to before zend_extension=\"%s\". compatibility downgraded", ext->name);
 	}
-
-	old_compile_file = zend_compile_file;
-	zend_compile_file = xc_check_initial_compile_file;
 
 	for (ext = (zend_extension *) zend_llist_get_first_ex(&zend_extensions, &lpos);
 			ext;
@@ -820,6 +817,9 @@ static PHP_MINIT_FUNCTION(xcache) /* {{{ */
 
 	/* must be the first */
 	xcache_zend_extension_add(&xc_zend_extension_entry, 1);
+	old_compile_file = zend_compile_file;
+	zend_compile_file = xc_check_initial_compile_file;
+
 #ifdef HAVE_XCACHE_OPTIMIZER
 	xc_optimizer_startup_module();
 #endif
