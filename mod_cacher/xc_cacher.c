@@ -1726,14 +1726,14 @@ static void xc_compile_php(xc_compiler_t *compiler, zend_file_handle *h, int typ
 
 #define COPY_H(vartype, var, cnt, name, datatype) do {        \
 	for (i = 0, j = 0; b; i ++, b = b->pListNext) {           \
-		vartype *data = &compiler->new_php.var[j];                         \
+		vartype *data = &compiler->new_php.var[j];            \
                                                               \
 		if (i < old_##cnt) {                                  \
 			continue;                                         \
 		}                                                     \
 		j ++;                                                 \
                                                               \
-		assert(i < old_##cnt + compiler->new_php.cnt);                     \
+		assert(i < old_##cnt + compiler->new_php.cnt);        \
 		assert(b->pData);                                     \
 		memcpy(&data->name, b->pData, sizeof(datatype));      \
 		UNISW(NOTHING, data->type = b->key.type;)             \
