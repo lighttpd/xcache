@@ -728,7 +728,7 @@ static int xc_zend_startup(zend_extension *extension) /* {{{ */
 
 	ext = (zend_extension *) zend_extensions.head->data;
 	if (strcmp(ext->name, XCACHE_NAME) != 0) {
-		zend_error(E_WARNING, "XCache failed to load itself as the before \"%s\". compatibility downgraded", ext->name);
+		zend_error(E_WARNING, "XCache failed to load itself to before \"%s\". compatibility downgraded", ext->name);
 	}
 
 	old_compile_file = zend_compile_file;
