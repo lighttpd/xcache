@@ -1,3 +1,6 @@
+3.1.1 2013-??-??
+ * compatible with bcompiler
+
 3.1.0 2013-10-10
 ========
  * adds support for PHP_5_5
