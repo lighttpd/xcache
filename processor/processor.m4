@@ -193,7 +193,7 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 						zval_ptr pzv = (zval_ptr)-1;
 					', `
 						zval_ptr pzv = dst[0];
-						FIXPOINTER_EX(zval, pzv)
+						FIXPOINTER_EX(zval, pzv, dst[0])
 					')
 					if (zend_hash_add(&processor->zvalptrs, (char *) &src[0], sizeof(src[0]), (void *) &pzv, sizeof(pzv), NULL) == SUCCESS) {
 						/* first add, go on */
@@ -209,7 +209,7 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 			')
 			IFDPRINT(`INDENT()`'fprintf(stderr, "[%p] ", (void *) src[0]);')
 			STRUCT_P_EX(zval, dst[0], src[0], `[0]', `', ` ')
-			FIXPOINTER_EX(zval, dst[0])
+			FIXPOINTER_EX(zval, dst[0], src[0])
 		} while (0);
 	')
 	DONE_SIZE(sizeof(zval_ptr))
@@ -335,7 +335,7 @@ DEF_STRUCT_P_FUNC(`zend_trait_alias_ptr', , `dnl {{{
 	', `
 		ALLOC(dst[0], zend_trait_alias)
 		STRUCT_P_EX(zend_trait_alias, dst[0], src[0], `[0]', `', ` ')
-		FIXPOINTER_EX(zend_trait_alias, dst[0])
+		FIXPOINTER_EX(zend_trait_alias, dst[0], src[0])
 	')
 	DONE_SIZE(sizeof(zend_trait_alias))
 ')
@@ -348,7 +348,7 @@ DEF_STRUCT_P_FUNC(`zend_trait_precedence_ptr', , `dnl {{{
 	', `
 		ALLOC(dst[0], zend_trait_precedence)
 		STRUCT_P_EX(zend_trait_precedence, dst[0], src[0], `[0]', `', ` ')
-		FIXPOINTER_EX(zend_trait_precedence, dst[0])
+		FIXPOINTER_EX(zend_trait_precedence, dst[0], src[0])
 	')
 	DONE_SIZE(sizeof(zend_trait_precedence))
 ')
@@ -365,7 +365,7 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	IFRESTORE(`
 #ifndef ZEND_ENGINE_2
 		/* just copy parent and resolve on install_class */
-		COPY(parent)
+		COPYPOINTER(parent)
 #else
 		PROC_CLASS_ENTRY_P(parent)
 #endif
@@ -457,46 +457,46 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 
 	/* # NOT DONE */
 #	ifdef ZEND_ENGINE_2_1
-	COPY(serialize_func)
-	COPY(unserialize_func)
+	PROCESS_CTEXTPOINTER(serialize_func)
+	PROCESS_CTEXTPOINTER(unserialize_func)
 #	endif
-	COPY(iterator_funcs)
-	COPY(create_object)
-	COPY(get_iterator)
-	COPY(interface_gets_implemented)
+	PROCESS_CTEXTPOINTER(iterator_funcs)
+	PROCESS_CTEXTPOINTER(create_object)
+	PROCESS_CTEXTPOINTER(get_iterator)
+	PROCESS_CTEXTPOINTER(interface_gets_implemented)
 #	ifdef ZEND_ENGINE_2_3
-	COPY(get_static_method)
+	PROCESS_CTEXTPOINTER(get_static_method)
 #	endif
 #	ifdef ZEND_ENGINE_2_1
-	COPY(serialize)
-	COPY(unserialize)
+	PROCESS_CTEXTPOINTER(serialize)
+	PROCESS_CTEXTPOINTER(unserialize)
 #	endif
 	/* deal with it inside xc_fix_method */
 	SETNULL(constructor)
-	COPY(destructor)
-	COPY(clone)
-	COPY(__get)
-	COPY(__set)
+	PROCESS_CTEXTPOINTER(destructor)
+	PROCESS_CTEXTPOINTER(clone)
+	PROCESS_CTEXTPOINTER(__get)
+	PROCESS_CTEXTPOINTER(__set)
 /* should be >5.1 */
 #	ifdef ZEND_ENGINE_2_1
-	COPY(__unset)
-	COPY(__isset)
+	PROCESS_CTEXTPOINTER(__unset)
+	PROCESS_CTEXTPOINTER(__isset)
 #	 if defined(ZEND_ENGINE_2_2) || PHP_MAJOR_VERSION >= 6
-	COPY(__tostring)
+	PROCESS_CTEXTPOINTER(__tostring)
 #	 endif
 #	endif
-	COPY(__call)
+	PROCESS_CTEXTPOINTER(__call)
 #	ifdef ZEND_CALLSTATIC_FUNC_NAME
-	COPY(__callstatic)
+	PROCESS_CTEXTPOINTER(__callstatic)
 #	endif
 #	ifndef ZEND_ENGINE_2_4
 	/* # NOT DONE */
-	COPY(module)
+	PROCESS_CTEXTPOINTER(module)
 #	endif
 #else /* ZEND_ENGINE_2 */
-	COPY(handle_function_call)
-	COPY(handle_property_get)
-	COPY(handle_property_set)
+	PROCESS_CTEXTPOINTER(handle_function_call)
+	PROCESS_CTEXTPOINTER(handle_property_get)
+	PROCESS_CTEXTPOINTER(handle_property_set)
 #endif
 	dnl must do after SETNULL(constructor) and dst->parent
 	STRUCT(HashTable, function_table, HashTable_zend_function)
@@ -673,7 +673,7 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 				Z_OP(DST(`op1')).jmp_addr = processor->active_op_array_dst->opcodes + (Z_OP(SRC(`op1')).jmp_addr - processor->active_op_array_src->opcodes);
 				assert(Z_OP(DST(`op1')).jmp_addr >= processor->active_op_array_dst->opcodes);
 				assert(Z_OP(DST(`op1')).jmp_addr - processor->active_op_array_dst->opcodes < processor->active_op_array_dst->last);
-				FIXPOINTER_EX(zend_op, `Z_OP(DST(`op1')).jmp_addr')
+				FIXPOINTER_EX(zend_op, `Z_OP(DST(`op1')).jmp_addr', `Z_OP(SRC(`op1')).jmp_addr')
 				break;
 
 			case ZEND_JMPZ:
@@ -691,7 +691,7 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 				Z_OP(DST(`op2')).jmp_addr = processor->active_op_array_dst->opcodes + (Z_OP(SRC(`op2')).jmp_addr - processor->active_op_array_src->opcodes);
 				assert(Z_OP(DST(`op2')).jmp_addr >= processor->active_op_array_dst->opcodes);
 				assert(Z_OP(DST(`op2')).jmp_addr - processor->active_op_array_dst->opcodes < processor->active_op_array_dst->last);
-				FIXPOINTER_EX(zend_op, `Z_OP(DST(`op2')).jmp_addr')
+				FIXPOINTER_EX(zend_op, `Z_OP(DST(`op2')).jmp_addr', `Z_OP(SRC(`op2')).jmp_addr')
 				break;
 
 			default:
@@ -883,9 +883,10 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	dnl SETNULL(u_twin)
 #endif
 
+	IFSTORE(`pushdef(`FIXPOINTER')')
 	STRUCT_P(zend_uint, refcount)
 	IFSTORE(`
-		UNFIXPOINTER(zend_uint, refcount)
+		popdef(`FIXPOINTER')
 		DST(`refcount[0]') = 1;
 		FIXPOINTER(zend_uint, refcount)
 	')
@@ -943,7 +944,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	STRUCT_P(HashTable, static_variables, HashTable_zval_ptr)
 
 #ifndef ZEND_ENGINE_2_4
-	COPY(start_op)
+	COPYPOINTER(start_op)
 	PROCESS(int, backpatch_count)
 #endif
 #ifdef ZEND_ENGINE_2_3
@@ -961,7 +962,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	IFRESTORE(`DST(`filename') = processor->entry_php_src->filepath;DONE(filename)', `PROC_STRING(filename)')
 #ifdef IS_UNICODE
 	IFRESTORE(`
-		COPY(script_encoding)
+		COPYPOINTER(script_encoding)
 	', `
 		PROC_STRING(script_encoding)
 	')
@@ -1050,7 +1051,7 @@ DEF_STRUCT_P_FUNC(`xc_constinfo_t', , `dnl {{{
 #ifdef IS_UNICODE
 	PROCESS(zend_uchar, type)
 #endif
-	IFRESTORE(`COPY(key)', `
+	IFRESTORE(`COPYPOINTER(key)', `
 		PROC_ZSTRING_N(type, key, key_size)
 	')
 	PROCESS(ulong, h)
@@ -1080,11 +1081,11 @@ DEF_STRUCT_P_FUNC(`xc_funcinfo_t', , `dnl {{{
 #ifdef IS_UNICODE
 	PROCESS(zend_uchar, type)
 #endif
-	IFRESTORE(`COPY(key)', `
+	IFRESTORE(`COPYPOINTER(key)', `
 		PROC_ZSTRING_N(type, key, key_size)
 	')
 	PROCESS(ulong, h)
-	IFRESTORE(`COPY(op_array_info)', `
+	IFRESTORE(`COPYPOINTER(op_array_info)', `
 		STRUCT(xc_op_array_info_t, op_array_info)
 	')
 	IFRESTORE(`
@@ -1099,12 +1100,12 @@ DEF_STRUCT_P_FUNC(`xc_classinfo_t', , `dnl {{{
 #ifdef IS_UNICODE
 	PROCESS(zend_uchar, type)
 #endif
-	IFRESTORE(`COPY(key)', `
+	IFRESTORE(`COPYPOINTER(key)', `
 		PROC_ZSTRING_N(type, key, key_size)
 	')
 	PROCESS(ulong, h)
 	PROCESS(zend_uint, methodinfo_cnt)
-	IFRESTORE(`COPY(methodinfos)', `
+	IFRESTORE(`COPYPOINTER(methodinfos)', `
 		STRUCT_ARRAY(zend_uint, methodinfo_cnt, xc_op_array_info_t, methodinfos)
 	')
 	IFRESTORE(`
@@ -1128,7 +1129,7 @@ DEF_STRUCT_P_FUNC(`xc_autoglobal_t', , `dnl {{{
 #ifdef IS_UNICODE
 	PROCESS(zend_uchar, type)
 #endif
-	IFRESTORE(`COPY(key)', `
+	IFRESTORE(`COPYPOINTER(key)', `
 		PROC_ZSTRING_L(type, key, key_len)
 	')
 	PROCESS(ulong, h)
@@ -1162,7 +1163,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 	PROCESS(zend_ulong, hits)
 	PROCESS(size_t, size)
 
-	IFRESTORE(`COPY(op_array_info)', `
+	IFRESTORE(`COPYPOINTER(op_array_info)', `
 		STRUCT(xc_op_array_info_t, op_array_info)
 	')
 	IFRESTORE(`
@@ -1184,7 +1185,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 #ifdef ZEND_ENGINE_2_1
 	PROCESS(zend_uint, autoglobal_cnt)
 	IFRESTORE(`
-		COPY(autoglobals)
+		COPYPOINTER(autoglobals)
 	', `
 		STRUCT_ARRAY(zend_uint, autoglobal_cnt, xc_autoglobal_t, autoglobals)
 	')
@@ -1192,7 +1193,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 #ifdef XCACHE_ERROR_CACHING
 	PROCESS(zend_uint, compilererror_cnt)
 	IFRESTORE(`
-		COPY(compilererrors)
+		COPYPOINTER(compilererrors)
 	', `
 		STRUCT_ARRAY(zend_uint, compilererror_cnt, xc_compilererror_t, compilererrors)
 	')
@@ -1220,12 +1221,12 @@ DEF_STRUCT_P_FUNC(`xc_entry_php_t', , `dnl {{{
 	STRUCT(xc_entry_t, entry)
 	DISABLECHECK(`
 		PROCESS(int, entry.name.str.len)
-		IFRESTORE(`COPY(entry.name.str.val)', `
+		IFRESTORE(`COPYPOINTER(entry.name.str.val)', `
 			PROC_STRING_L(entry.name.str.val, entry.name.str.len)
 		')
 	')
 
-	IFCALCCOPY(`COPY(php)', `STRUCT_P(xc_entry_data_php_t, php)')
+	IFCALCCOPY(`COPYPOINTER(php)', `STRUCT_P(xc_entry_data_php_t, php)')
 
 	IFSTORE(`DST(`refcount') = 0; DONE(refcount)', `PROCESS(long, refcount)')
 	PROCESS(time_t, file_mtime)
@@ -1234,14 +1235,14 @@ DEF_STRUCT_P_FUNC(`xc_entry_php_t', , `dnl {{{
 	PROCESS(size_t, file_inode)
 
 	PROCESS(size_t, filepath_len)
-	IFRESTORE(`COPY(filepath)', `PROC_STRING_L(filepath, filepath_len)')
+	IFRESTORE(`COPYPOINTER(filepath)', `PROC_STRING_L(filepath, filepath_len)')
 	PROCESS(size_t, dirpath_len)
-	IFRESTORE(`COPY(dirpath)', `PROC_STRING_L(dirpath, dirpath_len)')
+	IFRESTORE(`COPYPOINTER(dirpath)', `PROC_STRING_L(dirpath, dirpath_len)')
 #ifdef IS_UNICODE
 	PROCESS(int, ufilepath_len)
-	IFRESTORE(`COPY(ufilepath)', `PROC_USTRING_L(ufilepath, ufilepath_len)')
+	IFRESTORE(`COPYPOINTER(ufilepath)', `PROC_USTRING_L(ufilepath, ufilepath_len)')
 	PROCESS(int, udirpath_len)
-	IFRESTORE(`COPY(udirpath)', `PROC_USTRING_L(udirpath, udirpath_len)')
+	IFRESTORE(`COPYPOINTER(udirpath)', `PROC_USTRING_L(udirpath, udirpath_len)')
 #endif
 ')
 dnl }}}
@@ -1263,7 +1264,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_var_t', , `dnl {{{
 #else
 		PROCESS(int, entry.name.str.len)
 #endif
-		IFRESTORE(`COPY(entry.name.str.val)', `
+		IFRESTORE(`COPYPOINTER(entry.name.str.val)', `
 #ifdef IS_UNICODE
 			PROC_ZSTRING_L(name_type, entry.name.uni.val, entry.name.uni.len)
 #else

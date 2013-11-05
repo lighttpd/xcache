@@ -114,6 +114,8 @@ struct _xc_processor_t {
 IFAUTOCHECK(xc_stack_t allocsizes;)
 };
 /* }}} */
+/* export: typedef struct _xc_ptrmove_t { ptrdiff_t src; ptrdiff_t ptrdiff; } xc_ptrmove_t; :export {{{ */
+/* }}} */
 /* export: typedef struct _xc_dasm_t { const zend_op_array *active_op_array_src; } xc_dasm_t; :export {{{ */
 /* }}} */
 /* {{{ memsetptr */

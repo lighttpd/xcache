@@ -24,6 +24,14 @@ define(`SRC', `src->$1')
 dnl ============
 define(`INDENT', `xc_dprint_indent(indent);')
 dnl }}}
+dnl {{{ SRCPTR(1:type, 2:elm)
+define(`SRCPTR', `SRCPTR_EX(`$1', `SRC(`$2')')')
+define(`SRCPTR_EX', `IFPTRMOVE(`(($1 *) (((char *) $2) + ptrmove->src))', `$2')')
+dnl }}}
+dnl {{{ SRCPTR(1:type, 2:elm)
+define(`DSTPTR', `DSTPTR_EX(`$1', `DST(`$2')')')
+define(`DSTPTR_EX', `SRCPTR_EX($@)')
+dnl }}}
 dnl {{{ ALLOC(1:dst, 2:type, 3:count=1, 4:clean=false, 5:realtype=$2)
 define(`ALLOC', `
 	pushdef(`COUNT', `ifelse(`$3', `', `1', `$3')')
@@ -122,15 +130,14 @@ dnl }}}
 dnl {{{ EXPORT
 define(`EXPORT', `define(`EXPORT_$1')')
 dnl }}}
-dnl {{{ FIXPOINTER
-define(`FIXPOINTER', `FIXPOINTER_EX(`$1', `DST(`$2')')')
-define(`FIXPOINTER_EX', `IFSTORE(`
-	$2 = ($1 *) processor->shm->handlers->to_readonly(processor->shm, (void *)$2);
-')')
-define(`UNFIXPOINTER', `UNFIXPOINTER_EX(`$1', `DST(`$2')')')
-define(`UNFIXPOINTER_EX', `IFSTORE(`
-	$2 = ($1 *) processor->shm->handlers->to_readwrite(processor->shm, (void *)$2);
-')')
+dnl {{{ FIXPOINTER(1:type, 2:ele)
+define(`FIXPOINTER', `FIXPOINTER_EX(`$1', `DST(`$2')', `SRCPTR(`$1', `$2')')')
+dnl }}}
+dnl {{{ FIXPOINTER_EX(1:type, 2:dst, 3:src)
+define(`FIXPOINTER_EX', `
+	IFSTORE(`$2 = ($1 *) processor->shm->handlers->to_readonly(processor->shm, (void *)$2);')
+	IFPTRMOVE(`$2 = ($1 *) (((char *) $3) + ptrmove->ptrdiff);')
+')
 dnl }}}
 dnl {{{ IFNOTMEMCPY
 define(`IFNOTMEMCPY', `ifdef(`USEMEMCPY', `', `$1')')
@@ -138,7 +145,7 @@ dnl }}}
 dnl {{{ COPY
 define(`COPY', `IFNOTMEMCPY(`IFCOPY(`DST(`$1') = SRC(`$1');')')DONE(`$1')')
 dnl }}}
-dnl {{{ COPY_N_EX
+dnl {{{ COPY_N_EX(1:count, 2:type, 3:dst)
 define(`COPY_N_EX', `
 	ALLOC(`DST(`$3')', `$2', `SRC(`$1')')
 	IFCOPY(`
@@ -146,25 +153,12 @@ define(`COPY_N_EX', `
 		')
 ')
 dnl }}}
-dnl {{{ COPY_N
-define(`COPY_N', `COPY_N_EX(`$1',`$2')DONE(`$1')')
-dnl }}}
 dnl {{{ COPYPOINTER
 define(`COPYPOINTER', `COPY(`$1')')
-dnl }}}
-dnl {{{ COPYARRAY_EX
-define(`COPYARRAY_EX', `IFNOTMEMCPY(`IFCOPY(`memcpy(DST(`$1'), SRC(`$1'), sizeof(DST(`$1')));')')')
-dnl }}}
-dnl {{{ COPYARRAY
-define(`COPYARRAY', `COPYARRAY_EX(`$1',`$2')DONE(`$1')')
 dnl }}}
 dnl {{{ SETNULL_EX
 define(`SETNULL_EX', `IFCOPY(`$1 = NULL;')')
 define(`SETNULL', `SETNULL_EX(`DST(`$1')')DONE(`$1')')
-dnl }}}
-dnl {{{ SETZERO_EX
-define(`SETZERO_EX', `IFCOPY(`$1 = 0;')')
-define(`SETZERO', `SETZERO_EX(`DST(`$1')')DONE(`$1')')
 dnl }}}
 dnl {{{ COPYNULL_EX(1:dst, 2:elm-name)
 define(`COPYNULL_EX', `
@@ -242,6 +236,7 @@ define(`IFCALC', `ifelse(PROCESSOR_TYPE, `calc', `$1', `$2')')
 define(`IFSTORE', `ifelse(PROCESSOR_TYPE, `store', `$1', `$2')')
 define(`IFCALCSTORE', `IFSTORE(`$1', `IFCALC(`$1', `$2')')')
 define(`IFRESTORE', `ifelse(PROCESSOR_TYPE, `restore', `$1', `$2')')
+define(`IFPTRMOVE', `ifelse(PROCESSOR_TYPE, `ptrmove', `$1', `$2')')
 define(`IFCOPY', `IFSTORE(`$1', `IFRESTORE(`$1', `$2')')')
 define(`IFCALCCOPY', `IFCALC(`$1', `IFCOPY(`$1', `$2')')')
 define(`IFDPRINT', `ifelse(PROCESSOR_TYPE, `dprint', `$1', `$2')')
@@ -269,6 +264,7 @@ include(srcdir`/processor/head.m4')
 REDEF(`PROCESSOR_TYPE', `calc') include(srcdir`/processor/processor.m4')
 REDEF(`PROCESSOR_TYPE', `store') include(srcdir`/processor/processor.m4')
 REDEF(`PROCESSOR_TYPE', `restore') include(srcdir`/processor/processor.m4')
+REDEF(`PROCESSOR_TYPE', `ptrmove') include(srcdir`/processor/processor.m4')
 
 #ifdef HAVE_XCACHE_DPRINT
 REDEF(`PROCESSOR_TYPE', `dprint') include(srcdir`/processor/processor.m4')

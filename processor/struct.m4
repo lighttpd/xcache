@@ -11,6 +11,7 @@ define(`DECL_STRUCT_P_FUNC', `translit(
 		IFCALC(   `xc_processor_t *processor, const $1 * const src')
 		IFSTORE(  `xc_processor_t *processor, $1 *dst, const $1 * const src')
 		IFRESTORE(`xc_processor_t *processor, $1 *dst, const $1 * const src')
+		IFPTRMOVE(`const xc_ptrmove_t *ptrmove, $1 * const dst, const $1 * const src')
 		IFDASM(   `xc_dasm_t *dasm, zval *dst, const $1 * const src')
 		TSRMLS_DC
 	)ifelse(`$3', `', `;')
@@ -58,26 +59,25 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 			/* }}} */
 			IFRESTORE(`assert(xc_is_shm(src));')
 			IFCALCSTORE(`assert(!xc_is_shm(src));')
-			do {
 		')
 		ifdef(`SIZEOF_$1', , `m4_errprint(`AUTOCHECK WARN: $1: missing structinfo, dont panic')')
 
 		ifdef(`USEMEMCPY', `IFCOPY(`
 			memcpy(dst, src, sizeof($1));
-			do {
 		')')
 
 		IFDPRINT(`
 			fprintf(stderr, "%s", "{\n");
 			indent ++;
-			{
 		')
-		$3`'
+		{
+			$3`'
+		}
 		IFDPRINT(`
-			}
 			indent --;
 			INDENT()fprintf(stderr, "}\n");
 		')
+
 		IFAUTOCHECK(`
 		/* {{{ autocheck */
 		if (!xc_autocheck_skip) {
@@ -104,22 +104,19 @@ DECL_STRUCT_P_FUNC(`$1', `$2', 1)
 		zend_hash_destroy(&xc_autocheck_done_names);
 		/* }}} */
 		')
-		ifdef(`ELEMENTSOF_$1', `
-			pushdef(`ELEMENTS_UNDONE', LIST_DIFF(defn(`ELEMENTSOF_$1'), defn(`ELEMENTS_DONE')))
-			ifelse(defn(`ELEMENTS_UNDONE'), , `m4_errprint(`AUTOCHECK INFO: $1: processor looks good')', `
-				m4_errprint(`AUTOCHECK ERROR: ====' PROCESSOR_TYPE `$1 =================')
-				m4_errprint(`AUTOCHECK expected:' defn(`ELEMENTSOF_$1'))
-				m4_errprint(`AUTOCHECK missing :' defn(`ELEMENTS_UNDONE'))
-				define(`EXIT_PENDING', 1)
+		ifdef(`AUTOCHECK_SKIP', `undefine(`AUTOCHECK_SKIP')', `
+			ifdef(`ELEMENTSOF_$1', `
+				pushdef(`ELEMENTS_UNDONE', LIST_DIFF(defn(`ELEMENTSOF_$1'), defn(`ELEMENTS_DONE')))
+				ifelse(defn(`ELEMENTS_UNDONE'), , `m4_errprint(`AUTOCHECK INFO: $1: processor looks good')', `
+					m4_errprint(`AUTOCHECK ERROR: ====' PROCESSOR_TYPE `$1 =================')
+					m4_errprint(`AUTOCHECK expected:' defn(`ELEMENTSOF_$1'))
+					m4_errprint(`AUTOCHECK missing :' defn(`ELEMENTS_UNDONE'))
+					define(`EXIT_PENDING', 1)
+				')
+				popdef(`ELEMENTS_UNDONE')
 			')
-			popdef(`ELEMENTS_UNDONE')
 		')
-		ifdef(`USEMEMCPY', `IFCOPY(`
-			} while (0);
-		')')
-		IFAUTOCHECK(`
-			} while (0);
-		')
+
 		popdef(`ELEMENTS_DONE')
 	}
 /* }`}'} */
@@ -145,6 +142,11 @@ ifdef(`DASM_STRUCT_DIRECT', `', `
 		IFCALC(   `processor, $6 $3')
 		IFSTORE(  `processor, $6 $2, $6 $3')
 		IFRESTORE(`processor, $6 $2, $6 $3')
+		IFPTRMOVE(`
+			ptrmove
+			, ifelse(`$6', `', `DSTPTR_EX(`$1', `$2')', `$6 $2')
+			, ifelse(`$6', `', `SRCPTR_EX(`$1', `$3')', `$6 $3')
+		')
 		IFDASM(   `dasm, ifdef(`DASM_STRUCT_DIRECT', `dst', `zv'), $6 $3')
 		TSRMLS_CC
 	);
@@ -155,7 +157,7 @@ ifdef(`DASM_STRUCT_DIRECT', `', `
 	')
 ')
 	popdef(`FUNC_NAME')
-	ifelse(`$6', , `FIXPOINTER_EX(`$1', `$2')')
+	ifelse(`$6', , `FIXPOINTER_EX(`$1', `$2', `$3')')
 ')
 dnl }}}
 dnl {{{ STRUCT_P(1:type, 2:elm, 3:name=type)

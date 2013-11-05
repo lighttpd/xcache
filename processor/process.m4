@@ -13,6 +13,9 @@ define(`PROCESS_SCALAR', `dnl {{{ (1:elm, 2:format=%d, 3:type=)
 	DONE(`$1')
 ')
 dnl }}}
+dnl {{{ PROCESS_CTEXTPOINTER
+define(`PROCESS_CTEXTPOINTER', `COPY(`$1')')
+dnl }}}
 define(`PROCESS_xc_ztstring', `dnl {{{ (1:elm)
 	pushdef(`REALPTRTYPE', `zend_class_entry')
 	PROC_STRING(`$1')
@@ -71,7 +74,7 @@ define(`PROCESS', `dnl PROCESS(1:type, 2:elm)
 	, `$1', `xc_zval_type_t',    `PROCESS_xc_zval_type_t(`$2')'
 	, `$1', `xc_op_type',        `PROCESS_xc_op_type(`$2')'
 	, `$1', `xc_opcode',         `PROCESS_xc_opcode(`$2')'
-	, `$1', `opcode_handler_t',  `/* is copying enough? */COPY(`$2')'
+	, `$1', `opcode_handler_t',  `/* is copying enough? */PROCESS_CTEXTPOINTER(`$2')'
 	, `$1', `xc_md5sum_t',       `COPY(`$2')'
 	, `', `', `m4_errprint(`AUTOCHECK ERROR: Unknown type "$1"')define(`EXIT_PENDING', 1)'
 	)
