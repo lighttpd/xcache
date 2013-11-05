@@ -132,6 +132,9 @@ define(`UNFIXPOINTER_EX', `IFSTORE(`
 	$2 = ($1 *) processor->shm->handlers->to_readwrite(processor->shm, (void *)$2);
 ')')
 dnl }}}
+dnl {{{ IFNOTMEMCPY
+define(`IFNOTMEMCPY', `ifdef(`USEMEMCPY', `', `$1')')
+dnl }}}
 dnl {{{ COPY
 define(`COPY', `IFNOTMEMCPY(`IFCOPY(`DST(`$1') = SRC(`$1');')')DONE(`$1')')
 dnl }}}
@@ -244,6 +247,7 @@ define(`IFCALCCOPY', `IFCALC(`$1', `IFCOPY(`$1', `$2')')')
 define(`IFDPRINT', `ifelse(PROCESSOR_TYPE, `dprint', `$1', `$2')')
 define(`IFDASM', `ifelse(PROCESSOR_TYPE, `dasm', `$1', `$2')')
 dnl }}}
+
 EXPORT(`zend_op')
 EXPORT(`zend_op_array')
 EXPORT(`zend_function')
@@ -262,16 +266,10 @@ include(srcdir`/processor/struct.m4')
 include(srcdir`/processor/process.m4')
 include(srcdir`/processor/head.m4')
 
-define(`IFNOTMEMCPY', `ifdef(`USEMEMCPY', `', `$1')')
 REDEF(`PROCESSOR_TYPE', `calc') include(srcdir`/processor/processor.m4')
-pushdef(`xc_get_class_num', ``xc_get_class_num'($@)')
 REDEF(`PROCESSOR_TYPE', `store') include(srcdir`/processor/processor.m4')
-popdef(`xc_get_class_num')
-pushdef(`xc_get_class', ``xc_get_class'($@)')
 REDEF(`PROCESSOR_TYPE', `restore') include(srcdir`/processor/processor.m4')
-popdef(`xc_get_class')
 
-REDEF(`IFNOTMEMCPY', `$1')
 #ifdef HAVE_XCACHE_DPRINT
 REDEF(`PROCESSOR_TYPE', `dprint') include(srcdir`/processor/processor.m4')
 #endif /* HAVE_XCACHE_DPRINT */

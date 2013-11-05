@@ -157,21 +157,18 @@ static void xc_dprint_str_len(const char *str, int len) /* {{{ */
 }
 /* }}} */
 #endif
-/* {{{ xc_zstrlen_char */
-static inline size_t xc_zstrlen_char(const_zstr s)
+static inline size_t xc_zstrlen_char(const_zstr s) /* {{{ */
 {
 	return strlen(ZSTR_S(s));
 }
 /* }}} */
 #ifdef IS_UNICODE
-/* {{{ xc_zstrlen_uchar */
-static inline size_t xc_zstrlen_uchar(zstr s)
+static inline size_t xc_zstrlen_uchar(zstr s) /* {{{ */
 {
 	return u_strlen(ZSTR_U(s));
 }
 /* }}} */
-/* {{{ xc_zstrlen */
-static inline size_t xc_zstrlen(int type, const_zstr s)
+static inline size_t xc_zstrlen(int type, const_zstr s) /* {{{ */
 {
 	return type == IS_UNICODE ? xc_zstrlen_uchar(s) : xc_zstrlen_char(s);
 }
@@ -181,15 +178,14 @@ static inline size_t xc_zstrlen(int type, const_zstr s)
 #define xc_zstrlen(dummy, s) xc_zstrlen_char(s)
 /* }}} */
 #endif
-/* {{{ xc_calc_string_n */
-REDEF(`PROCESSOR_TYPE', `calc')
 #undef C_RELAYLINE
 #define C_RELAYLINE
 IFAUTOCHECK(`
 #undef C_RELAYLINE
 #define C_RELAYLINE , __LINE__
 ')
-static inline void xc_calc_string_n(xc_processor_t *processor, zend_uchar type, const_zstr str, long size IFAUTOCHECK(`, int relayline')) {
+static inline void xc_calc_string_n(xc_processor_t *processor, zend_uchar type, const_zstr str, long size IFAUTOCHECK(`, int relayline')) { /* {{{ */
+	pushdef(`PROCESSOR_TYPE', `calc')
 	pushdef(`__LINE__', `relayline')
 	size_t realsize = UNISW(size, (type == IS_UNICODE) ? UBYTES(size) : size);
 	long dummy = 1;
@@ -207,11 +203,11 @@ static inline void xc_calc_string_n(xc_processor_t *processor, zend_uchar type, 
 		}
 	')
 	popdef(`__LINE__')
+	popdef(`PROCESSOR_TYPE')
 }
 /* }}} */
-/* {{{ xc_store_string_n */
-REDEF(`PROCESSOR_TYPE', `store')
-static inline zstr xc_store_string_n(xc_processor_t *processor, zend_uchar type, const_zstr str, long size IFAUTOCHECK(`, int relayline')) {
+static inline zstr xc_store_string_n(xc_processor_t *processor, zend_uchar type, const_zstr str, long size IFAUTOCHECK(`, int relayline')) { /* {{{ */
+	pushdef(`PROCESSOR_TYPE', `store')
 	pushdef(`__LINE__', `relayline')
 	size_t realsize = UNISW(size, (type == IS_UNICODE) ? UBYTES(size) : size);
 	zstr ret, *pret;
@@ -233,6 +229,7 @@ static inline zstr xc_store_string_n(xc_processor_t *processor, zend_uchar type,
 	return ret;
 
 	popdef(`__LINE__')
+	popdef(`PROCESSOR_TYPE')
 }
 /* }}} */
 /* {{{ xc_get_class_num
@@ -257,18 +254,17 @@ static zend_ulong xc_get_class_num(xc_processor_t *processor, zend_class_entry *
 	assert(0);
 	return (zend_ulong) -1;
 }
-define(`xc_get_class_num', `xc_get_class_numNOTDEFINED')
+define(`xc_get_class_num', `IFSTORE(``xc_get_class_num'($@)',``xc_get_class_num' can be use in store only')')
 /* }}} */
-/* {{{ xc_get_class */
 #ifdef ZEND_ENGINE_2
-static zend_class_entry *xc_get_class(xc_processor_t *processor, zend_ulong class_num) {
+static zend_class_entry *xc_get_class(xc_processor_t *processor, zend_ulong class_num) { /* {{{ */
 	/* must be parent or currrent class */
 	assert(class_num <= processor->active_class_index + 1);
 	return CestToCePtr(processor->php_dst->classinfos[class_num - 1].cest);
 }
-#endif
-define(`xc_get_class', `xc_get_classNOTDEFINED')
+define(`xc_get_class', `IFRESTORE(``xc_get_class'($@)',``xc_get_class' can be use in restore only')')
 /* }}} */
+#endif
 #ifdef ZEND_ENGINE_2
 /* fix method on store */
 static void xc_fix_method(xc_processor_t *processor, zend_op_array *dst TSRMLS_DC) /* {{{ */
