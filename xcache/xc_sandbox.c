@@ -163,6 +163,7 @@ static xc_sandbox_t *xc_sandbox_init(xc_sandbox_t *sandbox, ZEND_24(NOTHING, con
 
 	OG(function_table) = CG(function_table);
 	CG(function_table) = &TG(function_table);
+	EG(function_table) = CG(function_table);
 
 	OG(class_table) = CG(class_table);
 	CG(class_table) = &TG(class_table);
@@ -331,6 +332,7 @@ static void xc_sandbox_free(xc_sandbox_t *sandbox, zend_op_array *op_array TSRML
 	EG(zend_constants) = OG(zend_constants);
 #endif
 	CG(function_table) = OG(function_table);
+	EG(function_table) = CG(function_table);
 	CG(class_table)    = OG(class_table);
 	EG(class_table)    = CG(class_table);
 #ifdef ZEND_ENGINE_2_1
