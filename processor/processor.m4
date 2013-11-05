@@ -222,7 +222,7 @@ DEF_STRUCT_P_FUNC(`zval_ptr_nullable', , `dnl {{{
 		popdef(`DASM_STRUCT_DIRECT')
 	}
 	else {
-		IFCOPY(`COPYNULL_EX(src[0], src)')
+		IFCOPY(`COPYNULL_EX(dst[0], src)')
 	}
 	DONE_SIZE(sizeof(zval_ptr_nullable))
 ')
@@ -550,7 +550,7 @@ define(`UNION_znode_op', `dnl {{{
 		IFCOPY(`
 			IFNOTMEMCPY(`
 				default:
-					$1 = $2;
+					DST(`$1') = SRC(`$1');
 			')
 		', `
 		case IS_VAR:
@@ -592,7 +592,7 @@ DEF_STRUCT_P_FUNC(`znode', , `dnl {{{
 		IFCOPY(`
 			IFNOTMEMCPY(`
 				default:
-					memcpy(&DST(`u'), &SRC(`u'), sizeof(SRC(`u')));
+					DST(`u') = SRC(`u');
 			')
 		', `
 		case IS_VAR:
