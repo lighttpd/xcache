@@ -72,8 +72,7 @@ define(`DEF_HASH_TABLE_FUNC', `
 		CALLOC(`DST(`arBuckets')', Bucket*, SRC(`nTableSize'))
 		DONE(arBuckets)
 		DISABLECHECK(`
-		for (srcBucket = SRCPTR(`Bucket', `pListHead'); srcBucket != NULL; srcBucket = SRCPTR_EX(`Bucket', `srcBucket->pListNext')) {
-			IFPTRMOVE(`Bucket *dstBucket = srcBucket;')
+		for (srcBucket = SRCPTR_EX(`Bucket', SRC(`pListHead')); srcBucket != NULL; srcBucket = SRCPTR_EX(`Bucket', `srcBucket->pListNext')) {
 			IFCALCCOPY(`bucketsize = BUCKET_SIZE(srcBucket);')
 			ALLOC(dstBucket, char, bucketsize, , Bucket)
 			IFCOPY(`
@@ -107,7 +106,7 @@ define(`DEF_HASH_TABLE_FUNC', `
 				IFCOPY(`dstBucket->pData = &dstBucket->pDataPtr;')
 				dnl $6 = `' to skip alloc
 				STRUCT_P_EX(`$2', dstBucket->pData, (($2*)srcBucket->pData), `', `$3', ` ')
-				FIXPOINTER_EX(`$2', dstBucket->pData, srcBucket->pData)
+				FIXPOINTER_EX(`$2', dstBucket->pData)
 			}
 			else {
 				STRUCT_P_EX(`$2', dstBucket->pData, (($2*)srcBucket->pData), `', `$3')
@@ -128,7 +127,7 @@ define(`DEF_HASH_TABLE_FUNC', `
 				}
 				prev = dstBucket;
 			')
-			FIXPOINTER_EX(`Bucket', `dstBucket', `srcBucket')
+			FIXPOINTER_EX(`Bucket', `dstBucket')
 			IFCOPY(`
 				DST(`arBuckets[n]') = dstBucket;
 			')

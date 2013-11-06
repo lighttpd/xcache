@@ -193,10 +193,9 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 						zval_ptr pzv = (zval_ptr)-1;
 					', `
 						zval_ptr pzv = dst[0];
-						FIXPOINTER_EX(zval, pzv, dst[0])
+						FIXPOINTER_EX(zval, pzv)
 					')
-					if (zend_hash_add(&processor->zvalptrs, (char *) &src[0], sizeof(src[0]), (void *) &pzv, sizeof(pzv), NULL) == SUCCESS) {
-						/* first add, go on */
+					if (zend_hash_add(&processor->zvalptrs, (char *) &src[0], sizeof(src[0]), (void *) &pzv, sizeof(pzv), NULL) == SUCCESS) { /* first add, go on */
 						dnl fprintf(stderr, "mark[%p] = %p\n", src[0], pzv);
 					}
 					else {
@@ -209,7 +208,7 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 			')
 			IFDPRINT(`INDENT()`'fprintf(stderr, "[%p] ", (void *) src[0]);')
 			STRUCT_P_EX(zval, dst[0], src[0], `[0]', `', ` ')
-			FIXPOINTER_EX(zval, dst[0], src[0])
+			FIXPOINTER_EX(zval, dst[0])
 		} while (0);
 	')
 	DONE_SIZE(sizeof(zval_ptr))
@@ -335,7 +334,7 @@ DEF_STRUCT_P_FUNC(`zend_trait_alias_ptr', , `dnl {{{
 	', `
 		ALLOC(dst[0], zend_trait_alias)
 		STRUCT_P_EX(zend_trait_alias, dst[0], src[0], `[0]', `', ` ')
-		FIXPOINTER_EX(zend_trait_alias, dst[0], src[0])
+		FIXPOINTER_EX(zend_trait_alias, dst[0])
 	')
 	DONE_SIZE(sizeof(zend_trait_alias))
 ')
@@ -348,7 +347,7 @@ DEF_STRUCT_P_FUNC(`zend_trait_precedence_ptr', , `dnl {{{
 	', `
 		ALLOC(dst[0], zend_trait_precedence)
 		STRUCT_P_EX(zend_trait_precedence, dst[0], src[0], `[0]', `', ` ')
-		FIXPOINTER_EX(zend_trait_precedence, dst[0], src[0])
+		FIXPOINTER_EX(zend_trait_precedence, dst[0])
 	')
 	DONE_SIZE(sizeof(zend_trait_precedence))
 ')
@@ -673,7 +672,7 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 				Z_OP(DST(`op1')).jmp_addr = processor->active_op_array_dst->opcodes + (Z_OP(SRC(`op1')).jmp_addr - processor->active_op_array_src->opcodes);
 				assert(Z_OP(DST(`op1')).jmp_addr >= processor->active_op_array_dst->opcodes);
 				assert(Z_OP(DST(`op1')).jmp_addr - processor->active_op_array_dst->opcodes < processor->active_op_array_dst->last);
-				FIXPOINTER_EX(zend_op, `Z_OP(DST(`op1')).jmp_addr', `Z_OP(SRC(`op1')).jmp_addr')
+				FIXPOINTER_EX(zend_op, `Z_OP(DST(`op1')).jmp_addr')
 				break;
 
 			case ZEND_JMPZ:
@@ -691,7 +690,7 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 				Z_OP(DST(`op2')).jmp_addr = processor->active_op_array_dst->opcodes + (Z_OP(SRC(`op2')).jmp_addr - processor->active_op_array_src->opcodes);
 				assert(Z_OP(DST(`op2')).jmp_addr >= processor->active_op_array_dst->opcodes);
 				assert(Z_OP(DST(`op2')).jmp_addr - processor->active_op_array_dst->opcodes < processor->active_op_array_dst->last);
-				FIXPOINTER_EX(zend_op, `Z_OP(DST(`op2')).jmp_addr', `Z_OP(SRC(`op2')).jmp_addr')
+				FIXPOINTER_EX(zend_op, `Z_OP(DST(`op2')).jmp_addr')
 				break;
 
 			default:

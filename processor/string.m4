@@ -63,7 +63,7 @@ define(`PROC_STRING_N_EX', `
 		IFRESTORE(`
 			DSTPTR = ifdef(`REALPTRTYPE', `(REALPTRTYPE() *)') STRDUP() (SRCPTR, ($3) - 1);
 		')
-		FIXPOINTER_EX(ifdef(`REALPTRTYPE', `REALPTRTYPE()', `PTRTYPE'), DSTPTR, SRCPTR)
+		FIXPOINTER_EX(ifdef(`REALPTRTYPE', `REALPTRTYPE()', `PTRTYPE'), DSTPTR)
 		IFDASM(`
 			ifelse(STRTYPE,zstr_uchar, `
 				add_assoc_unicodel_ex(dst, XCACHE_STRS("$4"), ZSTR_U($2), $3-1, 1);

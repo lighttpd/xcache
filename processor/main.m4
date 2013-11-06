@@ -24,13 +24,8 @@ define(`SRC', `src->$1')
 dnl ============
 define(`INDENT', `xc_dprint_indent(indent);')
 dnl }}}
-dnl {{{ SRCPTR(1:type, 2:elm)
-define(`SRCPTR', `SRCPTR_EX(`$1', `SRC(`$2')')')
-define(`SRCPTR_EX', `IFPTRMOVE(`(($1 *) (((char *) $2) + relocate->src))', `$2')')
-dnl }}}
-dnl {{{ DSTPTR(1:type, 2:elm)
-define(`DSTPTR', `DSTPTR_EX(`$1', `DST(`$2')')')
-define(`DSTPTR_EX', `IFPTRMOVE(`(($1 *) (((char *) $2) + relocate->dst))', `$2')')
+dnl {{{ SRCPTR_EX(1:type, 2:elm)
+define(`SRCPTR_EX', `IFRELOCATE(`(($1 *) (((char *) $2) + 1))', `$2')')
 dnl }}}
 dnl {{{ ALLOC(1:dst, 2:type, 3:count=1, 4:clean=false, 5:realtype=$2)
 define(`ALLOC', `
@@ -129,19 +124,21 @@ define(`DBG', `ifdef(`XCACHE_ENABLE_TEST', `
 dnl }}}
 dnl {{{ EXPORT(1:code)
 define(`EXPORT', `/* export: $1 :export */')
-define(`EXPORTED', `EXPORT(`$1;')
+define(`EXPORTED', `EXPORT(`$1')
+$1')
+define(`EXPORTED_FUNCTION', `EXPORT(`$1;')
 $1')
 dnl }}}
 dnl {{{ EXPORT_PROCESSOR(1:type, 2:processor)
 define(`EXPORT_PROCESSOR', `define(`EXPORT_$1_$2', 1)')
 dnl }}}
 dnl {{{ FIXPOINTER(1:type, 2:ele)
-define(`FIXPOINTER', `FIXPOINTER_EX(`$1', `DST(`$2')', `SRCPTR(`$1', `$2')')')
+define(`FIXPOINTER', `FIXPOINTER_EX(`$1', `DST(`$2')')')
 dnl }}}
-dnl {{{ FIXPOINTER_EX(1:type, 2:dst, 3:src)
+dnl {{{ FIXPOINTER_EX(1:type, 2:dst)
 define(`FIXPOINTER_EX', `
 	IFSTORE(`$2 = ($1 *) processor->shm->handlers->to_readonly(processor->shm, (void *)$2);')
-	IFPTRMOVE(`$2 = ($1 *) (((char *) $3) + relocate->ptrdiff);')
+	IFRELOCATE(`patsubst($2, `dst', `src') = ($1 *) (((char *) patsubst($2, `dst', `src')) + 1);')
 ')
 dnl }}}
 dnl {{{ IFNOTMEMCPY
@@ -241,7 +238,7 @@ define(`IFCALC', `ifelse(PROCESSOR_TYPE, `calc', `$1', `$2')')
 define(`IFSTORE', `ifelse(PROCESSOR_TYPE, `store', `$1', `$2')')
 define(`IFCALCSTORE', `IFSTORE(`$1', `IFCALC(`$1', `$2')')')
 define(`IFRESTORE', `ifelse(PROCESSOR_TYPE, `restore', `$1', `$2')')
-define(`IFPTRMOVE', `ifelse(PROCESSOR_TYPE, `relocate', `$1', `$2')')
+define(`IFRELOCATE', `ifelse(PROCESSOR_TYPE, `relocate', `$1', `$2')')
 define(`IFCOPY', `IFSTORE(`$1', `IFRESTORE(`$1', `$2')')')
 define(`IFCALCCOPY', `IFCALC(`$1', `IFCOPY(`$1', `$2')')')
 define(`IFDPRINT', `ifelse(PROCESSOR_TYPE, `dprint', `$1', `$2')')
@@ -252,18 +249,18 @@ EXPORT_PROCESSOR(`dasm', `zend_op_array')
 EXPORT_PROCESSOR(`dasm', `zend_function')
 EXPORT_PROCESSOR(`dasm', `zend_class_entry')
 
-EXPORT_PROCESSOR(`calc',    `xc_entry_data_php_t')
-EXPORT_PROCESSOR(`calc',    `xc_entry_php_t')
-EXPORT_PROCESSOR(`calc',    `xc_entry_var_t')
-EXPORT_PROCESSOR(`store',   `xc_entry_data_php_t')
-EXPORT_PROCESSOR(`store',   `xc_entry_php_t')
-EXPORT_PROCESSOR(`store',   `xc_entry_var_t')
-EXPORT_PROCESSOR(`restore', `xc_entry_data_php_t')
-EXPORT_PROCESSOR(`restore', `xc_entry_php_t')
-EXPORT_PROCESSOR(`dasm',    `xc_entry_data_php_t')
-EXPORT_PROCESSOR(`dprint',  `xc_entry_php_t')
+dnl EXPORT_PROCESSOR(`calc',    `xc_entry_data_php_t')
+dnl EXPORT_PROCESSOR(`calc',    `xc_entry_php_t')
+dnl EXPORT_PROCESSOR(`calc',    `xc_entry_var_t')
+dnl EXPORT_PROCESSOR(`store',   `xc_entry_data_php_t')
+dnl EXPORT_PROCESSOR(`store',   `xc_entry_php_t')
+dnl EXPORT_PROCESSOR(`store',   `xc_entry_var_t')
+dnl EXPORT_PROCESSOR(`restore', `xc_entry_data_php_t')
+dnl EXPORT_PROCESSOR(`restore', `xc_entry_php_t')
+dnl EXPORT_PROCESSOR(`dasm',    `xc_entry_data_php_t')
+dnl EXPORT_PROCESSOR(`dprint',  `xc_entry_php_t')
 
-EXPORT_PROCESSOR(`restore', `zval')
+dnl EXPORT_PROCESSOR(`restore', `zval')
 EXPORT_PROCESSOR(`dprint',  `zval')
 
 include(srcdir`/processor/hashtable.m4')
@@ -283,5 +280,7 @@ REDEF(`PROCESSOR_TYPE', `dprint') include(srcdir`/processor/processor.m4')
 #ifdef HAVE_XCACHE_DISASSEMBLER
 REDEF(`PROCESSOR_TYPE', `dasm') include(srcdir`/processor/processor.m4')
 #endif /* HAVE_XCACHE_DISASSEMBLER */
+
+include(srcdir`/processor/foot.m4')
 
 ifdef(`EXIT_PENDING', `m4exit(EXIT_PENDING)')
