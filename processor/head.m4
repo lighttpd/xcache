@@ -9,13 +9,13 @@ divert(0)
 #include "zend_API.h"
 #include "zend_ini.h"
 
-/* export: #include "xcache.h" :export */
+EXPORT(`#include "xcache.h"')
 #include "xcache.h"
-/* export: #include "mod_cacher/xc_cache.h" :export */
+EXPORT(`#include "mod_cacher/xc_cache.h"')
 #include "mod_cacher/xc_cache.h"
-/* export: #include "xcache/xc_shm.h" :export */
+EXPORT(`#include "xcache/xc_shm.h"')
 #include "xcache/xc_shm.h"
-/* export: #include "xcache/xc_allocator.h" :export */
+EXPORT(`#include "xcache/xc_allocator.h"')
 #include "xcache/xc_allocator.h"
 #include "xcache/xc_const_string.h"
 #include "xcache/xc_utils.h"
@@ -85,7 +85,8 @@ typedef char  zstr_char;
 
 #define MAX_DUP_STR_LEN 256
 dnl }}}
-/* export: typedef struct _xc_processor_t xc_processor_t; :export {{{ */
+dnl {{{ _xc_processor_t
+EXPORT(`typedef struct _xc_processor_t xc_processor_t;')
 struct _xc_processor_t {
 	char *p;
 	size_t size;
@@ -113,11 +114,9 @@ struct _xc_processor_t {
 	zend_bool readonly_protection; /* wheather it's present */
 IFAUTOCHECK(xc_stack_t allocsizes;)
 };
-/* }}} */
-/* export: typedef struct _xc_relocate_t { ptrdiff_t src; ptrdiff_t dst; ptrdiff_t ptrdiff; } xc_relocate_t; :export {{{ */
-/* }}} */
-/* export: typedef struct _xc_dasm_t { const zend_op_array *active_op_array_src; } xc_dasm_t; :export {{{ */
-/* }}} */
+dnl }}}
+EXPORT(`typedef struct _xc_relocate_t { ptrdiff_t src; ptrdiff_t dst; ptrdiff_t ptrdiff; } xc_relocate_t;')
+EXPORT(`typedef struct _xc_dasm_t { const zend_op_array *active_op_array_src; } xc_dasm_t;')
 /* {{{ memsetptr */
 IFAUTOCHECK(`dnl
 static void *memsetptr(void *mem, void *content, size_t n)
@@ -396,8 +395,8 @@ static int xc_check_names(const char *file, int line, const char *functionName, 
 /* }}} */
 dnl ================ export API
 define(`DEFINE_STORE_API', `
-/* export: $1 *xc_processor_store_$1(xc_shm_t *shm, xc_allocator_t *allocator, $1 *src TSRMLS_DC); :export {{{ */
-$1 *xc_processor_store_$1(xc_shm_t *shm, xc_allocator_t *allocator, $1 *src TSRMLS_DC) {
+EXPORTED(`$1 *xc_processor_store_$1(xc_shm_t *shm, xc_allocator_t *allocator, $1 *src TSRMLS_DC)') dnl {{{
+{
 	$1 *dst;
 	xc_processor_t processor;
 
@@ -475,13 +474,13 @@ err_alloc:
 
 	return dst;
 }
-/* }}} */
+dnl }}}
 ')
 DEFINE_STORE_API(`xc_entry_var_t')
 DEFINE_STORE_API(`xc_entry_php_t')
 DEFINE_STORE_API(`xc_entry_data_php_t')
-/* export: xc_entry_php_t *xc_processor_restore_xc_entry_php_t(xc_entry_php_t *dst, const xc_entry_php_t *src TSRMLS_DC); :export {{{ */
-xc_entry_php_t *xc_processor_restore_xc_entry_php_t(xc_entry_php_t *dst, const xc_entry_php_t *src TSRMLS_DC) {
+EXPORTED(`xc_entry_php_t *xc_processor_restore_xc_entry_php_t(xc_entry_php_t *dst, const xc_entry_php_t *src TSRMLS_DC)') dnl {{{
+{
 	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
@@ -489,9 +488,9 @@ xc_entry_php_t *xc_processor_restore_xc_entry_php_t(xc_entry_php_t *dst, const x
 
 	return dst;
 }
-/* }}} */
-/* export: xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_php_t *entry_php, xc_entry_data_php_t *dst, const xc_entry_data_php_t *src, zend_bool readonly_protection TSRMLS_DC); :export {{{ */
-xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_php_t *entry_php, xc_entry_data_php_t *dst, const xc_entry_data_php_t *src, zend_bool readonly_protection TSRMLS_DC) {
+dnl }}}
+EXPORTED(`xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_php_t *entry_php, xc_entry_data_php_t *dst, const xc_entry_data_php_t *src, zend_bool readonly_protection TSRMLS_DC)') dnl {{{
+{
 	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
@@ -511,9 +510,9 @@ xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_php
 	}
 	return dst;
 }
-/* }}} */
-/* export: zval *xc_processor_restore_zval(zval *dst, const zval *src, zend_bool have_references TSRMLS_DC); :export {{{ */
-zval *xc_processor_restore_zval(zval *dst, const zval *src, zend_bool have_references TSRMLS_DC) {
+dnl }}}
+EXPORTED(`zval *xc_processor_restore_zval(zval *dst, const zval *src, zend_bool have_references TSRMLS_DC)') dnl {{{
+{
 	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
@@ -531,21 +530,21 @@ zval *xc_processor_restore_zval(zval *dst, const zval *src, zend_bool have_refer
 
 	return dst;
 }
-/* }}} */
+dnl }}}
 define(`DEFINE_RELOCATE_API', `
-/* export: void xc_processor_relocate_$1(int a TSRMLS_DC); :export {{{ */
-void xc_processor_relocate_$1(int a TSRMLS_DC) {
+EXPORTED(`void xc_processor_relocate_$1(int a TSRMLS_DC)') dnl {{{
+{
 }
-/* }}} */
+dnl }}}
 ')
 DEFINE_RELOCATE_API(`xc_entry_var_t')
 DEFINE_RELOCATE_API(`xc_entry_php_t')
 DEFINE_RELOCATE_API(`xc_entry_data_php_t')
-/* export: void xc_dprint(xc_entry_php_t *src, int indent TSRMLS_DC); :export {{{ */
 #ifdef HAVE_XCACHE_DPRINT
-void xc_dprint(xc_entry_php_t *src, int indent TSRMLS_DC) {
+EXPORTED(`void xc_dprint(xc_entry_php_t *src, int indent TSRMLS_DC)') dnl {{{
+{
 	IFDPRINT(`INDENT()`'fprintf(stderr, "xc_entry_php_t:src");')
 	xc_dprint_xc_entry_php_t(src, indent TSRMLS_CC);
 }
 #endif
-/* }}} */
+dnl }}}

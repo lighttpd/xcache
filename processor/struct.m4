@@ -29,7 +29,7 @@ define(`DEF_STRUCT_P_FUNC', `
 	pushdef(`type', `ifelse(`$2', `', `$1', `$2')')
 	define(`DEFINED_'type, `')
 	ifelse(ifdef(`EXPORT_'PROCESSOR_TYPE`_'type,1)ifdef(`EXPORT_'PROCESSOR_TYPE`_',1)ifdef(`EXPORT__'type,1), `', `',
-		`', `', `/* export: DECL_STRUCT_P_FUNC(`$1', `$2') :export */')
+		`', `', `EXPORT(`DECL_STRUCT_P_FUNC(`$1', `$2')')')
 	popdef(`type')
 DECL_STRUCT_P_FUNC(`$1', `$2', ` ')
 	{
