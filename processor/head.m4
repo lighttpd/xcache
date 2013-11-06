@@ -114,7 +114,7 @@ struct _xc_processor_t {
 IFAUTOCHECK(xc_stack_t allocsizes;)
 };
 /* }}} */
-/* export: typedef struct _xc_ptrmove_t { ptrdiff_t src; ptrdiff_t ptrdiff; } xc_ptrmove_t; :export {{{ */
+/* export: typedef struct _xc_relocate_t { ptrdiff_t src; ptrdiff_t dst; ptrdiff_t ptrdiff; } xc_relocate_t; :export {{{ */
 /* }}} */
 /* export: typedef struct _xc_dasm_t { const zend_op_array *active_op_array_src; } xc_dasm_t; :export {{{ */
 /* }}} */
@@ -512,16 +512,6 @@ xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_php
 	return dst;
 }
 /* }}} */
-/* export: xc_entry_var_t *xc_processor_restore_xc_entry_var_t(xc_entry_var_t *dst, const xc_entry_var_t *src TSRMLS_DC); :export {{{ */
-xc_entry_var_t *xc_processor_restore_xc_entry_var_t(xc_entry_var_t *dst, const xc_entry_var_t *src TSRMLS_DC) {
-	xc_processor_t processor;
-
-	memset(&processor, 0, sizeof(processor));
-	xc_restore_xc_entry_var_t(&processor, dst, src TSRMLS_CC);
-
-	return dst;
-}
-/* }}} */
 /* export: zval *xc_processor_restore_zval(zval *dst, const zval *src, zend_bool have_references TSRMLS_DC); :export {{{ */
 zval *xc_processor_restore_zval(zval *dst, const zval *src, zend_bool have_references TSRMLS_DC) {
 	xc_processor_t processor;
@@ -542,6 +532,15 @@ zval *xc_processor_restore_zval(zval *dst, const zval *src, zend_bool have_refer
 	return dst;
 }
 /* }}} */
+define(`DEFINE_RELOCATE_API', `
+/* export: void xc_processor_relocate_$1(int a TSRMLS_DC); :export {{{ */
+void xc_processor_relocate_$1(int a TSRMLS_DC) {
+}
+/* }}} */
+')
+DEFINE_RELOCATE_API(`xc_entry_var_t')
+DEFINE_RELOCATE_API(`xc_entry_php_t')
+DEFINE_RELOCATE_API(`xc_entry_data_php_t')
 /* export: void xc_dprint(xc_entry_php_t *src, int indent TSRMLS_DC); :export {{{ */
 #ifdef HAVE_XCACHE_DPRINT
 void xc_dprint(xc_entry_php_t *src, int indent TSRMLS_DC) {

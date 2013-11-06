@@ -4,14 +4,17 @@ define(`pushdefFUNC_NAME', `
 dnl {{{ DECL_STRUCT_P_FUNC(1:type, 2:name, 3:comma=;)
 define(`DECL_STRUCT_P_FUNC', `translit(
 	pushdefFUNC_NAME(`$1', `$2')
-	define(`DEFINED_'ifelse(`$2', `', `$1', `$2'), `')
-	ifdef(`EXPORT_'ifelse(`$2', `', `$1', `$2'), `void', `static void inline')
+	pushdef(`type', `ifelse(`$2', `', `$1', `$2')')
+	define(`DEFINED_'type, `')
+	ifelse(ifdef(`EXPORT_'PROCESSOR_TYPE`_'type,1)ifdef(`EXPORT_'PROCESSOR_TYPE`_',1)ifdef(`EXPORT__'type,1), `', `static void inline',
+		`', `', `void')
+	popdef(`type')
 	FUNC_NAME`'(
 		IFDPRINT( `const $1 * const src, int indent')
 		IFCALC(   `xc_processor_t *processor, const $1 * const src')
 		IFSTORE(  `xc_processor_t *processor, $1 *dst, const $1 * const src')
 		IFRESTORE(`xc_processor_t *processor, $1 *dst, const $1 * const src')
-		IFPTRMOVE(`const xc_ptrmove_t *ptrmove, $1 * const dst, const $1 * const src')
+		IFPTRMOVE(`const xc_relocate_t *relocate, $1 * const dst, const $1 * const src')
 		IFDASM(   `xc_dasm_t *dasm, zval *dst, const $1 * const src')
 		TSRMLS_DC
 	)ifelse(`$3', `', `;')
@@ -23,10 +26,12 @@ dnl {{{ DEF_STRUCT_P_FUNC(1:type, 2:name, 3:body)
 define(`DEF_STRUCT_P_FUNC', `
 	pushdefFUNC_NAME(`$1', `$2')
 /* {`{'{ FUNC_NAME */
-	ifdef(`EXPORT_'ifelse(`$2', `', `$1', `$2'), `
-		/* export: DECL_STRUCT_P_FUNC(`$1', `$2') :export */
-	')
-DECL_STRUCT_P_FUNC(`$1', `$2', 1)
+	pushdef(`type', `ifelse(`$2', `', `$1', `$2')')
+	define(`DEFINED_'type, `')
+	ifelse(ifdef(`EXPORT_'PROCESSOR_TYPE`_'type,1)ifdef(`EXPORT_'PROCESSOR_TYPE`_',1)ifdef(`EXPORT__'type,1), `', `',
+		`', `', `/* export: DECL_STRUCT_P_FUNC(`$1', `$2') :export */')
+	popdef(`type')
+DECL_STRUCT_P_FUNC(`$1', `$2', ` ')
 	{
 		pushdef(`ELEMENTS_DONE')
 		IFAUTOCHECK(`
@@ -143,7 +148,7 @@ ifdef(`DASM_STRUCT_DIRECT', `', `
 		IFSTORE(  `processor, $6 $2, $6 $3')
 		IFRESTORE(`processor, $6 $2, $6 $3')
 		IFPTRMOVE(`
-			ptrmove
+			relocate
 			, ifelse(`$6', `', `DSTPTR_EX(`$1', `$2')', `$6 $2')
 			, ifelse(`$6', `', `SRCPTR_EX(`$1', `$3')', `$6 $3')
 		')

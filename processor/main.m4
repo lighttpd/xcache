@@ -26,11 +26,11 @@ define(`INDENT', `xc_dprint_indent(indent);')
 dnl }}}
 dnl {{{ SRCPTR(1:type, 2:elm)
 define(`SRCPTR', `SRCPTR_EX(`$1', `SRC(`$2')')')
-define(`SRCPTR_EX', `IFPTRMOVE(`(($1 *) (((char *) $2) + ptrmove->src))', `$2')')
+define(`SRCPTR_EX', `IFPTRMOVE(`(($1 *) (((char *) $2) + relocate->src))', `$2')')
 dnl }}}
-dnl {{{ SRCPTR(1:type, 2:elm)
+dnl {{{ DSTPTR(1:type, 2:elm)
 define(`DSTPTR', `DSTPTR_EX(`$1', `DST(`$2')')')
-define(`DSTPTR_EX', `SRCPTR_EX($@)')
+define(`DSTPTR_EX', `IFPTRMOVE(`(($1 *) (((char *) $2) + relocate->dst))', `$2')')
 dnl }}}
 dnl {{{ ALLOC(1:dst, 2:type, 3:count=1, 4:clean=false, 5:realtype=$2)
 define(`ALLOC', `
@@ -127,8 +127,8 @@ define(`DBG', `ifdef(`XCACHE_ENABLE_TEST', `
 	/* `$1' */
 ')')
 dnl }}}
-dnl {{{ EXPORT
-define(`EXPORT', `define(`EXPORT_$1')')
+dnl {{{ EXPORT(1:type, 2:processor)
+define(`EXPORT', `define(`EXPORT_$1_$2', 1)')
 dnl }}}
 dnl {{{ FIXPOINTER(1:type, 2:ele)
 define(`FIXPOINTER', `FIXPOINTER_EX(`$1', `DST(`$2')', `SRCPTR(`$1', `$2')')')
@@ -136,7 +136,7 @@ dnl }}}
 dnl {{{ FIXPOINTER_EX(1:type, 2:dst, 3:src)
 define(`FIXPOINTER_EX', `
 	IFSTORE(`$2 = ($1 *) processor->shm->handlers->to_readonly(processor->shm, (void *)$2);')
-	IFPTRMOVE(`$2 = ($1 *) (((char *) $3) + ptrmove->ptrdiff);')
+	IFPTRMOVE(`$2 = ($1 *) (((char *) $3) + relocate->ptrdiff);')
 ')
 dnl }}}
 dnl {{{ IFNOTMEMCPY
@@ -236,24 +236,30 @@ define(`IFCALC', `ifelse(PROCESSOR_TYPE, `calc', `$1', `$2')')
 define(`IFSTORE', `ifelse(PROCESSOR_TYPE, `store', `$1', `$2')')
 define(`IFCALCSTORE', `IFSTORE(`$1', `IFCALC(`$1', `$2')')')
 define(`IFRESTORE', `ifelse(PROCESSOR_TYPE, `restore', `$1', `$2')')
-define(`IFPTRMOVE', `ifelse(PROCESSOR_TYPE, `ptrmove', `$1', `$2')')
+define(`IFPTRMOVE', `ifelse(PROCESSOR_TYPE, `relocate', `$1', `$2')')
 define(`IFCOPY', `IFSTORE(`$1', `IFRESTORE(`$1', `$2')')')
 define(`IFCALCCOPY', `IFCALC(`$1', `IFCOPY(`$1', `$2')')')
 define(`IFDPRINT', `ifelse(PROCESSOR_TYPE, `dprint', `$1', `$2')')
 define(`IFDASM', `ifelse(PROCESSOR_TYPE, `dasm', `$1', `$2')')
 dnl }}}
 
-EXPORT(`zend_op')
-EXPORT(`zend_op_array')
-EXPORT(`zend_function')
-EXPORT(`HashTable_zend_function')
-EXPORT(`zend_class_entry')
-EXPORT(`xc_classinfo_t')
-EXPORT(`xc_funcinfo_t')
-EXPORT(`xc_entry_var_t')
-EXPORT(`xc_entry_php_t')
-EXPORT(`xc_entry_data_php_t')
-EXPORT(`zval')
+EXPORT(`dasm', `zend_op_array')
+EXPORT(`dasm', `zend_function')
+EXPORT(`dasm', `zend_class_entry')
+
+EXPORT(`calc',    `xc_entry_data_php_t')
+EXPORT(`calc',    `xc_entry_php_t')
+EXPORT(`calc',    `xc_entry_var_t')
+EXPORT(`store',   `xc_entry_data_php_t')
+EXPORT(`store',   `xc_entry_php_t')
+EXPORT(`store',   `xc_entry_var_t')
+EXPORT(`restore', `xc_entry_data_php_t')
+EXPORT(`restore', `xc_entry_php_t')
+EXPORT(`dasm',    `xc_entry_data_php_t')
+EXPORT(`dprint',  `xc_entry_php_t')
+
+EXPORT(`restore', `zval')
+EXPORT(`dprint',  `zval')
 
 include(srcdir`/processor/hashtable.m4')
 include(srcdir`/processor/string.m4')
@@ -264,7 +270,7 @@ include(srcdir`/processor/head.m4')
 REDEF(`PROCESSOR_TYPE', `calc') include(srcdir`/processor/processor.m4')
 REDEF(`PROCESSOR_TYPE', `store') include(srcdir`/processor/processor.m4')
 REDEF(`PROCESSOR_TYPE', `restore') include(srcdir`/processor/processor.m4')
-REDEF(`PROCESSOR_TYPE', `ptrmove') include(srcdir`/processor/processor.m4')
+REDEF(`PROCESSOR_TYPE', `relocate') include(srcdir`/processor/processor.m4')
 
 #ifdef HAVE_XCACHE_DPRINT
 REDEF(`PROCESSOR_TYPE', `dprint') include(srcdir`/processor/processor.m4')
