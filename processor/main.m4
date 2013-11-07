@@ -249,10 +249,10 @@ define(`IFDPRINT', `ifelse(PROCESSOR_TYPE, `dprint', `$1', `$2')')
 define(`IFDASM', `ifelse(PROCESSOR_TYPE, `dasm', `$1', `$2')')
 dnl }}}
 
-EXPORT_PROCESSOR(`dasm', `zend_op_array')
-EXPORT_PROCESSOR(`dasm', `zend_function')
-EXPORT_PROCESSOR(`dasm', `zend_class_entry')
-EXPORT_PROCESSOR(`dprint',  `zval')
+EXPORT_PROCESSOR(`dasm',   `zend_op_array')
+EXPORT_PROCESSOR(`dasm',   `zend_function')
+EXPORT_PROCESSOR(`dasm',   `zend_class_entry')
+EXPORT_PROCESSOR(`dprint', `zval')
 
 include(srcdir`/processor/hashtable.m4')
 include(srcdir`/processor/string.m4')
