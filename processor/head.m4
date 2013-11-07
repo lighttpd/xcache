@@ -110,12 +110,6 @@ typedef struct _xc_processor_t {
 IFAUTOCHECK(xc_stack_t allocsizes;)
 } xc_processor_t;
 dnl }}}
-typedef struct _xc_relocate_t { /* {{{ */
-	ptrdiff_t dst;
-	char *old_start;
-	char *new_start;
-} xc_relocate_t;
-/* }}} */
 EXPORT(`typedef struct _xc_dasm_t { const zend_op_array *active_op_array_src; } xc_dasm_t;')
 /* {{{ memsetptr */
 IFAUTOCHECK(`dnl

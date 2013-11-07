@@ -178,12 +178,10 @@ static xc_entry_data_php_t *xc_php_store_unlocked(xc_cache_t *cache, xc_entry_da
 	stored_php = xc_processor_store_xc_entry_data_php_t(cache->shm, cache->allocator, php TSRMLS_CC);
 #if 1
 	{
-		char *p = malloc(stored_php->size);
-		fprintf(stderr, "%d\n", stored_php->size);
+		xc_entry_data_php_t *p = malloc(stored_php->size);
+		fprintf(stderr, "%lu\n", stored_php->size);
 		memcpy(p, stored_php, stored_php->size);
-		/*
-		xc_processor_relocate_xc_entry_data_php_t(p, p, 0, stored_php TSRMLS_CC);
-		*/
+		xc_processor_relocate_xc_entry_data_php_t(p, stored_php, p TSRMLS_CC);
 	}
 #endif
 	if (stored_php) {

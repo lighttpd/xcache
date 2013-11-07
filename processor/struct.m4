@@ -14,7 +14,7 @@ define(`DECL_STRUCT_P_FUNC', `translit(
 		IFCALC(   `xc_processor_t *processor, const $1 * const src')
 		IFSTORE(  `xc_processor_t *processor, $1 *dst, const $1 * const src')
 		IFRESTORE(`xc_processor_t *processor, $1 *dst, const $1 * const src')
-		IFRELOCATE(`const xc_relocate_t *relocate, $1 *const src')
+		IFRELOCATE(`$1 *const src, ptrdiff_t ptrdiff, ptrdiff_t relocatediff')
 		IFDASM(`xc_dasm_t *dasm, zval *dst, const $1 * const src')
 		TSRMLS_DC
 	)ifelse(`$3', `', `;')
@@ -148,8 +148,9 @@ ifdef(`DASM_STRUCT_DIRECT', `', `
 		IFSTORE(  `processor, $6 $2, $6 $3')
 		IFRESTORE(`processor, $6 $2, $6 $3')
 		IFRELOCATE(`
-			relocate
-			, ifelse(`$6', `', `SRCPTR_EX(`$1', `$3')', `$6 $3')
+			ifelse(`$6', `', `SRCPTR_EX(`$1', `$3')', `$6 $3')
+			, ptrdiff
+			, relocatediff
 		')
 		IFDASM(`dasm, ifdef(`DASM_STRUCT_DIRECT', `dst', `zv'), $6 $3')
 		TSRMLS_CC

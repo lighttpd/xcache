@@ -25,7 +25,7 @@ dnl ============
 define(`INDENT', `xc_dprint_indent(indent);')
 dnl }}}
 dnl {{{ SRCPTR_EX(1:type, 2:elm)
-define(`SRCPTR_EX', `IFRELOCATE(`(($1 *) (((char *) $2) + 1))', `$2')')
+define(`SRCPTR_EX', `IFRELOCATE(`(($1 *) (((char *) $2) + ptrdiff))', `$2')')
 dnl }}}
 dnl {{{ ALLOC(1:dst, 2:type, 3:count=1, 4:clean=false, 5:realtype=$2)
 define(`ALLOC', `
@@ -138,7 +138,11 @@ dnl }}}
 dnl {{{ FIXPOINTER_EX(1:type, 2:dst)
 define(`FIXPOINTER_EX', `
 	IFSTORE(`$2 = ($1 *) processor->shm->handlers->to_readonly(processor->shm, (void *)$2);')
-	IFRELOCATE(`patsubst($2, `dst', `src') = ($1 *) (((char *) patsubst($2, `dst', `src')) + 1);')
+	IFRELOCATE(`
+		pushdef(`relocatee', `patsubst($2, `dst', `src')')
+		relocatee = ($1 *) (((char *) relocatee) + relocatediff);
+		popdef(`relocatee')
+	')
 ')
 dnl }}}
 dnl {{{ IFNOTMEMCPY

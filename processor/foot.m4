@@ -136,13 +136,27 @@ EXPORTED_FUNCTION(`zval *xc_processor_restore_zval(zval *dst, const zval *src, z
 }
 dnl }}}
 define(`DEFINE_RELOCATE_API', `
-EXPORTED_FUNCTION(`void xc_processor_relocate_$1($1 *dst, char *old_start, char *new_start TSRMLS_DC)') dnl {{{
+EXPORTED_FUNCTION(`void xc_processor_relocate_$1($1 *src, $1 *old_start, $1 *new_start TSRMLS_DC)') dnl {{{
 {
-	xc_relocate_t relocate;
-	relocate.dst = dst;
-	relocate.old_start = old_start;
-	relocate.new_start = new_start;
-	xc_relocate_$1(&relocate, dst TSRMLS_CC);
+	/*
+	$1 *xc_addressof(offset) {
+		return (char *) offset + (ptrdiff_t) old_start;
+	}
+	*/
+	ptrdiff_t ptrdiff = /* offset + */ (ptrdiff_t) old_start;
+
+	/*
+	ptrdiff_t *xc_offsetof(offset) {
+		return (char *) xc_addressof(offset) - src;
+	}
+
+	$1 *xc_newoffset(offset) {
+		return new_start + xc_offsetof(offset);
+	}
+	*/
+	ptrdiff_t relocatediff = new_start + (/* offset + */ ptrdiff - (ptrdiff_t) src);
+
+	xc_relocate_$1(src, ptrdiff, relocatediff TSRMLS_CC);
 }
 dnl }}}
 ')

@@ -104,7 +104,8 @@ define(`DEF_HASH_TABLE_FUNC', `
 			')
 			if (sizeof(void *) == sizeof($2)) {
 				IFCOPY(`dstBucket->pData = &dstBucket->pDataPtr;')
-				dnl $6 = `' to skip alloc
+				IFRELOCATE(`srcBucket->pData = &srcBucket->pDataPtr;')
+				dnl $6 = ` ' to skip alloc, skip pointer fix
 				STRUCT_P_EX(`$2', dstBucket->pData, (($2*)srcBucket->pData), `', `$3', ` ')
 				FIXPOINTER_EX(`$2', dstBucket->pData)
 			}
