@@ -882,10 +882,10 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	dnl SETNULL(u_twin)
 #endif
 
-	IFSTORE(`pushdef(`FIXPOINTER')')
+	IFSTORE(`pushdef(`FIXPOINTER_EX')')
 	STRUCT_P(zend_uint, refcount)
 	IFSTORE(`
-		popdef(`FIXPOINTER')
+		popdef(`FIXPOINTER_EX')
 		DST(`refcount[0]') = 1;
 		FIXPOINTER(zend_uint, refcount)
 	')
