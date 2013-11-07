@@ -582,6 +582,20 @@ static void xcache_signal_handler(int sig) /* {{{ */
 		xc_disable_on_crash = 0;
 		xc_cacher_disable();
 	}
+
+	if (0) {
+	}
+#define FOREACH_SIG(forsig) \
+	else if (sig == forsig) \
+		write(2, XCACHE_STRL("Program received signal " #forsig ", Segmentation fault\n"))
+
+#include "util/xc_foreachcoresig.h"
+#undef FOREACH_SIG
+
+	write(2, XCACHE_STRL("If core dump is enabled it can be found at "));
+	write(2, xc_coredump_dir, strlen(xc_coredump_dir));
+	write(2, XCACHE_STRL("\n"));
+
 	raise(sig);
 }
 /* }}} */
