@@ -135,28 +135,21 @@ EXPORTED_FUNCTION(`zval *xc_processor_restore_zval(zval *dst, const zval *src, z
 	return dst;
 }
 dnl }}}
+#define ptradd(type, ptr, ptrdiff) ((type) ((char *) (ptr) + (ptrdiff)))
+#define ptrsub(ptr1, ptr2) ((char *) (ptr1) - (char *)(ptr2))
 define(`DEFINE_RELOCATE_API', `
-EXPORTED_FUNCTION(`void xc_processor_relocate_$1($1 *src, $1 *old_start, $1 *new_start TSRMLS_DC)') dnl {{{
+EXPORTED_FUNCTION(`void xc_processor_relocate_$1($1 *old_src, $1 *old_start, $1 *new_src, $1 *new_start TSRMLS_DC)') dnl {{{
 {
-	/*
-	$1 *xc_addressof(offset) {
-		return (char *) offset + (ptrdiff_t) old_start;
-	}
-	*/
-	ptrdiff_t ptrdiff = /* offset + */ (ptrdiff_t) old_start;
+	ptrdiff_t offset_from_old_start = 0; /* unkown X used later */
+	$1 *const old_address = ptradd($1 *, offset_from_old_start, (ptrdiff_t) old_start);
+	ptrdiff_t offset = ptrsub(old_address, old_src);
+	$1 *const new_address = ptradd($1 *, new_src, offset);
 
-	/*
-	ptrdiff_t *xc_offsetof(offset) {
-		return (char *) xc_addressof(offset) - src;
-	}
+	/* diff to new_ptr */
+	ptrdiff_t ptrdiff = (ptrdiff_t) new_address;
+	ptrdiff_t relocatediff = (ptrdiff_t) ptradd($1 *, new_start, offset);
 
-	$1 *xc_newoffset(offset) {
-		return new_start + xc_offsetof(offset);
-	}
-	*/
-	ptrdiff_t relocatediff = new_start + (/* offset + */ ptrdiff - (ptrdiff_t) src);
-
-	xc_relocate_$1(src, ptrdiff, relocatediff TSRMLS_CC);
+	xc_relocate_$1(new_src, ptrdiff, relocatediff TSRMLS_CC);
 }
 dnl }}}
 ')

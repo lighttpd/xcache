@@ -181,7 +181,7 @@ static xc_entry_data_php_t *xc_php_store_unlocked(xc_cache_t *cache, xc_entry_da
 		xc_entry_data_php_t *p = malloc(stored_php->size);
 		fprintf(stderr, "%lu\n", stored_php->size);
 		memcpy(p, stored_php, stored_php->size);
-		xc_processor_relocate_xc_entry_data_php_t(p, stored_php, p TSRMLS_CC);
+		xc_processor_relocate_xc_entry_data_php_t(p, stored_php, 0, p TSRMLS_CC);
 	}
 #endif
 	if (stored_php) {
