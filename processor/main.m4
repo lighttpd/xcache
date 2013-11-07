@@ -252,19 +252,6 @@ dnl }}}
 EXPORT_PROCESSOR(`dasm', `zend_op_array')
 EXPORT_PROCESSOR(`dasm', `zend_function')
 EXPORT_PROCESSOR(`dasm', `zend_class_entry')
-
-dnl EXPORT_PROCESSOR(`calc',    `xc_entry_data_php_t')
-dnl EXPORT_PROCESSOR(`calc',    `xc_entry_php_t')
-dnl EXPORT_PROCESSOR(`calc',    `xc_entry_var_t')
-dnl EXPORT_PROCESSOR(`store',   `xc_entry_data_php_t')
-dnl EXPORT_PROCESSOR(`store',   `xc_entry_php_t')
-dnl EXPORT_PROCESSOR(`store',   `xc_entry_var_t')
-dnl EXPORT_PROCESSOR(`restore', `xc_entry_data_php_t')
-dnl EXPORT_PROCESSOR(`restore', `xc_entry_php_t')
-dnl EXPORT_PROCESSOR(`dasm',    `xc_entry_data_php_t')
-dnl EXPORT_PROCESSOR(`dprint',  `xc_entry_php_t')
-
-dnl EXPORT_PROCESSOR(`restore', `zval')
 EXPORT_PROCESSOR(`dprint',  `zval')
 
 include(srcdir`/processor/hashtable.m4')
