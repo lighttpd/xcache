@@ -83,6 +83,15 @@ typedef char  zstr_char;
 
 #define ptradd(type, ptr, ptrdiff) ((type) (((char *) (ptr)) + (ptrdiff)))
 #define ptrsub(ptr1, ptr2) (((char *) (ptr1)) - ((char *) (ptr2)))
+#ifdef NDEBUG
+	#define notnullable(ptr) (ptr)
+#else
+static inline void *notnullable(void *ptr)
+{
+	assert(ptr);
+	return ptr;
+}
+#endif
 dnl }}}
 dnl {{{ _xc_processor_t
 typedef struct _xc_processor_t {
