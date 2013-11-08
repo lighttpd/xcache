@@ -147,9 +147,8 @@ EXPORTED_FUNCTION(`void xc_processor_relocate_$1($1 *dst, $1 *virtual_dst, $1 *s
 	ptrdiff_t offset = ptrsub(old_address, (ptrdiff_t) virtual_src);
 
 	/* diff to new_ptr */
-	ptrdiff_t ptrdiff = ptrsub(dst, src);
+	ptrdiff_t ptrdiff = ptrsub(dst, virtual_src);
 	ptrdiff_t relocatediff = (ptrdiff_t) ptradd($1 *, virtual_dst, offset);
-	assert(ptradd($1 *, src, ptrdiff) == dst);
 
 	xc_relocate_$1(dst, ptrdiff, relocatediff TSRMLS_CC);
 }
