@@ -80,6 +80,9 @@ typedef UChar zstr_uchar;
 typedef char  zstr_char;
 
 #define MAX_DUP_STR_LEN 256
+
+#define ptradd(type, ptr, ptrdiff) ((type) (((char *) (ptr)) + (ptrdiff)))
+#define ptrsub(ptr1, ptr2) (((char *) (ptr1)) - ((char *) (ptr2)))
 dnl }}}
 dnl {{{ _xc_processor_t
 typedef struct _xc_processor_t {

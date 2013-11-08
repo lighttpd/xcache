@@ -25,7 +25,7 @@ dnl ============
 define(`INDENT', `xc_dprint_indent(indent);')
 dnl }}}
 dnl {{{ SRCPTR_EX(1:type, 2:elm)
-define(`SRCPTR_EX', `IFRELOCATE(`(($1 *) (((char *) $2) + ptrdiff))', `$2')')
+define(`SRCPTR_EX', `IFRELOCATE(`ptradd($1 *, $2, ptrdiff)', `$2')')
 dnl }}}
 dnl {{{ ALLOC(1:dst, 2:type, 3:count=1, 4:clean=false, 5:realtype=$2)
 define(`ALLOC', `

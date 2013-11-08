@@ -135,8 +135,6 @@ EXPORTED_FUNCTION(`zval *xc_processor_restore_zval(zval *dst, const zval *src, z
 	return dst;
 }
 dnl }}}
-#define ptradd(type, ptr, ptrdiff) ((type) ((char *) (ptr) + (ptrdiff)))
-#define ptrsub(ptr1, ptr2) ((char *) (ptr1) - (char *)(ptr2))
 define(`DEFINE_RELOCATE_API', `
 EXPORTED_FUNCTION(`void xc_processor_relocate_$1($1 *old_src, $1 *old_start, $1 *new_src, $1 *new_start TSRMLS_DC)') dnl {{{
 {
@@ -148,6 +146,7 @@ EXPORTED_FUNCTION(`void xc_processor_relocate_$1($1 *old_src, $1 *old_start, $1 
 	/* diff to new_ptr */
 	ptrdiff_t ptrdiff = (ptrdiff_t) new_address;
 	ptrdiff_t relocatediff = (ptrdiff_t) ptradd($1 *, new_start, offset);
+	assert(new_src == ptradd($1 *, old_src, ptrdiff));
 
 	xc_relocate_$1(new_src, ptrdiff, relocatediff TSRMLS_CC);
 }
