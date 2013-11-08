@@ -136,22 +136,22 @@ EXPORTED_FUNCTION(`zval *xc_processor_restore_zval(zval *dst, const zval *src, z
 }
 dnl }}}
 define(`DEFINE_RELOCATE_API', `
-/* old_src = readable element, before memcpy if any
- * new_src = writable element, after memcpy if any
- * virtual_old_src = brother pointers relatived to this address, before relocation
- * virtual_new_src = brother pointers relatived to this address, after  relocation
+/* src = readable element, before memcpy if any
+ * dst = writable element, after memcpy if any
+ * virtual_src = brother pointers relatived to this address, before relocation
+ * virtual_dst = brother pointers relatived to this address, after  relocation
  */
-EXPORTED_FUNCTION(`void xc_processor_relocate_$1($1 *old_src, $1 *virtual_old_src, $1 *new_src, $1 *virtual_new_src TSRMLS_DC)') dnl {{{
+EXPORTED_FUNCTION(`void xc_processor_relocate_$1($1 *dst, $1 *virtual_dst, $1 *src, $1 *virtual_src TSRMLS_DC)') dnl {{{
 {
 	char *old_address = 0; /* unkown X used later */
-	ptrdiff_t offset = ptrsub(old_address, (ptrdiff_t) virtual_old_src);
+	ptrdiff_t offset = ptrsub(old_address, (ptrdiff_t) virtual_src);
 
 	/* diff to new_ptr */
-	ptrdiff_t ptrdiff = ptrsub(new_src, old_src);
-	ptrdiff_t relocatediff = (ptrdiff_t) ptradd($1 *, virtual_new_src, offset);
-	assert(ptradd($1 *, old_src, ptrdiff) == new_src);
+	ptrdiff_t ptrdiff = ptrsub(dst, src);
+	ptrdiff_t relocatediff = (ptrdiff_t) ptradd($1 *, virtual_dst, offset);
+	assert(ptradd($1 *, src, ptrdiff) == dst);
 
-	xc_relocate_$1(new_src, ptrdiff, relocatediff TSRMLS_CC);
+	xc_relocate_$1(dst, ptrdiff, relocatediff TSRMLS_CC);
 }
 dnl }}}
 ')
