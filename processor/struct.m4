@@ -231,7 +231,11 @@ define(`STRUCT_ARRAY', `
 					`', `', `LOOPCOUNTER < SRC(`$2')');
 					++LOOPCOUNTER) {
 				DISABLECHECK(`
-					STRUCT(`$3', `$4[LOOPCOUNTER]', `$5')
+					pushdef(`ALLOC')
+					pushdef(`FIXPOINTER_EX')
+					STRUCT_P_EX(`$3', (DST(`$4') + LOOPCOUNTER), (SRC(`$4') + LOOPCOUNTER), `', `$5')
+					popdef(`FIXPOINTER_EX')
+					popdef(`ALLOC')
 				')
 			}
 			dnl the end marker
