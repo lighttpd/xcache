@@ -176,7 +176,7 @@ static xc_entry_data_php_t *xc_php_store_unlocked(xc_cache_t *cache, xc_entry_da
 	php->hits     = 0;
 	php->refcount = 0;
 	stored_php = xc_processor_store_xc_entry_data_php_t(cache->shm, cache->allocator, php TSRMLS_CC);
-#if 1
+#if 0
 	{
 		xc_entry_data_php_t *p = malloc(stored_php->size);
 		xc_entry_data_php_t *backup = malloc(stored_php->size);

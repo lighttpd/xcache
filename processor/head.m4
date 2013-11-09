@@ -86,10 +86,10 @@ typedef char  zstr_char;
 #ifdef NDEBUG
 	#define notnullable(ptr) (ptr)
 #else
-static inline void *notnullable(void *ptr)
+static inline void *notnullable(const void *ptr)
 {
 	assert(ptr);
-	return ptr;
+	return (void *) ptr;
 }
 #endif
 dnl }}}
