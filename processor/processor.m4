@@ -25,22 +25,22 @@ DEF_STRUCT_P_FUNC(`zend_compiled_variable', , `dnl {{{
 dnl }}}
 #endif
 DEF_STRUCT_P_FUNC(`zend_uint', , `dnl {{{
-	IFCOPY(`dst[0] = src[0];')
+	IFCOPY(`DST()[0] = SRC()[0];')
 	IFDPRINT(`
 		INDENT()
-		fprintf(stderr, "%u\n", src[0]);
+		fprintf(stderr, "%u\n", SRC()[0]);
 	')
-	DONE_SIZE(sizeof(src[0]))
+	DONE_SIZE(sizeof(SRC()[0]))
 ')
 dnl }}}
 #ifndef ZEND_ENGINE_2
 DEF_STRUCT_P_FUNC(`int', , `dnl {{{
-	IFCOPY(`*dst = *src;')
+	IFCOPY(`*DST() = *SRC();')
 	IFDPRINT(`
 		INDENT()
-		fprintf(stderr, "%d\n", src[0]);
+		fprintf(stderr, "%d\n", SRC()[0]);
 	')
-	DONE_SIZE(sizeof(src[0]))
+	DONE_SIZE(sizeof(SRC()[0]))
 ')
 dnl }}}
 #endif
@@ -71,10 +71,10 @@ DEF_HASH_TABLE_FUNC(`HashTable_zend_property_info', `zend_property_info')
 #endif
 DEF_STRUCT_P_FUNC(`zval', , `dnl {{{
 	IFDASM(`do {
-		zval_dtor(dst);
-		*dst = *src;
-		zval_copy_ctor(dst);
-		Z_SET_REFCOUNT(*dst, 1);
+		zval_dtor(DST());
+		*DST() = *SRC();
+		zval_copy_ctor(DST());
+		Z_SET_REFCOUNT(*DST(), 1);
 		DONE(value)
 		DONE(type)
 #ifdef ZEND_ENGINE_2_3
@@ -90,7 +90,7 @@ DEF_STRUCT_P_FUNC(`zval', , `dnl {{{
 		/* Variable information */
 dnl {{{ zvalue_value
 		DISABLECHECK(`
-		switch ((Z_TYPE_P(src) & IS_CONSTANT_TYPE_MASK)) {
+		switch ((Z_TYPE_P(SRC()) & IS_CONSTANT_TYPE_MASK)) {
 			case IS_LONG:
 			case IS_RESOURCE:
 			case IS_BOOL:
@@ -130,7 +130,7 @@ proc_unicode:
 				break;
 
 			case IS_OBJECT:
-				IFNOTMEMCPY(`IFCOPY(`memcpy(dst, src, sizeof(src[0]));')')
+				IFNOTMEMCPY(`IFCOPY(`memcpy(DST(), SRC(), sizeof(SRC()[0]));')')
 				dnl STRUCT(value.obj)
 #ifndef ZEND_ENGINE_2
 				STRUCT_P(zend_class_entry, value.obj.ce)
@@ -164,39 +164,39 @@ dnl }}}
 DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 	IFDASM(`
 		pushdefFUNC_NAME(`zval')
-		FUNC_NAME (dasm, dst, src[0] TSRMLS_CC);
+		FUNC_NAME (dasm, DST(), SRC()[0] TSRMLS_CC);
 		popdef(`FUNC_NAME')
 	', `
 		do {
 			IFCALCCOPY(`
 				if (processor->reference) {
 					zval_ptr *ppzv;
-					if (zend_hash_find(&processor->zvalptrs, (char *) &src[0], sizeof(src[0]), (void **) &ppzv) == SUCCESS) {
+					if (zend_hash_find(&processor->zvalptrs, (char *) &SRC()[0], sizeof(SRC()[0]), (void **) &ppzv) == SUCCESS) {
 						IFCOPY(`
-							dst[0] = *ppzv;
-							/* *dst is updated */
-							dnl fprintf(stderr, "*dst is set to %p, PROCESSOR_TYPE is_shm %d\n", dst[0], xc_is_shm(dst[0]));
+							DST()[0] = *ppzv;
+							/* *DST() is updated */
+							dnl fprintf(stderr, "*DST() is set to %p, PROCESSOR_TYPE is_shm %d\n", DST()[0], xc_is_shm(DST()[0]));
 						')
 						IFCALCSTORE(`processor->have_references = 1;')
-						IFSTORE(`assert(xc_is_shm(dst[0]));')
-						IFRESTORE(`assert(!xc_is_shm(dst[0]));')
+						IFSTORE(`assert(xc_is_shm(DST()[0]));')
+						IFRESTORE(`assert(!xc_is_shm(DST()[0]));')
 						break;
 					}
 				}
 			')
 			
-			ALLOC(dst[0], zval)
+			ALLOC(DST()[0], zval)
 			IFCALCCOPY(`
 				if (processor->reference) {
 					IFCALC(`
 						/* make dummy */
 						zval_ptr pzv = (zval_ptr)-1;
 					', `
-						zval_ptr pzv = dst[0];
+						zval_ptr pzv = DST()[0];
 						FIXPOINTER_EX(zval, pzv)
 					')
-					if (zend_hash_add(&processor->zvalptrs, (char *) &src[0], sizeof(src[0]), (void *) &pzv, sizeof(pzv), NULL) == SUCCESS) { /* first add, go on */
-						dnl fprintf(stderr, "mark[%p] = %p\n", src[0], pzv);
+					if (zend_hash_add(&processor->zvalptrs, (char *) &SRC()[0], sizeof(SRC()[0]), (void *) &pzv, sizeof(pzv), NULL) == SUCCESS) { /* first add, go on */
+						dnl fprintf(stderr, "mark[%p] = %p\n", SRC()[0], pzv);
 					}
 					else {
 						assert(0);
@@ -204,24 +204,24 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 				}
 			')
 			IFCOPY(`
-				dnl fprintf(stderr, "copy from %p to %p\n", src[0], dst[0]);
+				dnl fprintf(stderr, "copy from %p to %p\n", SRC()[0], DST()[0]);
 			')
-			IFDPRINT(`INDENT()`'fprintf(stderr, "[%p] ", (void *) src[0]);')
-			STRUCT_P_EX(zval, dst[0], src[0], `[0]', `', ` ')
-			FIXPOINTER_EX(zval, dst[0])
+			IFDPRINT(`INDENT()`'fprintf(stderr, "[%p] ", (void *) SRC()[0]);')
+			STRUCT_P_EX(zval, DST()[0], SRC()[0], `[0]', `', ` ')
+			FIXPOINTER_EX(zval, DST()[0])
 		} while (0);
 	')
 	DONE_SIZE(sizeof(zval_ptr))
 ')
 dnl }}}
 DEF_STRUCT_P_FUNC(`zval_ptr_nullable', , `dnl {{{
-	if (src[0]) {
+	if (SRC()[0]) {
 		pushdef(`DASM_STRUCT_DIRECT')
-		STRUCT_P_EX(zval_ptr, dst, src, `', `', ` ')
+		STRUCT_P_EX(zval_ptr, DST(), SRC(), `', `', ` ')
 		popdef(`DASM_STRUCT_DIRECT')
 	}
 	else {
-		IFCOPY(`COPYNULL_EX(dst[0], src)')
+		IFCOPY(`COPYNULL_EX(DST()[0], SRC())')
 	}
 	DONE_SIZE(sizeof(zval_ptr_nullable))
 ')
@@ -263,7 +263,7 @@ DEF_STRUCT_P_FUNC(`zend_function', , `dnl {{{
 	switch (SRC(`type')) {
 	case ZEND_INTERNAL_FUNCTION:
 	case ZEND_OVERLOADED_FUNCTION:
-		IFNOTMEMCPY(`IFCOPY(`memcpy(dst, src, sizeof(src[0]));')')
+		IFNOTMEMCPY(`IFCOPY(`memcpy(DST(), SRC(), sizeof(SRC()[0]));')')
 		break;
 
 	case ZEND_USER_FUNCTION:
@@ -276,7 +276,7 @@ DEF_STRUCT_P_FUNC(`zend_function', , `dnl {{{
 		assert(0);
 	}
 	')
-	DONE_SIZE(sizeof(src[0]))
+	DONE_SIZE(sizeof(SRC()[0]))
 ')
 dnl }}}
 #ifdef ZEND_ENGINE_2
@@ -329,12 +329,12 @@ dnl }}}
 DEF_STRUCT_P_FUNC(`zend_trait_alias_ptr', , `dnl {{{
 	IFDASM(`
 		pushdefFUNC_NAME(`zend_trait_alias')
-		FUNC_NAME (dasm, dst, src[0] TSRMLS_CC);
+		FUNC_NAME (dasm, DST(), SRC()[0] TSRMLS_CC);
 		popdef(`FUNC_NAME')
 	', `
-		ALLOC(dst[0], zend_trait_alias)
-		STRUCT_P_EX(zend_trait_alias, dst[0], src[0], `[0]', `', ` ')
-		FIXPOINTER_EX(zend_trait_alias, dst[0])
+		ALLOC(DST()[0], zend_trait_alias)
+		STRUCT_P_EX(zend_trait_alias, DST()[0], SRC()[0], `[0]', `', ` ')
+		FIXPOINTER_EX(zend_trait_alias, DST()[0])
 	')
 	DONE_SIZE(sizeof(zend_trait_alias))
 ')
@@ -342,12 +342,12 @@ dnl }}}
 DEF_STRUCT_P_FUNC(`zend_trait_precedence_ptr', , `dnl {{{
 	IFDASM(`
 		pushdefFUNC_NAME(`zend_trait_precedence')
-		FUNC_NAME (dasm, dst, src[0] TSRMLS_CC);
+		FUNC_NAME (dasm, DST(), SRC()[0] TSRMLS_CC);
 		popdef(`FUNC_NAME')
 	', `
-		ALLOC(dst[0], zend_trait_precedence)
-		STRUCT_P_EX(zend_trait_precedence, dst[0], src[0], `[0]', `', ` ')
-		FIXPOINTER_EX(zend_trait_precedence, dst[0])
+		ALLOC(DST()[0], zend_trait_precedence)
+		STRUCT_P_EX(zend_trait_precedence, DST()[0], SRC()[0], `[0]', `', ` ')
+		FIXPOINTER_EX(zend_trait_precedence, DST()[0])
 	')
 	DONE_SIZE(sizeof(zend_trait_precedence))
 ')
@@ -355,8 +355,8 @@ dnl }}}
 #endif
 DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	IFCALCCOPY(`
-		processor->active_class_entry_src = src;
-		IFCOPY(`processor->active_class_entry_dst = dst;')
+		processor->active_class_entry_src = SRC();
+		IFCOPY(`processor->active_class_entry_dst = DST();')
 	')
 	PROCESS(char, type)
 	PROCESS(zend_uint, name_length)
@@ -497,7 +497,7 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	PROCESS_CTEXTPOINTER(handle_property_get)
 	PROCESS_CTEXTPOINTER(handle_property_set)
 #endif
-	dnl must do after SETNULL(constructor) and dst->parent
+	dnl must do after SETNULL(constructor) and DST()->parent
 	STRUCT(HashTable, function_table, HashTable_zend_function)
 	IFRESTORE(`DST(`function_table.pDestructor') = ZEND_FUNCTION_DTOR;')
 	IFCALCCOPY(`
@@ -535,7 +535,7 @@ define(`UNION_znode_op', `dnl {{{
 					ALLOC_INIT_ZVAL(zv);
 					*zv = dasm->active_op_array_src->literals[SRC(`$1.constant')].constant;
 					zval_copy_ctor(zv);
-					add_assoc_zval_ex(dst, XCACHE_STRS("$1.constant"), zv);
+					add_assoc_zval_ex(DST(), XCACHE_STRS("$1.constant"), zv);
 				}
 				', `
 					IFCOPY(`
@@ -625,7 +625,7 @@ DEF_STRUCT_P_FUNC(`zend_op', , `dnl {{{
 	IFRESTORE(`', `
 	switch (SRC(`opcode')) {
 	case ZEND_BIND_TRAITS:
-		((zend_op *) src)->op2_type = IS_UNUSED;
+		((zend_op *) SRC())->op2_type = IS_UNUSED;
 		break;
 	}
 	')
@@ -713,11 +713,11 @@ dnl }}}
 #endif
 DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	IFCOPY(`
-		processor->active_op_array_dst = dst;
-		processor->active_op_array_src = src;
+		processor->active_op_array_dst = DST();
+		processor->active_op_array_src = SRC();
 	')
 	IFDASM(`
-		dasm->active_op_array_src = src;
+		dasm->active_op_array_src = SRC();
 	')
 	{
 	IFRESTORE(`
@@ -730,7 +730,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 #else
 	zend_bool need_early_binding = processor->php_src->have_early_binding;
 #endif
-	zend_bool shallow_copy = !processor->readonly_protection && !(src == processor->php_src->op_array && need_early_binding);
+	zend_bool shallow_copy = !processor->readonly_protection && !(SRC() == processor->php_src->op_array && need_early_binding);
 	if (shallow_copy) {
 		zend_bool gc_arg_info = 0;
 		zend_bool gc_opcodes  = 0;
@@ -738,7 +738,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		zend_bool gc_literals = 0;
 #endif
 		/* really fast shallow copy */
-		memcpy(dst, src, sizeof(src[0]));
+		memcpy(DST(), SRC(), sizeof(SRC()[0]));
 		DST(`refcount') = &XG(op_array_dummy_refcount_holder);
 		XG(op_array_dummy_refcount_holder) = ((zend_uint) -1) / 2;
 #ifdef ZEND_ACC_ALIAS
@@ -866,7 +866,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 			for (i = 0; i < SRC(`arg_types[0]'); i ++) {
 				add_next_index_long(zv, SRC(`arg_types[i + 1]'));
 			}
-			add_assoc_zval_ex(dst, ZEND_STRS("arg_types"), zv);
+			add_assoc_zval_ex(DST(), ZEND_STRS("arg_types"), zv);
 		} while (0);')
 		DONE(arg_types)
 	}
@@ -986,7 +986,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	PROCESS(int, last_cache_slot)
 #endif
 	} while (0);
-	IFRESTORE(`xc_fix_op_array_info(processor->entry_php_src, processor->php_src, dst, shallow_copy, op_array_info TSRMLS_CC);')
+	IFRESTORE(`xc_fix_op_array_info(processor->entry_php_src, processor->php_src, DST(), shallow_copy, op_array_info TSRMLS_CC);')
 
 #ifdef ZEND_ENGINE_2
 	dnl mark it as -1 on store, and lookup parent on restore
@@ -1023,14 +1023,14 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	PROC_CLASS_ENTRY_P(scope)
 	IFCOPY(`
 		if (SRC(`scope')) {
-			xc_fix_method(processor, dst TSRMLS_CC);
+			xc_fix_method(processor, DST() TSRMLS_CC);
 		}
 	')
 #endif
 
 	IFRESTORE(`
 		if (xc_have_op_array_ctor) {
-			zend_llist_apply_with_argument(&zend_extensions, (llist_apply_with_arg_func_t) xc_zend_extension_op_array_ctor_handler, dst TSRMLS_CC);
+			zend_llist_apply_with_argument(&zend_extensions, (llist_apply_with_arg_func_t) xc_zend_extension_op_array_ctor_handler, DST() TSRMLS_CC);
 		}
 	')
 	}
@@ -1149,8 +1149,8 @@ dnl }}}
 ')
 DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 	IFCOPY(`
-		processor->php_dst = dst;
-		processor->php_src = src;
+		processor->php_dst = DST();
+		processor->php_src = SRC();
 	')
 
 	/* skip */

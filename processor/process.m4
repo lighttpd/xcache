@@ -92,7 +92,7 @@ define(`PROCESS_ARRAY', `dnl {{{ (1:count, 2:type, 3:elm, [4:real_type])
 					`', `', `LOOPCOUNTER < SRC(`$1')');
 					++LOOPCOUNTER) {
 				pushdef(`dst', `arr')
-				pushdef(`SRC', `ifelse(`$4', `', `', `', `', `($2)')' defn(`SRC') `[LOOPCOUNTER]')
+				pushdef(`SRC', `ifelse(`$4', `', `', `($2)')' defn(`SRC') `[LOOPCOUNTER]')
 				popdef(`add_assoc_bool_ex', `add_next_index_bool($1, $3)')
 				popdef(`add_assoc_string_ex', `add_next_index_string($1, $3)')
 				popdef(`add_assoc_long_ex', `add_next_index_long($1, $3)')

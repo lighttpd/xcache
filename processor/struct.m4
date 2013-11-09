@@ -62,13 +62,13 @@ DECL_STRUCT_P_FUNC(`$1', `$2', ` ')
 			HashTable xc_autocheck_done_names;
 			zend_hash_init(&xc_autocheck_done_names, 0, NULL, NULL, 0);
 			/* }}} */
-			IFRESTORE(`assert(xc_is_shm(src));')
-			IFCALCSTORE(`assert(!xc_is_shm(src));')
+			IFRESTORE(`assert(xc_is_shm(SRC()));')
+			IFCALCSTORE(`assert(!xc_is_shm(SRC()));')
 		')
 		ifdef(`SIZEOF_$1', , `m4_errprint(`AUTOCHECK WARN: $1: missing structinfo, dont panic')')
 
 		ifdef(`USEMEMCPY', `IFCOPY(`
-			memcpy(dst, src, sizeof($1));
+			memcpy(DST(), SRC(), sizeof($1));
 		')')
 
 		IFDPRINT(`
@@ -152,12 +152,12 @@ ifdef(`DASM_STRUCT_DIRECT', `', `
 			, ptrdiff
 			, relocatediff
 		')
-		IFDASM(`dasm, ifdef(`DASM_STRUCT_DIRECT', `dst', `zv'), $6 $3')
+		IFDASM(`dasm, ifdef(`DASM_STRUCT_DIRECT', `DST()', `zv'), $6 $3')
 		TSRMLS_CC
 	);
 ifdef(`DASM_STRUCT_DIRECT', `', `
 	IFDASM(`
-		add_assoc_zval_ex(dst, XCACHE_STRS("$4"), zv);
+		add_assoc_zval_ex(DST(), XCACHE_STRS("$4"), zv);
 	} while (0);
 	')
 ')
@@ -211,7 +211,7 @@ define(`STRUCT_ARRAY', `
 				FUNC_NAME (dasm, zv, &(SRC(`$4[LOOPCOUNTER]')) TSRMLS_CC);
 				add_next_index_zval(arr, zv);
 			}
-			add_assoc_zval_ex(dst, XCACHE_STRS("$4"), arr);
+			add_assoc_zval_ex(DST(), XCACHE_STRS("$4"), arr);
 		', `
 			dnl find count with NULL
 			ifelse(`$2', `', `

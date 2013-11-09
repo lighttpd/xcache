@@ -19,8 +19,8 @@ undefine(`len')
 ')
 define(`XCACHE_STRS', `($1), (sizeof($1))')
 define(`XCACHE_STRL', `($1), (sizeof($1) - 1)')
-define(`DST', `dst->$1')
-define(`SRC', `src->$1')
+define(`SRC', `ifelse(`$1', `', `src', `src->$1')')
+define(`DST', `ifelse(`$1', `', `dst', `dst->$1')')
 dnl ============
 define(`INDENT', `xc_dprint_indent(indent);')
 dnl }}}
@@ -100,9 +100,9 @@ define(`PROC_CLASS_ENTRY_P_EX', `
 		IFSTORE(`$1 = (zend_class_entry *) xc_get_class_num(processor, $2);')
 		IFRESTORE(`$1 = xc_get_class(processor, (zend_ulong) $2);')
 #ifdef IS_UNICODE
-		IFDASM(`add_assoc_unicodel_ex(dst, XCACHE_STRS("$3"), ZSTR_U($2->name), $2->name_length, 1);')
+		IFDASM(`add_assoc_unicodel_ex(DST(), XCACHE_STRS("$3"), ZSTR_U($2->name), $2->name_length, 1);')
 #else
-		IFDASM(`add_assoc_stringl_ex(dst, XCACHE_STRS("$3"), (char *) $2->name, $2->name_length, 1);')
+		IFDASM(`add_assoc_stringl_ex(DST(), XCACHE_STRS("$3"), (char *) $2->name, $2->name_length, 1);')
 #endif
 	}
 	else {
@@ -164,9 +164,9 @@ define(`SETNULL', `SETNULL_EX(`DST(`$1')')DONE(`$1')')
 dnl }}}
 dnl {{{ COPYNULL_EX(1:dst, 2:elm-name)
 define(`COPYNULL_EX', `
-	IFDASM(`add_assoc_null_ex(dst, XCACHE_STRS("$2"));')
+	IFDASM(`add_assoc_null_ex(DST(), XCACHE_STRS("$2"));')
 	IFNOTMEMCPY(`IFCOPY(`$1 = NULL;')')
-	assert(patsubst($1, dst, src) == NULL);
+	assert(patsubst($1, DST(), SRC()) == NULL);
 ')
 dnl }}}
 dnl {{{ COPYNULL(1:elm)
@@ -176,9 +176,9 @@ define(`COPYNULL', `
 dnl }}}
 dnl {{{ COPYZERO_EX(1:dst, 2:elm-name)
 define(`COPYZERO_EX', `
-	IFDASM(`add_assoc_long_ex(dst, XCACHE_STRS("$2"), 0);')
+	IFDASM(`add_assoc_long_ex(DST(), XCACHE_STRS("$2"), 0);')
 	IFNOTMEMCPY(`IFCOPY(`$1 = 0;')')
-	assert(patsubst($1, dst, src) == 0);
+	assert(patsubst($1, DST(), SRC()) == 0);
 ')
 dnl }}}
 dnl {{{ COPYZERO(1:elm)
@@ -265,9 +265,9 @@ popdef(`FIXPOINTER_EX')
 
 REDEF(`PROCESSOR_TYPE', `restore') include(srcdir`/processor/processor.m4')
 
-define(`DSTPTR_EX', `ptradd($1 *, notnullable($2), ptrdiff)')
+pushdef(`DSTPTR_EX', `ptradd($1 *, notnullable($2), ptrdiff)')
 pushdef(`FIXPOINTER_EX', `$2 = ptradd($1 *, notnullable($2), relocatediff);')
-define(`SRC', `DST(`$1')')
+pushdef(`SRC', defn(`DST'))
 REDEF(`PROCESSOR_TYPE', `relocate') include(srcdir`/processor/processor.m4')
 popdef(`SRC')
 popdef(`FIXPOINTER_EX')
