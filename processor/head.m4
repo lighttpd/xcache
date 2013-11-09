@@ -1,6 +1,6 @@
 dnl {{{ === program start ========================================
 divert(0)
-EXPORT(`#include <stddef.h>') dnl for ptrdiff_t
+EXPORT(`#include <stddef.h>')
 #include <string.h>
 #include <stdio.h>
 
