@@ -169,7 +169,7 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 	', `
 		do {
 			IFCALCCOPY(`
-				if (processor->reference) {
+				if (processor->handle_reference) {
 					zval_ptr *ppzv;
 					if (zend_hash_find(&processor->zvalptrs, (char *) &SRC()[0], sizeof(SRC()[0]), (void **) &ppzv) == SUCCESS) {
 						IFCOPY(`
@@ -187,7 +187,7 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 			
 			ALLOC(DST()[0], zval)
 			IFCALCCOPY(`
-				if (processor->reference) {
+				if (processor->handle_reference) {
 					IFCALC(`
 						/* make dummy */
 						zval_ptr pzv = (zval_ptr)-1;

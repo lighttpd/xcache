@@ -100,14 +100,14 @@ typedef struct _xc_processor_t {
 	size_t size;
 	HashTable strings;
 	HashTable zvalptrs;
-	zend_bool reference; /* enable if to deal with reference */
+	zend_bool handle_reference; /* enable if to deal with reference */
 	zend_bool have_references;
+	ptrdiff_t relocatediff;
+
 	const xc_entry_php_t *entry_php_src;
 	const xc_entry_php_t *entry_php_dst;
 	const xc_entry_data_php_t *php_src;
 	const xc_entry_data_php_t *php_dst;
-	xc_shm_t                  *shm;
-	xc_allocator_t            *allocator;
 	const zend_class_entry *cache_ce;
 	zend_ulong cache_class_index;
 

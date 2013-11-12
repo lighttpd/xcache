@@ -175,7 +175,7 @@ static xc_entry_data_php_t *xc_php_store_unlocked(xc_cache_t *cache, xc_entry_da
 
 	php->hits     = 0;
 	php->refcount = 0;
-	stored_php = xc_processor_store_xc_entry_data_php_t(cache->shm, cache->allocator, php TSRMLS_CC);
+	stored_php = xc_processor_store_xc_entry_data_php_t(cache->shm->readonlydiff, cache->allocator, php TSRMLS_CC);
 #if 0
 	{
 		xc_entry_data_php_t *p = malloc(stored_php->size);
@@ -312,8 +312,8 @@ static xc_entry_t *xc_entry_store_unlocked(xc_entry_type_t type, xc_cache_t *cac
 	entry->ctime = XG(request_time);
 	entry->atime = XG(request_time);
 	stored_entry = type == XC_TYPE_PHP
-		? (xc_entry_t *) xc_processor_store_xc_entry_php_t(cache->shm, cache->allocator, (xc_entry_php_t *) entry TSRMLS_CC)
-		: (xc_entry_t *) xc_processor_store_xc_entry_var_t(cache->shm, cache->allocator, (xc_entry_var_t *) entry TSRMLS_CC);
+		? (xc_entry_t *) xc_processor_store_xc_entry_php_t(cache->shm->readonlydiff, cache->allocator, (xc_entry_php_t *) entry TSRMLS_CC)
+		: (xc_entry_t *) xc_processor_store_xc_entry_var_t(cache->shm->readonlydiff, cache->allocator, (xc_entry_var_t *) entry TSRMLS_CC);
 	if (stored_entry) {
 		xc_entry_add_unlocked(cache->cached, entryslotid, stored_entry);
 		++cache->cached->updates;
@@ -2240,7 +2240,7 @@ zend_bool xc_is_rw(const void *p) /* {{{ */
 	if (xc_php_caches) {
 		for (i = 0; i < xc_php_hcache.size; i ++) {
 			shm = xc_php_caches[i].shm;
-			if (shm->handlers->is_readwrite(shm, p)) {
+			if (shm->vtable->is_readwrite(shm, p)) {
 				return 1;
 			}
 		}
@@ -2249,7 +2249,7 @@ zend_bool xc_is_rw(const void *p) /* {{{ */
 	if (xc_var_caches) {
 		for (i = 0; i < xc_var_hcache.size; i ++) {
 			shm = xc_var_caches[i].shm;
-			if (shm->handlers->is_readwrite(shm, p)) {
+			if (shm->vtable->is_readwrite(shm, p)) {
 				return 1;
 			}
 		}
@@ -2265,7 +2265,7 @@ zend_bool xc_is_ro(const void *p) /* {{{ */
 	if (xc_php_caches) {
 		for (i = 0; i < xc_php_hcache.size; i ++) {
 			shm = xc_php_caches[i].shm;
-			if (shm->handlers->is_readonly(shm, p)) {
+			if (shm->vtable->is_readonly(shm, p)) {
 				return 1;
 			}
 		}
@@ -2274,7 +2274,7 @@ zend_bool xc_is_ro(const void *p) /* {{{ */
 	if (xc_var_caches) {
 		for (i = 0; i < xc_var_hcache.size; i ++) {
 			shm = xc_var_caches[i].shm;
-			if (shm->handlers->is_readonly(shm, p)) {
+			if (shm->vtable->is_readonly(shm, p)) {
 				return 1;
 			}
 		}
@@ -2637,7 +2637,7 @@ static xc_shm_t *xc_cache_destroy(xc_cache_t *caches, xc_hash_t *hcache) /* {{{ 
 			}
 			shm = cache->shm;
 			if (shm) {
-				cache->shm->handlers->memdestroy(cache->allocator);
+				cache->shm->vtable->memdestroy(cache->allocator);
 			}
 		}
 	}
@@ -2670,7 +2670,7 @@ static xc_cache_t *xc_cache_init(xc_shm_t *shm, const char *allocator_name, xc_h
 
 	for (i = 0; i < hcache->size; i ++) {
 		xc_cache_t *cache = &caches[i];
-		CHECK(allocator = shm->handlers->meminit(shm, memsize), "Failed init shm");
+		CHECK(allocator = shm->vtable->meminit(shm, memsize), "Failed init shm");
 		if (!(allocator->vtable = xc_allocator_find(allocator_name))) {
 			zend_error(E_ERROR, "Allocator %s not found", allocator_name);
 			goto err;
@@ -2745,7 +2745,7 @@ static int xc_init() /* {{{ */
 
 	if (xc_php_size || xc_var_size) {
 		CHECK(shm = xc_shm_init(xc_shm_scheme, shmsize, xc_readonly_protection, xc_mmap_path, NULL), "Cannot create shm");
-		if (!shm->handlers->can_readonly(shm)) {
+		if (!xc_shm_can_readonly(shm)) {
 			xc_readonly_protection = 0;
 		}
 
@@ -3469,7 +3469,7 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 				value += (inc == 1 ? count : - count);
 				RETVAL_LONG(value);
 
-				zv = (zval *) cache->shm->handlers->to_readwrite(cache->shm, (char *) stored_entry_var->value);
+				zv = (zval *) xc_shm_to_readwrite(cache->shm, (char *) stored_entry_var->value);
 				Z_LVAL_P(zv) = value;
 				++cache->cached->updates;
 				break; /* leave lock */

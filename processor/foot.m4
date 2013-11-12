@@ -1,19 +1,18 @@
 define(`DEFINE_STORE_API', `
-EXPORTED_FUNCTION(`$1 *xc_processor_store_$1(xc_shm_t *shm, xc_allocator_t *allocator, $1 *src TSRMLS_DC)') dnl {{{
+EXPORTED_FUNCTION(`$1 *xc_processor_store_$1(ptrdiff_t relocatediff, xc_allocator_t *allocator, $1 *src TSRMLS_DC)') dnl {{{
 {
 	$1 *dst;
 	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
-	processor.reference = 1;
-	processor.shm = shm;
-	processor.allocator = allocator;
+	processor.handle_reference = 1;
+	processor.relocatediff = relocatediff;
 
 	IFAUTOCHECK(`xc_stack_init(&processor.allocsizes);')
 
 	/* calc size */ {
 		zend_hash_init(&processor.strings, 0, NULL, NULL, 0);
-		if (processor.reference) {
+		if (processor.handle_reference) {
 			zend_hash_init(&processor.zvalptrs, 0, NULL, NULL, 0);
 		}
 
@@ -22,7 +21,7 @@ EXPORTED_FUNCTION(`$1 *xc_processor_store_$1(xc_shm_t *shm, xc_allocator_t *allo
 		processor.size = ALIGN(processor.size + sizeof(src[0]));
 
 		xc_calc_$1(&processor, src TSRMLS_CC);
-		if (processor.reference) {
+		if (processor.handle_reference) {
 			zend_hash_destroy(&processor.zvalptrs);
 		}
 		zend_hash_destroy(&processor.strings);
@@ -40,12 +39,12 @@ EXPORTED_FUNCTION(`$1 *xc_processor_store_$1(xc_shm_t *shm, xc_allocator_t *allo
 	{
 		IFAUTOCHECK(`char *oldp;')
 		zend_hash_init(&processor.strings, 0, NULL, NULL, 0);
-		if (processor.reference) {
+		if (processor.handle_reference) {
 			zend_hash_init(&processor.zvalptrs, 0, NULL, NULL, 0);
 		}
 
 		/* allocator :) */
-		processor.p = (char *) processor.allocator->vtable->malloc(processor.allocator, processor.size);
+		processor.p = (char *) allocator->vtable->malloc(allocator, processor.size);
 		if (processor.p == NULL) {
 			dst = NULL;
 			goto err_alloc;
@@ -67,7 +66,7 @@ EXPORTED_FUNCTION(`$1 *xc_processor_store_$1(xc_shm_t *shm, xc_allocator_t *allo
 			}
 		}')
 err_alloc:
-		if (processor.reference) {
+		if (processor.handle_reference) {
 			zend_hash_destroy(&processor.zvalptrs);
 		}
 		zend_hash_destroy(&processor.strings);
@@ -101,15 +100,15 @@ EXPORTED_FUNCTION(`xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t
 	processor.readonly_protection = readonly_protection;
 	/* this function is used for php data only */
 	if (SRC(`have_references')) {
-		processor.reference = 1;
+		processor.handle_reference = 1;
 	}
 	processor.entry_php_src = entry_php;
 
-	if (processor.reference) {
+	if (processor.handle_reference) {
 		zend_hash_init(&processor.zvalptrs, 0, NULL, NULL, 0);
 	}
 	xc_restore_xc_entry_data_php_t(&processor, dst, src TSRMLS_CC);
-	if (processor.reference) {
+	if (processor.handle_reference) {
 		zend_hash_destroy(&processor.zvalptrs);
 	}
 	return dst;
@@ -120,15 +119,15 @@ EXPORTED_FUNCTION(`zval *xc_processor_restore_zval(zval *dst, const zval *src, z
 	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
-	processor.reference = have_references;
+	processor.handle_reference = have_references;
 
-	if (processor.reference) {
+	if (processor.handle_reference) {
 		zend_hash_init(&processor.zvalptrs, 0, NULL, NULL, 0);
 		dnl fprintf(stderr, "mark[%p] = %p\n", src, dst);
 		zend_hash_add(&processor.zvalptrs, (char *)src, sizeof(src), (void*)&dst, sizeof(dst), NULL);
 	}
 	xc_restore_zval(&processor, dst, src TSRMLS_CC);
-	if (processor.reference) {
+	if (processor.handle_reference) {
 		zend_hash_destroy(&processor.zvalptrs);
 	}
 

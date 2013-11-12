@@ -1,5 +1,7 @@
-#define XC_SHM_IMPL _xc_malloc_shm_t
+typedef struct xc_malloc_shm_t xc_shm_t;
+#define XC_SHM_T_DEFINED
 #define _xc_allocator_t _xc_allocator_malloc_t
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -18,11 +20,11 @@ struct _xc_allocator_malloc_t {
 	xc_memsize_t avail;       /* total free */
 };
 
-/* {{{ _xc_malloc_shm_t */
-struct _xc_malloc_shm_t {
-	xc_shm_handlers_t *handlers;
-	xc_shmsize_t       size;
-	xc_shmsize_t       memoffset;
+/* {{{ xc_malloc_shm_t */
+struct xc_malloc_shm_t {
+	xc_shm_vtable_t *vtable;
+	xc_shmsize_t     size;
+	xc_shmsize_t     memoffset;
 #ifndef TEST
 	HashTable blocks;
 #endif
@@ -138,47 +140,6 @@ static XC_ALLOCATOR_DESTROY(xc_allocator_malloc_destroy) /* {{{ */
 }
 /* }}} */
 
-static XC_SHM_CAN_READONLY(xc_malloc_can_readonly) /* {{{ */
-{
-	return 0;
-}
-/* }}} */
-static XC_SHM_IS_READWRITE(xc_malloc_is_readwrite) /* {{{ */
-{
-#ifndef TEST
-	HashPosition pos;
-	size_t *psize;
-	char **ptr;
-
-	zend_hash_internal_pointer_reset_ex(&shm->blocks, &pos);
-	while (zend_hash_get_current_data_ex(&shm->blocks, (void **) &psize, &pos) == SUCCESS) {
-		zend_hash_get_current_key_ex(&shm->blocks, (void *) &ptr, NULL, NULL, 0, &pos);
-		if ((char *) p >= *ptr && (char *) p < *ptr + *psize) {
-			return 1;
-		}
-		zend_hash_move_forward_ex(&shm->blocks, &pos);
-	}
-#endif
-
-	return 0;
-}
-/* }}} */
-static XC_SHM_IS_READONLY(xc_malloc_is_readonly) /* {{{ */
-{
-	return 0;
-}
-/* }}} */
-static XC_SHM_TO_READWRITE(xc_malloc_to_readwrite) /* {{{ */
-{
-	return p;
-}
-/* }}} */
-static XC_SHM_TO_READONLY(xc_malloc_to_readonly) /* {{{ */
-{
-	return p;
-}
-/* }}} */
-
 static XC_SHM_DESTROY(xc_malloc_destroy) /* {{{ */
 {
 #ifndef TEST
@@ -200,6 +161,33 @@ static XC_SHM_INIT(xc_malloc_init) /* {{{ */
 	return shm;
 err:
 	return NULL;
+}
+/* }}} */
+
+static XC_SHM_IS_READWRITE(xc_malloc_is_readwrite) /* {{{ */
+{
+#ifndef TEST
+	HashPosition pos;
+	size_t *psize;
+	char **ptr;
+	HashTable *blocks = &((xc_shm_t *) shm)->blocks;
+
+	zend_hash_internal_pointer_reset_ex(blocks, &pos);
+	while (zend_hash_get_current_data_ex(blocks, (void **) &psize, &pos) == SUCCESS) {
+		zend_hash_get_current_key_ex(blocks, (void *) &ptr, NULL, NULL, 0, &pos);
+		if ((char *) p >= *ptr && (char *) p < *ptr + *psize) {
+			return 1;
+		}
+		zend_hash_move_forward_ex(blocks, &pos);
+	}
+#endif
+
+	return 0;
+}
+/* }}} */
+static XC_SHM_IS_READONLY(xc_malloc_is_readonly) /* {{{ */
+{
+	return 0;
 }
 /* }}} */
 
@@ -227,7 +215,7 @@ static XC_SHM_MEMDESTROY(xc_malloc_memdestroy) /* {{{ */
 
 static xc_allocator_vtable_t xc_allocator_malloc_vtable = XC_ALLOCATOR_VTABLE(allocator_malloc);
 #ifndef TEST
-static xc_shm_handlers_t xc_shm_malloc_handlers = XC_SHM_HANDLERS(malloc);
+static xc_shm_vtable_t xc_shm_malloc_vtable = XC_SHM_VTABLE(malloc);
 #endif
 void xc_allocator_malloc_register() /* {{{ */
 {
@@ -242,7 +230,7 @@ void xc_allocator_malloc_register() /* {{{ */
 #ifndef TEST
 void xc_shm_malloc_register() /* {{{ */
 {
-	if (xc_shm_scheme_register("malloc", &xc_shm_malloc_handlers) == 0) {
+	if (xc_shm_scheme_register("malloc", &xc_shm_malloc_vtable) == 0) {
 		zend_error(E_ERROR, "XCache: failed to register malloc shm_scheme");
 	}
 }

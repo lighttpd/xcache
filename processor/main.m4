@@ -259,7 +259,7 @@ include(srcdir`/processor/head.m4')
 
 REDEF(`PROCESSOR_TYPE', `calc') include(srcdir`/processor/processor.m4')
 
-pushdef(`FIXPOINTER_EX', `$2 = ($1 *) processor->shm->handlers->to_readonly(processor->shm, (void *)$2);')
+pushdef(`FIXPOINTER_EX', `$2 = ptradd($1 *, notnullable($2), processor->relocatediff);')
 REDEF(`PROCESSOR_TYPE', `store') include(srcdir`/processor/processor.m4')
 popdef(`FIXPOINTER_EX')
 
@@ -279,6 +279,8 @@ REDEF(`PROCESSOR_TYPE', `dprint') include(srcdir`/processor/processor.m4')
 #ifdef HAVE_XCACHE_DISASSEMBLER
 REDEF(`PROCESSOR_TYPE', `dasm') include(srcdir`/processor/processor.m4')
 #endif /* HAVE_XCACHE_DISASSEMBLER */
+
+undefine(`PROCESSOR_TYPE')
 
 include(srcdir`/processor/foot.m4')
 
