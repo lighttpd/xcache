@@ -159,6 +159,13 @@ typedef enum { XC_TYPE_PHP, XC_TYPE_VAR } xc_entry_type_t;
 static void xc_holds_init(TSRMLS_D);
 static void xc_holds_destroy(TSRMLS_D);
 
+static void *xc_cache_storage(void *data, size_t size) /* {{{ */
+{
+	xc_allocator_t *allocator = (xc_allocator_t *) data;
+	return allocator->vtable->malloc(allocator, size);
+}
+/* }}} */
+
 /* any function in *_unlocked is only safe be called within locked (single thread access) area */
 
 static void xc_php_add_unlocked(xc_cached_t *cached, xc_entry_data_php_t *php) /* {{{ */
@@ -172,10 +179,14 @@ static void xc_php_add_unlocked(xc_cached_t *cached, xc_entry_data_php_t *php) /
 static xc_entry_data_php_t *xc_php_store_unlocked(xc_cache_t *cache, xc_entry_data_php_t *php TSRMLS_DC) /* {{{ */
 {
 	xc_entry_data_php_t *stored_php;
+	xc_processor_storage_t storage;
+	storage.allocator      = &xc_cache_storage;
+	storage.allocator_data = (void *) cache->allocator;
+	storage.relocatediff   = cache->shm->readonlydiff;
 
 	php->hits     = 0;
 	php->refcount = 0;
-	stored_php = xc_processor_store_xc_entry_data_php_t(cache->shm->readonlydiff, cache->allocator, php TSRMLS_CC);
+	stored_php = xc_processor_store_xc_entry_data_php_t(&storage, php TSRMLS_CC);
 #if 0
 	{
 		xc_entry_data_php_t *p = malloc(stored_php->size);
@@ -307,13 +318,17 @@ static void xc_entry_add_unlocked(xc_cached_t *cached, xc_hash_value_t entryslot
 static xc_entry_t *xc_entry_store_unlocked(xc_entry_type_t type, xc_cache_t *cache, xc_hash_value_t entryslotid, xc_entry_t *entry TSRMLS_DC) /* {{{ */
 {
 	xc_entry_t *stored_entry;
+	xc_processor_storage_t storage;
+	storage.allocator      = &xc_cache_storage;
+	storage.allocator_data = (void *) cache->allocator;
+	storage.relocatediff   = cache->shm->readonlydiff;
 
 	entry->hits  = 0;
 	entry->ctime = XG(request_time);
 	entry->atime = XG(request_time);
 	stored_entry = type == XC_TYPE_PHP
-		? (xc_entry_t *) xc_processor_store_xc_entry_php_t(cache->shm->readonlydiff, cache->allocator, (xc_entry_php_t *) entry TSRMLS_CC)
-		: (xc_entry_t *) xc_processor_store_xc_entry_var_t(cache->shm->readonlydiff, cache->allocator, (xc_entry_var_t *) entry TSRMLS_CC);
+		? (xc_entry_t *) xc_processor_store_xc_entry_php_t(&storage, (xc_entry_php_t *) entry TSRMLS_CC)
+		: (xc_entry_t *) xc_processor_store_xc_entry_var_t(&storage, (xc_entry_var_t *) entry TSRMLS_CC);
 	if (stored_entry) {
 		xc_entry_add_unlocked(cache->cached, entryslotid, stored_entry);
 		++cache->cached->updates;

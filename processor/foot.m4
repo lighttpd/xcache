@@ -1,12 +1,16 @@
+dnl {{{ xc_store_target
+EXPORT(`typedef void *(*xc_processor_storage_allocator_t)(void *data, size_t size);')
+EXPORT(`typedef struct { xc_processor_storage_allocator_t allocator; void *allocator_data; ptrdiff_t relocatediff; } xc_processor_storage_t;')
+dnl }}}
 define(`DEFINE_STORE_API', `
-EXPORTED_FUNCTION(`$1 *xc_processor_store_$1(ptrdiff_t relocatediff, xc_allocator_t *allocator, $1 *src TSRMLS_DC)') dnl {{{
+EXPORTED_FUNCTION(`$1 *xc_processor_store_$1(const xc_processor_storage_t *storage, $1 *src TSRMLS_DC)') dnl {{{
 {
 	$1 *dst;
 	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
 	processor.handle_reference = 1;
-	processor.relocatediff = relocatediff;
+	processor.relocatediff = storage->relocatediff;
 
 	IFAUTOCHECK(`xc_stack_init(&processor.allocsizes);')
 
@@ -44,7 +48,7 @@ EXPORTED_FUNCTION(`$1 *xc_processor_store_$1(ptrdiff_t relocatediff, xc_allocato
 		}
 
 		/* allocator :) */
-		processor.p = (char *) allocator->vtable->malloc(allocator, processor.size);
+		processor.p = (char *) storage->allocator(storage->allocator_data, processor.size);
 		if (processor.p == NULL) {
 			dst = NULL;
 			goto err_alloc;
