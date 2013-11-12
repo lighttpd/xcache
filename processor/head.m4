@@ -1,6 +1,5 @@
 dnl {{{ === program start ========================================
 divert(0)
-EXPORT(`#include <stddef.h>')
 #include <string.h>
 #include <stdio.h>
 
@@ -10,6 +9,7 @@ EXPORT(`#include <stddef.h>')
 #include "zend_API.h"
 #include "zend_ini.h"
 
+EXPORT(`#include <stddef.h>')
 EXPORT(`#include "xcache.h"')
 EXPORT(`#include "mod_cacher/xc_cache.h"')
 EXPORT(`#include "xcache/xc_shm.h"')
