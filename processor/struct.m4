@@ -148,7 +148,7 @@ ifdef(`DASM_STRUCT_DIRECT', `', `
 		IFSTORE(  `processor, $6 $2, $6 $3')
 		IFRESTORE(`processor, $6 $2, $6 $3')
 		IFRELOCATE(`
-			ifelse(`$6', `', `DSTPTR_EX(`$1', `$3')', `$6 $3')
+			ifelse(`$6', `', `UNRELOCATED_EX(`$1', `$3')', `$6 $3')
 			, ptrdiff
 			, relocatediff
 		')
@@ -162,7 +162,7 @@ ifdef(`DASM_STRUCT_DIRECT', `', `
 	')
 ')
 	popdef(`FUNC_NAME')
-	ifelse(`$6', , `FIXPOINTER_EX(`$1', `$2')')
+	ifelse(`$6', , `RELOCATE_EX(`$1', `$2')')
 ')
 dnl }}}
 dnl {{{ STRUCT_P(1:type, 2:elm, 3:name=type)
@@ -232,16 +232,16 @@ define(`STRUCT_ARRAY', `
 					++LOOPCOUNTER) {
 				DISABLECHECK(`
 					pushdef(`ALLOC')
-					pushdef(`FIXPOINTER_EX')
+					pushdef(`RELOCATE_EX')
 					STRUCT_P_EX(`$3', (DST(`$4') + LOOPCOUNTER), (SRC(`$4') + LOOPCOUNTER), `', `$5')
-					popdef(`FIXPOINTER_EX')
+					popdef(`RELOCATE_EX')
 					popdef(`ALLOC')
 				')
 			}
 			dnl the end marker
 			ifelse(`$2', `', `IFCOPY(`DST(`$4[LOOPCOUNTER]') = NULL;')')
 		')dnl IFDASM
-		FIXPOINTER(`$3', `$4')
+		RELOCATE(`$3', `$4')
 		DONE(`$4')
 		popdef(`FUNC_NAME')
 		popdef(`LOOPCOUNTER')

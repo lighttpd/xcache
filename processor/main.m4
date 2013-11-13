@@ -24,11 +24,8 @@ define(`DST', `ifelse(`$1', `', `dst', `dst->$1')')
 dnl ============
 define(`INDENT', `xc_dprint_indent(indent);')
 dnl }}}
-dnl {{{ SRCPTR_EX(1:type, 2:elm)
-define(`SRCPTR_EX', `DSTPTR_EX(`$1', `$2')')
-dnl }}}
-dnl {{{ DSTPTR_EX(1:type, 2:elm)
-define(`DSTPTR_EX', `$2')
+dnl {{{ UNRELOCATED_EX(1:type, 2:elm)
+define(`UNRELOCATED_EX', `$2')
 dnl }}}
 dnl {{{ ALLOC(1:dst, 2:type, 3:count=1, 4:clean=false, 5:realtype=$2)
 define(`ALLOC', `
@@ -135,11 +132,11 @@ dnl }}}
 dnl {{{ EXPORT_PROCESSOR(1:type, 2:processor)
 define(`EXPORT_PROCESSOR', `define(`EXPORT_$1_$2', 1)')
 dnl }}}
-dnl {{{ FIXPOINTER(1:type, 2:ele)
-define(`FIXPOINTER', `FIXPOINTER_EX(`$1', `DST(`$2')')')
+dnl {{{ RELOCATE(1:type, 2:ele)
+define(`RELOCATE', `RELOCATE_EX(`$1', `DST(`$2')')')
 dnl }}}
-dnl {{{ FIXPOINTER_EX(1:type, 2:dst)
-define(`FIXPOINTER_EX', `')
+dnl {{{ RELOCATE_EX(1:type, 2:dst)
+define(`RELOCATE_EX', `')
 dnl }}}
 dnl {{{ IFNOTMEMCPY
 define(`IFNOTMEMCPY', `ifdef(`USEMEMCPY', `', `$1')')
@@ -241,7 +238,7 @@ define(`IFRESTORE', `ifelse(PROCESSOR_TYPE, `restore', `$1', `$2')')
 define(`IFCOPY', `IFSTORE(`$1', `IFRESTORE(`$1', `$2')')')
 define(`IFCALCCOPY', `IFCALC(`$1', `IFCOPY(`$1', `$2')')')
 define(`IFRELOCATE', `ifelse(PROCESSOR_TYPE, `relocate', `$1', `$2')')
-define(`IFFIXPOINTER', `IFSTORE(`$1', `IFRELOCATE(`$1', `$2')')')
+define(`IFRELOCATE', `IFSTORE(`$1', `IFRELOCATE(`$1', `$2')')')
 define(`IFDPRINT', `ifelse(PROCESSOR_TYPE, `dprint', `$1', `$2')')
 define(`IFDASM', `ifelse(PROCESSOR_TYPE, `dasm', `$1', `$2')')
 dnl }}}
@@ -259,19 +256,19 @@ include(srcdir`/processor/head.m4')
 
 REDEF(`PROCESSOR_TYPE', `calc') include(srcdir`/processor/processor.m4')
 
-pushdef(`FIXPOINTER_EX', `$2 = ptradd($1 *, notnullable($2), processor->relocatediff);')
+pushdef(`RELOCATE_EX', `$2 = ptradd($1 *, notnullable($2), processor->relocatediff);')
 REDEF(`PROCESSOR_TYPE', `store') include(srcdir`/processor/processor.m4')
-popdef(`FIXPOINTER_EX')
+popdef(`RELOCATE_EX')
 
 REDEF(`PROCESSOR_TYPE', `restore') include(srcdir`/processor/processor.m4')
 
-pushdef(`DSTPTR_EX', `ptradd($1 *, notnullable($2), ptrdiff)')
-pushdef(`FIXPOINTER_EX', `$2 = ptradd($1 *, notnullable($2), relocatediff);')
+pushdef(`UNRELOCATED_EX', `ptradd($1 *, notnullable($2), ptrdiff)')
+pushdef(`RELOCATE_EX', `$2 = ptradd($1 *, notnullable($2), relocatediff);')
 pushdef(`SRC', defn(`DST'))
 REDEF(`PROCESSOR_TYPE', `relocate') include(srcdir`/processor/processor.m4')
 popdef(`SRC')
-popdef(`FIXPOINTER_EX')
-popdef(`DSTPTR_EX')
+popdef(`RELOCATE_EX')
+popdef(`UNRELOCATED_EX')
 
 #ifdef HAVE_XCACHE_DPRINT
 REDEF(`PROCESSOR_TYPE', `dprint') include(srcdir`/processor/processor.m4')

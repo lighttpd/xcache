@@ -47,7 +47,7 @@ define(`DEF_HASH_TABLE_FUNC', `DEF_STRUCT_P_FUNC(`HashTable', `$1', `
 	', ` dnl IFDASM else
 	dnl }}}
 	Bucket *srcBucket;
-	IFFIXPOINTER(`Bucket *next;')
+	IFRELOCATE(`Bucket *next;')
 	IFRELOCATE(`Bucket *dstBucket = NULL;')
 	IFCOPY(`Bucket *dstBucket = NULL, *first = NULL, *last = NULL;')
 	dnl only used for copy
@@ -74,7 +74,7 @@ define(`DEF_HASH_TABLE_FUNC', `DEF_STRUCT_P_FUNC(`HashTable', `$1', `
 		CALLOC(`DST(`arBuckets')', Bucket*, SRC(`nTableSize'))
 		DONE(arBuckets)
 		DISABLECHECK(`
-		for (srcBucket = SRCPTR_EX(`Bucket', SRC(`pListHead')); srcBucket != NULL; srcBucket = SRCPTR_EX(`Bucket', `srcBucket->pListNext')) {
+		for (srcBucket = UNRELOCATED_EX(`Bucket', SRC(`pListHead')); srcBucket != NULL; srcBucket = UNRELOCATED_EX(`Bucket', `srcBucket->pListNext')) {
 			IFCALCCOPY(`bucketSize = BUCKET_SIZE(srcBucket);')
 			ALLOC(dstBucket, char, bucketSize, , Bucket)
 			IFCOPY(`
@@ -110,7 +110,7 @@ define(`DEF_HASH_TABLE_FUNC', `DEF_STRUCT_P_FUNC(`HashTable', `$1', `
 				IFRELOCATE(`srcBucket->pData = &srcBucket->pDataPtr;')
 				dnl $6 = ` ' to skip alloc, skip pointer fix
 				STRUCT_P_EX(`$2', dstBucket->pData, (($2*)srcBucket->pData), `', `$3', ` ')
-				FIXPOINTER_EX(`$2', dstBucket->pData)
+				RELOCATE_EX(`$2', dstBucket->pData)
 			}
 			else {
 				STRUCT_P_EX(`$2', dstBucket->pData, (($2*)srcBucket->pData), `', `$3')
@@ -144,34 +144,34 @@ define(`DEF_HASH_TABLE_FUNC', `DEF_STRUCT_P_FUNC(`HashTable', `$1', `
 		IFCOPY(`DST(`pListHead') = first;') DONE(pListHead)
 		IFCOPY(`DST(`pListTail') = dstBucket;') DONE(pListTail)
 
-		IFFIXPOINTER(`
+		IFRELOCATE(`
 		for (n = 0; n < SRC(`nTableSize'); ++n) {
 			if (SRC(`arBuckets[n]')) {
-				next = DSTPTR_EX(`Bucket', `DST(`arBuckets[n]')');
+				next = UNRELOCATED_EX(`Bucket', `DST(`arBuckets[n]')');
 				do {
 						dstBucket = next;
-						next = DSTPTR_EX(`Bucket', `next->pNext');
+						next = UNRELOCATED_EX(`Bucket', `next->pNext');
 						if (dstBucket->pListLast) {
-							FIXPOINTER_EX(Bucket, dstBucket->pListLast)
+							RELOCATE_EX(Bucket, dstBucket->pListLast)
 						}
 						if (dstBucket->pListNext) {
-							FIXPOINTER_EX(Bucket, dstBucket->pListNext)
+							RELOCATE_EX(Bucket, dstBucket->pListNext)
 						}
 						if (dstBucket->pNext) {
-							FIXPOINTER_EX(Bucket, dstBucket->pNext)
+							RELOCATE_EX(Bucket, dstBucket->pNext)
 						}
 						if (dstBucket->pLast) {
-							FIXPOINTER_EX(Bucket, dstBucket->pLast)
+							RELOCATE_EX(Bucket, dstBucket->pLast)
 						}
 				} while (next);
 
-				FIXPOINTER(Bucket, arBuckets[n])
+				RELOCATE(Bucket, arBuckets[n])
 			}
 		}
 		')
-		FIXPOINTER(Bucket, pListHead)
-		FIXPOINTER(Bucket, pListTail)
-		FIXPOINTER(Bucket *, arBuckets)
+		RELOCATE(Bucket, pListHead)
+		RELOCATE(Bucket, pListTail)
+		RELOCATE(Bucket *, arBuckets)
 #ifdef ZEND_ENGINE_2_4
 	}
 	else { /* if (SRC(`nTableMask')) */
