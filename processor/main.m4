@@ -241,8 +241,8 @@ define(`IFCALCSTORE', `IFSTORE(`$1', `IFCALC(`$1', `$2')')')
 define(`IFRESTORE', `ifelse(PROCESSOR_TYPE, `restore', `$1', `$2')')
 define(`IFCOPY', `IFSTORE(`$1', `IFRESTORE(`$1', `$2')')')
 define(`IFCALCCOPY', `IFCALC(`$1', `IFCOPY(`$1', `$2')')')
-define(`IFRELOCATEONLY', `ifelse(PROCESSOR_TYPE, `relocate', `$1', `$2')')
-define(`IFRELOCATE', `IFSTORE(`$1', `IFRELOCATEONLY(`$1', `$2')')')
+define(`PROCRELOCATE', `ifelse(PROCESSOR_TYPE, `relocate', `$1', `$2')')
+define(`IFRELOCATE', `ifelse(defn(`RELOCATE_EX'), `', `$2', `$1')')
 define(`IFDPRINT', `ifelse(PROCESSOR_TYPE, `dprint', `$1', `$2')')
 define(`IFDASM', `ifelse(PROCESSOR_TYPE, `dasm', `$1', `$2')')
 dnl }}}
@@ -258,25 +258,36 @@ include(__dir__`/struct.m4')
 include(__dir__`/process.m4')
 include(__dir__`/head.m4')
 
-REDEF(`PROCESSOR_TYPE', `calc') include(__dir__`/processor.m4')
+dnl ==== calc ====
+REDEF(`PROCESSOR_TYPE', `calc')
+include(__dir__`/processor.m4')
 
+dnl ==== store ====
 pushdef(`RELOCATE_EX', `$2 = ptradd($1 *, notnullable($2), processor->relocatediff);')
-REDEF(`PROCESSOR_TYPE', `store') include(__dir__`/processor.m4')
+REDEF(`PROCESSOR_TYPE', `store')
+include(__dir__`/processor.m4')
 popdef(`RELOCATE_EX')
 
-REDEF(`PROCESSOR_TYPE', `restore') include(__dir__`/processor.m4')
+dnl ==== restore ====
+REDEF(`PROCESSOR_TYPE', `restore')
+include(__dir__`/processor.m4')
 
+dnl ==== relocate ====
 pushdef(`PTR_FROM_VIRTUAL_EX', `ptradd($1 *, notnullable($2), ptrdiff)')
 pushdef(`RELOCATE_EX', `$2 = ptradd($1 *, notnullable($2), relocatediff);')
 pushdef(`SRC', defn(`DST'))
-REDEF(`PROCESSOR_TYPE', `relocate') include(__dir__`/processor.m4')
+REDEF(`PROCESSOR_TYPE', `relocate')
+include(__dir__`/processor.m4')
 popdef(`SRC')
 popdef(`RELOCATE_EX')
 popdef(`PTR_FROM_VIRTUAL_EX')
 
+dnl ==== dprint ====
 #ifdef HAVE_XCACHE_DPRINT
 REDEF(`PROCESSOR_TYPE', `dprint') include(__dir__`/processor.m4')
 #endif /* HAVE_XCACHE_DPRINT */
+
+dnl ==== dasm ====
 #ifdef HAVE_XCACHE_DISASSEMBLER
 REDEF(`PROCESSOR_TYPE', `dasm') include(__dir__`/processor.m4')
 #endif /* HAVE_XCACHE_DISASSEMBLER */
