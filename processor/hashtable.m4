@@ -74,7 +74,7 @@ define(`DEF_HASH_TABLE_FUNC', `DEF_STRUCT_P_FUNC(`HashTable', `$1', `
 		CALLOC(`DST(`arBuckets')', Bucket*, SRC(`nTableSize'))
 		DONE(arBuckets)
 		DISABLECHECK(`
-		for (srcBucket = UNRELOCATED_EX(`Bucket', SRC(`pListHead')); srcBucket != NULL; srcBucket = UNRELOCATED_EX(`Bucket', `srcBucket->pListNext')) {
+		for (srcBucket = PTR_FROM_VIRTUAL_EX(`Bucket', SRC(`pListHead')); srcBucket != NULL; srcBucket = PTR_FROM_VIRTUAL_EX(`Bucket', `srcBucket->pListNext')) {
 			IFCALCCOPY(`bucketSize = BUCKET_SIZE(srcBucket);')
 			ALLOC(dstBucket, char, bucketSize, , Bucket)
 			IFCOPY(`
@@ -147,10 +147,10 @@ define(`DEF_HASH_TABLE_FUNC', `DEF_STRUCT_P_FUNC(`HashTable', `$1', `
 		IFRELOCATE(`
 		for (n = 0; n < SRC(`nTableSize'); ++n) {
 			if (SRC(`arBuckets[n]')) {
-				next = UNRELOCATED_EX(`Bucket', `DST(`arBuckets[n]')');
+				next = PTR_FROM_VIRTUAL_EX(`Bucket', `DST(`arBuckets[n]')');
 				do {
 						dstBucket = next;
-						next = UNRELOCATED_EX(`Bucket', `next->pNext');
+						next = PTR_FROM_VIRTUAL_EX(`Bucket', `next->pNext');
 						if (dstBucket->pListLast) {
 							RELOCATE_EX(Bucket, dstBucket->pListLast)
 						}

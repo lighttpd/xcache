@@ -148,7 +148,7 @@ ifdef(`DASM_STRUCT_DIRECT', `', `
 		IFSTORE(  `processor, $6 $2, $6 $3')
 		IFRESTORE(`processor, $6 $2, $6 $3')
 		IFRELOCATE(`
-			ifelse(`$6', `', `UNRELOCATED_EX(`$1', `$3')', `$6 $3')
+			ifelse(`$6', `', `PTR_FROM_VIRTUAL_EX(`$1', `$3')', `$6 $3')
 			, ptrdiff
 			, relocatediff
 		')

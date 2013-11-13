@@ -24,8 +24,8 @@ define(`DST', `ifelse(`$1', `', `dst', `dst->$1')')
 dnl ============
 define(`INDENT', `xc_dprint_indent(indent);')
 dnl }}}
-dnl {{{ UNRELOCATED_EX(1:type, 2:elm)
-define(`UNRELOCATED_EX', `$2')
+dnl {{{ PTR_FROM_VIRTUAL_EX(1:type, 2:elm)
+define(`PTR_FROM_VIRTUAL_EX', `$2')
 dnl }}}
 dnl {{{ ALLOC(1:dst, 2:type, 3:count=1, 4:clean=false, 5:realtype=$2)
 define(`ALLOC', `
@@ -262,13 +262,13 @@ popdef(`RELOCATE_EX')
 
 REDEF(`PROCESSOR_TYPE', `restore') include(srcdir`/processor/processor.m4')
 
-pushdef(`UNRELOCATED_EX', `ptradd($1 *, notnullable($2), ptrdiff)')
+pushdef(`PTR_FROM_VIRTUAL_EX', `ptradd($1 *, notnullable($2), ptrdiff)')
 pushdef(`RELOCATE_EX', `$2 = ptradd($1 *, notnullable($2), relocatediff);')
 pushdef(`SRC', defn(`DST'))
 REDEF(`PROCESSOR_TYPE', `relocate') include(srcdir`/processor/processor.m4')
 popdef(`SRC')
 popdef(`RELOCATE_EX')
-popdef(`UNRELOCATED_EX')
+popdef(`PTR_FROM_VIRTUAL_EX')
 
 #ifdef HAVE_XCACHE_DPRINT
 REDEF(`PROCESSOR_TYPE', `dprint') include(srcdir`/processor/processor.m4')
