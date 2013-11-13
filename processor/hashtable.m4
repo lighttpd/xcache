@@ -47,12 +47,11 @@ define(`DEF_HASH_TABLE_FUNC', `DEF_STRUCT_P_FUNC(`HashTable', `$1', `
 	', ` dnl IFDASM else
 	dnl }}}
 	Bucket *srcBucket;
-	IFRELOCATE(`Bucket *next;')
+	IFCOPY(`Bucket *first = NULL, *last = NULL;')
 	IFRELOCATE(`Bucket *dstBucket = NULL;')
-	IFCOPY(`Bucket *dstBucket = NULL, *first = NULL, *last = NULL;')
-	dnl only used for copy
-	IFCOPY(`uint n;')
+	IFRESTORE(`Bucket *dstBucket = NULL;')
 	IFRELOCATE(`uint n;')
+	IFRESTORE(`uint n;')
 	IFCALCCOPY(`size_t bucketSize;')
 
 #if defined(HARDENING_PATCH_HASH_PROTECT) && HARDENING_PATCH_HASH_PROTECT
@@ -147,7 +146,7 @@ define(`DEF_HASH_TABLE_FUNC', `DEF_STRUCT_P_FUNC(`HashTable', `$1', `
 		IFRELOCATE(`
 		for (n = 0; n < SRC(`nTableSize'); ++n) {
 			if (SRC(`arBuckets[n]')) {
-				next = PTR_FROM_VIRTUAL_EX(`Bucket', `DST(`arBuckets[n]')');
+				Bucket *next = PTR_FROM_VIRTUAL_EX(`Bucket', `DST(`arBuckets[n]')');
 				do {
 						dstBucket = next;
 						next = PTR_FROM_VIRTUAL_EX(`Bucket', `next->pNext');
