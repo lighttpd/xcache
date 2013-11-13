@@ -17,6 +17,10 @@ ifdef(`len', `
 define(`m4_len', defn(`len'))
 undefine(`len')
 ')
+define(`dirof', `patsubst(`$1', `[/\\][^/\\]*$', `')')
+ifdef(`__dir__', `', `
+define(`__dir__', `dirof(__file__)')
+')
 define(`XCACHE_STRS', `($1), (sizeof($1))')
 define(`XCACHE_STRL', `($1), (sizeof($1) - 1)')
 define(`SRC', `ifelse(`$1', `', `src', `src->$1')')
@@ -248,37 +252,37 @@ EXPORT_PROCESSOR(`dasm',   `zend_function')
 EXPORT_PROCESSOR(`dasm',   `zend_class_entry')
 EXPORT_PROCESSOR(`dprint', `zval')
 
-include(srcdir`/processor/hashtable.m4')
-include(srcdir`/processor/string.m4')
-include(srcdir`/processor/struct.m4')
-include(srcdir`/processor/process.m4')
-include(srcdir`/processor/head.m4')
+include(__dir__`/hashtable.m4')
+include(__dir__`/string.m4')
+include(__dir__`/struct.m4')
+include(__dir__`/process.m4')
+include(__dir__`/head.m4')
 
-REDEF(`PROCESSOR_TYPE', `calc') include(srcdir`/processor/processor.m4')
+REDEF(`PROCESSOR_TYPE', `calc') include(__dir__`/processor.m4')
 
 pushdef(`RELOCATE_EX', `$2 = ptradd($1 *, notnullable($2), processor->relocatediff);')
-REDEF(`PROCESSOR_TYPE', `store') include(srcdir`/processor/processor.m4')
+REDEF(`PROCESSOR_TYPE', `store') include(__dir__`/processor.m4')
 popdef(`RELOCATE_EX')
 
-REDEF(`PROCESSOR_TYPE', `restore') include(srcdir`/processor/processor.m4')
+REDEF(`PROCESSOR_TYPE', `restore') include(__dir__`/processor.m4')
 
 pushdef(`PTR_FROM_VIRTUAL_EX', `ptradd($1 *, notnullable($2), ptrdiff)')
 pushdef(`RELOCATE_EX', `$2 = ptradd($1 *, notnullable($2), relocatediff);')
 pushdef(`SRC', defn(`DST'))
-REDEF(`PROCESSOR_TYPE', `relocate') include(srcdir`/processor/processor.m4')
+REDEF(`PROCESSOR_TYPE', `relocate') include(__dir__`/processor.m4')
 popdef(`SRC')
 popdef(`RELOCATE_EX')
 popdef(`PTR_FROM_VIRTUAL_EX')
 
 #ifdef HAVE_XCACHE_DPRINT
-REDEF(`PROCESSOR_TYPE', `dprint') include(srcdir`/processor/processor.m4')
+REDEF(`PROCESSOR_TYPE', `dprint') include(__dir__`/processor.m4')
 #endif /* HAVE_XCACHE_DPRINT */
 #ifdef HAVE_XCACHE_DISASSEMBLER
-REDEF(`PROCESSOR_TYPE', `dasm') include(srcdir`/processor/processor.m4')
+REDEF(`PROCESSOR_TYPE', `dasm') include(__dir__`/processor.m4')
 #endif /* HAVE_XCACHE_DISASSEMBLER */
 
 undefine(`PROCESSOR_TYPE')
 
-include(srcdir`/processor/foot.m4')
+include(__dir__`/foot.m4')
 
 ifdef(`EXIT_PENDING', `m4exit(EXIT_PENDING)')

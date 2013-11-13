@@ -11,10 +11,11 @@ $(XCACHE_INCLUDES_I):
 
 $(XCACHE_STRUCTINFO_OUT): $(XCACHE_INCLUDES_I) $(srcdir)/gen_structinfo.awk
 	@echo $(XCACHE_STRUCTINFO_OUT) is optional if XCache test is not enabled, feel free if it awk failed to produce it
-	-$(XCACHE_AWK) -f $(srcdir)/gen_structinfo.awk < $(XCACHE_INCLUDES_I) > $(XCACHE_STRUCTINFO_OUT).tmp && mv $(XCACHE_STRUCTINFO_OUT).tmp $(XCACHE_STRUCTINFO_OUT)
+	$(XCACHE_AWK) -f $(srcdir)/gen_structinfo.awk < $(XCACHE_INCLUDES_I) > $(XCACHE_STRUCTINFO_OUT).tmp || echo > $(XCACHE_STRUCTINFO_OUT)
+	mv $(XCACHE_STRUCTINFO_OUT).tmp $(XCACHE_STRUCTINFO_OUT)
 
 $(XCACHE_PROC_OUT): $(XCACHE_PROC_SRC) $(XCACHE_STRUCTINFO_OUT) $(XCACHE_PROC_SOURCES)
-	$(M4) -D srcdir=$(XCACHE_BACKTICK)"$(srcdir)'" -D builddir=$(XCACHE_BACKTICK)"$(builddir)'" $(XCACHE_ENABLE_TEST) $(XCACHE_PROC_SRC) > $(XCACHE_PROC_OUT).tmp
+	$(M4) $(XCACHE_ENABLE_TEST) $(XCACHE_STRUCTINFO_OUT) $(XCACHE_PROC_SRC) > $(XCACHE_PROC_OUT).tmp
 	mv $(XCACHE_PROC_OUT).tmp $(XCACHE_PROC_OUT)
 
 $(XCACHE_PROC_H): $(XCACHE_PROC_OUT)

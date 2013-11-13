@@ -70,7 +70,6 @@ xc_cacher.c \
 			ERROR(apps[i] + " is currently required to build XCache");
 		}
 	}
-	DEFINE("XCACHE_BACKTICK", "`")
 	PATH_PROG("gawk", null, "XCACHE_AWK") || PATH_PROG("awk", null, "XCACHE_AWK");
 
 	// the cygwin indent is known broken on our output
@@ -134,8 +133,6 @@ xc_cacher.c \
 	frag = frag.replace(/ -o /g, " /Fo");
 	frag = frag.replace(/cp /g, "copy ");
 	frag = frag.replace(/mv /g, "move ");
-	frag = frag.replace(/ \|\| /g, "\r\n\tif errorlevel 1 ");
-	frag = frag.replace(/ && /g, "\r\n\tif not errorlevel 1 ");
 	if (indent == '') {
 		frag = frag.replace(/\| *\$\(XCACHE_INDENT\)/g, '');
 		frag = frag.replace(/\$\(XCACHE_INDENT\) *< */g, 'type ');

@@ -912,7 +912,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 #else
 	dnl zend_cv.m4 is illegal to be made public, don not ask me for it
 	IFDASM(`
-		sinclude(srcdir`/processor/zend_cv.m4')
+		sinclude(__dir__`/zend_cv.m4')
 		')
 #endif
 
