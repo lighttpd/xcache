@@ -1,3 +1,15 @@
+4.0.0 2014-??-??
+API Changes
+========
+ * new: proto array xcache_get_refcount(mixed &$variable), with +1 side effect removed
+ * chg: proto array xcache_get_cowcount(mixed $value)
+
+ChangeLog
+========
+ * cacher:
+   * (WIP) defragment
+   * (WIP) cache to disk
+
 3.1.1 2013-??-??
 ChangeLog
 ========

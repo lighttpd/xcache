@@ -176,8 +176,16 @@ void xc_shutdown_globals(zend_xcache_globals* xcache_globals TSRMLS_DC)
 }
 /* }}} */
 
-/* {{{ proto int xcache_get_refcount(mixed variable)
-   XCache internal uses only: Get reference count of variable */
+/* {{{ proto int xcache_get_refcount(mixed &variable)
+   XCache internal uses only: Get reference count of referenced variable */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_get_refcount, 0, 0, 1)
+	ZEND_ARG_INFO(1, variable)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_get_refcount[] = { 1, BYREF_FORCE };
+#endif
+
 PHP_FUNCTION(xcache_get_refcount)
 {
 	zval *variable;
@@ -185,7 +193,27 @@ PHP_FUNCTION(xcache_get_refcount)
 		RETURN_NULL();
 	}
 
-	RETURN_LONG(Z_REFCOUNT(*variable));
+	RETURN_LONG(Z_REFCOUNT(*variable) - 1);
+}
+/* }}} */
+/* {{{ proto int xcache_get_cowcount(mixed value)
+   XCache internal uses only: Get reference count of copy-on-write variable or data */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_get_cowcount, 0, 0, 1)
+	ZEND_ARG_INFO(0, variable)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_get_cowcount[] = { 1, BYREF_NONE };
+#endif
+
+PHP_FUNCTION(xcache_get_cowcount)
+{
+	zval *variable;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &variable) == FAILURE) {
+		RETURN_NULL();
+	}
+
+	RETURN_LONG(Z_REFCOUNT(*variable) - 1);
 }
 /* }}} */
 /* {{{ proto bool xcache_get_isref(mixed variable)
@@ -425,7 +453,8 @@ static zend_function_entry xcache_functions[] = /* {{{ */
 	PHP_FE(xcache_get_opcode,        NULL)
 	PHP_FE(xcache_get_opcode_spec,   NULL)
 	PHP_FE(xcache_is_autoglobal,     NULL)
-	PHP_FE(xcache_get_refcount,      NULL)
+	PHP_FE(xcache_get_refcount,      arginfo_xcache_get_refcount)
+	PHP_FE(xcache_get_cowcount,      arginfo_xcache_get_cowcount)
 	PHP_FE(xcache_get_isref,         arginfo_xcache_get_isref)
 #ifdef HAVE_XCACHE_DPRINT
 	PHP_FE(xcache_dprint,            NULL)

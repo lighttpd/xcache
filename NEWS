@@ -1,3 +1,9 @@
+4.0.0 2014-??-??
+ChangeLog
+========
+ * api updates
+ * cache defragment, cache to disk
+
 3.1.1 2013-??-??
  * compatible with bcompiler
 
