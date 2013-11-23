@@ -3132,6 +3132,14 @@ static void xcache_admin_operate(xcache_op_type optype, INTERNAL_FUNCTION_PARAME
 /* }}} */
 /* {{{ proto int xcache_count(int type)
    Return count of cache on specified cache type */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_count, 0, 0, 1)
+	ZEND_ARG_INFO(0, type)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_count[] = { 1, BYREF_NONE };
+#endif
+
 PHP_FUNCTION(xcache_count)
 {
 	xcache_admin_operate(XC_OP_COUNT, INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -3139,6 +3147,15 @@ PHP_FUNCTION(xcache_count)
 /* }}} */
 /* {{{ proto array xcache_info(int type, int id)
    Get cache info by id on specified cache type */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_info, 0, 0, 2)
+	ZEND_ARG_INFO(0, type)
+	ZEND_ARG_INFO(0, id)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_info[] = { 2, BYREF_NONE, BYREF_NONE };
+#endif
+
 PHP_FUNCTION(xcache_info)
 {
 	xcache_admin_operate(XC_OP_INFO, INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -3146,6 +3163,15 @@ PHP_FUNCTION(xcache_info)
 /* }}} */
 /* {{{ proto array xcache_list(int type, int id)
    Get cache entries list by id on specified cache type */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_list, 0, 0, 2)
+	ZEND_ARG_INFO(0, type)
+	ZEND_ARG_INFO(0, id)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_list[] = { 2, BYREF_NONE, BYREF_NONE };
+#endif
+
 PHP_FUNCTION(xcache_list)
 {
 	xcache_admin_operate(XC_OP_LIST, INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -3153,6 +3179,15 @@ PHP_FUNCTION(xcache_list)
 /* }}} */
 /* {{{ proto array xcache_clear_cache(int type, [ int id = -1 ])
    Clear cache by id on specified cache type */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_clear_cache, 0, 0, 1)
+	ZEND_ARG_INFO(0, type)
+	ZEND_ARG_INFO(0, id)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_clear_cache[] = { 2, BYREF_NONE, BYREF_NONE };
+#endif
+
 PHP_FUNCTION(xcache_clear_cache)
 {
 	xcache_admin_operate(XC_OP_CLEAR, INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -3160,6 +3195,16 @@ PHP_FUNCTION(xcache_clear_cache)
 /* }}} */
 /* {{{ proto array xcache_enable_cache(int type, [ int id = -1, [ bool enable = true ] ])
    Enable or disable cache by id on specified cache type */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_enable_cache, 0, 0, 1)
+	ZEND_ARG_INFO(0, type)
+	ZEND_ARG_INFO(0, id)
+	ZEND_ARG_INFO(0, enable)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_enable_cache[] = { 1, BYREF_NONE };
+#endif
+
 PHP_FUNCTION(xcache_enable_cache)
 {
 	xcache_admin_operate(XC_OP_ENABLE, INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -3167,6 +3212,13 @@ PHP_FUNCTION(xcache_enable_cache)
 /* }}} */
 /* {{{ proto mixed xcache_admin_namespace()
    Break out of namespace limitation */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_admin_namespace, 0, 0, 0)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_admin_namespace[] = { 0 };
+#endif
+
 PHP_FUNCTION(xcache_admin_namespace)
 {
 	xcache_admin_auth_check(TSRMLS_C);
@@ -3198,6 +3250,14 @@ static int xc_entry_var_init_key(xc_entry_var_t *entry_var, xc_entry_hash_t *ent
 /* }}} */
 /* {{{ proto mixed xcache_set_namespace(string namespace)
    Switch to user defined namespace */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_set_namespace, 0, 0, 1)
+	ZEND_ARG_INFO(0, namespace)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_set_namespace[] = { 1, BYREF_NONE };
+#endif
+
 PHP_FUNCTION(xcache_set_namespace)
 {
 	zval *namespace;
@@ -3223,6 +3283,14 @@ PHP_FUNCTION(xcache_set_namespace)
 /* }}} */
 /* {{{ proto mixed xcache_get(string name)
    Get cached data by specified name */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_get, 0, 0, 1)
+	ZEND_ARG_INFO(0, name)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_get[] = { 1, BYREF_NONE };
+#endif
+
 PHP_FUNCTION(xcache_get)
 {
 	xc_entry_hash_t entry_hash;
@@ -3264,6 +3332,16 @@ PHP_FUNCTION(xcache_get)
 /* }}} */
 /* {{{ proto bool  xcache_set(string name, mixed value [, int ttl])
    Store data to cache by specified name */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_set, 0, 0, 2)
+	ZEND_ARG_INFO(0, name)
+	ZEND_ARG_INFO(0, value)
+	ZEND_ARG_INFO(0, ttl)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_set[] = { 3, BYREF_NONE, BYREF_NONE, BYREF_NONE };
+#endif
+
 PHP_FUNCTION(xcache_set)
 {
 	xc_entry_hash_t entry_hash;
@@ -3315,6 +3393,14 @@ PHP_FUNCTION(xcache_set)
 /* }}} */
 /* {{{ proto bool  xcache_isset(string name)
    Check if an entry exists in cache by specified name */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_isset, 0, 0, 1)
+	ZEND_ARG_INFO(0, name)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_isset[] = { 1, BYREF_NONE };
+#endif
+
 PHP_FUNCTION(xcache_isset)
 {
 	xc_entry_hash_t entry_hash;
@@ -3357,6 +3443,14 @@ PHP_FUNCTION(xcache_isset)
 /* }}} */
 /* {{{ proto bool  xcache_unset(string name)
    Unset existing data in cache by specified name */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_unset, 0, 0, 1)
+	ZEND_ARG_INFO(0, name)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_unset[] = { 1, BYREF_NONE };
+#endif
+
 PHP_FUNCTION(xcache_unset)
 {
 	xc_entry_hash_t entry_hash;
@@ -3397,6 +3491,14 @@ PHP_FUNCTION(xcache_unset)
 /* }}} */
 /* {{{ proto bool  xcache_unset_by_prefix(string prefix)
    Unset existing data in cache by specified prefix */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_unset_by_prefix, 0, 0, 1)
+	ZEND_ARG_INFO(0, prefix)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_unset_by_prefix[] = { 1, BYREF_NONE };
+#endif
+
 PHP_FUNCTION(xcache_unset_by_prefix)
 {
 	zval *prefix;
@@ -3517,6 +3619,16 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 /* }}} */
 /* {{{ proto int xcache_inc(string name [, int value [, int ttl]])
    Increase an int counter in cache by specified name, create it if not exists */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_inc, 0, 0, 1)
+	ZEND_ARG_INFO(0, prefix)
+	ZEND_ARG_INFO(0, value)
+	ZEND_ARG_INFO(0, ttl)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_inc[] = { 3, BYREF_NONE, BYREF_NONE, BYREF_NONE };
+#endif
+
 PHP_FUNCTION(xcache_inc)
 {
 	xc_var_inc_dec(1, INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -3524,6 +3636,16 @@ PHP_FUNCTION(xcache_inc)
 /* }}} */
 /* {{{ proto int xcache_dec(string name [, int value [, int ttl]])
    Decrease an int counter in cache by specified name, create it if not exists */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_dec, 0, 0, 1)
+	ZEND_ARG_INFO(0, prefix)
+	ZEND_ARG_INFO(0, value)
+	ZEND_ARG_INFO(0, ttl)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_dec[] = { 3, BYREF_NONE, BYREF_NONE, BYREF_NONE };
+#endif
+
 PHP_FUNCTION(xcache_dec)
 {
 	xc_var_inc_dec(-1, INTERNAL_FUNCTION_PARAM_PASSTHRU);
@@ -3531,20 +3653,20 @@ PHP_FUNCTION(xcache_dec)
 /* }}} */
 static zend_function_entry xcache_cacher_functions[] = /* {{{ */
 {
-	PHP_FE(xcache_count,             NULL)
-	PHP_FE(xcache_info,              NULL)
-	PHP_FE(xcache_list,              NULL)
-	PHP_FE(xcache_clear_cache,       NULL)
-	PHP_FE(xcache_enable_cache,      NULL)
-	PHP_FE(xcache_admin_namespace,   NULL)
-	PHP_FE(xcache_set_namespace,     NULL)
-	PHP_FE(xcache_get,               NULL)
-	PHP_FE(xcache_set,               NULL)
-	PHP_FE(xcache_isset,             NULL)
-	PHP_FE(xcache_unset,             NULL)
-	PHP_FE(xcache_unset_by_prefix,   NULL)
-	PHP_FE(xcache_inc,               NULL)
-	PHP_FE(xcache_dec,               NULL)
+	PHP_FE(xcache_count,             arginfo_xcache_count)
+	PHP_FE(xcache_info,              arginfo_xcache_info)
+	PHP_FE(xcache_list,              arginfo_xcache_list)
+	PHP_FE(xcache_clear_cache,       arginfo_xcache_clear_cache)
+	PHP_FE(xcache_enable_cache,      arginfo_xcache_enable_cache)
+	PHP_FE(xcache_admin_namespace,   arginfo_xcache_admin_namespace)
+	PHP_FE(xcache_set_namespace,     arginfo_xcache_set_namespace)
+	PHP_FE(xcache_get,               arginfo_xcache_get)
+	PHP_FE(xcache_set,               arginfo_xcache_set)
+	PHP_FE(xcache_isset,             arginfo_xcache_isset)
+	PHP_FE(xcache_unset,             arginfo_xcache_unset)
+	PHP_FE(xcache_unset_by_prefix,   arginfo_xcache_unset_by_prefix)
+	PHP_FE(xcache_inc,               arginfo_xcache_inc)
+	PHP_FE(xcache_dec,               arginfo_xcache_dec)
 	PHP_FE_END
 };
 /* }}} */

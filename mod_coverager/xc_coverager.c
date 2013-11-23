@@ -484,6 +484,14 @@ static void xc_coverager_handle_ext_stmt(zend_op_array *op_array, zend_uchar op)
 /* {{{ proto array xcache_coverager_decode(string data)
  * decode specified data which is saved by auto dumper to array
  */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_coverager_decode, 0, 0, 1)
+	ZEND_ARG_INFO(0, data)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_coverager_decode[] = { 1, BYREF_NONE };
+#endif
+
 PHP_FUNCTION(xcache_coverager_decode)
 {
 	char *str;
@@ -514,6 +522,14 @@ PHP_FUNCTION(xcache_coverager_decode)
 /* {{{ proto void xcache_coverager_start([bool clean = true])
  * starts coverager data collecting
  */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_coverager_start, 0, 0, 0)
+	ZEND_ARG_INFO(0, clean)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_coverager_start[] = { 1, BYREF_NONE };
+#endif
+
 PHP_FUNCTION(xcache_coverager_start)
 {
 	zend_bool clean = 1;
@@ -537,6 +553,14 @@ PHP_FUNCTION(xcache_coverager_start)
 /* {{{ proto void xcache_coverager_stop([bool clean = false])
  * stop coverager data collecting
  */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_coverager_stop, 0, 0, 0)
+	ZEND_ARG_INFO(0, clean)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_coverager_stop[] = { 1, BYREF_NONE };
+#endif
+
 PHP_FUNCTION(xcache_coverager_stop)
 {
 	zend_bool clean = 0;
@@ -554,6 +578,13 @@ PHP_FUNCTION(xcache_coverager_stop)
 /* {{{ proto array xcache_coverager_get([bool clean = false])
  * get coverager data collected
  */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_coverager_get, 0, 0, 0)
+	ZEND_ARG_INFO(0, clean)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_coverager_get[] = { 1, BYREF_NONE };
+#endif
 PHP_FUNCTION(xcache_coverager_get)
 {
 	zend_bool clean = 0;
@@ -569,10 +600,10 @@ PHP_FUNCTION(xcache_coverager_get)
 /* }}} */
 static zend_function_entry xcache_coverager_functions[] = /* {{{ */
 {
-	PHP_FE(xcache_coverager_decode,  NULL)
-	PHP_FE(xcache_coverager_start,   NULL)
-	PHP_FE(xcache_coverager_stop,    NULL)
-	PHP_FE(xcache_coverager_get,     NULL)
+	PHP_FE(xcache_coverager_decode,  arginfo_xcache_coverager_decode)
+	PHP_FE(xcache_coverager_start,   arginfo_xcache_coverager_start)
+	PHP_FE(xcache_coverager_stop,    arginfo_xcache_coverager_stop)
+	PHP_FE(xcache_coverager_get,     arginfo_xcache_coverager_get)
 	PHP_FE_END
 };
 /* }}} */

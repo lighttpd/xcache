@@ -176,6 +176,281 @@ void xc_shutdown_globals(zend_xcache_globals* xcache_globals TSRMLS_DC)
 }
 /* }}} */
 
+#ifdef HAVE_XCACHE_DPRINT
+/* {{{ proto bool  xcache_dprint(mixed value)
+   Prints internal struct of an zval (debug only) */
+#include "xc_processor.h"
+
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_dprint, 0, 0, 1)
+	ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_dprint[] = { 1, BYREF_NONE };
+#endif
+
+PHP_FUNCTION(xcache_dprint)
+{
+	zval *value;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &value) == FAILURE) {
+		return;
+	}
+	xc_dprint_zval(value, 0 TSRMLS_CC);
+}
+/* }}} */
+#endif
+#ifdef HAVE_XCACHE_ASSEMBLER
+/* {{{ proto string xcache_asm(string filename)
+ */
+PHP_FUNCTION(xcache_asm)
+{
+}
+/* }}} */
+#endif
+#ifdef HAVE_XCACHE_ENCODER
+/* {{{ proto string xcache_encode(string filename)
+   Encode php file into XCache opcode encoded format */
+PHP_FUNCTION(xcache_encode)
+{
+}
+/* }}} */
+#endif
+#ifdef HAVE_XCACHE_DECODER
+/* {{{ proto bool xcache_decode_file(string filename)
+   Decode(load) opcode from XCache encoded format file */
+PHP_FUNCTION(xcache_decode_file)
+{
+}
+/* }}} */
+/* {{{ proto bool xcache_decode_string(string data)
+   Decode(load) opcode from XCache encoded format data */
+PHP_FUNCTION(xcache_decode_string)
+{
+}
+/* }}} */
+#endif
+/* {{{ xc_call_getter */
+typedef const char *(xc_name_getter_t)(zend_uchar type);
+static void xc_call_getter(xc_name_getter_t getter, int count, INTERNAL_FUNCTION_PARAMETERS)
+{
+	long spec;
+	const char *name;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &spec) == FAILURE) {
+		return;
+	}
+	if (spec >= 0 && spec < count) {
+		name = getter((zend_uchar) spec);
+		if (name) {
+			/* RETURN_STRING */
+			int len = (int) strlen(name);
+			return_value->value.str.len = len;
+			return_value->value.str.val = estrndup(name, len);
+			return_value->type = IS_STRING; 
+			return;
+		}
+	}
+	RETURN_NULL();
+}
+/* }}} */
+/* {{{ proto string xcache_get_op_type(int op_type) */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_get_op_type, 0, 0, 1)
+	ZEND_ARG_INFO(0, op_type)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_get_op_type[] = { 1, BYREF_NONE };
+#endif
+
+PHP_FUNCTION(xcache_get_op_type)
+{
+	xc_call_getter(xc_get_op_type, xc_get_op_type_count(), INTERNAL_FUNCTION_PARAM_PASSTHRU);
+}
+/* }}} */
+/* {{{ proto string xcache_get_data_type(int type) */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_get_data_type, 0, 0, 1)
+	ZEND_ARG_INFO(0, type)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_get_data_type[] = { 1, BYREF_NONE };
+#endif
+
+PHP_FUNCTION(xcache_get_data_type)
+{
+	xc_call_getter(xc_get_data_type, xc_get_data_type_count(), INTERNAL_FUNCTION_PARAM_PASSTHRU);
+}
+/* }}} */
+/* {{{ proto string xcache_get_opcode(int opcode) */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_get_opcode, 0, 0, 1)
+	ZEND_ARG_INFO(0, opcode)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_get_opcode[] = { 1, BYREF_NONE };
+#endif
+
+PHP_FUNCTION(xcache_get_opcode)
+{
+	xc_call_getter(xc_get_opcode, xc_get_opcode_count(), INTERNAL_FUNCTION_PARAM_PASSTHRU);
+}
+/* }}} */
+/* {{{ proto string xcache_get_op_spec(int op_type) */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_get_op_spec, 0, 0, 1)
+	ZEND_ARG_INFO(0, op_type)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_get_op_spec[] = { 1, BYREF_NONE };
+#endif
+
+PHP_FUNCTION(xcache_get_op_spec)
+{
+	xc_call_getter(xc_get_op_spec, xc_get_op_spec_count(), INTERNAL_FUNCTION_PARAM_PASSTHRU);
+}
+/* }}} */
+/* {{{ proto string xcache_get_opcode_spec(int opcode) */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_get_opcode_spec, 0, 0, 1)
+	ZEND_ARG_INFO(0, opcode)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_get_opcode_spec[] = { 1, BYREF_NONE };
+#endif
+
+PHP_FUNCTION(xcache_get_opcode_spec)
+{
+	long spec;
+	const xc_opcode_spec_t *opspec;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &spec) == FAILURE) {
+		return;
+	}
+	if ((zend_uchar) spec <= xc_get_opcode_spec_count()) {
+		opspec = xc_get_opcode_spec((zend_uchar) spec);
+		if (opspec) {
+			array_init(return_value);
+			add_assoc_long_ex(return_value, XCACHE_STRS("ext"), opspec->ext);
+			add_assoc_long_ex(return_value, XCACHE_STRS("op1"), opspec->op1);
+			add_assoc_long_ex(return_value, XCACHE_STRS("op2"), opspec->op2);
+			add_assoc_long_ex(return_value, XCACHE_STRS("res"), opspec->res);
+			return;
+		}
+	}
+	RETURN_NULL();
+}
+/* }}} */
+/* {{{ proto mixed xcache_get_special_value(zval value)
+   XCache internal use only: For decompiler to get static value with type fixed */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_get_special_value, 0, 0, 1)
+	ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_get_special_value[] = { 1, BYREF_NONE };
+#endif
+
+PHP_FUNCTION(xcache_get_special_value)
+{
+	zval *value;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &value) == FAILURE) {
+		return;
+	}
+
+	switch ((Z_TYPE_P(value) & IS_CONSTANT_TYPE_MASK)) {
+	case IS_CONSTANT:
+		*return_value = *value;
+		zval_copy_ctor(return_value);
+		return_value->type = UNISW(IS_STRING, UG(unicode) ? IS_UNICODE : IS_STRING);
+		break;
+
+	case IS_CONSTANT_ARRAY:
+		*return_value = *value;
+		zval_copy_ctor(return_value);
+		return_value->type = IS_ARRAY;
+		break;
+
+	default:
+		if ((Z_TYPE_P(value) & ~IS_CONSTANT_TYPE_MASK)) {
+			*return_value = *value;
+			zval_copy_ctor(return_value);
+			return_value->type &= IS_CONSTANT_TYPE_MASK;
+		}
+		else {
+			RETURN_NULL();
+		}
+	}
+}
+/* }}} */
+/* {{{ proto int xcache_get_type(zval value)
+   XCache internal use only for disassembler to get variable type in engine level */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_get_type, 0, 0, 1)
+	ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_get_type[] = { 1, BYREF_NONE };
+#endif
+
+PHP_FUNCTION(xcache_get_type)
+{
+	zval *value;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &value) == FAILURE) {
+		return;
+	}
+
+	RETURN_LONG(Z_TYPE_P(value));
+}
+/* }}} */
+/* {{{ proto string xcache_coredump() */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_coredump, 0, 0, 0)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_coredump[] = { 1, BYREF_NONE };
+#endif
+
+PHP_FUNCTION(xcache_coredump)
+{
+	if (xc_test) {
+		char *null_ptr = NULL;
+		*null_ptr = 0;
+		raise(SIGSEGV);
+	}
+	else {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "xcache.test must be enabled to test xcache_coredump()");
+	}
+}
+/* }}} */
+/* {{{ proto string xcache_is_autoglobal(string name) */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_is_autoglobal, 0, 0, 1)
+	ZEND_ARG_INFO(0, name)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_is_autoglobal[] = { 1, BYREF_NONE };
+#endif
+
+PHP_FUNCTION(xcache_is_autoglobal)
+{
+	zval *name;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &name) == FAILURE) {
+		return;
+	}
+
+#ifdef IS_UNICODE
+	convert_to_unicode(name);
+#else
+	convert_to_string(name);
+#endif
+
+	RETURN_BOOL(zend_u_hash_exists(CG(auto_globals), UG(unicode), Z_STRVAL_P(name), Z_STRLEN_P(name) + 1));
+}
+/* }}} */
 /* {{{ proto int xcache_get_refcount(mixed &variable)
    XCache internal uses only: Get reference count of referenced variable */
 #ifdef ZEND_BEGIN_ARG_INFO_EX
@@ -236,206 +511,11 @@ PHP_FUNCTION(xcache_get_isref)
 	RETURN_BOOL(Z_ISREF(*variable) && Z_REFCOUNT(*variable) >= 3);
 }
 /* }}} */
-#ifdef HAVE_XCACHE_DPRINT
-/* {{{ proto bool  xcache_dprint(mixed value)
-   Prints variable (or value) internal struct (debug only) */
-#include "xc_processor.h"
-PHP_FUNCTION(xcache_dprint)
-{
-	zval *value;
-
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &value) == FAILURE) {
-		return;
-	}
-	xc_dprint_zval(value, 0 TSRMLS_CC);
-}
-/* }}} */
-#endif
-/* {{{ proto string xcache_asm(string filename)
- */
-#ifdef HAVE_XCACHE_ASSEMBLER
-PHP_FUNCTION(xcache_asm)
-{
-}
-#endif
-/* }}} */
-/* {{{ proto string xcache_encode(string filename)
-   Encode php file into XCache opcode encoded format */
-#ifdef HAVE_XCACHE_ENCODER
-PHP_FUNCTION(xcache_encode)
-{
-}
-#endif
-/* }}} */
-/* {{{ proto bool xcache_decode_file(string filename)
-   Decode(load) opcode from XCache encoded format file */
-#ifdef HAVE_XCACHE_DECODER
-PHP_FUNCTION(xcache_decode_file)
-{
-}
-#endif
-/* }}} */
-/* {{{ proto bool xcache_decode_string(string data)
-   Decode(load) opcode from XCache encoded format data */
-#ifdef HAVE_XCACHE_DECODER
-PHP_FUNCTION(xcache_decode_string)
-{
-}
-#endif
-/* }}} */
-/* {{{ xc_call_getter */
-typedef const char *(xc_name_getter_t)(zend_uchar type);
-static void xc_call_getter(xc_name_getter_t getter, int count, INTERNAL_FUNCTION_PARAMETERS)
-{
-	long spec;
-	const char *name;
-
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &spec) == FAILURE) {
-		return;
-	}
-	if (spec >= 0 && spec < count) {
-		name = getter((zend_uchar) spec);
-		if (name) {
-			/* RETURN_STRING */
-			int len = (int) strlen(name);
-			return_value->value.str.len = len;
-			return_value->value.str.val = estrndup(name, len);
-			return_value->type = IS_STRING; 
-			return;
-		}
-	}
-	RETURN_NULL();
-}
-/* }}} */
-/* {{{ proto string xcache_get_op_type(int op_type) */
-PHP_FUNCTION(xcache_get_op_type)
-{
-	xc_call_getter(xc_get_op_type, xc_get_op_type_count(), INTERNAL_FUNCTION_PARAM_PASSTHRU);
-}
-/* }}} */
-/* {{{ proto string xcache_get_data_type(int type) */
-PHP_FUNCTION(xcache_get_data_type)
-{
-	xc_call_getter(xc_get_data_type, xc_get_data_type_count(), INTERNAL_FUNCTION_PARAM_PASSTHRU);
-}
-/* }}} */
-/* {{{ proto string xcache_get_opcode(int opcode) */
-PHP_FUNCTION(xcache_get_opcode)
-{
-	xc_call_getter(xc_get_opcode, xc_get_opcode_count(), INTERNAL_FUNCTION_PARAM_PASSTHRU);
-}
-/* }}} */
-/* {{{ proto string xcache_get_op_spec(int op_type) */
-PHP_FUNCTION(xcache_get_op_spec)
-{
-	xc_call_getter(xc_get_op_spec, xc_get_op_spec_count(), INTERNAL_FUNCTION_PARAM_PASSTHRU);
-}
-/* }}} */
-/* {{{ proto string xcache_get_opcode_spec(int opcode) */
-PHP_FUNCTION(xcache_get_opcode_spec)
-{
-	long spec;
-	const xc_opcode_spec_t *opspec;
-
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &spec) == FAILURE) {
-		return;
-	}
-	if ((zend_uchar) spec <= xc_get_opcode_spec_count()) {
-		opspec = xc_get_opcode_spec((zend_uchar) spec);
-		if (opspec) {
-			array_init(return_value);
-			add_assoc_long_ex(return_value, XCACHE_STRS("ext"), opspec->ext);
-			add_assoc_long_ex(return_value, XCACHE_STRS("op1"), opspec->op1);
-			add_assoc_long_ex(return_value, XCACHE_STRS("op2"), opspec->op2);
-			add_assoc_long_ex(return_value, XCACHE_STRS("res"), opspec->res);
-			return;
-		}
-	}
-	RETURN_NULL();
-}
-/* }}} */
-/* {{{ proto mixed xcache_get_special_value(zval value)
-   XCache internal use only: For decompiler to get static value with type fixed */
-PHP_FUNCTION(xcache_get_special_value)
-{
-	zval *value;
-
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &value) == FAILURE) {
-		return;
-	}
-
-	switch ((Z_TYPE_P(value) & IS_CONSTANT_TYPE_MASK)) {
-	case IS_CONSTANT:
-		*return_value = *value;
-		zval_copy_ctor(return_value);
-		return_value->type = UNISW(IS_STRING, UG(unicode) ? IS_UNICODE : IS_STRING);
-		break;
-
-	case IS_CONSTANT_ARRAY:
-		*return_value = *value;
-		zval_copy_ctor(return_value);
-		return_value->type = IS_ARRAY;
-		break;
-
-	default:
-		if ((Z_TYPE_P(value) & ~IS_CONSTANT_TYPE_MASK)) {
-			*return_value = *value;
-			zval_copy_ctor(return_value);
-			return_value->type &= IS_CONSTANT_TYPE_MASK;
-		}
-		else {
-			RETURN_NULL();
-		}
-	}
-}
-/* }}} */
-/* {{{ proto int xcache_get_type(zval value)
-   XCache internal use only for disassembler to get variable type in engine level */
-PHP_FUNCTION(xcache_get_type)
-{
-	zval *value;
-
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &value) == FAILURE) {
-		return;
-	}
-
-	RETURN_LONG(Z_TYPE_P(value));
-}
-/* }}} */
-/* {{{ proto string xcache_coredump(int op_type) */
-PHP_FUNCTION(xcache_coredump)
-{
-	if (xc_test) {
-		char *null_ptr = NULL;
-		*null_ptr = 0;
-		raise(SIGSEGV);
-	}
-	else {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "xcache.test must be enabled to test xcache_coredump()");
-	}
-}
-/* }}} */
-/* {{{ proto string xcache_is_autoglobal(string name) */
-PHP_FUNCTION(xcache_is_autoglobal)
-{
-	zval *name;
-
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &name) == FAILURE) {
-		return;
-	}
-
-#ifdef IS_UNICODE
-	convert_to_unicode(name);
-#else
-	convert_to_string(name);
-#endif
-
-	RETURN_BOOL(zend_u_hash_exists(CG(auto_globals), UG(unicode), Z_STRVAL_P(name), Z_STRLEN_P(name) + 1));
-}
-/* }}} */
 static zend_function_entry xcache_functions[] = /* {{{ */
 {
-	PHP_FE(xcache_coredump,          NULL)
+#ifdef HAVE_XCACHE_DPRINT
+	PHP_FE(xcache_dprint,            arginfo_xcache_dprint)
+#endif
 #ifdef HAVE_XCACHE_ASSEMBLER
 	PHP_FE(xcache_asm,               NULL)
 #endif
@@ -446,19 +526,17 @@ static zend_function_entry xcache_functions[] = /* {{{ */
 	PHP_FE(xcache_decode_file,       NULL)
 	PHP_FE(xcache_decode_string,     NULL)
 #endif
-	PHP_FE(xcache_get_special_value, NULL)
-	PHP_FE(xcache_get_type,          NULL)
-	PHP_FE(xcache_get_op_type,       NULL)
-	PHP_FE(xcache_get_data_type,     NULL)
-	PHP_FE(xcache_get_opcode,        NULL)
-	PHP_FE(xcache_get_opcode_spec,   NULL)
-	PHP_FE(xcache_is_autoglobal,     NULL)
+	PHP_FE(xcache_get_special_value, arginfo_xcache_get_special_value)
+	PHP_FE(xcache_get_type,          arginfo_xcache_get_type)
+	PHP_FE(xcache_get_op_type,       arginfo_xcache_get_op_type)
+	PHP_FE(xcache_get_data_type,     arginfo_xcache_get_data_type)
+	PHP_FE(xcache_get_opcode,        arginfo_xcache_get_opcode)
+	PHP_FE(xcache_get_opcode_spec,   arginfo_xcache_get_opcode_spec)
+	PHP_FE(xcache_coredump,          arginfo_xcache_coredump)
+	PHP_FE(xcache_is_autoglobal,     arginfo_xcache_is_autoglobal)
 	PHP_FE(xcache_get_refcount,      arginfo_xcache_get_refcount)
 	PHP_FE(xcache_get_cowcount,      arginfo_xcache_get_cowcount)
 	PHP_FE(xcache_get_isref,         arginfo_xcache_get_isref)
-#ifdef HAVE_XCACHE_DPRINT
-	PHP_FE(xcache_dprint,            NULL)
-#endif
 	PHP_FE_END
 };
 /* }}} */

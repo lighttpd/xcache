@@ -9,6 +9,8 @@ ChangeLog
  * cacher:
    * (WIP) defragment
    * (WIP) cache to disk
+ * misc:
+   * Reflection info added for APIs
 
 3.1.1 2013-??-??
 ChangeLog

@@ -194,6 +194,14 @@ void xc_dasm_file(zval *output, const char *filename TSRMLS_DC) /* {{{ */
 
 /* {{{ proto array xcache_dasm_file(string filename)
    Disassemble file into opcode array by filename */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_dasm_file, 0, 0, 1)
+	ZEND_ARG_INFO(0, filename)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_dasm_file[] = { 1, BYREF_NONE };
+#endif
+
 PHP_FUNCTION(xcache_dasm_file)
 {
 	char *filename;
@@ -209,6 +217,14 @@ PHP_FUNCTION(xcache_dasm_file)
 /* }}} */
 /* {{{ proto array xcache_dasm_string(string code)
    Disassemble php code into opcode array */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_dasm_string, 0, 0, 1)
+	ZEND_ARG_INFO(0, code)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_dasm_string[] = { 1, BYREF_NONE };
+#endif
+
 PHP_FUNCTION(xcache_dasm_string)
 {
 	zval *code;
@@ -232,8 +248,8 @@ static PHP_MINFO_FUNCTION(xcache_disassembler)
 /* }}} */
 static zend_function_entry xcache_disassembler_functions[] = /* {{{ */
 {
-	PHP_FE(xcache_dasm_file,         NULL)
-	PHP_FE(xcache_dasm_string,       NULL)
+	PHP_FE(xcache_dasm_file,         arginfo_xcache_dasm_file)
+	PHP_FE(xcache_dasm_string,       arginfo_xcache_dasm_string)
 	PHP_FE_END
 };
 /* }}} */
