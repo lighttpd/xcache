@@ -866,11 +866,6 @@ static zend_op_array *xc_entry_install(xc_entry_php_t *entry_php TSRMLS_DC) /* {
 	CG(zend_lineno) = 0;
 #endif
 
-	i = 1;
-#ifndef ZEND_ENGINE_2_2
-	zend_hash_add(&EG(included_files), entry_php->entry.name.str.val, entry_php->entry.name.str.len+1, (void *)&i, sizeof(int), NULL);
-#endif
-
 #ifndef ZEND_ENGINE_2
 	xc_free_alloca(new_cest_ptrs, use_heap);
 #endif
@@ -2187,7 +2182,6 @@ static zend_op_array *xc_compile_file_cached(xc_compiler_t *compiler, zend_file_
 
 	/* found entry */
 	if (stored_entry && stored_php) {
-		zend_llist_add_element(&CG(open_files), h);
 		return xc_compile_restore(stored_entry, stored_php TSRMLS_CC);
 	}
 

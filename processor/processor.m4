@@ -749,22 +749,24 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 		/* deep */
 		STRUCT_P(HashTable, static_variables, HashTable_zval_ptr)
 #ifdef ZEND_ENGINE_2
-		STRUCT_ARRAY(zend_uint, num_args, zend_arg_info, arg_info)
-		gc_arg_info = 1;
+		if (SRC(`arg_info')) {
+			gc_arg_info = 1;
+			STRUCT_ARRAY(zend_uint, num_args, zend_arg_info, arg_info)
+		}
 #endif
 		DST(`filename') = processor->entry_php_src->filepath;
+
 #ifdef ZEND_ENGINE_2_4
-		if (SRC(`literals')) {
+		if (SRC(`literals') && op_array_info->literalinfo_cnt) {
 			gc_opcodes = 1;
-			if (op_array_info->literalinfo_cnt) {
-				gc_literals = 1;
-			}
+			gc_literals = 1;
 		}
 #else
 		if (op_array_info->oplineinfo_cnt) {
 			gc_opcodes = 1;
 		}
 #endif
+
 #ifdef ZEND_ENGINE_2_4
 		if (gc_literals) {
 			dnl used when copying opcodes

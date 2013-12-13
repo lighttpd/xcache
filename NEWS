@@ -1,10 +1,12 @@
 4.0.0 2014-??-??
-ChangeLog
-========
  * api updates
  * cache defragment, cache to disk
 
+3.2.1 2013-??-??
+========
+
 3.1.1 2013-??-??
+========
  * compatible with bcompiler
 
 3.1.0 2013-10-10
