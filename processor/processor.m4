@@ -1182,7 +1182,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_data_php_t', , `dnl {{{
 	STRUCT_ARRAY(zend_uint, funcinfo_cnt, xc_funcinfo_t, funcinfos)
 
 	PROCESS(zend_uint, classinfo_cnt)
-	STRUCT_ARRAY(zend_uint, classinfo_cnt, xc_classinfo_t, classinfos, , IFRESTORE(`processor->active_class_index'))
+	STRUCT_ARRAY(zend_uint, classinfo_cnt, xc_classinfo_t, classinfos, , IFCOPY(`processor->active_class_index'))
 #ifdef ZEND_ENGINE_2_1
 	PROCESS(zend_uint, autoglobal_cnt)
 	IFRESTORE(`

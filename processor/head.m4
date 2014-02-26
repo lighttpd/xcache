@@ -254,6 +254,7 @@ static zend_ulong xc_get_class_num(xc_processor_t *processor, zend_class_entry *
 		if (ZCEP_REFCOUNT_PTR(ceptr) == ZCEP_REFCOUNT_PTR(ce)) {
 			processor->cache_ce = ceptr;
 			processor->cache_class_index = i;
+			assert(i <= processor->active_class_index);
 			return i + 1;
 		}
 	}
@@ -265,6 +266,7 @@ define(`xc_get_class_num', `IFSTORE(``xc_get_class_num'($@)',``xc_get_class_num'
 #ifdef ZEND_ENGINE_2
 static zend_class_entry *xc_get_class(xc_processor_t *processor, zend_ulong class_num) { /* {{{ */
 	/* must be parent or currrent class */
+	assert(class_num > 0);
 	assert(class_num <= processor->active_class_index + 1);
 	return CestToCePtr(processor->php_dst->classinfos[class_num - 1].cest);
 }
