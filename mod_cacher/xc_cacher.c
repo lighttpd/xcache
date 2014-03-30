@@ -447,15 +447,15 @@ static inline zend_uint advance_wrapped(zend_uint val, zend_uint count) /* {{{ *
 	return val + 1;
 }
 /* }}} */
-static inline void xc_counters_inc(time_t *curtime, zend_uint *curslot, time_t interval, zend_ulong *counters, zend_uint count TSRMLS_DC) /* {{{ */
+static inline void xc_counters_inc(time_t *curtime, zend_uint *curslot, time_t interval, zend_ulong *counters, zend_uint ncounters TSRMLS_DC) /* {{{ */
 {
 	time_t n = XG(request_time) / interval;
-	if (*curtime != n) {
-		zend_uint target_slot = ((zend_uint) n) % count;
+	if (*curtime < n) {
+		zend_uint target_slot = ((zend_uint) n) % ncounters;
 		zend_uint slot;
-		for (slot = advance_wrapped(*curslot, count);
+		for (slot = advance_wrapped(*curslot, ncounters);
 				slot != target_slot;
-				slot = advance_wrapped(slot, count)) {
+				slot = advance_wrapped(slot, ncounters)) {
 			counters[slot] = 0;
 		}
 		counters[target_slot] = 0;
@@ -465,6 +465,7 @@ static inline void xc_counters_inc(time_t *curtime, zend_uint *curslot, time_t i
 	counters[*curslot] ++;
 }
 /* }}} */
+#define xc_countof(array) (sizeof(array) / sizeof(array[0]))
 static inline void xc_cached_hit_unlocked(xc_cached_t *cached TSRMLS_DC) /* {{{ */
 {
 	cached->hits ++;
@@ -472,13 +473,13 @@ static inline void xc_cached_hit_unlocked(xc_cached_t *cached TSRMLS_DC) /* {{{ 
 	xc_counters_inc(&cached->hits_by_hour_cur_time
 			, &cached->hits_by_hour_cur_slot, 60 * 60
 			, cached->hits_by_hour
-			, sizeof(cached->hits_by_hour) / sizeof(cached->hits_by_hour[0])
+			, xc_countof(cached->hits_by_hour)
 			TSRMLS_CC);
 
 	xc_counters_inc(&cached->hits_by_second_cur_time
 			, &cached->hits_by_second_cur_slot, 1
 			, cached->hits_by_second
-			, sizeof(cached->hits_by_second) / sizeof(cached->hits_by_second[0])
+			, xc_countof(cached->hits_by_second)
 			TSRMLS_CC);
 }
 /* }}} */
@@ -665,14 +666,14 @@ static void xc_fillinfo_unlocked(int cachetype, xc_cache_t *cache, zval *return_
 	}
 	MAKE_STD_ZVAL(hits);
 	array_init(hits);
-	for (i = 0; i < sizeof(cached->hits_by_hour) / sizeof(cached->hits_by_hour[0]); i ++) {
+	for (i = 0; i < xc_countof(cached->hits_by_hour); i ++) {
 		add_next_index_long(hits, (long) cached->hits_by_hour[i]);
 	}
 	add_assoc_zval_ex(return_value, XCACHE_STRS("hits_by_hour"), hits);
 
 	MAKE_STD_ZVAL(hits);
 	array_init(hits);
-	for (i = 0; i < sizeof(cached->hits_by_second) / sizeof(cached->hits_by_second[0]); i ++) {
+	for (i = 0; i < xc_countof(cached->hits_by_second); i ++) {
 		add_next_index_long(hits, (long) cached->hits_by_second[i]);
 	}
 	add_assoc_zval_ex(return_value, XCACHE_STRS("hits_by_second"), hits);

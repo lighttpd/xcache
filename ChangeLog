@@ -23,6 +23,8 @@ ChangeLog
 ========
  * cacher
    * compatible with bcompiler
+ * admin
+   * fixed random 24H counters clear. it's a race cached condition. thanks to the report from Per Hansson
 
 3.1.0 2013-10-10
 ChangeLog
