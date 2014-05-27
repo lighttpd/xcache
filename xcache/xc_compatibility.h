@@ -98,6 +98,10 @@ static inline void xc_add_assoc_null_ex(zval *arg, char *key, uint key_len)
 #endif
 /* }}} */
 
+#ifndef ZEND_ENGINE_2_6
+typedef void zend_ast;
+#endif
+
 #ifdef ZEND_ENGINE_2_4
 #	define Z_OP(op) (op)
 #	define Z_OP_CONSTANT(op) (op).literal->constant

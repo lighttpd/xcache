@@ -648,11 +648,11 @@ class Decompiler
 				XC_JMP_SET_VAR         => "?:",
 				XC_JMPZ_EX             => "&&",
 				XC_JMPNZ_EX            => "||",
-
-				// zend_ast
-				ZEND_BOOL_AND          => '&&',
-				ZEND_BOOL_OR           => '||',
 				);
+		if (defined('IS_CONSTANT_AST')) {
+			$this->binops[ZEND_BOOL_AND] = '&&';
+			$this->binops[ZEND_BOOL_OR]  = '||';
+		}
 		// }}}
 		$this->includeTypes = array( // {{{
 				ZEND_EVAL         => 'eval',
