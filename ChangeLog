@@ -7,9 +7,11 @@ API Changes
 ChangeLog
 ========
  * cacher:
+   * PHP_5_6 support
    * (WIP) defragment
    * (WIP) cache to disk
-   * (WIP) PHP_5_6 support
+ * disassembler, decompiler:
+   * PHP_5_6 support
  * misc:
    * Reflection info added for APIs
 

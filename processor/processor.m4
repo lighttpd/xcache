@@ -70,10 +70,10 @@ DEF_HASH_TABLE_FUNC(`HashTable_zend_function',      `zend_function')
 DEF_HASH_TABLE_FUNC(`HashTable_zend_property_info', `zend_property_info')
 #endif
 #ifdef IS_CONSTANT_AST
-define(`ZEND_AST_HELPER', `
-	{
+define(`ZEND_AST_HELPER', `dnl {{{
+{
 	IFCALCCOPY(`
-		size_t zend_ast_size = $1->kind == ZEND_CONST
+		size_t zend_ast_size = ($1->kind == ZEND_CONST)
 		 ? sizeof(zend_ast) + sizeof(zval)
 		 : sizeof(zend_ast) + sizeof(zend_ast *) * ($1->children - 1);
 	')
@@ -81,8 +81,9 @@ define(`ZEND_AST_HELPER', `
 	pushdef(`ALLOC_SIZE_HELPER', `zend_ast_size')
 	$2
 	popdef(`ALLOC_SIZE_HELPER')
-	}
+}
 ')
+dnl }}}
 DEF_STRUCT_P_FUNC(`zend_ast', , `dnl {{{
 		zend_ushort i;
 		PROCESS(zend_ushort, kind)
@@ -92,6 +93,7 @@ DEF_STRUCT_P_FUNC(`zend_ast', , `dnl {{{
 			if (SRC()->kind == ZEND_CONST) {
 				assert(SRC()->u.val);
 				IFCOPY(`
+					DST()->u.val = (zval *) (DST() + 1);
 					memcpy(DST()->u.val, SRC()->u.val, sizeof(zval));
 				')
 				STRUCT_P_EX(zval, DST()->u.val, SRC()->u.val, `', `', ` ')
@@ -100,9 +102,16 @@ DEF_STRUCT_P_FUNC(`zend_ast', , `dnl {{{
 			else {
 				for (i = 0; i < SRC()->children; ++i) {
 					zend_ast *src_ast = (&SRC()->u.child)[i];
-					ALLOC(`(&DST()->u.child)[i]', zend_ast)
-					ZEND_AST_HELPER(`src_ast', `STRUCT_P_EX(zend_ast, (&DST()->u.child)[i], src_ast, `[i]', `', ` ')')
-					RELOCATE_EX(zend_ast, (&DST()->u.child)[i])
+					if (src_ast) {
+						ZEND_AST_HELPER(`src_ast', `
+							ALLOC(`(&DST()->u.child)[i]', zend_ast)
+							STRUCT_P_EX(zend_ast, (&DST()->u.child)[i], src_ast, `[i]', `', ` ')
+						')
+						RELOCATE_EX(zend_ast, (&DST()->u.child)[i])
+					}
+					else {
+						COPYNULL_EX(`(&DST()->u.child)[i]')
+					}
 				}
 			}
 		')
