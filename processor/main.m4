@@ -254,6 +254,7 @@ dnl }}}
 EXPORT_PROCESSOR(`dasm',   `zend_op_array')
 EXPORT_PROCESSOR(`dasm',   `zend_function')
 EXPORT_PROCESSOR(`dasm',   `zend_class_entry')
+EXPORT_PROCESSOR(`dasm',   `zend_ast')
 EXPORT_PROCESSOR(`dprint', `zval')
 
 include(__dir__`/hashtable.m4')

@@ -96,7 +96,7 @@ DEF_STRUCT_P_FUNC(`zend_ast', , `dnl {{{
 					DST()->u.val = (zval *) (DST() + 1);
 					memcpy(DST()->u.val, SRC()->u.val, sizeof(zval));
 				')
-				STRUCT_P_EX(zval, DST()->u.val, SRC()->u.val, `', `', ` ')
+				STRUCT_P_EX(zval, DST()->u.val, SRC()->u.val, `[]', `', ` ')
 				RELOCATE_EX(zval, DST()->u.val)
 			}
 			else {
@@ -105,7 +105,7 @@ DEF_STRUCT_P_FUNC(`zend_ast', , `dnl {{{
 					if (src_ast) {
 						ZEND_AST_HELPER(`src_ast', `
 							ALLOC(`(&DST()->u.child)[i]', zend_ast)
-							STRUCT_P_EX(zend_ast, (&DST()->u.child)[i], src_ast, `[i]', `', ` ')
+							STRUCT_P_EX(zend_ast, (&DST()->u.child)[i], src_ast, `[]', `', ` ')
 						')
 						RELOCATE_EX(zend_ast, (&DST()->u.child)[i])
 					}

@@ -44,6 +44,12 @@ abstract class ClassName
 	static public $static_const10 = array(CONST_VALUE => CONST_VALUE);
 	static public $static_const11 = array(self::CONST_VALUE => self::CONST_VALUE);
 	static public $static_const12 = array(ClassName::CONST_VALUE => ClassName::CONST_VALUE);
+	static public $ast_binop = ClassName::CONST_VALUE + ClassName::CONST_VALUE;
+	static public $ast_and = ClassName::CONST_VALUE && 1;
+	static public $ast_or = ClassName::CONST_VALUE || 2;
+	static public $ast_select = ClassName::CONST_VALUE ? a : b;
+	static public $ast_unaryPlus = +ClassName::CONST_VALUE;
+	static public $ast_unaryMinus = -ClassName::CONST_VALUE;
 	/** doc */
 	static public $public_static = array(2, 'str');
 	/** doc */

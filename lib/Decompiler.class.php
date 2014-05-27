@@ -87,8 +87,66 @@ function foldToCode($src, $indent = '') // {{{ wrap or rewrap anything to Decomp
 	return $src;
 }
 // }}}
+function decompileAst($ast, $EX) // {{{
+{
+	$kind = $ast['kind'];
+	$children = $ast['children'];
+	unset($ast['kind']);
+	unset($ast['children']);
+	switch ($kind) {
+	case ZEND_CONST:
+		return value($ast[0], $EX);
+
+	case XC_INIT_ARRAY:
+		$array = new Decompiler_Array();
+		for ($i = 0; $i < $children; $i += 2) {
+			if (isset($ast[$i + 1])) {
+				$key = decompileAst($ast[$i], $EX);
+				$value = decompileAst($ast[$i + 1], $EX);
+				$array->value[] = array($key, $value);
+			}
+			else {
+				$array->value[] = array(null, decompileAst($ast[$i], $EX));
+			}
+		}
+		return $array;
+
+	// ZEND_BOOL_AND: handled in binop
+	// ZEND_BOOL_OR:  handled in binop
+
+	case ZEND_SELECT:
+		return new Decompiler_TriOp(
+				decompileAst($ast[0], $EX)
+				, decompileAst($ast[1], $EX)
+				, decompileAst($ast[2], $EX)
+				);
+
+	case ZEND_UNARY_PLUS:
+		return new Decompiler_Code('+' . str(decompileAst($ast[0], $EX)));
+
+	case ZEND_UNARY_MINUS:
+		return new Decompiler_Code('-' . str(decompileAst($ast[0], $EX)));
+
+	default:
+		$decompiler = $GLOBALS['__xcache_decompiler'];
+		if (isset($decompiler->binops[$kind])) {
+			return new Decompiler_Binop($decompiler
+					, decompileAst($ast[0], $EX)
+					, $kind
+					, decompileAst($ast[1], $EX)
+					);
+		}
+
+		return "un-handled kind $kind in zend_ast";
+	}
+}
+// }}}
 function value($value, &$EX) // {{{
 {
+	if (ZEND_ENGINE_2_6 && (xcache_get_type($value) & IS_CONSTANT_TYPE_MASK) == IS_CONSTANT_AST) {
+		return decompileAst(xcache_dasm_ast($value), $EX);
+	}
+
 	$originalValue = xcache_get_special_value($value);
 	if (isset($originalValue)) {
 		if ((xcache_get_type($value) & IS_CONSTANT_TYPE_MASK) == IS_CONSTANT) {
@@ -590,6 +648,10 @@ class Decompiler
 				XC_JMP_SET_VAR         => "?:",
 				XC_JMPZ_EX             => "&&",
 				XC_JMPNZ_EX            => "||",
+
+				// zend_ast
+				ZEND_BOOL_AND          => '&&',
+				ZEND_BOOL_OR           => '||',
 				);
 		// }}}
 		$this->includeTypes = array( // {{{
@@ -2943,6 +3005,15 @@ define('IS_CONSTANT_UNQUALIFIED', 0x10);
 define('IS_CONSTANT_INDEX',       0x80);
 define('IS_LEXICAL_VAR',          0x20);
 define('IS_LEXICAL_REF',          0x40);
+
+if (ZEND_ENGINE_2_6) {
+	define('ZEND_CONST',          256);
+	define('ZEND_BOOL_AND',       256 + 1);
+	define('ZEND_BOOL_OR',        256 + 2);
+	define('ZEND_SELECT',         256 + 3);
+	define('ZEND_UNARY_PLUS',     256 + 4);
+	define('ZEND_UNARY_MINUS',    256 + 5);
+}
 
 @define('XC_IS_CV', 16);
 

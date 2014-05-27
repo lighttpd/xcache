@@ -236,6 +236,35 @@ PHP_FUNCTION(xcache_dasm_string)
 }
 /* }}} */
 
+#ifdef IS_CONSTANT_AST
+/* {{{ proto array xcache_dasm_ast(mixed ast)
+   Disassemble zend_ast data into array */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_dasm_ast, 0, 0, 1)
+	ZEND_ARG_INFO(0, ast)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_dasm_ast[] = { 1, BYREF_NONE };
+#endif
+
+PHP_FUNCTION(xcache_dasm_ast)
+{
+	zval *ast;
+	xc_dasm_t dasm;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &ast) == FAILURE) {
+		return;
+	}
+	if ((Z_TYPE_P(ast) & IS_CONSTANT_TYPE_MASK) != IS_CONSTANT_AST) {
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Data type is not zend_ast");
+		return;
+	}
+	array_init(return_value);
+	xc_dasm_zend_ast(&dasm, return_value, ast->value.ast TSRMLS_CC);
+}
+/* }}} */
+#endif
+
 /* {{{ PHP_MINFO_FUNCTION(xcache_disassembler) */
 static PHP_MINFO_FUNCTION(xcache_disassembler)
 {
@@ -250,6 +279,9 @@ static zend_function_entry xcache_disassembler_functions[] = /* {{{ */
 {
 	PHP_FE(xcache_dasm_file,         arginfo_xcache_dasm_file)
 	PHP_FE(xcache_dasm_string,       arginfo_xcache_dasm_string)
+#ifdef IS_CONSTANT_AST
+	PHP_FE(xcache_dasm_ast,          arginfo_xcache_dasm_ast)
+#endif
 	PHP_FE_END
 };
 /* }}} */
