@@ -10,7 +10,10 @@
 /* Purpose: Privode stuffs for compatibility with different PHP version
  */
 
-#if !defined(ZEND_ENGINE_2_5) && (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 5 || PHP_MAJOR_VERSION > 6)
+#if !defined(ZEND_ENGINE_2_6) && (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 6 || PHP_MAJOR_VERSION > 6)
+#	define ZEND_ENGINE_2_6
+#endif
+#if !defined(ZEND_ENGINE_2_5) && (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION == 5 || defined(ZEND_ENGINE_2_6))
 #	define ZEND_ENGINE_2_5
 #endif
 #if !defined(ZEND_ENGINE_2_4) && (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION == 4 || defined(ZEND_ENGINE_2_5))

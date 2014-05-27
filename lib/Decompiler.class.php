@@ -2796,7 +2796,9 @@ class Decompiler
 }
 
 // {{{ defines
-define('ZEND_ENGINE_2_4', PHP_VERSION >= "5.4");
+define('ZEND_ENGINE_2_6', PHP_VERSION >= "5.6");
+define('ZEND_ENGINE_2_5', ZEND_ENGINE_2_6 || PHP_VERSION >= "5.5.");
+define('ZEND_ENGINE_2_4', ZEND_ENGINE_2_5 || PHP_VERSION >= "5.4.");
 define('ZEND_ENGINE_2_3', ZEND_ENGINE_2_4 || PHP_VERSION >= "5.3.");
 define('ZEND_ENGINE_2_2', ZEND_ENGINE_2_3 || PHP_VERSION >= "5.2.");
 define('ZEND_ENGINE_2_1', ZEND_ENGINE_2_2 || PHP_VERSION >= "5.1.");
@@ -2925,7 +2927,13 @@ define('IS_OBJECT',   5);
 define('IS_STRING',   ZEND_ENGINE_2_1 ? 6 : 3);
 define('IS_RESOURCE', 7);
 define('IS_CONSTANT', 8);
-define('IS_CONSTANT_ARRAY',   9);
+if (ZEND_ENGINE_2_6) {
+	define('IS_CONSTANT_ARRAY', -1);
+	define('IS_CONSTANT_AST', 9);
+}
+else {
+	define('IS_CONSTANT_ARRAY', 9);
+}
 if (ZEND_ENGINE_2_4) {
 	define('IS_CALLABLE', 10);
 }

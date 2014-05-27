@@ -69,6 +69,46 @@ DEF_HASH_TABLE_FUNC(`HashTable_zend_function',      `zend_function')
 #ifdef ZEND_ENGINE_2
 DEF_HASH_TABLE_FUNC(`HashTable_zend_property_info', `zend_property_info')
 #endif
+#ifdef IS_CONSTANT_AST
+define(`ZEND_AST_HELPER', `
+	{
+	IFCALCCOPY(`
+		size_t zend_ast_size = $1->kind == ZEND_CONST
+		 ? sizeof(zend_ast) + sizeof(zval)
+		 : sizeof(zend_ast) + sizeof(zend_ast *) * ($1->children - 1);
+	')
+
+	pushdef(`ALLOC_SIZE_HELPER', `zend_ast_size')
+	$2
+	popdef(`ALLOC_SIZE_HELPER')
+	}
+')
+DEF_STRUCT_P_FUNC(`zend_ast', , `dnl {{{
+		zend_ushort i;
+		PROCESS(zend_ushort, kind)
+		PROCESS(zend_ushort, children)
+		DONE(u)
+		DISABLECHECK(`
+			if (SRC()->kind == ZEND_CONST) {
+				assert(SRC()->u.val);
+				IFCOPY(`
+					memcpy(DST()->u.val, SRC()->u.val, sizeof(zval));
+				')
+				STRUCT_P_EX(zval, DST()->u.val, SRC()->u.val, `', `', ` ')
+				RELOCATE_EX(zval, DST()->u.val)
+			}
+			else {
+				for (i = 0; i < SRC()->children; ++i) {
+					zend_ast *src_ast = (&SRC()->u.child)[i];
+					ALLOC(`(&DST()->u.child)[i]', zend_ast)
+					ZEND_AST_HELPER(`src_ast', `STRUCT_P_EX(zend_ast, (&DST()->u.child)[i], src_ast, `[i]', `', ` ')')
+					RELOCATE_EX(zend_ast, (&DST()->u.child)[i])
+				}
+			}
+		')
+')
+dnl }}}
+#endif
 DEF_STRUCT_P_FUNC(`zval', , `dnl {{{
 	IFDASM(`do {
 		zval_dtor(DST());
@@ -125,9 +165,19 @@ proc_unicode:
 #endif
 
 			case IS_ARRAY:
+#ifdef IS_CONSTANT_ARRAY
 			case IS_CONSTANT_ARRAY:
+#endif
+				assert(SRC()->value.ht);
 				STRUCT_P(HashTable, value.ht, HashTable_zval_ptr)
 				break;
+
+#ifdef IS_CONSTANT_AST
+			case IS_CONSTANT_AST:
+				assert(SRC()->value.ast);
+				ZEND_AST_HELPER(`SRC()->value.ast', `STRUCT_P(zend_ast, value.ast)')
+				break;
+#endif
 
 			case IS_OBJECT:
 				IFNOTMEMCPY(`IFCOPY(`memcpy(DST(), SRC(), sizeof(SRC()[0]));')')
@@ -237,8 +287,17 @@ DEF_STRUCT_P_FUNC(`zend_arg_info', , `dnl {{{
 #elif defined(ZEND_ENGINE_2_1)
 	PROCESS(zend_bool, array_type_hint)
 #endif
+#ifdef ZEND_ENGINE_2_6
+	PROCESS(zend_uchar, pass_by_reference)
+#endif
 	PROCESS(zend_bool, allow_null)
+
+#ifdef ZEND_ENGINE_2_6
+	PROCESS(zend_bool, is_variadic)
+#else
 	PROCESS(zend_bool, pass_by_reference)
+#endif
+
 #ifndef ZEND_ENGINE_2_4
 	PROCESS(zend_bool, return_reference)
 	PROCESS(int, required_num_args)
@@ -480,10 +539,13 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 #	ifdef ZEND_ENGINE_2_1
 	PROCESS_CTEXTPOINTER(__unset)
 	PROCESS_CTEXTPOINTER(__isset)
-#	 if defined(ZEND_ENGINE_2_2) || PHP_MAJOR_VERSION >= 6
-	PROCESS_CTEXTPOINTER(__tostring)
-#	 endif
 #	endif
+# if defined(ZEND_ENGINE_2_2) || PHP_MAJOR_VERSION >= 6
+	PROCESS_CTEXTPOINTER(__tostring)
+# endif
+# if defined(ZEND_ENGINE_2_6)
+	PROCESS_CTEXTPOINTER(__debugInfo)
+# endif
 	PROCESS_CTEXTPOINTER(__call)
 #	ifdef ZEND_CALLSTATIC_FUNC_NAME
 	PROCESS_CTEXTPOINTER(__callstatic)

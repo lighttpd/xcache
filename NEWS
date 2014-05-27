@@ -1,6 +1,8 @@
 4.0.0 2014-??-??
+========
  * api updates
  * cache defragment, cache to disk
+ * PHP_5_6 support
 
 3.2.1 2013-??-??
 ========
