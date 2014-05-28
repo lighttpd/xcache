@@ -314,6 +314,9 @@ static void xc_fix_method(xc_processor_t *processor, zend_op_array *dst TSRMLS_D
 #if defined(ZEND_ENGINE_2_2) || PHP_MAJOR_VERSION >= 6
 		SET_IF_SAME_NAME(__tostring);
 #endif
+#if defined(ZEND_ENGINE_2_6)
+		SET_IF_SAME_NAME(__debugInfo);
+#endif
 	')
 #ifdef IS_UNICODE
 		if (UG(unicode)) {

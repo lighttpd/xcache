@@ -549,16 +549,16 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	PROCESS_CTEXTPOINTER(__unset)
 	PROCESS_CTEXTPOINTER(__isset)
 #	endif
+	PROCESS_CTEXTPOINTER(__call)
+#	ifdef ZEND_CALLSTATIC_FUNC_NAME
+	PROCESS_CTEXTPOINTER(__callstatic)
+#	endif
 # if defined(ZEND_ENGINE_2_2) || PHP_MAJOR_VERSION >= 6
 	PROCESS_CTEXTPOINTER(__tostring)
 # endif
 # if defined(ZEND_ENGINE_2_6)
 	PROCESS_CTEXTPOINTER(__debugInfo)
 # endif
-	PROCESS_CTEXTPOINTER(__call)
-#	ifdef ZEND_CALLSTATIC_FUNC_NAME
-	PROCESS_CTEXTPOINTER(__callstatic)
-#	endif
 #	ifndef ZEND_ENGINE_2_4
 	/* # NOT DONE */
 	PROCESS_CTEXTPOINTER(module)
