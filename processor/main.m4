@@ -164,12 +164,27 @@ dnl {{{ COPYPOINTER
 define(`COPYPOINTER', `COPY(`$1')')
 dnl }}}
 dnl {{{ SETNULL_EX
-define(`SETNULL_EX', `IFCOPY(`$1 = NULL;')')
+define(`SETNULL_EX', `
+	IFDASM(`
+		ifelse(`$2', `[]', `
+			add_next_index_null(DST());
+		', `
+			add_assoc_null_ex(DST(), XCACHE_STRS("ifelse(`$2', `', `$1', `$2')"));
+		')
+	')
+	IFCOPY(`$1 = NULL;')
+')
 define(`SETNULL', `SETNULL_EX(`DST(`$1')')DONE(`$1')')
 dnl }}}
 dnl {{{ COPYNULL_EX(1:dst, 2:elm-name)
 define(`COPYNULL_EX', `
-	IFDASM(`add_assoc_null_ex(DST(), XCACHE_STRS("$2"));')
+	IFDASM(`
+		ifelse(`$2', `[]', `
+			add_next_index_null(DST());
+		', `
+			add_assoc_null_ex(DST(), XCACHE_STRS("ifelse(`$2', `', `$1', `$2')"));
+		')
+	')
 	IFNOTMEMCPY(`IFCOPY(`$1 = NULL;')')
 	assert(patsubst($1, DST(), SRC()) == NULL);
 ')
