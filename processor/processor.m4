@@ -110,7 +110,7 @@ DEF_STRUCT_P_FUNC(`zend_ast', , `dnl {{{
 						RELOCATE_EX(zend_ast, (&DST()->u.child)[i])
 					}
 					else {
-						COPYNULL_EX(`(&DST()->u.child)[i]')
+						SETNULL_EX(`(&DST()->u.child)[i]', `[]')
 					}
 				}
 			}
