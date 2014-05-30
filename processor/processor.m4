@@ -603,9 +603,9 @@ define(`UNION_znode_op', `dnl {{{
 			', `
 				IFDASM(`{
 					zval *zv;
-					ALLOC_INIT_ZVAL(zv);
-					*zv = dasm->active_op_array_src->literals[SRC(`$1.constant')].constant;
-					zval_copy_ctor(zv);
+					zval *srczv = &dasm->active_op_array_src->literals[SRC(`$1.constant')].constant;
+					ALLOC_ZVAL(zv);
+					MAKE_COPY_ZVAL(&srczv, zv);
 					add_assoc_zval_ex(DST(), XCACHE_STRS("$1.constant"), zv);
 				}
 				', `
