@@ -361,15 +361,13 @@ PHP_FUNCTION(xcache_get_special_value)
 
 	switch ((Z_TYPE_P(value) & IS_CONSTANT_TYPE_MASK)) {
 	case IS_CONSTANT:
-		*return_value = *value;
-		zval_copy_ctor(return_value);
+		MAKE_COPY_ZVAL(&value, return_value)
 		return_value->type = UNISW(IS_STRING, UG(unicode) ? IS_UNICODE : IS_STRING);
 		break;
 
 #ifdef IS_CONSTANT_ARRAY
 	case IS_CONSTANT_ARRAY:
-		*return_value = *value;
-		zval_copy_ctor(return_value);
+		MAKE_COPY_ZVAL(&value, return_value)
 		return_value->type = IS_ARRAY;
 		break;
 #endif
@@ -382,8 +380,7 @@ PHP_FUNCTION(xcache_get_special_value)
 
 	default:
 		if ((Z_TYPE_P(value) & ~IS_CONSTANT_TYPE_MASK)) {
-			*return_value = *value;
-			zval_copy_ctor(return_value);
+			MAKE_COPY_ZVAL(&value, return_value);
 			return_value->type &= IS_CONSTANT_TYPE_MASK;
 		}
 		else {

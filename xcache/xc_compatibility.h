@@ -219,6 +219,13 @@ typedef const zstr const_zstr;
 #endif
 /* }}} */
 
+#ifndef MAKE_COPY_ZVAL
+#	define MAKE_COPY_ZVAL(ppzv, pzv) \
+	*(pzv) = **(ppzv);            \
+	zval_copy_ctor((pzv));        \
+	INIT_PZVAL((pzv));
+#endif
+
 /* the class entry type to be stored in class_table */
 typedef ZESW(zend_class_entry, zend_class_entry*) xc_cest_t;
 
