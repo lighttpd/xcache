@@ -168,8 +168,10 @@ define(`DEF_HASH_TABLE_FUNC', `DEF_STRUCT_P_FUNC(`HashTable', `$1', `
 			}
 		}
 		')
-		RELOCATE(Bucket, pListHead)
-		RELOCATE(Bucket, pListTail)
+		if (SRC(`nNumOfElements')) {
+			RELOCATE(Bucket, pListHead)
+			RELOCATE(Bucket, pListTail)
+		}
 		RELOCATE(Bucket *, arBuckets)
 #ifdef ZEND_ENGINE_2_4
 	}
