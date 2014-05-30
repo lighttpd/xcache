@@ -24,7 +24,7 @@ define(`DEF_HASH_TABLE_FUNC', `DEF_STRUCT_P_FUNC(`HashTable', `$1', `
 				} while (keysize > bufsize);
 				buf = erealloc(buf, bufsize);
 			}
-			memcpy(buf, BUCKET_KEY_S(srcBucket), keysize);
+			memcpy(buf, BUCKET_KEY_S(srcBucket), keysize - 2);
 			buf[keysize - 2] = buf[keysize - 1] = ""[0];
 			keysize = srcBucket->nKeyLength;
 #ifdef IS_UNICODE

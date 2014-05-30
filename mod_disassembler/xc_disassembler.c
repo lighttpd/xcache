@@ -48,7 +48,7 @@ static void xc_dasm(zval *output, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 			} while (keysize > bufsize);
 			buf = erealloc(buf, bufsize);
 		}
-		memcpy(buf, BUCKET_KEY_S(b), keysize);
+		memcpy(buf, BUCKET_KEY_S(b), keysize - 2);
 		buf[keysize - 2] = buf[keysize - 1] = ""[0];
 		keyLength = b->nKeyLength;
 #ifdef IS_UNICODE
@@ -84,7 +84,7 @@ static void xc_dasm(zval *output, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 			} while (keysize > bufsize);
 			buf = erealloc(buf, bufsize);
 		}
-		memcpy(buf, BUCKET_KEY_S(b), keysize);
+		memcpy(buf, BUCKET_KEY_S(b), keysize - 2);
 		buf[keysize - 2] = buf[keysize - 1] = ""[0];
 		keyLength = b->nKeyLength;
 #ifdef IS_UNICODE
