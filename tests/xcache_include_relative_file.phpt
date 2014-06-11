@@ -4,6 +4,9 @@ include relative to current file
 <?php
 require("include-skipif.inc");
 ?>
+--INI--
+xcache.test = 1
+xcache.size = 32M
 --FILE--
 <?php
 include "sub-a.inc";
