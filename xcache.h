@@ -5,7 +5,7 @@
 #	define XCACHE_VERSION "3.1.1-dev"
 #endif
 #define XCACHE_AUTHOR     "mOo"
-#define XCACHE_COPYRIGHT  "Copyright (c) 2005-2013"
+#define XCACHE_COPYRIGHT  "Copyright (c) 2005-2014"
 #define XCACHE_URL        "http://xcache.lighttpd.net"
 #define XCACHE_WIKI_URL   XCACHE_URL "/wiki"
 
