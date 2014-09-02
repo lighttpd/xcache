@@ -6,10 +6,12 @@
 
 3.2.1 2013-??-??
 ========
+ * reduce memory usage for small or empty files
 
-3.1.1 2013-??-??
+3.1.1 2014-09-02
 ========
  * compatible with bcompiler
+ * fix 24h counter in admin page
 
 3.1.0 2013-10-10
 ========
