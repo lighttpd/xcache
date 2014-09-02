@@ -1,10 +1,10 @@
-3.2.0 2013-??-??
+3.2.0 2014-??-??
 ChangeLog
 ========
  * cacher:
    * fixed #333: reduce memory usage for small or empty files
 
-3.1.1 2013-??-??
+3.1.1 2014-09-02
 ChangeLog
 ========
  * cacher
