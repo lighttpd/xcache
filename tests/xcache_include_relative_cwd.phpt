@@ -4,6 +4,9 @@ include relative to current working dir
 <?php
 require("include-skipif.inc");
 ?>
+--INI--
+xcache.test = 1
+xcache.size = 32M
 --FILE--
 <?php
 chdir(__DIR__);

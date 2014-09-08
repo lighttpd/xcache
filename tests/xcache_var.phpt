@@ -4,6 +4,10 @@ xcache_set/get test
 <?php
 require("skipif.inc");
 ?>
+--INI--
+xcache.test = 1
+xcache.size = 32M
+xcache.var_size = 2M
 --FILE--
 <?php
 var_dump(xcache_isset("a"));

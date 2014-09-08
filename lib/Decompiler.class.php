@@ -87,8 +87,66 @@ function foldToCode($src, $indent = '') // {{{ wrap or rewrap anything to Decomp
 	return $src;
 }
 // }}}
+function decompileAst($ast, $EX) // {{{
+{
+	$kind = $ast['kind'];
+	$children = $ast['children'];
+	unset($ast['kind']);
+	unset($ast['children']);
+	switch ($kind) {
+	case ZEND_CONST:
+		return value($ast[0], $EX);
+
+	case XC_INIT_ARRAY:
+		$array = new Decompiler_Array();
+		for ($i = 0; $i < $children; $i += 2) {
+			if (isset($ast[$i + 1])) {
+				$key = decompileAst($ast[$i], $EX);
+				$value = decompileAst($ast[$i + 1], $EX);
+				$array->value[] = array($key, $value);
+			}
+			else {
+				$array->value[] = array(null, decompileAst($ast[$i], $EX));
+			}
+		}
+		return $array;
+
+	// ZEND_BOOL_AND: handled in binop
+	// ZEND_BOOL_OR:  handled in binop
+
+	case ZEND_SELECT:
+		return new Decompiler_TriOp(
+				decompileAst($ast[0], $EX)
+				, decompileAst($ast[1], $EX)
+				, decompileAst($ast[2], $EX)
+				);
+
+	case ZEND_UNARY_PLUS:
+		return new Decompiler_Code('+' . str(decompileAst($ast[0], $EX)));
+
+	case ZEND_UNARY_MINUS:
+		return new Decompiler_Code('-' . str(decompileAst($ast[0], $EX)));
+
+	default:
+		$decompiler = $GLOBALS['__xcache_decompiler'];
+		if (isset($decompiler->binops[$kind])) {
+			return new Decompiler_Binop($decompiler
+					, decompileAst($ast[0], $EX)
+					, $kind
+					, decompileAst($ast[1], $EX)
+					);
+		}
+
+		return "un-handled kind $kind in zend_ast";
+	}
+}
+// }}}
 function value($value, &$EX) // {{{
 {
+	if (ZEND_ENGINE_2_6 && (xcache_get_type($value) & IS_CONSTANT_TYPE_MASK) == IS_CONSTANT_AST) {
+		return decompileAst(xcache_dasm_ast($value), $EX);
+	}
+
 	$originalValue = xcache_get_special_value($value);
 	if (isset($originalValue)) {
 		if ((xcache_get_type($value) & IS_CONSTANT_TYPE_MASK) == IS_CONSTANT) {
@@ -591,6 +649,10 @@ class Decompiler
 				XC_JMPZ_EX             => "&&",
 				XC_JMPNZ_EX            => "||",
 				);
+		if (defined('IS_CONSTANT_AST')) {
+			$this->binops[ZEND_BOOL_AND] = '&&';
+			$this->binops[ZEND_BOOL_OR]  = '||';
+		}
 		// }}}
 		$this->includeTypes = array( // {{{
 				ZEND_EVAL         => 'eval',
@@ -2796,7 +2858,9 @@ class Decompiler
 }
 
 // {{{ defines
-define('ZEND_ENGINE_2_4', PHP_VERSION >= "5.4");
+define('ZEND_ENGINE_2_6', PHP_VERSION >= "5.6");
+define('ZEND_ENGINE_2_5', ZEND_ENGINE_2_6 || PHP_VERSION >= "5.5.");
+define('ZEND_ENGINE_2_4', ZEND_ENGINE_2_5 || PHP_VERSION >= "5.4.");
 define('ZEND_ENGINE_2_3', ZEND_ENGINE_2_4 || PHP_VERSION >= "5.3.");
 define('ZEND_ENGINE_2_2', ZEND_ENGINE_2_3 || PHP_VERSION >= "5.2.");
 define('ZEND_ENGINE_2_1', ZEND_ENGINE_2_2 || PHP_VERSION >= "5.1.");
@@ -2925,7 +2989,13 @@ define('IS_OBJECT',   5);
 define('IS_STRING',   ZEND_ENGINE_2_1 ? 6 : 3);
 define('IS_RESOURCE', 7);
 define('IS_CONSTANT', 8);
-define('IS_CONSTANT_ARRAY',   9);
+if (ZEND_ENGINE_2_6) {
+	define('IS_CONSTANT_ARRAY', -1);
+	define('IS_CONSTANT_AST', 9);
+}
+else {
+	define('IS_CONSTANT_ARRAY', 9);
+}
 if (ZEND_ENGINE_2_4) {
 	define('IS_CALLABLE', 10);
 }
@@ -2935,6 +3005,15 @@ define('IS_CONSTANT_UNQUALIFIED', 0x10);
 define('IS_CONSTANT_INDEX',       0x80);
 define('IS_LEXICAL_VAR',          0x20);
 define('IS_LEXICAL_REF',          0x40);
+
+if (ZEND_ENGINE_2_6) {
+	define('ZEND_CONST',          256);
+	define('ZEND_BOOL_AND',       256 + 1);
+	define('ZEND_BOOL_OR',        256 + 2);
+	define('ZEND_SELECT',         256 + 3);
+	define('ZEND_UNARY_PLUS',     256 + 4);
+	define('ZEND_UNARY_MINUS',    256 + 5);
+}
 
 @define('XC_IS_CV', 16);
 

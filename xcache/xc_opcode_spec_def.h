@@ -300,4 +300,10 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
 	OPSPEC(    UNUSED,    JMPADDR,     UNUSED,     UNUSED) /* 162 FAST_CALL                      */
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 163 FAST_RET                       */
 #endif
+#ifdef ZEND_ENGINE_2_6
+	OPSPEC(    UNUSED,        ARG,     UNUSED,        VAR) /* 164 RECV_VARIADIC                  */
+	OPSPEC(      SEND,        STD,        ARG,     UNUSED) /* 165 SEND_UNPACK                    */
+	OPSPEC(    UNUSED,        STD,        STD,        TMP) /* 166 POW                            */
+	OPSPEC(    ASSIGN,        STD,        STD,        VAR) /* 167 ASSIGN_POW                     */
+#endif
 };

@@ -5,9 +5,10 @@ PHP5_1_DIR=
 PHP5_3_DIR=
 PHP5_4_DIR=
 PHP5_5_DIR=
+PHP5_6_DIR=
 PHP6_x_DIR=
 
-PHP_DEVEL_DIR=
+PHP_DEVEL_DIR=$(PHP5_6_DIR)
 
 # path to eaccelerator source dir
 EA_DIR=

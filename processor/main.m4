@@ -27,7 +27,11 @@ dnl }}}
 dnl {{{ ALLOC(1:dst, 2:type, 3:count=1, 4:clean=false, 5:realtype=$2)
 define(`ALLOC', `
 	pushdef(`COUNT', `ifelse(`$3', `', `1', `$3')')
-	pushdef(`SIZE', `sizeof($2)ifelse(`$3', `', `', ` * $3')')
+	ifdef(`ALLOC_SIZE_HELPER', `
+		pushdef(`SIZE', `ALLOC_SIZE_HELPER()')
+	', `
+		pushdef(`SIZE', `sizeof($2)ifelse(`$3', `', `', ` * $3')')
+	')
 	pushdef(`REALTYPE', `ifelse(`$5', , `$2', `$5')')
 	/* allocate */
 	IFCALC(`
@@ -254,6 +258,7 @@ EXPORT(`xc_funcinfo_t')
 EXPORT(`xc_entry_var_t')
 EXPORT(`xc_entry_php_t')
 EXPORT(`xc_entry_data_php_t')
+EXPORT(`zend_ast')
 EXPORT(`zval')
 
 include(srcdir`/processor/hashtable.m4')

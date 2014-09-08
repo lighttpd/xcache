@@ -4,6 +4,9 @@ include absolute path
 <?php
 require("include-skipif.inc");
 ?>
+--INI--
+xcache.test = 1
+xcache.size = 32M
 --FILE--
 <?php
 include __DIR__ . "/sub-a.inc";
