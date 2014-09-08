@@ -129,7 +129,7 @@ hiecho "Loading config devel/run.cfg"
 PHPSDIR=${PHPSDIR:-$HOME/test}
 
 if [[ $# -eq 0 ]]; then
-	set -- $action "${args[@]}"
+	set -- "${args[@]}"
 fi
 
 basename=$(basename $(pwd))
@@ -233,31 +233,15 @@ run() {
 	# }}}1
 
 	if [[ -z $1 ]]; then
-		set -- devel.php
+		set -- devel/sample.cpp.php
 	fi
 
 	cmd=()
+	phpApp=()
 	tracer=()
 
 	# run utils {{{1
 	case "$1" in
-	dc)
-		shift
-		case "$1" in
-		*.cpp.php)
-			< "$1" \
-			sed -r -e 's#__#____#g' \
-			| cpp -C -P -traditional-cpp -DPHP_VERSION=$phpVersion \
-			| sed -r -e 's#^ +##g' -e 's#\t +#\t#g' -e 's#____#__#g' > sample.php || exit $?
-			shift
-			./php-cli -c devel.ini ./bin/phpdc.phpr sample.php "$@" | tee decompiled.php
-			;;
-		*)
-			./php-cli -c devel.ini ./bin/phpdc.phpr "$@" | tee decompiled.php
-			;;
-		esac
-		return
-		;;
 	retest)
 		shift
 		lastResult=$(ls php_test_results_*.txt | LANG=C sort | tail -n1)
@@ -318,10 +302,15 @@ run() {
 		;;
 	*)
 		case "$1" in
+		dc)
+			shift
+			cmd=(./php-cli -c devel.ini)
+			phpApp=(./bin/phpdc.phpr)
+			;;
 		dop)
 			shift
 			cmd=(./php-cli -c devel.ini)
-			set -- ./bin/phpdop.phpr "$@"
+			phpApp=(./bin/phpdop.phpr)
 			;;
 		fcgi)
 			shift
@@ -341,22 +330,35 @@ run() {
 		"${cmd[@]}" -v || true
 	esac
 
+	# hack sample.cpp.php {{{1
+	case "$1" in
+	*.cpp.php)
+		< "$1" \
+		sed -r -e 's#__#____#g' \
+		| cpp -C -P -traditional-cpp -DPHP_VERSION=$phpVersion \
+		| sed -r -e 's#^ +##g' -e 's#\t +#\t#g' -e 's#____#__#g' > devel.php || exit $?
+		shift
+		set -- devel.php "$@"
+		;;
+	esac
+
 	# run {{{1
-	commandLine=("${tracer[@]}" "${cmd[@]}" "$@")
+	set -- "${tracer[@]}" "${cmd[@]}" "${phpApp[@]}" "$@"
 
 	case "${cmd[0]}" in
 	*php-fpm*)
 		stopfpm
-		hiecho Starting fpm "${commandLine[@]}" ...
-		"${commandLine[@]}"
+		hiecho Starting fpm "$@" ...
+		"$@" | tee output.php
 		echo -n "Ctrl-C to stop"
 		trap cleanfpm SIGINT SIGTERM exit
 		cat > /dev/null || true
 		stopfpm
+		return
 		;;
 	*)
-		hiecho "${commandLine[@]}"
-		"${commandLine[@]}"
+		hiecho "$@"
+		"$@" | tee output.php
 		;;
 	esac
 	# }}}
