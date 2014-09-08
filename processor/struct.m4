@@ -150,7 +150,11 @@ ifdef(`DASM_STRUCT_DIRECT', `', `
 	);
 ifdef(`DASM_STRUCT_DIRECT', `', `
 	IFDASM(`
-		add_assoc_zval_ex(dst, XCACHE_STRS("$4"), zv);
+		ifelse(`$4', `[]', `
+			add_next_index_zval(dst, zv);
+		', `
+			add_assoc_zval_ex(dst, XCACHE_STRS("$4"), zv);
+		')
 	} while (0);
 	')
 ')

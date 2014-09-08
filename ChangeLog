@@ -2,6 +2,7 @@
 ChangeLog
 ========
  * cacher:
+   * PHP_5_6 support
    * fixed #333: reduce memory usage for small or empty files
 
 3.1.1 2014-09-02
