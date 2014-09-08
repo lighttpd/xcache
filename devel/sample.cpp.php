@@ -164,6 +164,7 @@ abstract class ClassName
 		echo __METHOD__;
 		echo __FUNCTION__;
 		$this->method();
+
 #if PHP_VERSION >= 500
 		try {
 			throw new _Exception();
@@ -537,8 +538,9 @@ for (; $i < 10; ++$i) {
 }
 
 $array = array(
-		array('a' => 'b')
-		);
+	array('a' => 'b')
+	);
+
 foreach ($array as $value) {
 	foreach ($value as $key => $value) {
 		echo $key . ' = ' . $value . "\n";
@@ -620,10 +622,12 @@ declare (ticks=1) {
 }
 
 $a = true;
+
 while ($a) {
 	declare (ticks=1) {
 		echo 2;
 	}
+
 	$a = false;
 }
 

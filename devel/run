@@ -358,7 +358,14 @@ run() {
 		;;
 	*)
 		hiecho "$@"
-		"$@" | tee output.php
+		case "${tracer[@]}" in
+		gdb*|val*)
+			"$@"
+			;;
+		*)
+			"$@" | tee output.php
+			;;
+		esac
 		;;
 	esac
 	# }}}
