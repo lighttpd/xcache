@@ -7,7 +7,6 @@ API Changes
 ChangeLog
 ========
  * cacher:
-   * PHP_5_6 support
    * (WIP) defragment
    * (WIP) cache to disk
  * disassembler, decompiler:
@@ -19,6 +18,7 @@ ChangeLog
 ChangeLog
 ========
  * cacher:
+   * PHP_5_6 support
    * fixed #333: reduce memory usage for small or empty files
 
 3.1.1 2014-09-02
