@@ -1308,13 +1308,17 @@ DEF_STRUCT_P_FUNC(`xc_entry_php_t', , `dnl {{{
 
 	PROCESS(size_t, filepath_len)
 	IFRESTORE(`COPYPOINTER(filepath)', `PROC_STRING_L(filepath, filepath_len)')
+#ifdef ZEND_ENGINE_2_3
 	PROCESS(size_t, dirpath_len)
 	IFRESTORE(`COPYPOINTER(dirpath)', `PROC_STRING_L(dirpath, dirpath_len)')
+#endif
 #ifdef IS_UNICODE
 	PROCESS(int, ufilepath_len)
 	IFRESTORE(`COPYPOINTER(ufilepath)', `PROC_USTRING_L(ufilepath, ufilepath_len)')
+#	ifdef ZEND_ENGINE_2_3
 	PROCESS(int, udirpath_len)
 	IFRESTORE(`COPYPOINTER(udirpath)', `PROC_USTRING_L(udirpath, udirpath_len)')
+#	endif
 #endif
 ')
 dnl }}}

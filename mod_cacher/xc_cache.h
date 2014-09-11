@@ -159,13 +159,17 @@ typedef struct {
 
 	size_t filepath_len;
 	ZEND_24(NOTHING, const) char *filepath;
+#ifdef ZEND_ENGINE_2_3
 	size_t dirpath_len;
 	char  *dirpath;
+#endif
 #ifdef IS_UNICODE
 	int    ufilepath_len;
 	UChar *ufilepath;
+#	ifdef ZEND_ENGINE_2_3
 	int    udirpath_len;
 	UChar *udirpath;
+#	endif
 #endif
 } xc_entry_php_t;
 
