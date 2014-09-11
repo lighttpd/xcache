@@ -26,6 +26,10 @@ abstract class ClassName
 {
 #if PHP_VERSION >= 500
 	const CONST_VALUE = 'A constant value';
+	const file = __FILE__;
+#if PHP_VERSION >= 530
+	const dir = __DIR__;
+#endif
 
 	/** doc */
 	static public $static = array(
@@ -288,9 +292,9 @@ abstract class ClassName
 		$a = $b && $c;
 		$a = $b || $c;
 #if PHP_VERSION >= 530
-		echo $this::CONST_VALUE;
-		echo $object::CONST_VALUE;
-		echo CONST_VALUE;
+		echo $this::CONST_VALUE, PHP_EOL;
+		echo $object::CONST_VALUE, PHP_EOL;
+		echo CONST_VALUE, PHP_EOL;
 		$this::method();
 		$object::method();
 		$a = $b ?: $d;
@@ -649,10 +653,10 @@ while ($a) {
 	$a = false;
 }
 
-require 'require.php';
-require_once 'require_once.php';
-include 'include.php';
-include_once 'include_once.php';
+require 'devel/require.php';
+require_once 'devel/require_once.php';
+include 'devel/include.php';
+include_once 'devel/include_once.php';
 echo __FILE__;
 #if PHP_VERSION >= 530
 echo __DIR__;
