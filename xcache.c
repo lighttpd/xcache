@@ -354,21 +354,24 @@ static unsigned char arginfo_xcache_get_special_value[] = { 1, BYREF_NONE };
 PHP_FUNCTION(xcache_get_special_value)
 {
 	zval *value;
+	zval value_copied;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &value) == FAILURE) {
 		return;
 	}
+	value_copied = *value;
+	value = &value_copied;
 
 	switch ((Z_TYPE_P(value) & IS_CONSTANT_TYPE_MASK)) {
 	case IS_CONSTANT:
-		MAKE_COPY_ZVAL(&value, return_value)
-		return_value->type = UNISW(IS_STRING, UG(unicode) ? IS_UNICODE : IS_STRING);
+		value->type = UNISW(IS_STRING, UG(unicode) ? IS_UNICODE : IS_STRING);
+		RETURN_ZVAL(value, 1, 0);
 		break;
 
 #ifdef IS_CONSTANT_ARRAY
 	case IS_CONSTANT_ARRAY:
-		MAKE_COPY_ZVAL(&value, return_value)
-		return_value->type = IS_ARRAY;
+		value->type = IS_ARRAY;
+		RETURN_ZVAL(value, 1, 0);
 		break;
 #endif
 
@@ -380,8 +383,8 @@ PHP_FUNCTION(xcache_get_special_value)
 
 	default:
 		if ((Z_TYPE_P(value) & ~IS_CONSTANT_TYPE_MASK)) {
-			MAKE_COPY_ZVAL(&value, return_value);
-			return_value->type &= IS_CONSTANT_TYPE_MASK;
+			value->type &= IS_CONSTANT_TYPE_MASK;
+			RETURN_ZVAL(value, 1, 0);
 		}
 		else {
 			RETURN_NULL();
