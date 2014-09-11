@@ -18,6 +18,8 @@
 
 namespace ns;
 #define _Exception \Exception
+#else
+#define _Exception Exception
 #endif
 
 abstract class ClassName
@@ -233,6 +235,14 @@ abstract class ClassName
 		$a ^= $b;
 		$a = 'a' . 'b';
 		$a = 'a' . 'abc';
+		$a = __FILE__;
+#if PHP_VERSION >= 530
+		$a = __DIR__;
+#endif
+		$a = 'a' . __FILE__;
+#if PHP_VERSION >= 530
+		$a = 'a' . __DIR__;
+#endif
 		@f1();
 		print('1');
 		$array = array('index' => 1);
@@ -304,11 +314,11 @@ abstract class ClassName
 		}
 #endif
 	}
+#if PHP_VERSION >= 500
 
 	public function __destruct()
 	{
 	}
-#if PHP_VERSION >= 500
 
 	/** doc */
 	abstract public function abstractMethod();
@@ -644,6 +654,9 @@ require_once 'require_once.php';
 include 'include.php';
 include_once 'include_once.php';
 echo __FILE__;
+#if PHP_VERSION >= 530
+echo __DIR__;
+#endif
 echo __LINE__;
 #if PHP_VERSION >= 530
 echo 'goto a';
