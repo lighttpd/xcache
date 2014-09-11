@@ -219,6 +219,35 @@ typedef const zstr const_zstr;
 #endif
 /* }}} */
 
+#ifndef ZVAL_COPY_VALUE
+#	define ZVAL_COPY_VALUE(z, v) (z)->value = (v)->value
+#endif
+
+#ifndef ZVAL_ZVAL
+#	define ZVAL_ZVAL(z, zv, copy, dtor) do {	\
+		zval *__z = (z);						\
+		zval *__zv = (zv);						\
+		ZVAL_COPY_VALUE(__z, __zv);				\
+		if (copy) {								\
+			zval_copy_ctor(__z);				\
+	    }										\
+		if (dtor) {								\
+			if (!copy) {						\
+				ZVAL_NULL(__zv);				\
+			}									\
+			zval_ptr_dtor(&__zv);				\
+	    }										\
+	} while (0)
+#endif
+
+#ifndef RETVAL_ZVAL
+#	define RETVAL_ZVAL(zv, copy, dtor)		ZVAL_ZVAL(return_value, zv, copy, dtor)
+#endif
+
+#ifndef RETURN_ZVAL
+#	define RETURN_ZVAL(zv, copy, dtor)		{ RETVAL_ZVAL(zv, copy, dtor); return; }
+#endif
+
 /* the class entry type to be stored in class_table */
 typedef ZESW(zend_class_entry, zend_class_entry*) xc_cest_t;
 
