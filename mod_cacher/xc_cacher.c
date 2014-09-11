@@ -1270,12 +1270,12 @@ static int xc_entry_php_init_key(xc_compiler_t *compiler TSRMLS_DC) /* {{{ */
 	}
 
 	compiler->new_entry.filepath  = NULL;
-#ifdef ZEND_ENGNIE_2_3
+#ifdef ZEND_ENGINE_2_3
 	compiler->new_entry.dirpath   = NULL;
 #endif
 #ifdef IS_UNICODE
 	compiler->new_entry.ufilepath = NULL;
-#	ifdef ZEND_ENGNIE_2_3
+#	ifdef ZEND_ENGINE_2_3
 	compiler->new_entry.udirpath  = NULL;
 #	endif
 #endif
@@ -1332,13 +1332,13 @@ static void xc_entry_php_init(xc_entry_php_t *entry_php, const char *filepath TS
 {
 	entry_php->filepath     = ZEND_24((char *), NOTHING) filepath;
 	entry_php->filepath_len = strlen(entry_php->filepath);
-#ifdef ZEND_ENGNIE_2_3
+#ifdef ZEND_ENGINE_2_3
 	entry_php->dirpath      = estrndup(entry_php->filepath, entry_php->filepath_len);
 	entry_php->dirpath_len  = zend_dirname(entry_php->dirpath, entry_php->filepath_len);
 #endif
 #ifdef IS_UNICODE
 	zend_string_to_unicode(ZEND_U_CONVERTER(UG(runtime_encoding_conv)), &entry_php->ufilepath, &entry_php->ufilepath_len, entry_php->filepath, entry_php->filepath_len TSRMLS_CC);
-#	ifdef ZEND_ENGNIE_2_3
+#	ifdef ZEND_ENGINE_2_3
 	zend_string_to_unicode(ZEND_U_CONVERTER(UG(runtime_encoding_conv)), &entry_php->udirpath,  &entry_php->udirpath_len,  entry_php->dirpath,  entry_php->dirpath_len TSRMLS_CC);
 #	endif
 #endif
