@@ -1,4 +1,4 @@
-#if 0
+#if 1
 #define XCACHE_DEBUG
 #endif
 
@@ -942,12 +942,12 @@ static void xc_entry_free_key_php(xc_entry_php_t *entry_php TSRMLS_DC) /* {{{ */
 	} \
 } while (0)
 #ifdef ZEND_ENGINE_2_3
-	X_FREE(dirpath);
+	X_FREE(dirpath.str);
 #endif
 #ifdef IS_UNICODE
-	X_FREE(ufilepath);
+	X_FREE(u_filepath.str);
 #	ifdef ZEND_ENGINE_2_3
-	X_FREE(udirpath);
+	X_FREE(u_dirpath.str);
 #	endif
 #endif
 
@@ -1269,15 +1269,13 @@ static int xc_entry_php_init_key(xc_compiler_t *compiler TSRMLS_DC) /* {{{ */
 				, &xc_php_hentry);
 	}
 
-	compiler->new_entry.filepath  = NULL;
+	compiler->new_entry.filepath.str   = NULL;
 #ifdef ZEND_ENGINE_2_3
-	compiler->new_entry.dirpath   = NULL;
+	compiler->new_entry.dirpath.str    = NULL;
 #endif
 #ifdef IS_UNICODE
-	compiler->new_entry.ufilepath = NULL;
-#	ifdef ZEND_ENGINE_2_3
-	compiler->new_entry.udirpath  = NULL;
-#	endif
+	compiler->new_entry.u_filepath.str = NULL;
+	compiler->new_entry.u_dirpath.str  = NULL;
 #endif
 
 	return SUCCESS;
@@ -1330,17 +1328,15 @@ static int xc_entry_data_php_init_md5(xc_cache_t *cache, xc_compiler_t *compiler
 /* }}} */
 static void xc_entry_php_init(xc_entry_php_t *entry_php, const char *filepath TSRMLS_DC) /* {{{*/
 {
-	entry_php->filepath     = ZEND_24((char *), NOTHING) filepath;
-	entry_php->filepath_len = strlen(entry_php->filepath);
+	entry_php->filepath.str = ZEND_24((char *), NOTHING) filepath;
+	entry_php->filepath.len = strlen(entry_php->filepath.str);
 #ifdef ZEND_ENGINE_2_3
-	entry_php->dirpath      = estrndup(entry_php->filepath, entry_php->filepath_len);
-	entry_php->dirpath_len  = zend_dirname(entry_php->dirpath, entry_php->filepath_len);
+	entry_php->dirpath.str  = estrndup(entry_php->filepath.str, entry_php->filepath.len);
+	entry_php->dirpath.len  = zend_dirname(entry_php->dirpath.str, entry_php->filepath.len);
 #endif
 #ifdef IS_UNICODE
-	zend_string_to_unicode(ZEND_U_CONVERTER(UG(runtime_encoding_conv)), &entry_php->ufilepath, &entry_php->ufilepath_len, entry_php->filepath, entry_php->filepath_len TSRMLS_CC);
-#	ifdef ZEND_ENGINE_2_3
-	zend_string_to_unicode(ZEND_U_CONVERTER(UG(runtime_encoding_conv)), &entry_php->udirpath,  &entry_php->udirpath_len,  entry_php->dirpath,  entry_php->dirpath_len TSRMLS_CC);
-#	endif
+	zend_string_to_unicode(ZEND_U_CONVERTER(UG(runtime_encoding_conv)), &entry_php->u_filepath.str, &entry_php->u_filepath.len, entry_php->filepath.str, entry_php->filepath.len TSRMLS_CC);
+	zend_string_to_unicode(ZEND_U_CONVERTER(UG(runtime_encoding_conv)), &entry_php->u_dirpath.str,  &entry_php->u_dirpath.len,  entry_php->dirpath.str,  entry_php->dirpath.len TSRMLS_CC);
 #endif
 }
 /* }}} */
@@ -1376,30 +1372,77 @@ static void xc_cache_early_binding_class_cb(zend_op *opline, int oplineno, void 
 #endif
 
 /* {{{ Constant Usage */
-#ifdef ZEND_ENGINE_2_4
-#	define xcache_literal_is_file 1
-#	define xcache_literal_is_dir  2
-#else
-#	define xcache_op1_is_file 1
-#	define xcache_op2_is_file 2
-#	ifdef ZEND_ENGINE_2_3
-#		define xcache_op1_is_dir  4
-#		define xcache_op2_is_dir  8
-#	endif
+#define xcache_constant_is_file    1
+#ifdef ZEND_ENGINE_2_3
+#	define xcache_constant_is_dir  2
 #endif
+#define xcache_constant_info_mask  0x0F
+#define xcache_constant_info_shift 4
 typedef struct {
 	zend_bool filepath_used;
 #ifdef ZEND_ENGINE_2_3
 	zend_bool dirpath_used;
 #endif
 #ifdef IS_UNICODE
-	zend_bool ufilepath_used;
+	zend_bool u_filepath_used;
 #	ifdef ZEND_ENGINE_2_3
-	zend_bool udirpath_used;
+	zend_bool u_dirpath_used;
 #	endif
 #endif
 } xc_const_usage_t;
+
+#define XCACHE_ANALYZE_CONSTANT(type, u_, shift) \
+	if (zend_##u_##binary_strcmp(Z_STRVAL_P(constant), Z_STRLEN_P(constant), compiler->new_entry.u_##type##path.str, compiler->new_entry.u_##type##path.len) == 0) { \
+		usage->u_##type##path_used = 1; \
+		constantinfo |= xcache_constant_is_##type << (shift * xcache_constant_info_shift); \
+		TRACE("found %s constant %s", #type, Z_STRVAL_P(constant)); \
+	}
+
 /* }}} */
+#ifdef ZEND_ENGINE_2
+static void xc_collect_class_constant_info(xc_compiler_t *compiler, xc_const_usage_t *usage, xc_classinfo_t *classinfo, HashTable *constants TSRMLS_DC) /* {{{ */
+{
+	zend_uint count = 0;
+	uint index;
+	xc_vector_t constantinfos;
+
+	xc_vector_init(xc_constant_info_t, &constantinfos);
+
+	for (index = 0; index < constants->nTableSize; ++index) {
+		Bucket *bucket;
+		zend_uint index2 = 0;
+
+		for (bucket = constants->arBuckets[index]; bucket; bucket = bucket->pNext, ++index2) {
+			zval *constant = *(zval **) bucket->pData;
+			zend_uint constantinfo = 0;
+
+			assert(constant);
+
+			if ((Z_TYPE_P(constant) & IS_CONSTANT_TYPE_MASK) == IS_STRING) {
+				XCACHE_ANALYZE_CONSTANT(file, , 0)
+				else XCACHE_ANALYZE_CONSTANT(dir, , 0)
+			}
+#	ifdef IS_UNICODE
+			else if ((Z_TYPE_P(constant) & IS_CONSTANT_TYPE_MASK) == IS_UNICODE) {
+				XCACHE_ANALYZE_CONSTANT(file, u_, 0)
+				else XCACHE_ANALYZE_CONSTANT(dir, u_, 0)
+			}
+#	endif
+
+			if (constantinfo) {
+				xc_constant_info_t detail;
+				detail.index = index2 * constants->nTableSize + index;
+				detail.info  = constantinfo;
+				xc_vector_add(xc_constant_info_t, &constantinfos, detail);
+			}
+		}
+	}
+
+	classinfo->constantinfo_cnt = constantinfos.cnt;
+	classinfo->constantinfos    = xc_vector_detach(xc_constant_info_t, &constantinfos);
+}
+/* }}} */
+#endif
 static void xc_collect_op_array_info(xc_compiler_t *compiler, xc_const_usage_t *usage, xc_op_array_info_t *op_array_info, zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
 #ifdef ZEND_ENGINE_2_4
@@ -1407,263 +1450,198 @@ static void xc_collect_op_array_info(xc_compiler_t *compiler, xc_const_usage_t *
 #else
 	zend_uint oplinenum;
 #endif
-	xc_vector_t details;
+	xc_vector_t constantinfos;
 
-	xc_vector_init(xc_op_array_info_detail_t, &details);
-
-#define XCACHE_ANALYZE_LITERAL(type) \
-	if (zend_binary_strcmp(Z_STRVAL(literal->constant), Z_STRLEN(literal->constant), compiler->new_entry.type##path, compiler->new_entry.type##path_len) == 0) { \
-		usage->type##path_used = 1; \
-		literalinfo |= xcache_##literal##_is_##type; \
-	}
-
-#define XCACHE_U_ANALYZE_LITERAL(type) \
-	if (zend_u_##binary_strcmp(Z_USTRVAL(literal->constant), Z_USTRLEN(literal->constant), compiler->new_entry.u##type##path, compiler->new_entry.u##type##path_len) == 0) { \
-		usage->u##type##path_used = 1; \
-		literalinfo |= xcache_##literal##_is_##type; \
-	}
-
-#define XCACHE_ANALYZE_OP(type, op) \
-	if (zend_binary_strcmp(Z_STRVAL(Z_OP_CONSTANT(opline->op)), Z_STRLEN(Z_OP_CONSTANT(opline->op)), compiler->new_entry.type##path, compiler->new_entry.type##path_len) == 0) { \
-		usage->type##path_used = 1; \
-		oplineinfo |= xcache_##op##_is_##type; \
-	}
-
-#define XCACHE_U_ANALYZE_OP(type, op) \
-	if (zend_u_##binary_strcmp(Z_USTRVAL(Z_OP_CONSTANT(opline->op)), Z_USTRLEN(Z_OP_CONSTANT(opline->op)), compiler->new_entry.u##type##path, compiler->new_entry.u##type##path_len) == 0) { \
-		usage->u##type##path_used = 1; \
-		oplineinfo |= xcache_##op##_is_##type; \
-	}
+	xc_vector_init(xc_constant_info_t, &constantinfos);
 
 #ifdef ZEND_ENGINE_2_4
 	for (literalindex = 0; literalindex < op_array->last_literal; literalindex++) {
 		zend_literal *literal = &op_array->literals[literalindex];
-		zend_uint literalinfo = 0;
-		if (Z_TYPE(literal->constant) == IS_STRING) {
-			XCACHE_ANALYZE_LITERAL(file)
-			else XCACHE_ANALYZE_LITERAL(dir)
+		zval *constant = &literal->constant;
+		zend_uint constantinfo = 0;
+
+		if (Z_TYPE_P(constant) == IS_STRING) {
+			XCACHE_ANALYZE_CONSTANT(file, , 0)
+			else XCACHE_ANALYZE_CONSTANT(dir, , 0)
 		}
 #	ifdef IS_UNICODE
-		else if (Z_TYPE(literal->constant) == IS_UNICODE) {
-			XCACHE_U_ANALYZE_LITERAL(file)
-			else XCACHE_U_ANALYZE_LITERAL(dir)
+		else if (Z_TYPE_P(constant) == IS_UNICODE) {
+			XCACHE_ANALYZE_CONSTANT(file, u_, 0)
+			else XCACHE_ANALYZE_CONSTANT(dir, u_, 0)
 		}
 #	endif
-		if (literalinfo) {
-			xc_op_array_info_detail_t detail;
+
+		if (constantinfo) {
+			xc_constant_info_t detail;
 			detail.index = literalindex;
-			detail.info  = literalinfo;
-			xc_vector_add(xc_op_array_info_detail_t, &details, detail);
+			detail.info  = constantinfo;
+			xc_vector_add(xc_constant_info_t, &constantinfos, detail);
 		}
 	}
 
-	op_array_info->literalinfo_cnt = details.cnt;
-	op_array_info->literalinfos    = xc_vector_detach(xc_op_array_info_detail_t, &details);
+	op_array_info->constantinfo_cnt = constantinfos.cnt;
+	op_array_info->constantinfos    = xc_vector_detach(xc_constant_info_t, &constantinfos);
 #else /* ZEND_ENGINE_2_4 */
 	for (oplinenum = 0; oplinenum < op_array->last; oplinenum++) {
 		zend_op *opline = &op_array->opcodes[oplinenum];
-		zend_uint oplineinfo = 0;
+		zend_uint constantinfo = 0;
+
 		if (Z_OP_TYPE(opline->op1) == IS_CONST) {
-			if (Z_TYPE(Z_OP_CONSTANT(opline->op1)) == IS_STRING) {
-				XCACHE_ANALYZE_OP(file, op1)
+			zval *constant = &Z_OP_CONSTANT(opline->op1);
+			if (Z_TYPE_P(constant) == IS_STRING) {
+				XCACHE_ANALYZE_CONSTANT(file, , 0)
 #	ifdef ZEND_ENGINE_2_3
-				else XCACHE_ANALYZE_OP(dir, op1)
+				else XCACHE_ANALYZE_CONSTANT(dir, , 0)
 #	endif
 			}
 #	ifdef IS_UNICODE
-			else if (Z_TYPE(Z_OP_CONSTANT(opline->op1)) == IS_UNICODE) {
-				XCACHE_U_ANALYZE_OP(file, op1)
-#		ifdef ZEND_ENGINE_2_3
-				else XCACHE_U_ANALYZE_OP(dir, op1)
-#		endif
+			else if (Z_TYPE_P(constant) == IS_UNICODE) {
+				XCACHE_ANALYZE_CONSTANT(file, u_, 0)
+				else XCACHE_ANALYZE_CONSTANT(dir, u_, 0)
 			}
 #	endif
 		}
 
 		if (Z_OP_TYPE(opline->op2) == IS_CONST) {
-			if (Z_TYPE(Z_OP_CONSTANT(opline->op2)) == IS_STRING) {
-				XCACHE_ANALYZE_OP(file, op2)
+			zval *constant = &Z_OP_CONSTANT(opline->op2);
+			if (Z_TYPE_P(constant) == IS_STRING) {
+				XCACHE_ANALYZE_CONSTANT(file, , 1)
 #	ifdef ZEND_ENGINE_2_3
-				else XCACHE_ANALYZE_OP(dir, op2)
+				else XCACHE_ANALYZE_CONSTANT(dir, , 1)
 #	endif
 			}
 #	ifdef IS_UNICODE
-			else if (Z_TYPE(Z_OP_CONSTANT(opline->op2)) == IS_UNICODE) {
-				XCACHE_U_ANALYZE_OP(file, op2)
-#		ifdef ZEND_ENGINE_2_3
-				else XCACHE_U_ANALYZE_OP(dir, op2)
-#		endif
+			else if (Z_TYPE_P(constant) == IS_UNICODE) {
+				XCACHE_ANALYZE_CONSTANT(file, u_, 1)
+				else XCACHE_ANALYZE_CONSTANT(dir, u_, 1)
 			}
 #	endif
 		}
 
-		if (oplineinfo) {
-			xc_op_array_info_detail_t detail;
+		if (constantinfo) {
+			xc_constant_info_t detail;
 			detail.index = oplinenum;
-			detail.info  = oplineinfo;
-			xc_vector_add(xc_op_array_info_detail_t, &details, detail);
+			detail.info  = constantinfo;
+			xc_vector_add(xc_constant_info_t, &constantinfos, detail);
 		}
 	}
 
-	op_array_info->oplineinfo_cnt = details.cnt;
-	op_array_info->oplineinfos    = xc_vector_detach(xc_op_array_info_detail_t, &details);
+	op_array_info->constantinfo_cnt = constantinfos.cnt;
+	op_array_info->constantinfos    = xc_vector_detach(xc_constant_info_t, &constantinfos);
 #endif /* ZEND_ENGINE_2_4 */
-	xc_vector_free(xc_op_array_info_detail_t, &details);
+	xc_vector_free(xc_constant_info_t, &constantinfos);
 }
 /* }}} */
-void xc_fix_op_array_info(const xc_entry_php_t *entry_php, const xc_entry_data_php_t *php, zend_op_array *op_array, int shallow_copy, const xc_op_array_info_t *op_array_info TSRMLS_DC) /* {{{ */
+#ifdef IS_UNICODE
+#	define xc_restore_constant_string xc_restore_constant_string_impl
+#else
+#	define xc_restore_constant_string(where, constant, type, constant_string, constant_u_string, shallow_copy) xc_restore_constant_string_impl(where, constant, type, constant_string, shallow_copy)
+#endif
+static inline void xc_restore_constant_string(const char *where, zval *constant, zend_uchar type, const xc_constant_string_t *constant_string, const xc_constant_u_string_t *constant_u_string, int shallow_copy TSRMLS_DC) /* {{{ */
 {
+	TRACE("fixing constant in %s: %s", where, Z_STRVAL_P(constant));
+	if (!shallow_copy) {
+		efree(Z_STRVAL_P(constant));
+	}
+	if (type == IS_STRING) {
+		assert(constant_string->str);
+		ZVAL_STRINGL(constant, constant_string->str, constant_string->len, !shallow_copy);
+		TRACE("fixed  constant in %s: %s", where, constant_string->str);
+	}
+#ifdef IS_UNICODE
+	else if (type == IS_UNICODE) {
+		assert(constant_u_string.str);
+		ZVAL_UNICODEL(constant, constant_u_string->str, constant_u_string->len, !shallow_copy);
+		/* TRACE("restored constant: %s", constant_u_string->str); */
+	}
+#endif
+	else {
+		assert(0);
+	}
+}
+/* }}} */
+#ifdef ZEND_ENGINE_2
+void xc_fix_class_info(const xc_entry_php_t *entry_php, xc_classinfo_t *classinfo, int shallow_copy TSRMLS_DC) /* {{{ */
+{
+	zend_class_entry *ce = CestToCePtr(classinfo->cest);
+	Bucket **constants = ce->constants_table.arBuckets;
+	
+	zend_uint constantinfo_index;
+
+	for (constantinfo_index = 0; constantinfo_index < classinfo->constantinfo_cnt; ++constantinfo_index) {
+		int index = classinfo->constantinfos[constantinfo_index].index;
+		int constantinfo = classinfo->constantinfos[constantinfo_index].info;
+
+		int index2 = index / ce->constants_table.nTableSize;
+
+		Bucket *bucket;
+		zval *constant;
+
+		for (bucket = constants[(index & ce->constants_table.nTableMask)]; index2; bucket = bucket->pNext, --index2) {
+			/* empty */
+		}
+		constant = *((zval **) bucket->pData);
+
+		if ((constantinfo & xcache_constant_is_file)) {
+			xc_restore_constant_string("class_constant", constant, Z_TYPE_P(constant), &entry_php->filepath, &entry_php->u_filepath, shallow_copy TSRMLS_CC);
+		}
+		else if ((constantinfo & xcache_constant_is_dir)) {
+			xc_restore_constant_string("class_constant", constant, Z_TYPE_P(constant), &entry_php->dirpath, &entry_php->u_dirpath, shallow_copy TSRMLS_CC);
+		}
+	}
+}
+/* }}} */
+#endif
+void xc_fix_op_array_info(const xc_entry_php_t *entry_php, zend_op_array *op_array, int shallow_copy, const xc_op_array_info_t *op_array_info TSRMLS_DC) /* {{{ */
+{
+	zend_uint constantinfo_index;
+	for (constantinfo_index = 0; constantinfo_index < op_array_info->constantinfo_cnt; ++constantinfo_index) {
+		int index = op_array_info->constantinfos[constantinfo_index].index;
+		int constantinfo = op_array_info->constantinfos[constantinfo_index].info;
+
 #ifdef ZEND_ENGINE_2_4
-	zend_uint literalinfoindex;
+		zend_literal *literal = &op_array->literals[index];
 
-	for (literalinfoindex = 0; literalinfoindex < op_array_info->literalinfo_cnt; ++literalinfoindex) {
-		int literalindex = op_array_info->literalinfos[literalinfoindex].index;
-		int literalinfo = op_array_info->literalinfos[literalinfoindex].info;
-		zend_literal *literal = &op_array->literals[literalindex];
-		if ((literalinfo & xcache_literal_is_file)) {
-			if (!shallow_copy) {
-				efree(Z_STRVAL(literal->constant));
-			}
-			if (Z_TYPE(literal->constant) == IS_STRING) {
-				assert(entry_php->filepath);
-				ZVAL_STRINGL(&literal->constant, entry_php->filepath, entry_php->filepath_len, !shallow_copy);
-				TRACE("restored literal constant: %s", entry_php->filepath);
-			}
-#ifdef IS_UNICODE
-			else if (Z_TYPE(literal->constant) == IS_UNICODE) {
-				assert(entry_php->ufilepath);
-				ZVAL_UNICODEL(&literal->constant, entry_php->ufilepath, entry_php->ufilepath_len, !shallow_copy);
-			}
-#endif
-			else {
-				assert(0);
-			}
+		if ((constantinfo & xcache_constant_is_file)) {
+			xc_restore_constant_string("literal", &literal->constant, Z_TYPE(literal->constant), &entry_php->filepath, &entry_php->u_filepath, shallow_copy TSRMLS_CC);
 		}
-		else if ((literalinfo & xcache_literal_is_dir)) {
-			if (!shallow_copy) {
-				efree(Z_STRVAL(literal->constant));
-			}
-			if (Z_TYPE(literal->constant) == IS_STRING) {
-				assert(entry_php->dirpath);
-				TRACE("restored literal constant: %s", entry_php->dirpath);
-				ZVAL_STRINGL(&literal->constant, entry_php->dirpath, entry_php->dirpath_len, !shallow_copy);
-			}
-#ifdef IS_UNICODE
-			else if (Z_TYPE(literal->constant) == IS_UNICODE) {
-				assert(!entry_php->udirpath);
-				ZVAL_UNICODEL(&literal->constant, entry_php->udirpath, entry_php->udirpath_len, !shallow_copy);
-			}
-#endif
-			else {
-				assert(0);
-			}
+		else if ((constantinfo & xcache_constant_is_dir)) {
+			xc_restore_constant_string("literal", &literal->constant, Z_TYPE(literal->constant), &entry_php->dirpath, &entry_php->u_dirpath, shallow_copy TSRMLS_CC);
 		}
-	}
 #else /* ZEND_ENGINE_2_4 */
-	zend_uint oplinenum;
-
-	for (oplinenum = 0; oplinenum < op_array_info->oplineinfo_cnt; ++oplinenum) {
-		int oplineindex = op_array_info->oplineinfos[oplinenum].index;
-		int oplineinfo = op_array_info->oplineinfos[oplinenum].info;
-		zend_op *opline = &op_array->opcodes[oplineindex];
-		if ((oplineinfo & xcache_op1_is_file)) {
-			assert(Z_OP_TYPE(opline->op1) == IS_CONST);
-			if (!shallow_copy) {
-				efree(Z_STRVAL(Z_OP_CONSTANT(opline->op1)));
-			}
-			if (Z_TYPE(Z_OP_CONSTANT(opline->op1)) == IS_STRING) {
-				assert(entry_php->filepath);
-				ZVAL_STRINGL(&Z_OP_CONSTANT(opline->op1), entry_php->filepath, entry_php->filepath_len, !shallow_copy);
-				TRACE("restored op1 constant: %s", entry_php->filepath);
-			}
-#	ifdef IS_UNICODE
-			else if (Z_TYPE(Z_OP_CONSTANT(opline->op1)) == IS_UNICODE) {
-				assert(entry_php->ufilepath);
-				ZVAL_UNICODEL(&Z_OP_CONSTANT(opline->op1), entry_php->ufilepath, entry_php->ufilepath_len, !shallow_copy);
-			}
-#	endif
-			else {
-				assert(0);
-			}
+		zend_op *opline = &op_array->opcodes[index];
+		
+		if ((constantinfo & xcache_constant_is_file)) {
+			xc_restore_constant_string("op1", &Z_OP_CONSTANT(opline->op1), Z_TYPE(Z_OP_CONSTANT(opline->op1)), &entry_php->filepath, &entry_php->u_filepath, shallow_copy TSRMLS_CC);
 		}
 #	ifdef ZEND_ENGINE_2_3
-		else if ((oplineinfo & xcache_op1_is_dir)) {
-			assert(Z_OP_TYPE(opline->op1) == IS_CONST);
-			if (!shallow_copy) {
-				efree(Z_STRVAL(Z_OP_CONSTANT(opline->op1)));
-			}
-			if (Z_TYPE(Z_OP_CONSTANT(opline->op1)) == IS_STRING) {
-				assert(entry_php->dirpath);
-				TRACE("restored op1 constant: %s", entry_php->dirpath);
-				ZVAL_STRINGL(&Z_OP_CONSTANT(opline->op1), entry_php->dirpath, entry_php->dirpath_len, !shallow_copy);
-			}
-#		ifdef IS_UNICODE
-			else if (Z_TYPE(Z_OP_CONSTANT(opline->op1)) == IS_UNICODE) {
-				assert(!entry_php->udirpath);
-				ZVAL_UNICODEL(&Z_OP_CONSTANT(opline->op1), entry_php->udirpath, entry_php->udirpath_len, !shallow_copy);
-			}
-#		endif
-			else {
-				assert(0);
-			}
+		else if ((constantinfo & xcache_constant_is_dir)) {
+			xc_restore_constant_string("op1", &Z_OP_CONSTANT(opline->op1), Z_TYPE(Z_OP_CONSTANT(opline->op1)), &entry_php->dirpath, &entry_php->u_dirpath, shallow_copy TSRMLS_CC);
 		}
-#endif
-
-		if ((oplineinfo & xcache_op2_is_file)) {
-			assert(Z_OP_TYPE(opline->op2) == IS_CONST);
-			if (!shallow_copy) {
-				efree(Z_STRVAL(Z_OP_CONSTANT(opline->op2)));
-			}
-			if (Z_TYPE(Z_OP_CONSTANT(opline->op2)) == IS_STRING) {
-				assert(entry_php->filepath);
-				TRACE("restored op2 constant: %s", entry_php->filepath);
-				ZVAL_STRINGL(&Z_OP_CONSTANT(opline->op2), entry_php->filepath, entry_php->filepath_len, !shallow_copy);
-			}
-#	ifdef IS_UNICODE
-			else if (Z_TYPE(Z_OP_CONSTANT(opline->op2)) == IS_UNICODE) {
-				assert(entry_php->ufilepath);
-				ZVAL_UNICODEL(&Z_OP_CONSTANT(opline->op2), entry_php->ufilepath, entry_php->ufilepath_len, !shallow_copy);
-			}
 #	endif
-			else {
-				assert(0);
-			}
+
+		constantinfo >>= xcache_constant_info_shift * 1;
+		if ((constantinfo & xcache_constant_is_file)) {
+			xc_restore_constant_string("op2", &Z_OP_CONSTANT(opline->op2), Z_TYPE(Z_OP_CONSTANT(opline->op2)), &entry_php->filepath, &entry_php->u_filepath, shallow_copy TSRMLS_CC);
 		}
 #	ifdef ZEND_ENGINE_2_3
-		else if ((oplineinfo & xcache_op2_is_dir)) {
-			assert(Z_OP_TYPE(opline->op2) == IS_CONST);
-			if (!shallow_copy) {
-				efree(Z_STRVAL(Z_OP_CONSTANT(opline->op2)));
-			}
-			if (Z_TYPE(Z_OP_CONSTANT(opline->op2)) == IS_STRING) {
-				assert(entry_php->dirpath);
-				TRACE("restored op2 constant: %s", entry_php->dirpath);
-				ZVAL_STRINGL(&Z_OP_CONSTANT(opline->op2), entry_php->dirpath, entry_php->dirpath_len, !shallow_copy);
-			}
-#		ifdef IS_UNICODE
-			else if (Z_TYPE(Z_OP_CONSTANT(opline->op2)) == IS_UNICODE) {
-				assert(entry_php->udirpath);
-				ZVAL_UNICODEL(&Z_OP_CONSTANT(opline->op2), entry_php->udirpath, entry_php->udirpath_len, !shallow_copy);
-			}
-#		endif
-			else {
-				assert(0);
-			}
+		else if ((constantinfo & xcache_constant_is_dir)) {
+			xc_restore_constant_string("op2", &Z_OP_CONSTANT(opline->op2), Z_TYPE(Z_OP_CONSTANT(opline->op2)), &entry_php->dirpath, &entry_php->u_dirpath, shallow_copy TSRMLS_CC);
 		}
 #	endif
-	}
 #endif /* ZEND_ENGINE_2_4 */
+	}
 }
 /* }}} */
 static void xc_free_op_array_info(xc_op_array_info_t *op_array_info TSRMLS_DC) /* {{{ */
 {
 #ifdef ZEND_ENGINE_2_4
-	if (op_array_info->literalinfos) {
-		efree(op_array_info->literalinfos);
+	if (op_array_info->constantinfos) {
+		efree(op_array_info->constantinfos);
 	}
 #else
-	if (op_array_info->oplineinfos) {
-		efree(op_array_info->oplineinfos);
+	if (op_array_info->constantinfos) {
+		efree(op_array_info->constantinfos);
 	}
 #endif
 }
@@ -1683,6 +1661,12 @@ static void xc_free_php(xc_entry_data_php_t *php TSRMLS_DC) /* {{{ */
 			if (classinfo->methodinfos) {
 				efree(classinfo->methodinfos);
 			}
+
+#ifdef ZEND_ENGINE_2
+			if (classinfo->constantinfos) {
+				efree(classinfo->constantinfos);
+			}
+#endif
 		}
 	}
 	if (php->funcinfos) {
@@ -1864,7 +1848,8 @@ static void xc_compile_php(xc_compiler_t *compiler, zend_file_handle *h, int typ
 		for (i = 0; i < compiler->new_php.classinfo_cnt; i ++) {
 			xc_classinfo_t *classinfo = &compiler->new_php.classinfos[i];
 			zend_class_entry *ce = CestToCePtr(classinfo->cest);
-			classinfo->methodinfo_cnt = ce->function_table.nTableSize;
+
+			classinfo->methodinfo_cnt = ce->function_table.nNumOfElements;
 			if (classinfo->methodinfo_cnt) {
 				int j;
 
@@ -1880,6 +1865,16 @@ static void xc_compile_php(xc_compiler_t *compiler, zend_file_handle *h, int typ
 			else {
 				classinfo->methodinfos = NULL;
 			}
+
+#ifdef ZEND_ENGINE_2
+			if (ce->constants_table.nNumOfElements) {
+				xc_collect_class_constant_info(compiler, &const_usage, classinfo, &ce->constants_table TSRMLS_CC);
+			}
+			else {
+				classinfo->constantinfo_cnt = 0;
+				classinfo->constantinfos = NULL;
+			}
+#endif
 		}
 
 		for (i = 0; i < compiler->new_php.funcinfo_cnt; i ++) {
@@ -1891,19 +1886,17 @@ static void xc_compile_php(xc_compiler_t *compiler, zend_file_handle *h, int typ
 		/* file/dir path free unused */
 #define X_FREE_UNUSED(var) \
 		if (!const_usage.var##path_used) { \
-			efree(compiler->new_entry.var##path); \
-			compiler->new_entry.var##path = NULL; \
-			compiler->new_entry.var##path_len = 0; \
+			efree(compiler->new_entry.var##path.str); \
+			compiler->new_entry.var##path.str = NULL; \
+			compiler->new_entry.var##path.len = 0; \
 		}
 		/* filepath is required to restore op_array->filename, so no free filepath here */
 #ifdef ZEND_ENGINE_2_3
 		X_FREE_UNUSED(dir)
 #endif
 #ifdef IS_UNICODE
-		X_FREE_UNUSED(ufile)
-#	ifdef ZEND_ENGINE_2_3
-		X_FREE_UNUSED(udir)
-#	endif
+		X_FREE_UNUSED(u_file)
+		X_FREE_UNUSED(u_dir)
 #endif
 #undef X_FREE_UNUSED
 	}

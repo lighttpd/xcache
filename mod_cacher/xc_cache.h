@@ -16,21 +16,16 @@ typedef struct _xc_entry_data_php_t xc_entry_data_php_t;
 
 struct _xc_lock_t;
 struct _xc_shm_t;
-/* {{{ xc_op_array_info_detail_t */
+/* {{{ xc_constant_info_t */
 typedef struct {
 	zend_uint index;
 	zend_uint info;
-} xc_op_array_info_detail_t;
+} xc_constant_info_t;
 /* }}} */
 /* {{{ xc_op_array_info_t */
 typedef struct {
-#ifdef ZEND_ENGINE_2_4
-	zend_uint literalinfo_cnt;
-	xc_op_array_info_detail_t *literalinfos;
-#else
-	zend_uint oplineinfo_cnt;
-	xc_op_array_info_detail_t *oplineinfos;
-#endif
+	zend_uint           constantinfo_cnt;
+	xc_constant_info_t *constantinfos;
 } xc_op_array_info_t;
 /* }}} */
 /* {{{ xc_classinfo_t */
@@ -43,6 +38,10 @@ typedef struct {
 	ulong               h;
 	zend_uint           methodinfo_cnt;
 	xc_op_array_info_t *methodinfos;
+#ifdef ZEND_ENGINE_2
+	zend_uint           constantinfo_cnt;
+	xc_constant_info_t *constantinfos;
+#endif
 	xc_cest_t           cest;
 #ifndef ZEND_COMPILE_DELAYED_BINDING
 	int                 oplineno;
@@ -148,6 +147,18 @@ struct _xc_entry_t {
 };
 
 typedef struct {
+	char  *str;
+	size_t len;
+} xc_constant_string_t;
+
+#ifdef IS_UNICODE
+typedef struct {
+	UChar  *str;
+	size_t len;
+} xc_constant_u_string_t;
+#endif
+
+typedef struct {
 	xc_entry_t entry;
 	xc_entry_data_php_t *php;
 
@@ -157,19 +168,13 @@ typedef struct {
 	size_t file_device;
 	size_t file_inode;
 
-	size_t filepath_len;
-	ZEND_24(NOTHING, const) char *filepath;
+	xc_constant_string_t filepath;
 #ifdef ZEND_ENGINE_2_3
-	size_t dirpath_len;
-	char  *dirpath;
+	xc_constant_string_t dirpath;
 #endif
 #ifdef IS_UNICODE
-	int    ufilepath_len;
-	UChar *ufilepath;
-#	ifdef ZEND_ENGINE_2_3
-	int    udirpath_len;
-	UChar *udirpath;
-#	endif
+	xc_constant_u_string_t u_filepath;
+	xc_constant_u_string_t u_dirpath;
 #endif
 } xc_entry_php_t;
 
@@ -204,6 +209,9 @@ typedef struct {
 } xc_gc_op_array_t;
 /* }}} */
 void xc_gc_add_op_array(xc_gc_op_array_t *gc_op_array TSRMLS_DC);
-void xc_fix_op_array_info(const xc_entry_php_t *xce, const xc_entry_data_php_t *php, zend_op_array *op_array, int shallow_copy, const xc_op_array_info_t *op_array_info TSRMLS_DC);
+#ifdef ZEND_ENGINE_2
+void xc_fix_class_info(const xc_entry_php_t *entry_php, xc_classinfo_t *classinfo, int shallow_copy TSRMLS_DC);
+#endif
+void xc_fix_op_array_info(const xc_entry_php_t *xce, zend_op_array *op_array, int shallow_copy, const xc_op_array_info_t *op_array_info TSRMLS_DC);
 
 #endif /* XC_CACHE_H_684B099102B4651FB10058EF6F7E80CE */

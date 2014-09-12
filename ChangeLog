@@ -9,6 +9,7 @@ ChangeLog
  * cacher:
    * (WIP) defragment
    * (WIP) cache to disk
+   * added class const support for __FILE__ __DIR__
  * disassembler, decompiler:
    * PHP_5_6 support
  * misc:

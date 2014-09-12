@@ -586,6 +586,7 @@ class Decompiler
 	var $namespace;
 	var $namespaceDecided;
 	var $activeFile;
+	var $activeDir;
 	var $activeClass;
 	var $activeMethod;
 	var $activeFunction;
@@ -1515,6 +1516,9 @@ class Decompiler
 		$EX['value2constant'] = array();
 		if (isset($this->activeFile)) {
 			$EX['value2constant'][$this->activeFile] = '__FILE__';
+		}
+		if (isset($this->activeDir)) {
+			$EX['value2constant'][$this->activeDir] = '__DIR__';
 		}
 		if (isset($this->activeClass)) {
 			$EX['value2constant'][$this->activeClass] = '__CLASS__';
@@ -2791,6 +2795,7 @@ class Decompiler
 			return false;
 		}
 		$this->activeFile = null;
+		$this->activeDir = null;
 		return true;
 	}
 	// }}}
@@ -2802,6 +2807,9 @@ class Decompiler
 			return false;
 		}
 		$this->activeFile = realpath($file);
+		if (ZEND_ENGINE_2_3) {
+			$this->activeDir = dirname($this->activeFile);
+		}
 		return true;
 	}
 	// }}}
@@ -2809,6 +2817,7 @@ class Decompiler
 	{
 		$this->dc = $content;
 		$this->activeFile = null;
+		$this->activeDir = null;
 		return true;
 	}
 	// }}}

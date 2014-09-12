@@ -507,7 +507,7 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 
 #	ifdef ZEND_ENGINE_2_4
 	DISABLECHECK(`
-	IFRESTORE(`DST(`info.user.filename') = processor->entry_php_src->filepath;', `PROC_STRING(info.user.filename)')
+	IFRESTORE(`DST(`info.user.filename') = processor->entry_php_src->filepath.str;', `PROC_STRING(info.user.filename)')
 	PROCESS(zend_uint, info.user.line_start)
 	PROCESS(zend_uint, info.user.line_end)
 	PROCESS(zend_uint, info.user.doc_comment_len)
@@ -515,7 +515,7 @@ DEF_STRUCT_P_FUNC(`zend_class_entry', , `dnl {{{
 	')
 	DONE(info)
 #	else
-	IFRESTORE(`DST(`filename') = processor->entry_php_src->filepath;DONE(filename)', `PROC_STRING(filename)')
+	IFRESTORE(`DST(`filename') = processor->entry_php_src->filepath.str;DONE(filename)', `PROC_STRING(filename)')
 	PROCESS(zend_uint, line_start)
 	PROCESS(zend_uint, line_end)
 	PROCESS(zend_uint, doc_comment_len)
@@ -825,15 +825,15 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 			STRUCT_ARRAY(zend_uint, num_args, zend_arg_info, arg_info)
 		}
 #endif
-		DST(`filename') = processor->entry_php_src->filepath;
+		DST(`filename') = processor->entry_php_src->filepath.str;
 
 #ifdef ZEND_ENGINE_2_4
-		if (SRC(`literals') && op_array_info->literalinfo_cnt) {
+		if (SRC(`literals') && op_array_info->constantinfo_cnt) {
 			gc_opcodes = 1;
 			gc_literals = 1;
 		}
 #else
-		if (op_array_info->oplineinfo_cnt) {
+		if (op_array_info->constantinfo_cnt) {
 			gc_opcodes = 1;
 		}
 #endif
@@ -1031,7 +1031,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	PROCESS(zend_bool, uses_this)
 #endif
 
-	IFRESTORE(`DST(`filename') = processor->entry_php_src->filepath;DONE(filename)', `PROC_STRING(filename)')
+	IFRESTORE(`DST(`filename') = processor->entry_php_src->filepath.str; DONE(filename)', `PROC_STRING(filename)')
 #ifdef IS_UNICODE
 	IFRESTORE(`
 		COPYPOINTER(script_encoding)
@@ -1059,7 +1059,7 @@ DEF_STRUCT_P_FUNC(`zend_op_array', , `dnl {{{
 	PROCESS(int, last_cache_slot)
 #endif
 	} while (0);
-	IFRESTORE(`xc_fix_op_array_info(processor->entry_php_src, processor->php_src, DST(), shallow_copy, op_array_info TSRMLS_CC);')
+	IFRESTORE(`xc_fix_op_array_info(processor->entry_php_src, DST(), shallow_copy, op_array_info TSRMLS_CC);')
 
 #ifdef ZEND_ENGINE_2
 	dnl mark it as -1 on store, and lookup parent on restore
@@ -1132,19 +1132,14 @@ DEF_STRUCT_P_FUNC(`xc_constinfo_t', , `dnl {{{
 dnl }}}
 #endif
 IFRESTORE(`', `
-DEF_STRUCT_P_FUNC(`xc_op_array_info_detail_t', , `dnl {{{
+DEF_STRUCT_P_FUNC(`xc_constant_info_t', , `dnl {{{
 	PROCESS(zend_uint, index)
 	PROCESS(zend_uint, info)
 ')
 dnl }}}
 DEF_STRUCT_P_FUNC(`xc_op_array_info_t', , `dnl {{{
-#ifdef ZEND_ENGINE_2_4
-	PROCESS(zend_uint, literalinfo_cnt)
-	STRUCT_ARRAY(zend_uint, literalinfo_cnt, xc_op_array_info_detail_t, literalinfos)
-#else
-	PROCESS(zend_uint, oplineinfo_cnt)
-	STRUCT_ARRAY(zend_uint, oplineinfo_cnt, xc_op_array_info_detail_t, oplineinfos)
-#endif
+	PROCESS(zend_uint, constantinfo_cnt)
+	STRUCT_ARRAY(zend_uint, constantinfo_cnt, xc_constant_info_t, constantinfos)
 ')
 dnl }}}
 ')
@@ -1180,6 +1175,12 @@ DEF_STRUCT_P_FUNC(`xc_classinfo_t', , `dnl {{{
 	IFRESTORE(`COPYPOINTER(methodinfos)', `
 		STRUCT_ARRAY(zend_uint, methodinfo_cnt, xc_op_array_info_t, methodinfos)
 	')
+#ifdef ZEND_ENGINE_2
+	PROCESS(zend_uint, constantinfo_cnt)
+	IFRESTORE(`COPYPOINTER(constantinfos)', `
+		STRUCT_ARRAY(zend_uint, constantinfo_cnt, xc_constant_info_t, constantinfos)
+	')
+#endif
 	IFRESTORE(`
 		processor->active_op_array_infos_src = SRC(`methodinfos');
 		processor->active_op_array_index = 0;
@@ -1188,6 +1189,9 @@ DEF_STRUCT_P_FUNC(`xc_classinfo_t', , `dnl {{{
 	STRUCT_P(zend_class_entry, cest)
 #else
 	STRUCT(zend_class_entry, cest)
+#endif
+#ifdef ZEND_ENGINE_2
+	IFRESTORE(`xc_fix_class_info(processor->entry_php_src, DST(), 0 TSRMLS_CC);')
 #endif
 #ifndef ZEND_COMPILE_DELAYED_BINDING
 	PROCESS(int, oplineno)
@@ -1289,6 +1293,18 @@ DEF_STRUCT_P_FUNC(`xc_entry_t', , `dnl {{{
 	DONE(name) dnl handle in xc_entry_php_t and xc_entry_var_t
 ')
 dnl }}}
+DEF_STRUCT_P_FUNC(`xc_constant_string_t', , `dnl {{{
+	PROCESS(size_t, len)
+	IFRESTORE(`COPYPOINTER(str)', `PROC_STRING_L(str, len)')
+')
+dnl }}}
+#ifdef IS_UNICODE
+DEF_STRUCT_P_FUNC(`xc_constant_u_string_t', , `dnl {{{
+	PROCESS(size_t, len)
+	IFRESTORE(`COPYPOINTER(str)', `PROC_USTRING_L(str, len)')
+')
+dnl }}}
+#endif
 DEF_STRUCT_P_FUNC(`xc_entry_php_t', , `dnl {{{
 	STRUCT(xc_entry_t, entry)
 	DISABLECHECK(`
@@ -1306,19 +1322,13 @@ DEF_STRUCT_P_FUNC(`xc_entry_php_t', , `dnl {{{
 	PROCESS(size_t, file_device)
 	PROCESS(size_t, file_inode)
 
-	PROCESS(size_t, filepath_len)
-	IFRESTORE(`COPYPOINTER(filepath)', `PROC_STRING_L(filepath, filepath_len)')
+	STRUCT(xc_constant_string_t, filepath)
 #ifdef ZEND_ENGINE_2_3
-	PROCESS(size_t, dirpath_len)
-	IFRESTORE(`COPYPOINTER(dirpath)', `PROC_STRING_L(dirpath, dirpath_len)')
+	STRUCT(xc_constant_string_t, dirpath)
 #endif
 #ifdef IS_UNICODE
-	PROCESS(int, ufilepath_len)
-	IFRESTORE(`COPYPOINTER(ufilepath)', `PROC_USTRING_L(ufilepath, ufilepath_len)')
-#	ifdef ZEND_ENGINE_2_3
-	PROCESS(int, udirpath_len)
-	IFRESTORE(`COPYPOINTER(udirpath)', `PROC_USTRING_L(udirpath, udirpath_len)')
-#	endif
+	STRUCT(xc_constant_u_string_t, u_filepath)
+	STRUCT(xc_constant_u_string_t, u_dirpath)
 #endif
 ')
 dnl }}}
