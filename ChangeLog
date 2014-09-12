@@ -10,7 +10,6 @@ ChangeLog
    * (WIP) defragment
    * (WIP) cache to disk
    * added class const support for __FILE__ __DIR__
-   * closes #337: adds warning about Zend OPcache optimization level incompatiblity
  * disassembler, decompiler:
    * PHP_5_6 support
  * misc:
@@ -22,6 +21,7 @@ ChangeLog
  * cacher:
    * PHP_5_6 support
    * fixed #333: reduce memory usage for small or empty files
+   * closes #337: adds warning about Zend OPcache optimization level incompatiblity
 
 3.1.1 2014-09-02
 ChangeLog
