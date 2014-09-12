@@ -1,7 +1,3 @@
-#if 0
-#define XCACHE_DEBUG
-#endif
-
 #include "xc_coverager.h"
 
 #include <stdio.h>

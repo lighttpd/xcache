@@ -226,6 +226,7 @@ run() {
 	f=~/src/php/$phpbasename/sapi/fpm/php-fpm; [ -f "$f" ] && ln -snf "$f" php-fpm
 
 	case "$1" in
+	phpized) CFLAGS=-DXCACHE_DEBUG do_phpize; return $?;;
 	phpize) do_phpize; return $?;;
 	make) shift; do_make "$@"; return $?;;
 	*) do_make;;

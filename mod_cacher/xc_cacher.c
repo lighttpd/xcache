@@ -1,8 +1,4 @@
 #if 0
-#define XCACHE_DEBUG
-#endif
-
-#if 0
 #define SHOW_DPRINT
 #endif
 

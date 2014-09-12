@@ -1,7 +1,3 @@
-#if 0
-#	define XCACHE_DEBUG
-#endif
-
 #include "xc_optimizer.h"
 #include "xcache/xc_extension.h"
 #include "xcache/xc_ini.h"
