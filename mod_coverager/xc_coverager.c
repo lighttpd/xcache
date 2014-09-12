@@ -30,7 +30,7 @@ static zend_compile_file_t *old_compile_file = NULL;
 static void xc_destroy_coverage(void *pDest) /* {{{ */
 {
 	coverager_t cov = *(coverager_t*) pDest;
-	TRACE("destroy %p", cov);
+	TRACE("destroy %p", (void *) cov);
 	zend_hash_destroy(cov);
 	efree(cov);
 }
@@ -41,7 +41,7 @@ static void xcache_mkdirs_ex(char *root, long rootlen, char *path, long pathlen 
 	struct stat st;
 	ALLOCA_FLAG(use_heap)
 
-	TRACE("mkdirs %s %d %s %d", root, rootlen, path, pathlen);
+	TRACE("mkdirs %s %ld %s %ld", root, rootlen, path, pathlen);
 	fullpath = xc_do_alloca(rootlen + pathlen + 1, use_heap);
 	memcpy(fullpath, root, rootlen);
 	memcpy(fullpath + rootlen, path, pathlen);
@@ -356,14 +356,14 @@ static coverager_t xc_coverager_get(const char *filename TSRMLS_DC) /* {{{ */
 	coverager_t cov, *pcov;
 
 	if (zend_u_hash_find(XG(coverages), IS_STRING, filename, len, (void **) &pcov) == SUCCESS) {
-		TRACE("got coverage %s %p", filename, *pcov);
+		TRACE("got coverage %s %p", filename, (void *) *pcov);
 		return *pcov;
 	}
 	else {
 		cov = emalloc(sizeof(HashTable));
 		zend_hash_init(cov, 0, NULL, NULL, 0);
 		zend_u_hash_add(XG(coverages), IS_STRING, filename, len, (void **) &cov, sizeof(cov), NULL);
-		TRACE("new coverage %s %p", filename, cov);
+		TRACE("new coverage %s %p", filename, (void *) cov);
 		return cov;
 	}
 }

@@ -167,7 +167,7 @@ static XC_ALLOCATOR_MALLOC(xc_allocator_bestfit_malloc) /* {{{ */
 
 		TRACE(" -> avail: %lu (%luKB). new next: %p offset: %lu %luKB. Got: %p"
 				, allocator->avail, allocator->avail / 1024
-				, newb
+				, (void *) newb
 				, PSUB(newb, allocator), PSUB(newb, allocator) / 1024
 				, p
 				);
