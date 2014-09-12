@@ -3881,9 +3881,21 @@ static PHP_MINIT_FUNCTION(xcache_cacher) /* {{{ */
 
 	ext = zend_get_extension("Zend Optimizer");
 	if (ext) {
-		/* zend_optimizer.optimization_level>0 is not compatible with other cacher, disabling */
+		char *value;
+		if (cfg_get_string("zend_optimizer.optimization_level", &value) == SUCCESS && zend_atol(value, strlen(value)) > 0) {
+			zend_error(E_NOTICE, "Zend Optimizer with zend_optimizer.optimization_level>0 is not compatible with other cacher, disabling");
+		}
 		ext->op_array_handler = NULL;
 	}
+
+	ext = zend_get_extension("Zend OPcache");
+	if (ext) {
+		char *value;
+		if (cfg_get_string("opcache.optimization_level", &value) == SUCCESS && zend_atol(value, strlen(value)) > 0) {
+			zend_error(E_WARNING, "Constant folding feature in Zend OPcache is not compatible with XCache's __DIR__ handling, please set opcache.optimization_level=0 or disable Zend OPcache");
+		}
+	}
+
 	/* cache if there's an op_array_ctor */
 	for (ext = zend_llist_get_first_ex(&zend_extensions, &lpos);
 			ext;

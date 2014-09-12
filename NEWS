@@ -3,6 +3,7 @@
  * api updates
  * cache defragment, cache to disk
  * added class const support for __FILE__ __DIR__
+ * aware of Zend OPcache
  * updated disassembler decompiler support
 
 3.2.1 2013-??-??
