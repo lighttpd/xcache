@@ -17,6 +17,8 @@
 
 #ifdef XCACHE_DEBUG
 #	define IFDEBUG(x) (x)
+#	include <stdarg.h>
+#	include <zend.h>
 int xc_vtrace(const char *fmt, va_list args);
 int xc_trace(const char *fmt, ...) ZEND_ATTRIBUTE_PTR_FORMAT(printf, 1, 2);
 
