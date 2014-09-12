@@ -2,6 +2,7 @@
 ========
  * PHP_5_6 support
  * reduce memory usage for small or empty files
+ * aware of Zend OPcache
 
 3.1.1 2014-09-02
 ========
