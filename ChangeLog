@@ -21,7 +21,7 @@ ChangeLog
  * cacher:
    * PHP_5_6 support
    * fixed #333: reduce memory usage for small or empty files
-   * closes #337: adds warning about Zend OPcache optimization level incompatiblity
+   * closes #337: adds warning about Zend OPcache optimization level incompatibility
 
 3.1.2 2014-09-18
 no changes, same as 3.1.1
