@@ -163,7 +163,13 @@ dnl {{{ zvalue_value
 			case FLAG_IS_BC:
 #endif
 				PROCESS(int, value.str.len)
+				IFRESTORE(`
+					TRACE("%p, %p, %d", src->value.str.val, processor->entry_php_src->filepath.str, src->value.str.val == processor->entry_php_src->filepath.str);
+				')
 				PROC_STRING_L(value.str.val, value.str.len)
+				dnl IFSTORE(`
+				dnl 	TRACE("%s, %d", dst->value.str.val, dst->value.str.val == processor->entry_php_dst->filepath.str);
+				dnl ')
 				break;
 #ifdef IS_UNICODE
 			case IS_UNICODE:

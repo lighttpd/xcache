@@ -18,6 +18,7 @@ EXPORT(`#include "xcache/xc_allocator.h"')
 #include "xcache/xc_const_string.h"
 #include "xcache/xc_utils.h"
 #include "util/xc_align.h"
+#include "util/xc_trace.h"
 #include "xcache_globals.h"
 
 #if defined(HARDENING_PATCH_HASH_PROTECT) && HARDENING_PATCH_HASH_PROTECT
@@ -225,6 +226,7 @@ static inline zstr xc_store_string_n(xc_processor_t *processor, zend_uchar type,
 	}
 
 	if (zend_u_hash_find(&processor->strings, type, str, (uint) size, (void **) &pret) == SUCCESS) {
+		TRACE("found old string %s:%ld %p", str, size, *pret);
 		return *pret;
 	}
 
@@ -232,6 +234,7 @@ static inline zstr xc_store_string_n(xc_processor_t *processor, zend_uchar type,
 	ALLOC(ZSTR_V(ret), char, realsize)
 	memcpy(ZSTR_V(ret), ZSTR_V(str), realsize);
 	zend_u_hash_add(&processor->strings, type, str, (uint) size, (void *) &ret, sizeof(zstr), NULL);
+	TRACE("stored new string %s:%ld %p", str, size, ret);
 	return ret;
 
 	popdef(`__LINE__')

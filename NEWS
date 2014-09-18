@@ -5,7 +5,7 @@
  * added class const support for __FILE__ __DIR__
  * updated disassembler decompiler support
 
-3.2.1 2014-09-18
+3.2.0 2014-09-18
 ========
  * PHP_5_6 support
  * reduce memory usage for small or empty files
