@@ -5,11 +5,15 @@
  * added class const support for __FILE__ __DIR__
  * updated disassembler decompiler support
 
-3.2.1 2013-??-??
+3.2.1 2014-09-18
 ========
  * PHP_5_6 support
  * reduce memory usage for small or empty files
  * aware of Zend OPcache
+
+3.1.2 2014-09-18
+========
+ * repackage of 3.1.1 to fix sub directory name in source package
 
 3.1.1 2014-09-02
 ========

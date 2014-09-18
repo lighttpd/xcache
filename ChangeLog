@@ -15,13 +15,16 @@ ChangeLog
  * misc:
    * Reflection info added for APIs
 
-3.2.0 2014-??-??
+3.2.0 2014-09-18
 ChangeLog
 ========
  * cacher:
    * PHP_5_6 support
    * fixed #333: reduce memory usage for small or empty files
    * closes #337: adds warning about Zend OPcache optimization level incompatiblity
+
+3.1.2 2014-09-18
+no changes, same as 3.1.1
 
 3.1.1 2014-09-02
 ChangeLog
