@@ -9,9 +9,9 @@ true() { # {{{1
 }
 
 hi() { # {{{1
-	colors=(4 2 3 5 6 7 8 9)
-	re=()
-	i=0
+	local colors=(4 2 3 5 6 7 8 9)
+	local re=()
+	local i=0
 	for r in "$@"; do
 		((color=$i % ${#colors[@]})) || true
 		color=${colors[$color]}
@@ -365,6 +365,7 @@ run() {
 			;;
 		*)
 			"$@" | tee output.php
+			return ${PIPESTATUS[0]}
 			;;
 		esac
 		;;
