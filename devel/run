@@ -68,22 +68,25 @@ po2php() { # {{{1
 }
 
 updatedeps() { # {{{1
-	pwd=$(readlink -f "$(pwd)")
-	builddir=$(readlink -f ../trunk-php5-debug-zts)
+	local pwd=$(readlink -f "$(pwd)")
+	local builddirname=${xcachesrcdir}-${phpbasename}
+	local builddir=$(readlink -f $builddirname)
 	if [[ -z $builddir ]]; then
-		hiecho required ../trunk-php5-debug-zts not found
+		hiecho required $builddirname not found
 		return 1
 	fi
+	local sourceFile
+	local sourceFilename
 	find . -iname \*.c | LANG=C sort | while read -r sourceFile; do
-		sourceFile=${sourceFile#./}
+		sourceFilename=${sourceFile#./}
 		{
-			case "$sourceFile" in
+			case "$sourceFilename" in
 			includes.c)
 				echo '$(XCACHE_INCLUDES_I)'
 				;;
 			esac
-			echo ${sourceFile%.c}.lo '$(builddir)/'${sourceFile%.c}.lo:
-			hiecho "Checking $sourceFile ..." >&2
+			echo ${sourceFilename%.c}.lo '$(builddir)/'${sourceFilename%.c}.lo:
+			hiecho "Checking $sourceFilename ..." >&2
 			for dependency in $(gcc -DHAVE_XCACHE_TEST -DHAVE_XCACHE_DPRINT -DXCACHE_DEBUG -MM $sourceFile -I$PHPSDIR/$phpbasename/include/php/{,main,Zend,TSRM} -I. -I${builddir} -MG | sed 's#.*:##g' | sed 's#\\##g'); do
 				dependency=$(readlink -f "$dependency")
 				case "$dependency" in
@@ -103,7 +106,7 @@ updatedeps() { # {{{1
 					;;
 
 				/*) ;;
-				$sourceFile) ;;
+				$sourceFilename) ;;
 
 				xc_processor.h|\$\(builddir\)/xc_processor.h)
 					echo '$(XCACHE_PROC_H)'
