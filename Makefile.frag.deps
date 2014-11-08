@@ -7,6 +7,7 @@ mod_disassembler/xc_disassembler.lo $(builddir)/mod_disassembler/xc_disassembler
 mod_encoder/xc_encoder.lo $(builddir)/mod_encoder/xc_encoder.lo:
 mod_optimizer/xc_optimizer.lo $(builddir)/mod_optimizer/xc_optimizer.lo: $(XCACHE_PROC_H) $(srcdir)/mod_optimizer/xc_optimizer.h $(srcdir)/util/xc_trace.h $(srcdir)/util/xc_vector.h $(srcdir)/xcache.h $(srcdir)/xcache/xc_compatibility.h $(srcdir)/xcache/xc_const_string.h $(srcdir)/xcache/xc_extension.h $(srcdir)/xcache/xc_ini.h $(srcdir)/xcache/xc_mutex.h $(srcdir)/xcache/xc_opcode_spec.h $(srcdir)/xcache/xc_shm.h $(srcdir)/xcache/xc_utils.h $(srcdir)/xcache_globals.h
 util/xc_trace.lo $(builddir)/util/xc_trace.lo: $(srcdir)/util/xc_trace.h
+util/xc_vector_test.lo $(builddir)/util/xc_vector_test.lo: $(srcdir)/util/xc_vector.h
 xcache.lo $(builddir)/xcache.lo: $(XCACHE_PROC_H) $(srcdir)/util/xc_foreachcoresig.h $(srcdir)/util/xc_vector.h $(srcdir)/xcache.h $(srcdir)/xcache/xc_compatibility.h $(srcdir)/xcache/xc_const_string.h $(srcdir)/xcache/xc_extension.h $(srcdir)/xcache/xc_ini.h $(srcdir)/xcache/xc_mutex.h $(srcdir)/xcache/xc_opcode_spec.h $(srcdir)/xcache/xc_shm.h $(srcdir)/xcache/xc_utils.h $(srcdir)/xcache_globals.h
 xcache/xc_allocator.lo $(builddir)/xcache/xc_allocator.lo: $(srcdir)/xcache.h $(srcdir)/xcache/xc_allocator.h $(srcdir)/xcache/xc_compatibility.h $(srcdir)/xcache/xc_mutex.h $(srcdir)/xcache/xc_shm.h
 xcache/xc_allocator_bestfit.lo $(builddir)/xcache/xc_allocator_bestfit.lo: $(srcdir)/util/xc_align.h $(srcdir)/util/xc_trace.h $(srcdir)/xcache/xc_allocator.h $(srcdir)/xcache/xc_shm.h
