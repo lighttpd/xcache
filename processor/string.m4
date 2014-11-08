@@ -58,8 +58,8 @@ define(`PROC_STRING_N_EX', `
 			fprintf(stderr, "\" len=%lu\n", (unsigned long) $3 - 1);
 			')
 		')
-		IFCALC(`xc_calc_string_n(processor, ISTYPE, SRCSTR, $3 C_RELAYLINE TSRMLS_CC);')
-		IFSTORE(`DSTPTR = ifdef(`REALPTRTYPE', `(REALPTRTYPE() *)') ifelse(PTRTYPE,`char',`ZSTR_S',`ZSTR_U')(xc_store_string_n(processor, ISTYPE, SRCSTR, $3 C_RELAYLINE));')
+		IFCALC(`xc_calc_string_n(processor, ISTYPE, SRCSTR, $3 RELAYLINE_CC TSRMLS_CC);')
+		IFSTORE(`DSTPTR = ifdef(`REALPTRTYPE', `(REALPTRTYPE() *)') ifelse(PTRTYPE,`char',`ZSTR_S',`ZSTR_U')(xc_store_string_n(processor, ISTYPE, SRCSTR, $3 RELAYLINE_CC));')
 		IFRESTORE(`
 			DSTPTR = ifdef(`REALPTRTYPE', `(REALPTRTYPE() *)') STRDUP() (SRCPTR, ($3) - 1);
 		')
