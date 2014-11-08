@@ -26,7 +26,7 @@
 #include "xcache/xc_const_string.h"
 #include "xcache/xc_opcode_spec.h"
 #include "xcache/xc_utils.h"
-#include "util/xc_stack.h"
+#include "util/xc_vector.h"
 
 #include "php.h"
 #include "ext/standard/info.h"
@@ -150,7 +150,7 @@ void xc_shutdown_globals(zend_xcache_globals* xcache_globals TSRMLS_DC)
 
 	if (xcache_globals->php_holds != NULL) {
 		for (i = 0; i < xcache_globals->php_holds_size; i ++) {
-			xc_stack_destroy(&xcache_globals->php_holds[i]);
+			xc_vector_destroy(&xcache_globals->php_holds[i]);
 		}
 		free(xcache_globals->php_holds);
 		xcache_globals->php_holds = NULL;
@@ -159,7 +159,7 @@ void xc_shutdown_globals(zend_xcache_globals* xcache_globals TSRMLS_DC)
 
 	if (xcache_globals->var_holds != NULL) {
 		for (i = 0; i < xcache_globals->var_holds_size; i ++) {
-			xc_stack_destroy(&xcache_globals->var_holds[i]);
+			xc_vector_destroy(&xcache_globals->var_holds[i]);
 		}
 		free(xcache_globals->var_holds);
 		xcache_globals->var_holds = NULL;

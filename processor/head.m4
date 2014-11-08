@@ -119,7 +119,7 @@ typedef struct _xc_processor_t {
 	const xc_op_array_info_t *active_op_array_infos_src;
 
 	zend_bool readonly_protection; /* wheather it's present */
-IFAUTOCHECK(xc_stack_t allocsizes;)
+IFAUTOCHECK(xc_vector_t allocsizes;)
 } xc_processor_t;
 dnl }}}
 EXPORT(`typedef struct _xc_dasm_t { const zend_op_array *active_op_array_src; } xc_dasm_t;')
@@ -191,7 +191,7 @@ IFAUTOCHECK(`
 #undef C_RELAYLINE
 #define C_RELAYLINE , __LINE__
 ')
-static inline void xc_calc_string_n(xc_processor_t *processor, zend_uchar type, const_zstr str, long size IFAUTOCHECK(`, int relayline')) { /* {{{ */
+static inline void xc_calc_string_n(xc_processor_t *processor, zend_uchar type, const_zstr str, long size IFAUTOCHECK(`, int relayline') TSRMLS_DC) { /* {{{ */
 	pushdef(`PROCESSOR_TYPE', `calc')
 	pushdef(`__LINE__', `relayline')
 	size_t realsize = UNISW(size, (type == IS_UNICODE) ? UBYTES(size) : size);

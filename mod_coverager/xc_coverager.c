@@ -13,7 +13,7 @@
 #include "xcache/xc_extension.h"
 #include "xcache/xc_ini.h"
 #include "xcache/xc_utils.h"
-#include "util/xc_stack.h"
+#include "util/xc_vector.h"
 #include "util/xc_trace.h"
 #include "xcache_globals.h"
 

@@ -5,7 +5,6 @@
 #pragma once
 #endif /* _MSC_VER > 1000 */
 
-#include "util/xc_stack.h"
 #include "zend_extensions.h"
 int xcache_zend_extension_add(zend_extension *new_extension, zend_bool prepend);
 int xcache_zend_extension_remove(zend_extension *extension);

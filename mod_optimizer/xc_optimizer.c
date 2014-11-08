@@ -2,7 +2,7 @@
 #include "xcache/xc_extension.h"
 #include "xcache/xc_ini.h"
 #include "xcache/xc_utils.h"
-#include "util/xc_stack.h"
+#include "util/xc_vector.h"
 #include "util/xc_trace.h"
 #include "xcache_globals.h"
 
@@ -46,7 +46,7 @@ typedef struct _bb_t {
 /* }}} */
 
 /* basic blocks */
-typedef xc_stack_t bbs_t;
+typedef xc_vector_t bbs_t;
 
 /* op array helper functions */
 static int op_array_convert_switch(zend_op_array *op_array) /* {{{ */
@@ -352,48 +352,49 @@ static void bb_print(bb_t *bb, zend_op_array *op_array) /* {{{ */
 
 static bb_t *bbs_get(bbs_t *bbs, int n) /* {{{ */
 {
-	return (bb_t *) xc_stack_get(bbs, n);
+	return xc_vector_data(bb_t *, bbs)[n];
 }
 /* }}} */
 static int bbs_count(bbs_t *bbs) /* {{{ */
 {
-	return xc_stack_count(bbs);
+	return xc_vector_size(bbs);
 }
 /* }}} */
-static void bbs_destroy(bbs_t *bbs) /* {{{ */
+static void bbs_destroy(bbs_t *bbs TSRMLS_DC) /* {{{ */
 {
 	bb_t *bb;
 	while (bbs_count(bbs)) {
-		bb = (bb_t *) xc_stack_pop(bbs);
+		bb = xc_vector_pop_back(bb_t *, bbs);
 		bb_destroy(bb);
 	}
-	xc_stack_destroy(bbs);
+	xc_vector_destroy(bbs);
 }
 /* }}} */
 #ifdef XCACHE_DEBUG
 static void bbs_print(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
 {
 	int i;
-	for (i = 0; i < xc_stack_count(bbs); i ++) {
+	for (i = 0; i < xc_vector_size(bbs); i ++) {
 		bb_print(bbs_get(bbs, i), op_array);
 	}
 }
 /* }}} */
 #endif
-#define bbs_init(bbs) xc_stack_init_ex(bbs, 16)
-static bb_t *bbs_add_bb(bbs_t *bbs, bb_t *bb) /* {{{ */
+#define bbs_init(bbs) xc_vector_init(bb_t *, bbs, 0)
+#define bbs_initializer() xc_vector_initializer(bb_t *, 0)
+static bb_t *bbs_add_bb(bbs_t *bbs, bb_t *bb TSRMLS_DC) /* {{{ */
 {
-	bb->id = (bbid_t) xc_stack_count(bbs);
-	xc_stack_push(bbs, (void *) bb);
+	bb->id = (bbid_t) bbs_count(bbs);
+	xc_vector_push_back(bbs, &bb);
 	return bb;
 }
 /* }}} */
-static bb_t *bbs_new_bb_ex(bbs_t *bbs, zend_op *opcodes, int count) /* {{{ */
+static bb_t *bbs_new_bb_ex(bbs_t *bbs, zend_op *opcodes, int count TSRMLS_DC) /* {{{ */
 {
-	return bbs_add_bb(bbs, bb_new_ex(opcodes, count));
+	return bbs_add_bb(bbs, bb_new_ex(opcodes, count) TSRMLS_CC);
 }
 /* }}} */
-static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{ */
+static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count TSRMLS_DC) /* {{{ */
 {
 	int i, start;
 	bb_t *bb;
@@ -479,7 +480,7 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count) /* {{{
 		}
 
 		opline = op_array->opcodes + start;
-		bb = bbs_new_bb_ex(bbs, opline, i - start);
+		bb = bbs_new_bb_ex(bbs, opline, i - start TSRMLS_CC);
 
 		/* last */
 		opline = bb->opcodes + bb->count - 1;
@@ -562,8 +563,6 @@ static void bbs_restore_opnum(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
  */
 static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 {
-	bbs_t bbs;
-
 	if (op_array->type != ZEND_USER_FUNCTION) {
 		return 0;
 	}
@@ -578,8 +577,9 @@ static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 #endif
 
 	if (op_array_convert_switch(op_array) == SUCCESS) {
-		bbs_init(&bbs);
-		if (bbs_build_from(&bbs, op_array, op_array->last) == SUCCESS) {
+		bbs_t bbs = bbs_initializer();
+
+		if (bbs_build_from(&bbs, op_array, op_array->last TSRMLS_CC) == SUCCESS) {
 			int i;
 #ifdef XCACHE_DEBUG
 			bbs_print(&bbs, op_array);
@@ -591,7 +591,7 @@ static int xc_optimize_op_array(zend_op_array *op_array TSRMLS_DC) /* {{{ */
 			}
 			bbs_restore_opnum(&bbs, op_array);
 		}
-		bbs_destroy(&bbs);
+		bbs_destroy(&bbs TSRMLS_CC);
 	}
 
 #ifdef XCACHE_DEBUG

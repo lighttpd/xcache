@@ -39,7 +39,7 @@ stopfpm() { # {{{1
 }
 
 xtest() { # {{{1
-	$MAKE ${MAKEOPTS} -f devel/test.mak
+	$MAKE ${MAKEOPTS} -f devel/test.mak clean all
 }
 
 prep() { # {{{1

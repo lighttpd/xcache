@@ -432,7 +432,7 @@ static void xc_entry_hold_php_unlocked(xc_cache_t *cache, xc_entry_php_t *entry 
 	}
 #endif
 	entry->refcount ++;
-	xc_stack_push(&XG(php_holds)[cache->cacheid], (void *)entry);
+	xc_vector_push_back(&XG(php_holds)[cache->cacheid], &entry);
 }
 /* }}} */
 static inline zend_uint advance_wrapped(zend_uint val, zend_uint count) /* {{{ */
@@ -871,21 +871,21 @@ static zend_op_array *xc_entry_install(xc_entry_php_t *entry_php TSRMLS_DC) /* {
 }
 /* }}} */
 
-static inline void xc_entry_unholds_real(xc_stack_t *holds, xc_cache_t *caches, size_t cachecount TSRMLS_DC) /* {{{ */
+static inline void xc_entry_unholds_real(xc_vector_t *holds, xc_cache_t *caches, size_t cachecount TSRMLS_DC) /* {{{ */
 {
 	size_t i;
-	xc_stack_t *s;
+	xc_vector_t *v;
 	xc_cache_t *cache;
 	xc_entry_php_t *entry_php;
 
 	for (i = 0; i < cachecount; i ++) {
-		s = &holds[i];
-		TRACE("holded %d items", xc_stack_count(s));
-		if (xc_stack_count(s)) {
+		v = &holds[i];
+		TRACE("holded %d items", v->cnt);
+		if (xc_vector_size(v)) {
 			cache = &caches[i];
 			ENTER_LOCK(cache) {
-				while (xc_stack_count(s)) {
-					entry_php = (xc_entry_php_t *) xc_stack_pop(s);
+				while (xc_vector_size(v)) {
+					entry_php = xc_vector_pop_back(xc_entry_php_t *, v);
 					TRACE("unhold %lu:%s", (unsigned long) entry_php->file_inode, entry_php->entry.name.str.val);
 					assert(entry_php->refcount > 0);
 					--entry_php->refcount;
@@ -1409,9 +1409,7 @@ typedef struct {
 static void xc_collect_class_constant_info(xc_compiler_t *compiler, xc_const_usage_t *usage, xc_classinfo_t *classinfo, HashTable *constants TSRMLS_DC) /* {{{ */
 {
 	uint index;
-	xc_vector_t constantinfos;
-
-	xc_vector_init(xc_constant_info_t, &constantinfos);
+	xc_vector_t constantinfos = xc_vector_initializer(xc_constant_info_t, 0);
 
 	for (index = 0; index < constants->nTableSize; ++index) {
 		Bucket *bucket;
@@ -1438,12 +1436,12 @@ static void xc_collect_class_constant_info(xc_compiler_t *compiler, xc_const_usa
 				xc_constant_info_t detail;
 				detail.index = index2 * constants->nTableSize + index;
 				detail.info  = constantinfo;
-				xc_vector_add(xc_constant_info_t, &constantinfos, detail);
+				xc_vector_push_back(&constantinfos, &detail);
 			}
 		}
 	}
 
-	classinfo->constantinfo_cnt = constantinfos.cnt;
+	classinfo->constantinfo_cnt = xc_vector_size(&constantinfos);
 	classinfo->constantinfos    = xc_vector_detach(xc_constant_info_t, &constantinfos);
 }
 /* }}} */
@@ -1455,9 +1453,7 @@ static void xc_collect_op_array_info(xc_compiler_t *compiler, xc_const_usage_t *
 #else
 	zend_uint oplinenum;
 #endif
-	xc_vector_t constantinfos;
-
-	xc_vector_init(xc_constant_info_t, &constantinfos);
+	xc_vector_t constantinfos = xc_vector_initializer(xc_constant_info_t, 0);
 
 #ifdef ZEND_ENGINE_2_4
 	for (literalindex = 0; literalindex < op_array->last_literal; literalindex++) {
@@ -1480,12 +1476,9 @@ static void xc_collect_op_array_info(xc_compiler_t *compiler, xc_const_usage_t *
 			xc_constant_info_t detail;
 			detail.index = literalindex;
 			detail.info  = constantinfo;
-			xc_vector_add(xc_constant_info_t, &constantinfos, detail);
+			xc_vector_push_back(&constantinfos, &detail);
 		}
 	}
-
-	op_array_info->constantinfo_cnt = constantinfos.cnt;
-	op_array_info->constantinfos    = xc_vector_detach(xc_constant_info_t, &constantinfos);
 #else /* ZEND_ENGINE_2_4 */
 	for (oplinenum = 0; oplinenum < op_array->last; oplinenum++) {
 		zend_op *opline = &op_array->opcodes[oplinenum];
@@ -1530,11 +1523,11 @@ static void xc_collect_op_array_info(xc_compiler_t *compiler, xc_const_usage_t *
 			xc_vector_add(xc_constant_info_t, &constantinfos, detail);
 		}
 	}
-
-	op_array_info->constantinfo_cnt = constantinfos.cnt;
-	op_array_info->constantinfos    = xc_vector_detach(xc_constant_info_t, &constantinfos);
 #endif /* ZEND_ENGINE_2_4 */
-	xc_vector_free(xc_constant_info_t, &constantinfos);
+
+	op_array_info->constantinfo_cnt = xc_vector_size(&constantinfos);
+	op_array_info->constantinfos    = xc_vector_detach(xc_constant_info_t, &constantinfos);
+	xc_vector_destroy(&constantinfos);
 }
 /* }}} */
 #ifdef IS_UNICODE
@@ -2826,17 +2819,17 @@ static void xc_holds_init(TSRMLS_D) /* {{{ */
 
 	if (xc_php_caches && !XG(php_holds)) {
 		XG(php_holds_size) = xc_php_hcache.size;
-		XG(php_holds) = calloc(XG(php_holds_size), sizeof(xc_stack_t));
+		XG(php_holds) = calloc(XG(php_holds_size), sizeof(xc_vector_t));
 		for (i = 0; i < xc_php_hcache.size; i ++) {
-			xc_stack_init(&XG(php_holds[i]));
+			xc_vector_init(xc_entry_php_t *, &XG(php_holds[i]), 1);
 		}
 	}
 
 	if (xc_var_caches && !XG(var_holds)) {
 		XG(var_holds_size) = xc_var_hcache.size;
-		XG(var_holds) = calloc(XG(var_holds_size), sizeof(xc_stack_t));
+		XG(var_holds) = calloc(XG(var_holds_size), sizeof(xc_vector_t));
 		for (i = 0; i < xc_var_hcache.size; i ++) {
-			xc_stack_init(&XG(var_holds[i]));
+			xc_vector_init(xc_entry_php_t *, &XG(var_holds[i]), 1);
 		}
 	}
 }
@@ -2847,7 +2840,7 @@ static void xc_holds_destroy(TSRMLS_D) /* {{{ */
 
 	if (xc_php_caches && XG(php_holds)) {
 		for (i = 0; i < XG(php_holds_size); i ++) {
-			xc_stack_destroy(&XG(php_holds[i]));
+			xc_vector_destroy(&XG(php_holds[i]));
 		}
 		free(XG(php_holds));
 		XG(php_holds) = NULL;
@@ -2856,7 +2849,7 @@ static void xc_holds_destroy(TSRMLS_D) /* {{{ */
 
 	if (xc_var_caches && XG(var_holds)) {
 		for (i = 0; i < XG(var_holds_size); i ++) {
-			xc_stack_destroy(&XG(var_holds[i]));
+			xc_vector_destroy(&XG(var_holds[i]));
 		}
 		free(XG(var_holds));
 		XG(var_holds) = NULL;

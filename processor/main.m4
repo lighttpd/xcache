@@ -43,20 +43,23 @@ define(`ALLOC', `
 	/* allocate */
 	IFCALC(`
 		IFAUTOCHECK(`
-			xc_stack_push(&processor->allocsizes, (void *) (long) (SIZE));
-			xc_stack_push(&processor->allocsizes, (void *) (long) (__LINE__));
+			{
+				unsigned long allocsize = SIZE, allocline = __LINE__;
+				xc_vector_push_back(&processor->allocsizes, &allocsize);
+				xc_vector_push_back(&processor->allocsizes, &allocline);
+			}
 		')
 		processor->size = (size_t) ALIGN(processor->size);
 		processor->size += SIZE;
 	')
 	IFSTORE(`
 		IFAUTOCHECK(`{
-			if (!xc_stack_count(&processor->allocsizes)) {
+			if (!xc_vector_size(&processor->allocsizes)) {
 				fprintf(stderr, "mismatch `$@' at line %d\n", __LINE__);
 			}
 			else {
-				unsigned long expect = (unsigned long) xc_stack_pop(&processor->allocsizes);
-				unsigned long atline = (unsigned long) xc_stack_pop(&processor->allocsizes);
+				unsigned long expect = xc_vector_pop_back(unsigned long, &processor->allocsizes);
+				unsigned long atline = xc_vector_pop_back(unsigned long, &processor->allocsizes);
 				unsigned long real = SIZE;
 				if (expect != real) {
 					fprintf(stderr, "mismatch `$@' at line %d(was %lu): real %lu - expect %lu = %lu\n", __LINE__, atline, real, expect, real - expect);

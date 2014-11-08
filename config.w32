@@ -13,7 +13,6 @@ if (PHP_XCACHE != "no") {
 	// }}}
 
 	ADD_SOURCES(configure_module_dirname + "/util", " \
-xc_stack.c \
 xc_trace.c \
 ", "xcache");
 

@@ -1,4 +1,4 @@
-#include "util/xc_stack.h"
+#include "util/xc_vector.h"
 
 ZEND_BEGIN_MODULE_GLOBALS(xcache)
 	zend_bool initial_compile_file_called; /* true if origin_compile_file is called */
@@ -17,9 +17,9 @@ ZEND_BEGIN_MODULE_GLOBALS(xcache)
 #ifndef ZEND_WIN32
 	pid_t holds_pid;
 #endif
-	xc_stack_t *php_holds;
+	xc_vector_t *php_holds;
 	zend_uint php_holds_size;
-	xc_stack_t *var_holds;
+	xc_vector_t *var_holds;
 	zend_uint var_holds_size;
 	time_t request_time;
 	long   var_ttl;

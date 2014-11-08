@@ -12,7 +12,7 @@ EXPORTED_FUNCTION(`$1 *xc_processor_store_$1(const xc_processor_storage_t *stora
 	processor.handle_reference = 1;
 	processor.relocatediff = storage->relocatediff;
 
-	IFAUTOCHECK(`xc_stack_init(&processor.allocsizes);')
+	IFAUTOCHECK(`xc_vector_init(unsigned long, &processor.allocsizes, 0);')
 
 	/* calc size */ {
 		zend_hash_init(&processor.strings, 0, NULL, NULL, 0);
@@ -38,7 +38,7 @@ EXPORTED_FUNCTION(`$1 *xc_processor_store_$1(const xc_processor_storage_t *stora
 		`$1', `xc_entry_data_php_t', `SRC(`have_references') = processor.have_references;'
 	)
 
-	IFAUTOCHECK(`xc_stack_reverse(&processor.allocsizes);')
+	IFAUTOCHECK(`xc_vector_reverse(&processor.allocsizes);')
 	/* store {{{ */
 	{
 		IFAUTOCHECK(`char *oldp;')
@@ -77,7 +77,7 @@ err_alloc:
 	}
 	/* }}} */
 
-	IFAUTOCHECK(`xc_stack_destroy(&processor.allocsizes);')
+	IFAUTOCHECK(`xc_vector_destroy(&processor.allocsizes);')
 
 	return dst;
 }

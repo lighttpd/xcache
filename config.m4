@@ -25,7 +25,6 @@ if test "$PHP_XCACHE" != "no"; then
 
   xcache_sources="xcache.c"
   for i in \
-xc_stack.c \
 xc_trace.c \
 ; do
   xcache_sources="$xcache_sources util/$i"
