@@ -1,0 +1,1 @@
+HashTable strings;

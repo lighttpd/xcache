@@ -1,19 +1,15 @@
-IFAUTOCHECK(`
-#define RELAYLINE_DC , int relayline
-#define RELAYLINE_CC , __LINE__
-', `
-#define RELAYLINE_DC
-#define RELAYLINE_CC
-')
+#ifdef HAVE_XCACHE_TEST
+#	define RELAYLINE_DC , int relayline
+#	define RELAYLINE_CC , __LINE__
+#else
+#	define RELAYLINE_DC
+#	define RELAYLINE_CC
+#endif
 
-ifdef(`XCACHE_ENABLE_TEST', `
-#undef NDEBUG
-#include <assert.h>
-m4_errprint(`AUTOCHECK INFO: runtime autocheck Enabled (debug build)')
-', `
-m4_errprint(`AUTOCHECK INFO: runtime autocheck Disabled (optimized build)')
-')
-ifdef(`DEBUG_SIZE', `static int xc_totalsize = 0;')
+#ifdef HAVE_XCACHE_TEST
+#	undef NDEBUG
+#	include <assert.h>
+#endif
 
 #ifndef NDEBUG
 #	undef inline
@@ -54,9 +50,8 @@ static void xc_dprint_str_len(const char *str, int len) /* {{{ */
 }
 /* }}} */
 #endif
-/* {{{ field name checker */
-IFAUTOCHECK(`dnl
-static int xc_check_names(const char *file, int line, const char *functionName, const char **assert_names, size_t assert_names_count, HashTable *done_names)
+#ifdef HAVE_XCACHE_TEST
+static int xc_check_names(const char *file, int line, const char *functionName, const char **assert_names, size_t assert_names_count, HashTable *done_names) /* {{{ field name checker */
 {
 	int errors = 0;
 	if (assert_names_count) {
@@ -94,5 +89,21 @@ static int xc_check_names(const char *file, int line, const char *functionName, 
 	}
 	return errors;
 }
-')
 /* }}} */
+#endif
+#ifdef HAVE_XCACHE_TEST
+static void *xc_memsetptr(void *mem, void *content, size_t n) /* {{{ */
+{
+	void **p = (void **) mem;
+	void **end = (void **) ((char *) mem + n);
+	while (p < end - sizeof(content)) {
+		*p = content;
+		p += sizeof(content);
+	}
+	if (p < end) {
+		memset(p, -1, end - p);
+	}
+	return mem;
+}
+/* }}} */
+#endif

@@ -1,31 +1,3 @@
-#define MAX_DUP_STR_LEN 256
-
-define(`STRING_HELPER_T', `
-HashTable strings;
-')
-
-define(`STRING_HELPERS', `
-static inline size_t xc_zstrlen_char(const_zstr s) /* {{{ */
-{
-	return strlen(ZSTR_S(s));
-}
-/* }}} */
-#ifdef IS_UNICODE
-static inline size_t xc_zstrlen_uchar(zstr s) /* {{{ */
-{
-	return u_strlen(ZSTR_U(s));
-}
-/* }}} */
-static inline size_t xc_zstrlen(int type, const_zstr s) /* {{{ */
-{
-	return type == IS_UNICODE ? xc_zstrlen_uchar(s) : xc_zstrlen_char(s);
-}
-/* }}} */
-#else
-/* {{{ xc_zstrlen */
-#define xc_zstrlen(dummy, s) xc_zstrlen_char(s)
-/* }}} */
-#endif
 static inline void xc_calc_string_n(xc_processor_t *processor, zend_uchar type, const_zstr str, long size RELAYLINE_DC TSRMLS_DC) { /* {{{ */
 	pushdef(`PROCESSOR_TYPE', `calc')
 	pushdef(`__LINE__', `relayline')
@@ -76,4 +48,3 @@ static inline zstr xc_store_string_n(xc_processor_t *processor, zend_uchar type,
 	popdef(`PROCESSOR_TYPE')
 }
 /* }}} */
-')

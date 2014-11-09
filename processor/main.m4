@@ -1,6 +1,6 @@
 divert(-1)
 dnl ================ start ======================
-dnl define(`XCACHE_ENABLE_TEST')
+dnl #define HAVE_XCACHE_TEST
 dnl define(`DEBUG_SIZE')
 define(`USEMEMCPY')
 
@@ -71,7 +71,7 @@ define(`ALLOC', `
 		')
 		$1 = (REALTYPE *) (processor->p = (char *) ALIGN(processor->p));
 		ifelse(`$4', `', `
-				IFAUTOCHECK(`memsetptr($1, (void *) (unsigned long) __LINE__, SIZE);')
+				IFAUTOCHECK(`xc_memsetptr($1, (void *) (unsigned long) __LINE__, SIZE);')
 			', `
 				memset($1, 0, SIZE);
 		')
@@ -88,7 +88,7 @@ define(`ALLOC', `
 				REALTYPE*COUNT, `zval*1', `ALLOC_ZVAL($1);',
 				REALTYPE*COUNT, `HashTable*1', `ALLOC_HASHTABLE($1);',
 				`', `', `$1 = (REALTYPE *) emalloc(SIZE);')
-			IFAUTOCHECK(`memsetptr($1, (void *) __LINE__, SIZE);')
+			IFAUTOCHECK(`xc_memsetptr($1, (void *) __LINE__, SIZE);')
 		', `
 			$1 = (REALTYPE *) ecalloc(COUNT, sizeof($2));
 		')
@@ -118,20 +118,20 @@ define(`PROC_CLASS_ENTRY_P_EX', `
 	}
 ')
 dnl }}}
-dnl {{{ IFAUTOCHECKEX
-define(`IFAUTOCHECKEX', `ifdef(`XCACHE_ENABLE_TEST', `$1', `$2')')
-dnl }}}
 dnl {{{ IFAUTOCHECK
-define(`IFAUTOCHECK', `IFAUTOCHECKEX(`
-#ifndef NDEBUG
-		$1
+define(`IFAUTOCHECK', `
+#ifdef HAVE_XCACHE_TEST
+	$1
+ifelse(`$2', `', `
+#else
+	$2
+')
 #endif
-')')
+')
 dnl }}}
 dnl {{{ DBG
-define(`DBG', `ifdef(`XCACHE_ENABLE_TEST', `
-	/* `$1' */
-')')
+define(`DBG', `/* `$1' */
+')
 dnl }}}
 dnl {{{ EXPORT(1:code)
 define(`EXPORT', `/* export: $1 :export */')

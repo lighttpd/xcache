@@ -139,6 +139,9 @@ xc_cacher.c \
 	MFO.WriteLine(frag);
 	ADD_FLAG("CFLAGS_XCACHE", "/I " + builddir);
 	/// }}}
-	XCACHE_PROC_SOURCES=glob(srcdir + "\\processor\\*.m4").join(' ');
+	XCACHE_PROC_SOURCES = [];
+	XCACHE_PROC_SOURCES.concat(glob(srcdir + "\\processor\\*.m4"));
+	XCACHE_PROC_SOURCES.concat(glob(srcdir + "\\processor\\*.h"));
+	XCACHE_PROC_SOURCES = XCACHE_PROC_SOURCES.join(' ');
 	ADD_FLAG("XCACHE_PROC_SOURCES", XCACHE_PROC_SOURCES);
 }

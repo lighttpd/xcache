@@ -135,6 +135,6 @@ done
   PHP_SUBST([XCACHE_INDENT])
 
   dnl $ac_srcdir etc require PHP_NEW_EXTENSION
-  XCACHE_PROC_SOURCES=`ls $ac_srcdir/processor/*.m4`
+  XCACHE_PROC_SOURCES=`ls $ac_srcdir/processor/*.m4 $ac_srcdir/processor/*.h`
   PHP_SUBST([XCACHE_PROC_SOURCES])
 fi

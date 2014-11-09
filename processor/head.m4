@@ -1,5 +1,11 @@
-dnl {{{ === program start ========================================
+dnl === program start ========================================
 divert(0)
+ifdef(`XCACHE_ENABLE_TEST', `
+m4_errprint(`AUTOCHECK INFO: runtime autocheck Enabled (debug build)')
+', `
+m4_errprint(`AUTOCHECK INFO: runtime autocheck Disabled (optimized build)')
+')
+
 #include <string.h>
 #include <stdio.h>
 
@@ -25,11 +31,15 @@ EXPORT(`#include "xcache/xc_allocator.h"')
 #if defined(HARDENING_PATCH_HASH_PROTECT) && HARDENING_PATCH_HASH_PROTECT
 extern unsigned int zend_hash_canary;
 #endif
-dnl }}}
+dnl
 
-include(__dir__`/debug-helper.m4')
-include(__dir__`/type-helper.m4')
-include(__dir__`/string-helper.m4')
+#ifdef DEBUG_SIZE
+static int xc_totalsize = 0;
+#endif
+
+#include "processor/debug.h"
+#include "processor/types.h"
+include(__dir__`/types.m4')
 
 /* {{{ call op_array ctor handler */
 extern zend_bool xc_have_op_array_ctor;
@@ -40,54 +50,8 @@ static void xc_zend_extension_op_array_ctor_handler(zend_extension *extension, z
 	}
 }
 /* }}} */
-/* {{{ memsetptr */
-IFAUTOCHECK(`dnl
-static void *memsetptr(void *mem, void *content, size_t n)
-{
-	void **p = (void **) mem;
-	void **end = (void **) ((char *) mem + n);
-	while (p < end - sizeof(content)) {
-		*p = content;
-		p += sizeof(content);
-	}
-	if (p < end) {
-		memset(p, -1, end - p);
-	}
-	return mem;
-}
-')
-/* }}} */
-dnl {{{ _xc_processor_t
-typedef struct _xc_processor_t {
-	char *p;
-	size_t size;
-	HashTable zvalptrs;
-	zend_bool handle_reference; /* enable if to deal with reference */
-	zend_bool have_references;
-	ptrdiff_t relocatediff;
+#include "processor/processor-t.h"
 
-	const xc_entry_php_t *entry_php_src;
-	const xc_entry_php_t *entry_php_dst;
-	const xc_entry_data_php_t *php_src;
-	const xc_entry_data_php_t *php_dst;
-	const zend_class_entry *cache_ce;
-	zend_ulong cache_class_index;
-
-	const zend_op_array    *active_op_array_src;
-	zend_op_array          *active_op_array_dst;
-	const zend_class_entry *active_class_entry_src;
-	zend_class_entry       *active_class_entry_dst;
-	zend_uint                 active_class_index;
-	zend_uint                 active_op_array_index;
-	const xc_op_array_info_t *active_op_array_infos_src;
-
-	zend_bool readonly_protection; /* wheather it's present */
-
-	STRING_HELPER_T
-
-	IFAUTOCHECK(xc_vector_t allocsizes;)
-} xc_processor_t;
-dnl }}}
-STRING_HELPERS()
-
+#include "processor/string-helper.h"
+include(__dir__`/string-helper.m4')
 include(__dir__`/class-helper.m4')
