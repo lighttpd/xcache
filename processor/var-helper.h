@@ -63,7 +63,7 @@ static zend_class_entry *xc_var_index_to_ec(xc_processor_t *processor, size_t in
 	xc_constant_string_t *name = &processor->entry_var_src->class_names[index];
 	zend_class_entry *ce;
 
-	if (!(ce = xc_lookup_class(name->str, name->len+1 TSRMLS_CC))) {
+	if (!(ce = xc_lookup_class(name->str, name->len TSRMLS_CC))) {
 		ce = zend_standard_class_def;
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Class %s not found when restroing variable", name->str);
 	}
