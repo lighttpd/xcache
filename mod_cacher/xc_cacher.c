@@ -1423,7 +1423,9 @@ static void xc_collect_class_constant_info(xc_compiler_t *compiler, xc_const_usa
 
 			if ((Z_TYPE_P(constant) & IS_CONSTANT_TYPE_MASK) == IS_STRING) {
 				XCACHE_ANALYZE_CONSTANT(file, 0)
+#	ifdef ZEND_ENGINE_2_3
 				else XCACHE_ANALYZE_CONSTANT(dir, 0)
+#	endif
 			}
 #	ifdef IS_UNICODE
 			else if ((Z_TYPE_P(constant) & IS_CONSTANT_TYPE_MASK) == IS_UNICODE) {
@@ -1463,7 +1465,9 @@ static void xc_collect_op_array_info(xc_compiler_t *compiler, xc_const_usage_t *
 
 		if (Z_TYPE_P(constant) == IS_STRING) {
 			XCACHE_ANALYZE_CONSTANT(file, 0)
+#	ifdef ZEND_ENGINE_2_3
 			else XCACHE_ANALYZE_CONSTANT(dir, 0)
+#	endif
 		}
 #	ifdef IS_UNICODE
 		else if (Z_TYPE_P(constant) == IS_UNICODE) {
@@ -1520,7 +1524,7 @@ static void xc_collect_op_array_info(xc_compiler_t *compiler, xc_const_usage_t *
 			xc_constant_info_t detail;
 			detail.index = oplinenum;
 			detail.info  = constantinfo;
-			xc_vector_add(xc_constant_info_t, &constantinfos, detail);
+			xc_vector_push_back(&constantinfos, &detail);
 		}
 	}
 #endif /* ZEND_ENGINE_2_4 */
@@ -1583,9 +1587,11 @@ void xc_fix_class_info(const xc_entry_php_t *entry_php, xc_classinfo_t *classinf
 		if ((constantinfo & xcache_constant_is_file)) {
 			xc_restore_constant_string("class_constant", constant, Z_TYPE_P(constant), &entry_php->filepath, &entry_php->u_filepath, shallow_copy TSRMLS_CC);
 		}
+#	ifdef ZEND_ENGINE_2_3
 		else if ((constantinfo & xcache_constant_is_dir)) {
 			xc_restore_constant_string("class_constant", constant, Z_TYPE_P(constant), &entry_php->dirpath, &entry_php->u_dirpath, shallow_copy TSRMLS_CC);
 		}
+#	endif
 	}
 }
 /* }}} */
@@ -3669,7 +3675,7 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 			}
 
 			TRACE("%s", "incdec: notlong");
-			if (stored_entry_var->objects_count) {
+			if (stored_entry_var->class_names_count) {
 				php_error_docref(NULL TSRMLS_CC, E_WARNING, "Cannot convert object to integer");
 				value = 0;
 			}

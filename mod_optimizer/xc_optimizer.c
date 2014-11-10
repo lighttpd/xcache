@@ -518,7 +518,9 @@ static int bbs_build_from(bbs_t *bbs, zend_op_array *op_array, int count TSRMLS_
 static void bbs_restore_opnum(bbs_t *bbs, zend_op_array *op_array) /* {{{ */
 {
 	int bbid;
+#ifdef ZEND_ENGINE_2
 	int i;
+#endif
 
 	for (bbid = 0; bbid < bbs_count(bbs); bbid ++) {
 		op_flowinfo_t fi;

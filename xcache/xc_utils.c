@@ -641,8 +641,12 @@ void xc_copy_internal_zend_constants(HashTable *target, HashTable *source) /* {{
 zend_class_entry *xc_lookup_class(const char *class_name, int class_name_len, zend_bool autoload TSRMLS_DC) /* {{{ */
 {
 	xc_cest_t *cest;
-#ifdef ZEND_ENGINE_2
+#ifdef ZEND_ENGINE_2_4
 	if (zend_lookup_class_ex(class_name, class_name_len, NULL, autoload, &cest TSRMLS_CC) != SUCCESS) {
+		return NULL;
+	}
+#elif defined(ZEND_ENGINE_2)
+	if (zend_lookup_class_ex(class_name, class_name_len, autoload, &cest TSRMLS_CC) != SUCCESS) {
 		return NULL;
 	}
 #else

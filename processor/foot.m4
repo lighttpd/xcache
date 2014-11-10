@@ -153,7 +153,7 @@ EXPORTED_FUNCTION(`zval *xc_processor_restore_var(zval *dst, const xc_entry_var_
 #ifdef ZEND_ENGINE_2
 	if (src->objects_count) {
 		for (i = 0; i < src->objects_count; ++i) {
-			zend_objects_store_del_ref_by_handle_ex(processor.object_handles[i], NULL TSRMLS_CC);
+			zend_objects_store_del_ref_by_handle(processor.object_handles[i] TSRMLS_CC);
 		}
 		efree(processor.object_handles);
 	}

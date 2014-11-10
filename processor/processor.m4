@@ -1424,10 +1424,6 @@ DEF_STRUCT_P_FUNC(`xc_entry_var_t', , `dnl {{{
 		SRC(objects) = xc_vector_detach(zend_object, &processor->objects);
 		popdef(`src')
 		xc_vector_destroy(&processor->objects);
-		if (SRC(`objects_count')) {
-			xc_vector_init(xc_constant_string_t, &processor->class_names, 0);
-			zend_hash_init(&processor->class_name_to_index, 0, NULL, NULL, 0);
-		}
 	')
 	dnl must be after calc .value
 	PROCESS(zend_uint, objects_count)
@@ -1457,10 +1453,6 @@ DEF_STRUCT_P_FUNC(`xc_entry_var_t', , `dnl {{{
 	IFSTORE(`
 		/* no longer needed */
 		if (vsrc->class_names_count) {
-			dnl size_t i;
-			dnl for (i = 0; i < vsrc->class_names_count; ++i) {
-			dnl 	efree(vsrc->class_names[i]);
-			dnl }
 			efree(vsrc->class_names);
 			vsrc->class_names_count = 0;
 			vsrc->class_names = NULL;

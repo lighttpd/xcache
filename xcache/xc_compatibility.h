@@ -282,4 +282,15 @@ long xc_atol(const char *str, int len);
 #	endif
 #endif
 
+#if defined(ZEND_ENGINE_2) && !defined(ZEND_ENGINE_2_2)
+void *xc_object_store_get_object_by_handle(zend_object_handle handle TSRMLS_DC);
+#	define zend_object_store_get_object_by_handle xc_object_store_get_object_by_handle
+
+void xc_objects_store_add_ref_by_handle(zend_object_handle handle TSRMLS_DC);
+#	define zend_objects_store_add_ref_by_handle xc_objects_store_add_ref_by_handle
+
+void xc_objects_store_del_ref_by_handle(zend_object_handle handle TSRMLS_DC);
+#	define zend_objects_store_del_ref_by_handle xc_objects_store_del_ref_by_handle
+#endif
+
 #endif /* XC_COMPATIBILITY_H_54F26ED90198353558718191D5EE244C */
