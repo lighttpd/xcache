@@ -647,13 +647,21 @@ zend_class_entry *xc_lookup_class(const char *class_name, int class_name_len, ze
 	}
 #elif defined(ZEND_ENGINE_2)
 	if (zend_lookup_class_ex(class_name, class_name_len, autoload, &cest TSRMLS_CC) != SUCCESS) {
-		return NULL;
+		cest = NULL;
 	}
 #else
-	if (zend_hash_find(EG(class_table), class_name, class_name_len, (void **) &cest) != SUCCESS) {
-		return NULL;
+	char *lc_class_name;
+	ALLOCA_FLAG(use_heap);
+
+	lc_class_name = xc_do_alloca(sizeof(*class_name) * (class_name_len + 1), use_heap);
+	strcpy(lc_class_name, class_name);
+	zend_str_tolower(lc_class_name, class_name_len);
+
+	if (zend_hash_find(EG(class_table), lc_class_name, class_name_len + 1, (void **) &cest) != SUCCESS) {
+		cest = NULL;
 	}
+	xc_free_alloca(lc_class_name, use_heap);
 #endif
-	return CestToCePtr(*cest);
+	return cest ? CestToCePtr(*cest) : NULL;
 }
 /* }}} */

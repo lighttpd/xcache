@@ -44,7 +44,8 @@ static void xc_var_collect_class(xc_processor_t *processor, zend_class_entry *ce
 		zend_hash_init(&processor->class_name_to_index, 0, NULL, NULL, 0);
 	}
 
-	next_index = xc_vector_size(&processor->class_names);
+	/* HashTable <=PHP_4 cannot handle NULL pointers, +1 needed */
+	next_index = xc_vector_size(&processor->class_names) + 1;
 	if (zend_hash_add(&processor->class_name_to_index, ce->name, ce->name_length, (void *) &next_index, sizeof(next_index), NULL) == SUCCESS) {
 		xc_constant_string_t class_name;
 		class_name.str = (char *) ce->name;
@@ -59,10 +60,10 @@ static size_t xc_var_store_ce(xc_processor_t *processor, zend_class_entry *ce TS
 
 	if (zend_hash_find(&processor->class_name_to_index, ce->name, ce->name_length, (void **) &index) != SUCCESS) {
 		php_error_docref(NULL TSRMLS_CC, E_CORE_ERROR, "Internal error: class name not found in class names");
-		return (size_t) -1;
+		return (size_t) - 1;
 	}
 
-	return *index;
+	return *index - 1;
 }
 /* }}} */
 /* on restore */
