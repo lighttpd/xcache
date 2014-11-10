@@ -39,13 +39,14 @@ static void xc_var_collect_class(xc_processor_t *processor, zend_class_entry *ce
 	size_t next_index = xc_vector_size(&processor->class_names);
 
 	if (zend_hash_add(&processor->class_name_to_index, ce->name, ce->name_length, (void *) &next_index, sizeof(next_index), NULL) == SUCCESS) {
-		xc_constant_string_t class_name = { ce->name, ce->name_length };
+		xc_constant_string_t class_name;
+		class_name.str = (char *) ce->name;
+		class_name.len = ce->name_length;
 		xc_vector_push_back(&processor->class_names, &class_name);
 	}
 }
 /* }}} */
-/* on store */
-static size_t xc_var_ce_to_index(xc_processor_t *processor, zend_class_entry *ce TSRMLS_DC) /* {{{ */
+static size_t xc_var_store_ce(xc_processor_t *processor, zend_class_entry *ce TSRMLS_DC) /* {{{ */
 {
 	size_t *index;
 
@@ -58,15 +59,3 @@ static size_t xc_var_ce_to_index(xc_processor_t *processor, zend_class_entry *ce
 }
 /* }}} */
 /* on restore */
-static zend_class_entry *xc_var_index_to_ec(xc_processor_t *processor, size_t index TSRMLS_DC) /* {{{ */
-{
-	xc_constant_string_t *name = &processor->entry_var_src->class_names[index];
-	zend_class_entry *ce;
-
-	if (!(ce = xc_lookup_class(name->str, name->len TSRMLS_CC))) {
-		ce = zend_standard_class_def;
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Class %s not found when restroing variable", name->str);
-	}
-	return ce;
-}
-/* }}} */

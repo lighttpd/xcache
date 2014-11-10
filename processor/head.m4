@@ -55,7 +55,6 @@ static void xc_zend_extension_op_array_ctor_handler(zend_extension *extension, z
 #include "processor/string-helper.h"
 include(__dir__`/string-helper.m4')
 
-#include "processor/class-helper.h"
 include(__dir__`/class-helper.m4')
 
 #include "processor/var-helper.h"

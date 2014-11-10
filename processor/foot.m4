@@ -118,7 +118,7 @@ EXPORTED_FUNCTION(`xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t
 	return dst;
 }
 dnl }}}
-EXPORTED_FUNCTION(`zval *xc_processor_restore_var(zval *dst, const xc_entry_var_t *src TSRMLS_DC)') dnl {{{
+EXPORTED_FUNCTION(`zval *xc_processor_restore_var(zval *dst, const xc_entry_var_t *src, zend_class_entry **index_to_ce TSRMLS_DC)') dnl {{{
 {
 	xc_processor_t processor;
 	size_t i;
@@ -132,6 +132,7 @@ EXPORTED_FUNCTION(`zval *xc_processor_restore_var(zval *dst, const xc_entry_var_
 		zend_hash_add(&processor.zvalptrs, (char *)src->value, sizeof(src->value), (void *) &dst, sizeof(dst), NULL);
 	}
 	processor.entry_var_src = src;
+	processor.index_to_ce = index_to_ce;
 
 #ifdef ZEND_ENGINE_2
 	if (src->objects_count) {

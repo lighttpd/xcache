@@ -48,6 +48,7 @@ static inline void xc_vector_destroy_impl(xc_vector_t *vector TSRMLS_DC)
 }
 
 #define xc_vector_destroy(vector) xc_vector_destroy_impl(vector TSRMLS_CC)
+#define xc_vector_clear(vector) do { (vector)->size = 0; } while (0)
 
 #define xc_vector_size(vector) ((vector)->size)
 #define xc_vector_initialized(vector) ((vector)->data_size != 0)

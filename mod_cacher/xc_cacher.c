@@ -3319,6 +3319,9 @@ PHP_FUNCTION(xcache_get)
 	xc_cache_t *cache;
 	xc_entry_var_t entry_var, *stored_entry_var;
 	zval *name;
+	xc_vector_t index_to_ce = xc_vector_initializer(zend_class_entry *, 0);
+	xc_vector_t pending_class_names = xc_vector_initializer(xc_constant_string_t, 0);
+	zend_bool reload_class;
 	VAR_BUFFER_FLAGS(name);
 
 	if (!xc_var_caches) {
@@ -3338,17 +3341,73 @@ PHP_FUNCTION(xcache_get)
 		RETURN_NULL();
 	}
 
-	ENTER_LOCK(cache) {
-		stored_entry_var = (xc_entry_var_t *) xc_entry_find_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
-		if (stored_entry_var) {
-			/* return */
-			xc_processor_restore_var(return_value, stored_entry_var TSRMLS_CC);
+	do {
+		reload_class = 0;
+		if (xc_vector_size(&pending_class_names)) {
+			size_t i, end = xc_vector_size(&pending_class_names);
+			assert(end != 0);
+			for (i = 0; i < end; ++i) {
+				xc_constant_string_t *pending_class_name = &xc_vector_data(xc_constant_string_t, &pending_class_names)[i];
+				zend_class_entry *ce = xc_lookup_class(pending_class_name->str, pending_class_name->len, 1 TSRMLS_CC);
+				if (!ce) {
+					php_error_docref(NULL TSRMLS_CC, E_ERROR, "Class %s not found when restroing variable", pending_class_name->str);
+					break;
+				}
+			}
+			if (i != end) {
+				break;
+			}
+			xc_vector_clear(&pending_class_names);
+		}
+
+		ENTER_LOCK(cache) {
+			stored_entry_var = (xc_entry_var_t *) xc_entry_find_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
+			if (!stored_entry_var) {
+				RETVAL_NULL();
+				break;
+			}
+
+			if (stored_entry_var->class_names_count) {
+				zend_uint i;
+				/* see if lucky to have all classes needed already loaded */
+				for (i = 0; i < stored_entry_var->class_names_count; ++i) {
+					xc_constant_string_t *class_name = &stored_entry_var->class_names[i];
+					zend_class_entry *ce = xc_lookup_class(class_name->str, class_name->len, 0 TSRMLS_CC);
+
+					/* not found, add to pending */
+					if (!ce) {
+						xc_constant_string_t pending_class_name;
+						pending_class_name.str = estrndup(class_name->str, class_name->len);
+						pending_class_name.len = class_name->len;
+						xc_vector_push_back(&pending_class_names, &pending_class_name);
+						reload_class = 1;
+					}
+					else if (!reload_class) {
+						xc_vector_push_back(&index_to_ce, &ce);
+					}
+				}
+
+				if (reload_class) {
+					/* not all loaded, load it after unload and run another pass */
+					xc_vector_clear(&index_to_ce);
+					break;
+				}
+			}
+
+			xc_processor_restore_var(return_value, stored_entry_var, xc_vector_data(zend_class_entry *, &index_to_ce) TSRMLS_CC);
 			xc_cached_hit_unlocked(cache->cached TSRMLS_CC);
+		} LEAVE_LOCK(cache);
+	} while (reload_class);
+
+	if (xc_vector_size(&pending_class_names)) {
+		size_t i;
+		for (i = 0; i < xc_vector_size(&pending_class_names); ++i) {
+			efree(xc_vector_data(xc_constant_string_t, &pending_class_names)[i].str);
 		}
-		else {
-			RETVAL_NULL();
-		}
-	} LEAVE_LOCK(cache);
+	}
+	xc_vector_destroy(&pending_class_names);
+	xc_vector_destroy(&index_to_ce);
+
 	VAR_BUFFER_FREE(name);
 }
 /* }}} */
@@ -3615,7 +3674,7 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 				value = 0;
 			}
 			else {
-				xc_processor_restore_var(&oldzval, stored_entry_var TSRMLS_CC);
+				xc_processor_restore_var(&oldzval, stored_entry_var, NULL TSRMLS_CC);
 				convert_to_long(&oldzval);
 				value = Z_LVAL(oldzval);
 				zval_dtor(&oldzval);

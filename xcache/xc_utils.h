@@ -56,3 +56,5 @@ void xc_copy_internal_zend_constants(HashTable *target, HashTable *source);
 #ifndef ZEND_COMPILE_DELAYED_BINDING
 int xc_do_early_binding(zend_op_array *op_array, HashTable *class_table, int oplineno TSRMLS_DC);
 #endif
+
+zend_class_entry *xc_lookup_class(const char *class_name, int class_name_len, zend_bool autoload TSRMLS_DC);

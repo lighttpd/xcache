@@ -119,33 +119,18 @@ DEF_STRUCT_P_FUNC(`zend_ast', , `dnl {{{
 dnl }}}
 #endif
 DEF_STRUCT_P_FUNC(`zend_object', , `dnl {{{
-	dnl handle ce
-	dnl IFCALCSTORE(`
-	dnl 	pushdef(`SRC', `ifelse(`$1', `ce', `src->ce->name', `')')
-	dnl 	pushdef(`DST', `ifelse(`$1', `ce', `(*(char **)&dst->ce)', `')')
-	dnl 	PROC_STRING(`ce')
-	dnl 	popdef(`SRC')
-	dnl 	popdef(`DST')
-	dnl ', `IFRESTORE(`
-	dnl 	if (!(DST(`ce') = xc_lookup_class((const char *) SRC(`ce') TSRMLS_CC))) {
-	dnl 		DST(`ce') = zend_standard_class_def;
-	dnl 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Class %s not found when restroing variable", (const char *) SRC(`ce'));
-	dnl 	}
-	dnl 	DONE(`ce')
-	dnl ', `
-	dnl 	PROCESS(zend_ulong, ce)
-	dnl ')')
 	IFCALC(`
 		xc_var_collect_class(processor, SRC(ce) TSRMLS_CC);
 		DONE(ce)
 	', `IFSTORE(`
-		DST(ce) = (zend_class_entry *) xc_var_ce_to_index(processor, DST(ce) TSRMLS_CC);
+		DST(ce) = (zend_class_entry *) xc_var_store_ce(processor, DST(ce) TSRMLS_CC);
 		DONE(ce)
 	', `IFRESTORE(`
-		DST(ce) = xc_var_index_to_ec(processor, (size_t) DST(ce) TSRMLS_CC);
+		assert(processor->index_to_ce);
+		DST(ce) = processor->index_to_ce[(size_t) DST(ce)];
 		DONE(ce)
 	', `
-		PROCESS_SCALAR(ce, %lu, unsigned long)
+		PROCESS_SCALAR(ce, lu, unsigned long)
 	')')')
 
 	STRUCT_P(HashTable, properties, HashTable_zval_ptr)
