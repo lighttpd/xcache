@@ -3,6 +3,7 @@
  * api updates
  * cache defragment, cache to disk
  * added class const support for __FILE__ __DIR__
+ * adds support for object caching
  * updated disassembler decompiler support
 
 3.2.0 2014-09-18

@@ -38,16 +38,19 @@ typedef struct {
 
 static inline void xc_vector_destroy_impl(xc_vector_t *vector TSRMLS_DC)
 {
+	vector->size = 0;
 	if (vector->data) {
 		pefree(vector->data, vector->persistent);
+		vector->data = NULL;
 	}
 	vector->capacity = 0;
-	vector->size = 0;
+	vector->data_size = 0;
 }
 
 #define xc_vector_destroy(vector) xc_vector_destroy_impl(vector TSRMLS_CC)
 
 #define xc_vector_size(vector) ((vector)->size)
+#define xc_vector_initialized(vector) ((vector)->data_size != 0)
 #define xc_vector_element_ptr_(vector, index) ( \
 	(void *) ( \
 		((char *) (vector)->data) + (index) * (vector)->data_size \

@@ -3342,7 +3342,7 @@ PHP_FUNCTION(xcache_get)
 		stored_entry_var = (xc_entry_var_t *) xc_entry_find_unlocked(XC_TYPE_VAR, cache, entry_hash.entryslotid, (xc_entry_t *) &entry_var TSRMLS_CC);
 		if (stored_entry_var) {
 			/* return */
-			xc_processor_restore_zval(return_value, stored_entry_var->value, stored_entry_var->have_references TSRMLS_CC);
+			xc_processor_restore_var(return_value, stored_entry_var TSRMLS_CC);
 			xc_cached_hit_unlocked(cache->cached TSRMLS_CC);
 		}
 		else {
@@ -3381,11 +3381,6 @@ PHP_FUNCTION(xcache_set)
 	entry_var.entry.ttl = XG(var_ttl);
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zz|l", &name, &value, &entry_var.entry.ttl) == FAILURE) {
 		return;
-	}
-
-	if (Z_TYPE_P(value) == IS_OBJECT) {
-		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Objects cannot be stored in the variable cache. Use serialize before xcache_set");
-		RETURN_NULL();
 	}
 
 	/* max ttl */
@@ -3615,10 +3610,16 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 			}
 
 			TRACE("%s", "incdec: notlong");
-			xc_processor_restore_zval(&oldzval, stored_entry_var->value, stored_entry_var->have_references TSRMLS_CC);
-			convert_to_long(&oldzval);
-			value = Z_LVAL(oldzval);
-			zval_dtor(&oldzval);
+			if (stored_entry_var->objects_count) {
+				php_error_docref(NULL TSRMLS_CC, E_WARNING, "Cannot convert object to integer");
+				value = 0;
+			}
+			else {
+				xc_processor_restore_var(&oldzval, stored_entry_var TSRMLS_CC);
+				convert_to_long(&oldzval);
+				value = Z_LVAL(oldzval);
+				zval_dtor(&oldzval);
+			}
 		}
 		else {
 			TRACE("incdec: %s not found", entry_var.entry.name.str.val);

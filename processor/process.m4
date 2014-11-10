@@ -69,6 +69,7 @@ define(`PROCESS', `dnl PROCESS(1:type, 2:elm)
 	, `$1', `xc_entry_type_t',  `PROCESS_SCALAR(`$2', `d',  `$1')'
 	, `$1', `xc_hash_value_t',  `PROCESS_SCALAR(`$2', `lu', `$1')'
 	, `$1', `last_brk_cont_t',  `PROCESS_SCALAR(`$2', `d', `$1')'
+	, `$1', `zend_object_handle',`PROCESS_SCALAR(`$2', `d', `$1')'
 
 	, `$1', `xc_ztstring',       `PROCESS_xc_ztstring(`$2')'
 	, `$1', `xc_zval_type_t',    `PROCESS_xc_zval_type_t(`$2')'

@@ -112,3 +112,5 @@ static void xc_fix_method(xc_processor_t *processor, zend_op_array *dst TSRMLS_D
 }
 /* }}} */
 #endif
+
+define(`xc_lookup_class', `IFRESTORE(``xc_lookup_class'($@)',``xc_lookup_class' can be use in restore only')')

@@ -83,9 +83,9 @@ err_alloc:
 }
 dnl }}}
 ')
-DEFINE_STORE_API(`xc_entry_var_t')
 DEFINE_STORE_API(`xc_entry_php_t')
 DEFINE_STORE_API(`xc_entry_data_php_t')
+DEFINE_STORE_API(`xc_entry_var_t')
 EXPORTED_FUNCTION(`xc_entry_php_t *xc_processor_restore_xc_entry_php_t(xc_entry_php_t *dst, const xc_entry_php_t *src TSRMLS_DC)') dnl {{{
 {
 	xc_processor_t processor;
@@ -118,22 +118,45 @@ EXPORTED_FUNCTION(`xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t
 	return dst;
 }
 dnl }}}
-EXPORTED_FUNCTION(`zval *xc_processor_restore_zval(zval *dst, const zval *src, zend_bool have_references TSRMLS_DC)') dnl {{{
+EXPORTED_FUNCTION(`zval *xc_processor_restore_var(zval *dst, const xc_entry_var_t *src TSRMLS_DC)') dnl {{{
 {
 	xc_processor_t processor;
+	size_t i;
 
 	memset(&processor, 0, sizeof(processor));
-	processor.handle_reference = have_references;
+	processor.handle_reference = src->have_references;
 
 	if (processor.handle_reference) {
 		zend_hash_init(&processor.zvalptrs, 0, NULL, NULL, 0);
 		dnl fprintf(stderr, "mark[%p] = %p\n", src, dst);
-		zend_hash_add(&processor.zvalptrs, (char *)src, sizeof(src), (void*)&dst, sizeof(dst), NULL);
+		zend_hash_add(&processor.zvalptrs, (char *)src->value, sizeof(src->value), (void *) &dst, sizeof(dst), NULL);
 	}
-	xc_restore_zval(&processor, dst, src TSRMLS_CC);
+	processor.entry_var_src = src;
+
+#ifdef ZEND_ENGINE_2
+	if (src->objects_count) {
+		processor.object_handles = emalloc(sizeof(*processor.object_handles) * src->objects_count);
+		xc_vector_init(zend_object_handle, &processor.objects, 0);
+		for (i = 0; i < src->objects_count; ++i) {
+			zend_object *object = emalloc(sizeof(*object));
+			xc_restore_zend_object(&processor, object, &src->objects[i] TSRMLS_CC);
+			processor.object_handles[i] = zend_objects_store_put(object, (zend_objects_store_dtor_t) zend_objects_destroy_object, (zend_objects_free_object_storage_t) zend_objects_free_object_storage, NULL TSRMLS_CC);
+		}
+	}
+#endif
+	xc_restore_zval(&processor, dst, src->value TSRMLS_CC);
 	if (processor.handle_reference) {
 		zend_hash_destroy(&processor.zvalptrs);
 	}
+
+#ifdef ZEND_ENGINE_2
+	if (src->objects_count) {
+		for (i = 0; i < src->objects_count; ++i) {
+			zend_objects_store_del_ref_by_handle_ex(processor.object_handles[i], NULL TSRMLS_CC);
+		}
+		efree(processor.object_handles);
+	}
+#endif
 
 	return dst;
 }

@@ -184,6 +184,14 @@ typedef struct {
 	zend_uchar name_type;
 #endif
 	zval      *value;
+
+#ifdef ZEND_ENGINE_2
+	zend_uint objects_count;
+	zend_object *objects;
+#endif
+	zend_uint class_names_count;
+	xc_constant_string_t *class_names;
+
 	zend_bool  have_references;
 } xc_entry_var_t;
 /* }}} */

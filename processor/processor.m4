@@ -118,6 +118,64 @@ DEF_STRUCT_P_FUNC(`zend_ast', , `dnl {{{
 ')
 dnl }}}
 #endif
+DEF_STRUCT_P_FUNC(`zend_object', , `dnl {{{
+	dnl handle ce
+	dnl IFCALCSTORE(`
+	dnl 	pushdef(`SRC', `ifelse(`$1', `ce', `src->ce->name', `')')
+	dnl 	pushdef(`DST', `ifelse(`$1', `ce', `(*(char **)&dst->ce)', `')')
+	dnl 	PROC_STRING(`ce')
+	dnl 	popdef(`SRC')
+	dnl 	popdef(`DST')
+	dnl ', `IFRESTORE(`
+	dnl 	if (!(DST(`ce') = xc_lookup_class((const char *) SRC(`ce') TSRMLS_CC))) {
+	dnl 		DST(`ce') = zend_standard_class_def;
+	dnl 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Class %s not found when restroing variable", (const char *) SRC(`ce'));
+	dnl 	}
+	dnl 	DONE(`ce')
+	dnl ', `
+	dnl 	PROCESS(zend_ulong, ce)
+	dnl ')')
+	IFCALC(`
+		xc_var_collect_class(processor, SRC(ce) TSRMLS_CC);
+		DONE(ce)
+	', `IFSTORE(`
+		DST(ce) = (zend_class_entry *) xc_var_ce_to_index(processor, DST(ce) TSRMLS_CC);
+		DONE(ce)
+	', `IFRESTORE(`
+		DST(ce) = xc_var_index_to_ec(processor, (size_t) DST(ce) TSRMLS_CC);
+		DONE(ce)
+	', `
+		PROCESS_SCALAR(ce, %lu, unsigned long)
+	')')')
+
+	STRUCT_P(HashTable, properties, HashTable_zval_ptr)
+#ifdef ZEND_ENGINE_2_4
+	dnl TODO: how to rebuild properties_table
+	STRUCT_ARRAY(int, ce->default_properties_count, zval_ptr, properties_table)
+#endif
+#ifdef ZEND_ENGINE_2
+	COPYNULL(`guards')
+#endif
+')
+dnl }}}
+#ifdef ZEND_ENGINE_2
+DEF_STRUCT_P_FUNC(`zend_object_value', , `dnl {{{
+	IFCALC(`
+		xc_var_collect_object(processor, SRC(handle) TSRMLS_CC);
+		DONE(handle)
+	', `IFSTORE(`
+		DST(handle) = (zend_object_handle) xc_var_store_handle(processor, DST(handle) TSRMLS_CC);
+		DONE(handle)
+	', `IFRESTORE(`
+		DST(handle) = xc_var_restore_handle(processor, (size_t) DST(handle) TSRMLS_CC);
+		DONE(handle)
+	', `
+		PROCESS(zend_object_handle, handle)
+	')')')
+	COPY(handlers)
+')
+dnl }}}
+#endif
 DEF_STRUCT_P_FUNC(`zval', , `dnl {{{
 	IFDASM(`do {
 		zval_dtor(DST());
@@ -141,7 +199,6 @@ dnl {{{ zvalue_value
 		DISABLECHECK(`
 		switch ((Z_TYPE_P(SRC()) & IS_CONSTANT_TYPE_MASK)) {
 			case IS_LONG:
-			case IS_RESOURCE:
 			case IS_BOOL:
 				PROCESS(long, value.lval)
 				break;
@@ -195,16 +252,18 @@ proc_unicode:
 #endif
 
 			case IS_OBJECT:
-				IFNOTMEMCPY(`IFCOPY(`memcpy(DST(), SRC(), sizeof(SRC()[0]));')')
-				dnl STRUCT(value.obj)
-#ifndef ZEND_ENGINE_2
-				STRUCT_P(zend_class_entry, value.obj.ce)
-				STRUCT_P(HashTable, value.obj.properties, HashTable_zval_ptr)
+#ifdef ZEND_ENGINE_2
+				STRUCT(zend_object_value, value.obj)
+#else
+				STRUCT(zend_object, value.obj)
 #endif
 				break;
 
 			default:
-				assert(0);
+				/* IS_RESOURCE */
+				IFCOPY(`Z_TYPE_P(DST()) = IS_LONG;')
+				PROCESS(long, value.lval)
+				break;
 		}
 		')
 dnl }}}
@@ -1339,6 +1398,9 @@ DEF_STRUCT_P_FUNC(`xc_entry_php_t', , `dnl {{{
 ')
 dnl }}}
 DEF_STRUCT_P_FUNC(`xc_entry_var_t', , `dnl {{{
+	IFCALCSTORE(`xc_entry_var_t *vsrc = /* const_cast */ (xc_entry_var_t *) src;')
+
+	dnl restore is done in foot.m4
 	STRUCT(xc_entry_t, entry)
 
 #ifdef IS_UNICODE
@@ -1368,6 +1430,59 @@ DEF_STRUCT_P_FUNC(`xc_entry_var_t', , `dnl {{{
 
 	IFDPRINT(`INDENT()`'fprintf(stderr, "zval:value");')
 	STRUCT_P_EX(zval_ptr, DST(`value'), SRC(`value'), `value', `', `&')
+
+#ifdef ZEND_ENGINE_2
+	IFCALC(`
+		dnl objects = collect_from(value);
+		pushdef(`src', `vsrc')
+		SRC(objects_count) = xc_vector_size(&processor->objects);
+		SRC(objects) = xc_vector_detach(zend_object, &processor->objects);
+		popdef(`src')
+		xc_vector_destroy(&processor->objects);
+		if (SRC(`objects_count')) {
+			xc_vector_init(xc_constant_string_t, &processor->class_names, 0);
+			zend_hash_init(&processor->class_name_to_index, 0, NULL, NULL, 0);
+		}
+	')
+	dnl must be after calc .value
+	PROCESS(zend_uint, objects_count)
+	STRUCT_ARRAY(zend_uint, objects_count, zend_object, objects)
+	IFSTORE(`{
+		/* no longer needed */
+		if (vsrc->objects_count) {
+			efree(vsrc->objects);
+			vsrc->objects_count = 0;
+			vsrc->objects = NULL;
+			zend_hash_destroy(&processor->handle_to_index);
+		}
+	}')
+#endif
+
+	dnl classe_
+	IFCALC(`
+		dnl class_names = collect_from(objects);
+		pushdef(`src', `vsrc')
+		SRC(class_names_count) = xc_vector_size(&processor->class_names);
+		SRC(class_names) = xc_vector_detach(xc_constant_string_t, &processor->class_names);
+		popdef(`src')
+		xc_vector_destroy(&processor->class_names);
+	')
+	PROCESS(zend_uint, class_names_count)
+	STRUCT_ARRAY(zend_uint, class_names_count, xc_constant_string_t, class_names)
+	IFSTORE(`
+		/* no longer needed */
+		if (vsrc->class_names_count) {
+			dnl size_t i;
+			dnl for (i = 0; i < vsrc->class_names_count; ++i) {
+			dnl 	efree(vsrc->class_names[i]);
+			dnl }
+			efree(vsrc->class_names);
+			vsrc->class_names_count = 0;
+			vsrc->class_names = NULL;
+			zend_hash_destroy(&processor->class_name_to_index);
+		}
+	')
+
 	PROCESS(zend_bool, have_references)
 	DONE(value)
 ')

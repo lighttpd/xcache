@@ -24,6 +24,7 @@ typedef struct _xc_processor_t {
 	zend_bool readonly_protection; /* wheather it's present */
 
 	#include "processor/string-helper-t.h"
+	#include "processor/var-helper-t.h"
 
 #ifdef HAVE_XCACHE_TEST
 	xc_vector_t allocsizes;
