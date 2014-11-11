@@ -4,7 +4,7 @@ static void xc_var_collect_object(xc_processor_t *processor, zend_object_handle 
 	size_t next_index;
 
 	if (!xc_vector_initialized(&processor->objects)) {
-		xc_vector_init(zend_object, &processor->objects, 0);
+		xc_vector_init(zend_object, &processor->objects);
 		zend_hash_init(&processor->handle_to_index, 0, NULL, NULL, 0);
 	}
 
@@ -40,7 +40,7 @@ static void xc_var_collect_class(xc_processor_t *processor, zend_class_entry *ce
 	size_t next_index;
 
 	if (!xc_vector_initialized(&processor->class_names)) {
-		xc_vector_init(xc_constant_string_t, &processor->class_names, 0);
+		xc_vector_init(xc_constant_string_t, &processor->class_names);
 		zend_hash_init(&processor->class_name_to_index, 0, NULL, NULL, 0);
 	}
 

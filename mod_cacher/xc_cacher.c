@@ -2827,7 +2827,7 @@ static void xc_holds_init(TSRMLS_D) /* {{{ */
 		XG(php_holds_size) = xc_php_hcache.size;
 		XG(php_holds) = calloc(XG(php_holds_size), sizeof(xc_vector_t));
 		for (i = 0; i < xc_php_hcache.size; i ++) {
-			xc_vector_init(xc_entry_php_t *, &XG(php_holds[i]), 1);
+			xc_vector_pinit(xc_entry_php_t *, &XG(php_holds[i]));
 		}
 	}
 
@@ -2835,7 +2835,7 @@ static void xc_holds_init(TSRMLS_D) /* {{{ */
 		XG(var_holds_size) = xc_var_hcache.size;
 		XG(var_holds) = calloc(XG(var_holds_size), sizeof(xc_vector_t));
 		for (i = 0; i < xc_var_hcache.size; i ++) {
-			xc_vector_init(xc_entry_php_t *, &XG(var_holds[i]), 1);
+			xc_vector_pinit(xc_entry_php_t *, &XG(var_holds[i]));
 		}
 	}
 }

@@ -12,7 +12,7 @@ EXPORTED_FUNCTION(`$1 *xc_processor_store_$1(const xc_processor_storage_t *stora
 	processor.handle_reference = 1;
 	processor.relocatediff = storage->relocatediff;
 
-	IFAUTOCHECK(`xc_vector_init(unsigned long, &processor.allocsizes, 0);')
+	IFAUTOCHECK(`xc_vector_init(unsigned long, &processor.allocsizes);')
 
 	/* calc size */ {
 		zend_hash_init(&processor.strings, 0, NULL, NULL, 0);
