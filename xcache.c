@@ -716,6 +716,11 @@ static void xcache_signal_handler(int sig) /* {{{ */
 /* }}} */
 #endif
 
+static zend_bool xc_is_xcache(const char *name) /* {{{ */
+{
+	return strcmp(name, XCACHE_NAME) == 0 || strncmp(name, XCACHE_NAME " ", sizeof(XCACHE_NAME " ") - 1) == 0;
+}
+/* }}} */
 /* {{{ incompatible zend extensions handling */
 typedef struct {
 	const char *name;
@@ -790,7 +795,7 @@ static int xc_incompatible_zend_extension_startup_hook(zend_extension *extension
 
 		ext = (zend_extension *) element->data;
 
-		if (!(strcmp(ext->name, XCACHE_NAME) == 0 || strncmp(ext->name, XCACHE_NAME " ", sizeof(XCACHE_NAME " ") - 1) == 0)) {
+		if (!xc_is_xcache(ext->name)) {
 			xc_zend_llist_add_element(&zend_extensions, element);
 			++zend_extensions.count;
 		}
@@ -989,6 +994,34 @@ static PHP_MSHUTDOWN_FUNCTION(xcache) /* {{{ */
 
 	UNREGISTER_INI_ENTRIES();
 	xcache_zend_extension_remove(&xc_zend_extension_entry);
+
+#ifndef ZEND_ENGINE_2
+	/* XCache main module is registered last of all XCache modules in PHP_4
+	 * move handle to first XCache module to avoid early unload of this dll(so)
+	 */
+	{
+		zend_module_entry *handle_holder = NULL, *first = NULL;
+		Bucket *p;
+		
+		for (p = module_registry.pListHead; p; p = p->pListNext) {
+			zend_module_entry *module = p->pData;
+			if (xc_is_xcache(module->name)) {
+				if (!first) {
+					first = module;
+				}
+				if (module->handle) {
+					handle_holder = module;
+					break;
+				}
+			}
+		}
+
+		if (first && handle_holder && handle_holder != first) {
+			first->handle = handle_holder->handle;
+			handle_holder->handle = NULL;
+		}
+	}
+#endif
 	return SUCCESS;
 }
 /* }}} */
