@@ -137,7 +137,7 @@ EXPORTED_FUNCTION(`zval *xc_processor_restore_var(zval *dst, const xc_entry_var_
 		int i;
 		size_t size = sizeof(processor.object_handles[0]) * src->objects_count;
 		processor.object_handles = emalloc(size);
-		IFAUTOCHECK(`xc_memsetptr(processor.object_handles, -1, size);')
+		IFAUTOCHECK(`xc_memsetptr(processor.object_handles, (void *) -1, size);')
 		/* other objects in $object->properties after $object, reverse order is necessary */
 		for (i = src->objects_count - 1; i >= 0; --i) {
 			zend_object *object = emalloc(sizeof(*object));
