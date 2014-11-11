@@ -121,7 +121,6 @@ dnl }}}
 EXPORTED_FUNCTION(`zval *xc_processor_restore_var(zval *dst, const xc_entry_var_t *src, zend_class_entry **index_to_ce TSRMLS_DC)') dnl {{{
 {
 	xc_processor_t processor;
-	size_t i;
 
 	memset(&processor, 0, sizeof(processor));
 	processor.handle_reference = src->have_references;
@@ -135,6 +134,7 @@ EXPORTED_FUNCTION(`zval *xc_processor_restore_var(zval *dst, const xc_entry_var_
 
 #ifdef ZEND_ENGINE_2
 	if (src->objects_count) {
+		zend_uint i;
 		processor.object_handles = emalloc(sizeof(*processor.object_handles) * src->objects_count);
 		for (i = 0; i < src->objects_count; ++i) {
 			zend_object *object = emalloc(sizeof(*object));
@@ -150,6 +150,7 @@ EXPORTED_FUNCTION(`zval *xc_processor_restore_var(zval *dst, const xc_entry_var_
 
 #ifdef ZEND_ENGINE_2
 	if (src->objects_count) {
+		zend_uint i;
 		for (i = 0; i < src->objects_count; ++i) {
 			zend_objects_store_del_ref_by_handle(processor.object_handles[i] TSRMLS_CC);
 		}

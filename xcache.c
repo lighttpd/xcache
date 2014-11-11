@@ -539,6 +539,7 @@ static zend_function_entry xcache_functions[] = /* {{{ */
 	PHP_FE(xcache_get_op_type,       arginfo_xcache_get_op_type)
 	PHP_FE(xcache_get_data_type,     arginfo_xcache_get_data_type)
 	PHP_FE(xcache_get_opcode,        arginfo_xcache_get_opcode)
+	PHP_FE(xcache_get_op_spec,       arginfo_xcache_get_op_spec)
 	PHP_FE(xcache_get_opcode_spec,   arginfo_xcache_get_opcode_spec)
 	PHP_FE(xcache_coredump,          arginfo_xcache_coredump)
 	PHP_FE(xcache_is_autoglobal,     arginfo_xcache_is_autoglobal)

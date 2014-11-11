@@ -247,6 +247,7 @@ size_t xc_mutex_size(void) /* {{{ */
 xc_mutex_t *xc_mutex_init(xc_mutex_t *const shared_mutex, const char *pathname, unsigned char want_inter_process) /* {{{ */
 {
 	xc_mutex_t *mutex = NULL;
+	(void) want_inter_process; /* may be unused */
 
 #ifndef HAVE_FORK
 	want_inter_process = 0;
