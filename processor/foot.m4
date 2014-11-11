@@ -131,17 +131,15 @@ EXPORTED_FUNCTION(`zval *xc_processor_restore_var(zval *dst, const xc_entry_var_
 		dnl fprintf(stderr, "mark[%p] = %p\n", src, dst);
 		zend_hash_add(&processor.zvalptrs, (char *)src->value, sizeof(src->value), (void *) &dst, sizeof(dst), NULL);
 	}
-	processor.entry_var_src = src;
 	processor.index_to_ce = index_to_ce;
 
 #ifdef ZEND_ENGINE_2
 	if (src->objects_count) {
 		processor.object_handles = emalloc(sizeof(*processor.object_handles) * src->objects_count);
-		xc_vector_init(zend_object_handle, &processor.objects, 0);
 		for (i = 0; i < src->objects_count; ++i) {
 			zend_object *object = emalloc(sizeof(*object));
-			xc_restore_zend_object(&processor, object, &src->objects[i] TSRMLS_CC);
 			processor.object_handles[i] = zend_objects_store_put(object, (zend_objects_store_dtor_t) zend_objects_destroy_object, (zend_objects_free_object_storage_t) zend_objects_free_object_storage, NULL TSRMLS_CC);
+			xc_restore_zend_object(&processor, object, &src->objects[i] TSRMLS_CC);
 		}
 	}
 #endif

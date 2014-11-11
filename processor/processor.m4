@@ -123,11 +123,11 @@ DEF_STRUCT_P_FUNC(`zend_object', , `dnl {{{
 		xc_var_collect_class(processor, SRC(ce) TSRMLS_CC);
 		DONE(ce)
 	', `IFSTORE(`
-		DST(ce) = (zend_class_entry *) xc_var_store_ce(processor, DST(ce) TSRMLS_CC);
+		DST(ce) = (zend_class_entry *) xc_var_store_ce(processor, SRC(ce) TSRMLS_CC);
 		DONE(ce)
 	', `IFRESTORE(`
 		assert(processor->index_to_ce);
-		DST(ce) = processor->index_to_ce[(size_t) DST(ce)];
+		DST(ce) = processor->index_to_ce[(size_t) SRC(ce)];
 		DONE(ce)
 	', `
 		PROCESS_SCALAR(ce, lu, unsigned long)
@@ -149,10 +149,10 @@ DEF_STRUCT_P_FUNC(`zend_object_value', , `dnl {{{
 		xc_var_collect_object(processor, SRC(handle) TSRMLS_CC);
 		DONE(handle)
 	', `IFSTORE(`
-		DST(handle) = (zend_object_handle) xc_var_store_handle(processor, DST(handle) TSRMLS_CC);
+		DST(handle) = (zend_object_handle) xc_var_store_handle(processor, SRC(handle) TSRMLS_CC);
 		DONE(handle)
 	', `IFRESTORE(`
-		DST(handle) = xc_var_restore_handle(processor, (size_t) DST(handle) TSRMLS_CC);
+		DST(handle) = xc_var_restore_handle(processor, (size_t) SRC(handle) TSRMLS_CC);
 		DONE(handle)
 	', `
 		PROCESS(zend_object_handle, handle)
@@ -1384,6 +1384,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_php_t', , `dnl {{{
 dnl }}}
 DEF_STRUCT_P_FUNC(`xc_entry_var_t', , `dnl {{{
 	IFCALCSTORE(`xc_entry_var_t *vsrc = /* const_cast */ (xc_entry_var_t *) src;')
+	IFRESTORE(`processor->entry_var_src = src;')
 
 	dnl restore is done in foot.m4
 	STRUCT(xc_entry_t, entry)

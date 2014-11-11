@@ -20,7 +20,7 @@ static size_t xc_var_store_handle(xc_processor_t *processor, zend_object_handle 
 	size_t *index;
 
 	if (zend_hash_index_find(&processor->handle_to_index, handle, (void **) &index) != SUCCESS) {
-		php_error_docref(NULL TSRMLS_CC, E_CORE_ERROR, "Internal error: handle not found in objects");
+		php_error_docref(NULL TSRMLS_CC, E_CORE_ERROR, "Internal error: handle %d not found in objects", handle);
 		return (size_t) -1;
 	}
 
