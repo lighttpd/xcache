@@ -3,15 +3,15 @@ static void xc_var_collect_object(xc_processor_t *processor, zend_object_handle 
 {
 	size_t next_index;
 
-	if (!xc_vector_initialized(&processor->objects)) {
-		xc_vector_init(zend_object, &processor->objects);
+	if (!xc_vector_initialized(&processor->object_handles)) {
+		xc_vector_init(zend_object, &processor->object_handles);
 		zend_hash_init(&processor->handle_to_index, 0, NULL, NULL, 0);
 	}
 
-	next_index = xc_vector_size(&processor->objects);
+	next_index = xc_vector_size(&processor->object_handles);
 	if (_zend_hash_index_update_or_next_insert(&processor->handle_to_index, handle, (void *) &next_index, sizeof(next_index), NULL, HASH_ADD ZEND_FILE_LINE_CC) == SUCCESS) {
 		zend_object *object = zend_object_store_get_object_by_handle(handle TSRMLS_CC);
-		xc_vector_push_back(&processor->objects, object);
+		xc_vector_push_back(&processor->object_handles, object);
 	}
 }
 /* }}} */
@@ -20,7 +20,7 @@ static size_t xc_var_store_handle(xc_processor_t *processor, zend_object_handle 
 	size_t *index;
 
 	if (zend_hash_index_find(&processor->handle_to_index, handle, (void **) &index) != SUCCESS) {
-		php_error_docref(NULL TSRMLS_CC, E_CORE_ERROR, "Internal error: handle %d not found in objects", handle);
+		php_error_docref(NULL TSRMLS_CC, E_CORE_ERROR, "Internal error: handle %d not found on store", handle);
 		return (size_t) -1;
 	}
 
@@ -29,7 +29,7 @@ static size_t xc_var_store_handle(xc_processor_t *processor, zend_object_handle 
 /* }}} */
 static zend_object_handle xc_var_restore_handle(xc_processor_t *processor, size_t index TSRMLS_DC) /* {{{ */
 {
-	zend_object_handle handle = processor->object_handles[index];
+	zend_object_handle handle = xc_vector_data(zend_object_handle, &processor->object_handles)[index];
 	zend_objects_store_add_ref_by_handle(handle TSRMLS_CC);
 	return handle;
 }

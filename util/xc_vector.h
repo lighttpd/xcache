@@ -35,7 +35,7 @@ typedef struct {
 } while (0)
 
 #define xc_vector_init(type, vector) xc_vector_init_ex(type, vector, NULL, 0, 0)
-#define xc_vector_pinit(type, vector) xc_vector_init_ex(type, vector, NULL, 0, 1)
+#define xc_vector_init_persistent(type, vector) xc_vector_init_ex(type, vector, NULL, 0, 1)
 
 static inline void xc_vector_destroy_impl(xc_vector_t *vector TSRMLS_DC)
 {
@@ -67,17 +67,37 @@ static inline xc_vector_t *xc_vector_check_type_(xc_vector_t *vector, size_t dat
 
 #define xc_vector_data(type, vector) ((type *) xc_vector_check_type_(vector, sizeof(type))->data_)
 
+static void xc_vector_reserve_impl(xc_vector_t *vector, size_t capacity TSRMLS_DC)
+{
+	assert(capacity);
+	if (!vector->capacity_) {
+		vector->capacity_ = 8;
+	}
+	while (vector->capacity_ <= capacity) {
+		vector->capacity_ <<= 1;
+	}
+	vector->data_ = perealloc(vector->data_, vector->data_size_ * vector->capacity_, vector->persistent_);
+}
+#define xc_vector_reserve(vector, capacity) xc_vector_reserve_impl(vector, capacity TSRMLS_CC)
+
+static void xc_vector_resize_impl(xc_vector_t *vector, size_t size TSRMLS_DC)
+{
+	assert(size);
+	xc_vector_reserve(vector, size);
+	vector->size_ = size;
+}
+#define xc_vector_resize(vector, size) xc_vector_resize_impl(vector, size TSRMLS_CC)
+
 static inline void xc_vector_check_reserve_(xc_vector_t *vector TSRMLS_DC)
 {
 	if (vector->size_ == vector->capacity_) {
 		if (vector->capacity_) {
 			vector->capacity_ <<= 1;
-			vector->data_ = perealloc(vector->data_, vector->data_size_ * vector->capacity_, vector->persistent_);
 		}
 		else {
 			vector->capacity_ = 8;
-			vector->data_ = pemalloc(vector->data_size_ * vector->capacity_, vector->persistent_);
 		}
+		vector->data_ = perealloc(vector->data_, vector->data_size_ * vector->capacity_, vector->persistent_);
 	}
 }
 
