@@ -1,17 +1,59 @@
 #ifdef ZEND_ENGINE_2
+static void xc_var_collect_object(xc_processor_t *processor, zend_object_handle handle TSRMLS_DC);
+static void xc_var_collect_object_in_zval(xc_processor_t *processor, zval *zv TSRMLS_DC);
+static void xc_var_collect_object_in_hashtable(xc_processor_t *processor, HashTable *ht TSRMLS_DC);
+
+static void xc_var_collect_object_in_hashtable(xc_processor_t *processor, HashTable *ht TSRMLS_DC) /* {{{ */
+{
+	Bucket *bucket;
+	for (bucket = ht->pListHead; bucket; bucket = bucket->pListNext) {
+		xc_var_collect_object_in_zval(processor, *(zval **) bucket->pData TSRMLS_CC);
+	}
+}
+/* }}} */
+static void xc_var_collect_object_in_zval(xc_processor_t *processor, zval *zv TSRMLS_DC) /* {{{ */
+{
+	switch (Z_TYPE_P(zv)) {
+	case IS_OBJECT:
+		xc_var_collect_object(processor, Z_OBJ_HANDLE_P(zv) TSRMLS_CC);
+		break;
+
+	case IS_ARRAY:
+		xc_var_collect_object_in_hashtable(processor, Z_ARRVAL_P(zv) TSRMLS_CC);
+		break;
+	}
+}
+/* }}} */
 static void xc_var_collect_object(xc_processor_t *processor, zend_object_handle handle TSRMLS_DC) /* {{{ */
 {
 	size_t next_index;
 
-	if (!xc_vector_initialized(&processor->object_handles)) {
-		xc_vector_init(zend_object, &processor->object_handles);
+	if (!xc_vector_initialized(&processor->objects)) {
+		if (zend_hash_num_elements(&processor->handle_to_index)) {
+			/* collecting process is stopped, may reach here by xc_entry_src_t.objects.properties */
+			return;
+		}
+		xc_vector_init(zend_object, &processor->objects);
 		zend_hash_init(&processor->handle_to_index, 0, NULL, NULL, 0);
 	}
 
-	next_index = xc_vector_size(&processor->object_handles);
+	next_index = xc_vector_size(&processor->objects);
 	if (_zend_hash_index_update_or_next_insert(&processor->handle_to_index, handle, (void *) &next_index, sizeof(next_index), NULL, HASH_ADD ZEND_FILE_LINE_CC) == SUCCESS) {
 		zend_object *object = zend_object_store_get_object_by_handle(handle TSRMLS_CC);
-		xc_vector_push_back(&processor->object_handles, object);
+
+		xc_vector_push_back(&processor->objects, object);
+
+		if (object->properties) {
+			xc_var_collect_object_in_hashtable(processor, object->properties TSRMLS_CC);
+		}
+
+		/* TODO: is this necessary? */
+		if (object->properties_table) {
+			int i, count = zend_hash_num_elements(&object->ce->properties_info);
+			for (i = 0; i < count; ++i) {
+				xc_var_collect_object_in_zval(processor, object->properties_table[i] TSRMLS_CC);
+			}
+		}
 	}
 }
 /* }}} */
@@ -29,7 +71,7 @@ static size_t xc_var_store_handle(xc_processor_t *processor, zend_object_handle 
 /* }}} */
 static zend_object_handle xc_var_restore_handle(xc_processor_t *processor, size_t index TSRMLS_DC) /* {{{ */
 {
-	zend_object_handle handle = xc_vector_data(zend_object_handle, &processor->object_handles)[index];
+	zend_object_handle handle = processor->object_handles[index];
 	zend_objects_store_add_ref_by_handle(handle TSRMLS_CC);
 	return handle;
 }

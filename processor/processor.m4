@@ -1419,12 +1419,12 @@ DEF_STRUCT_P_FUNC(`xc_entry_var_t', , `dnl {{{
 
 #ifdef ZEND_ENGINE_2
 	IFCALC(`
-		dnl objects = collect_from(value);
+		dnl objects = collect_from(value + objects);
 		pushdef(`src', `vsrc')
-		SRC(objects_count) = xc_vector_size(&processor->object_handles);
-		SRC(objects) = xc_vector_detach(zend_object, &processor->object_handles);
+		SRC(objects_count) = xc_vector_size(&processor->objects);
+		SRC(objects) = xc_vector_detach(zend_object, &processor->objects);
 		popdef(`src')
-		xc_vector_destroy(&processor->object_handles);
+		xc_vector_destroy(&processor->objects);
 	')
 	dnl must be after calc .value
 	PROCESS(zend_uint, objects_count)
@@ -1442,7 +1442,7 @@ DEF_STRUCT_P_FUNC(`xc_entry_var_t', , `dnl {{{
 
 	dnl classe_
 	IFCALC(`
-		dnl class_names = collect_from(object_handles);
+		dnl class_names = collect_from(objects);
 		pushdef(`src', `vsrc')
 		SRC(class_names_count) = xc_vector_size(&processor->class_names);
 		SRC(class_names) = xc_vector_detach(xc_constant_string_t, &processor->class_names);

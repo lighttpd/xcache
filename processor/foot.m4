@@ -134,12 +134,14 @@ EXPORTED_FUNCTION(`zval *xc_processor_restore_var(zval *dst, const xc_entry_var_
 
 #ifdef ZEND_ENGINE_2
 	if (src->objects_count) {
-		zend_uint i;
-		xc_vector_init(zend_object_handle, &processor.object_handles);
-		xc_vector_reserve(&processor.object_handles, src->objects_count);
-		for (i = 0; i < src->objects_count; ++i) {
+		int i;
+		size_t size = sizeof(processor.object_handles[0]) * src->objects_count;
+		processor.object_handles = emalloc(size);
+		IFAUTOCHECK(`xc_memsetptr(processor.object_handles, -1, size);')
+		/* other objects in $object->properties after $object, reverse order is necessary */
+		for (i = src->objects_count - 1; i >= 0; --i) {
 			zend_object *object = emalloc(sizeof(*object));
-			xc_vector_data(zend_object_handle, &processor.object_handles)[i] = zend_objects_store_put(object, (zend_objects_store_dtor_t) zend_objects_destroy_object, (zend_objects_free_object_storage_t) zend_objects_free_object_storage, NULL TSRMLS_CC);
+			processor.object_handles[i] = zend_objects_store_put(object, (zend_objects_store_dtor_t) zend_objects_destroy_object, (zend_objects_free_object_storage_t) zend_objects_free_object_storage, NULL TSRMLS_CC);
 			xc_restore_zend_object(&processor, object, &src->objects[i] TSRMLS_CC);
 		}
 	}
@@ -153,9 +155,9 @@ EXPORTED_FUNCTION(`zval *xc_processor_restore_var(zval *dst, const xc_entry_var_
 	if (src->objects_count) {
 		zend_uint i;
 		for (i = 0; i < src->objects_count; ++i) {
-			zend_objects_store_del_ref_by_handle(xc_vector_data(zend_object_handle, &processor.object_handles)[i] TSRMLS_CC);
+			zend_objects_store_del_ref_by_handle(processor.object_handles[i] TSRMLS_CC);
 		}
-		xc_vector_destroy(&processor.object_handles);
+		efree(processor.object_handles);
 	}
 #endif
 
