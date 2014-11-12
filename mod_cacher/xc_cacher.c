@@ -3400,7 +3400,7 @@ PHP_FUNCTION(xcache_get)
 				}
 			}
 
-			xc_processor_restore_var(return_value, stored_entry_var, xc_vector_data(zend_class_entry *, &index_to_ce) TSRMLS_CC);
+			xc_processor_restore_var(return_value, ZESW(NULL, return_value_ptr), stored_entry_var, xc_vector_data(zend_class_entry *, &index_to_ce) TSRMLS_CC);
 			xc_cached_hit_unlocked(cache->cached TSRMLS_CC);
 		} LEAVE_LOCK(cache);
 	} while (reload_class);
@@ -3471,6 +3471,38 @@ PHP_FUNCTION(xcache_set)
 		RETVAL_BOOL(xc_entry_var_store_unlocked(cache, entry_hash.entryslotid, &entry_var TSRMLS_CC) != NULL ? 1 : 0);
 	} LEAVE_LOCK(cache);
 	VAR_BUFFER_FREE(name);
+}
+/* }}} */
+/* {{{ proto mixed &xcache_get_ref(string name)
+   Get cached data by specified name return referenced value. Not supported in PHP_4 */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_get_ref, 0, 1, 1)
+	ZEND_ARG_INFO(0, name)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_get_ref[] = { 1, BYREF_NONE };
+#endif
+
+PHP_FUNCTION(xcache_get_ref)
+{
+	zif_xcache_get(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+}
+/* }}} */
+/* {{{ proto bool  xcache_set(string name, mixed &value [, int ttl])
+   Store data to cache by specified name maintaining value referenced */
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xcache_set_ref, 0, 0, 2)
+	ZEND_ARG_INFO(0, name)
+	ZEND_ARG_INFO(1, value)
+	ZEND_ARG_INFO(0, ttl)
+ZEND_END_ARG_INFO()
+#else
+static unsigned char arginfo_xcache_set_ref[] = { 3, BYREF_NONE, BYREF_FORCE, BYREF_NONE };
+#endif
+
+PHP_FUNCTION(xcache_set_ref)
+{
+	zif_xcache_set(INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 /* }}} */
 /* {{{ proto bool  xcache_isset(string name)
@@ -3627,7 +3659,6 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 	zval *name;
 	long count = 1;
 	long value = 0;
-	zval oldzval;
 	VAR_BUFFER_FLAGS(name);
 
 	if (!xc_var_caches) {
@@ -3680,10 +3711,11 @@ static inline void xc_var_inc_dec(int inc, INTERNAL_FUNCTION_PARAMETERS) /* {{{ 
 				value = 0;
 			}
 			else {
-				xc_processor_restore_var(&oldzval, stored_entry_var, NULL TSRMLS_CC);
-				convert_to_long(&oldzval);
-				value = Z_LVAL(oldzval);
-				zval_dtor(&oldzval);
+				zval zv;
+				xc_processor_restore_var(&zv, NULL, stored_entry_var, NULL TSRMLS_CC);
+				convert_to_long(&zv);
+				value = Z_LVAL(zv);
+				zval_dtor(&zv);
 			}
 		}
 		else {
@@ -3750,6 +3782,10 @@ static zend_function_entry xcache_cacher_functions[] = /* {{{ */
 	PHP_FE(xcache_set_namespace,     arginfo_xcache_set_namespace)
 	PHP_FE(xcache_get,               arginfo_xcache_get)
 	PHP_FE(xcache_set,               arginfo_xcache_set)
+	PHP_FE(xcache_get_ref,           arginfo_xcache_get_ref)
+	PHP_FE(xcache_set_ref,           arginfo_xcache_set_ref)
+#ifdef ZEND_BEGIN_ARG_INFO_EX
+#endif
 	PHP_FE(xcache_isset,             arginfo_xcache_isset)
 	PHP_FE(xcache_unset,             arginfo_xcache_unset)
 	PHP_FE(xcache_unset_by_prefix,   arginfo_xcache_unset_by_prefix)

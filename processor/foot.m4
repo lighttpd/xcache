@@ -86,17 +86,15 @@ dnl }}}
 DEFINE_STORE_API(`xc_entry_php_t')
 DEFINE_STORE_API(`xc_entry_data_php_t')
 DEFINE_STORE_API(`xc_entry_var_t')
-EXPORTED_FUNCTION(`xc_entry_php_t *xc_processor_restore_xc_entry_php_t(xc_entry_php_t *dst, const xc_entry_php_t *src TSRMLS_DC)') dnl {{{
+EXPORTED_FUNCTION(`void xc_processor_restore_xc_entry_php_t(xc_entry_php_t *dst, const xc_entry_php_t *src TSRMLS_DC)') dnl {{{
 {
 	xc_processor_t processor;
 
 	memset(&processor, 0, sizeof(processor));
 	xc_restore_xc_entry_php_t(&processor, dst, src TSRMLS_CC);
-
-	return dst;
 }
 dnl }}}
-EXPORTED_FUNCTION(`xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t(const xc_entry_php_t *entry_php, xc_entry_data_php_t *dst, const xc_entry_data_php_t *src, zend_bool readonly_protection TSRMLS_DC)') dnl {{{
+EXPORTED_FUNCTION(`void xc_processor_restore_xc_entry_data_php_t(const xc_entry_php_t *entry_php, xc_entry_data_php_t *dst, const xc_entry_data_php_t *src, zend_bool readonly_protection TSRMLS_DC)') dnl {{{
 {
 	xc_processor_t processor;
 
@@ -115,10 +113,9 @@ EXPORTED_FUNCTION(`xc_entry_data_php_t *xc_processor_restore_xc_entry_data_php_t
 	if (processor.handle_reference) {
 		zend_hash_destroy(&processor.zvalptrs);
 	}
-	return dst;
 }
 dnl }}}
-EXPORTED_FUNCTION(`zval *xc_processor_restore_var(zval *dst, const xc_entry_var_t *src, zend_class_entry **index_to_ce TSRMLS_DC)') dnl {{{
+EXPORTED_FUNCTION(`void xc_processor_restore_var(zval *dst, zval **dst_ptr, const xc_entry_var_t *src, zend_class_entry **index_to_ce TSRMLS_DC)') dnl {{{
 {
 	xc_processor_t processor;
 
@@ -127,8 +124,9 @@ EXPORTED_FUNCTION(`zval *xc_processor_restore_var(zval *dst, const xc_entry_var_
 
 	if (processor.handle_reference) {
 		zend_hash_init(&processor.zvalptrs, 0, NULL, NULL, 0);
-		dnl fprintf(stderr, "mark[%p] = %p\n", src, dst);
-		zend_hash_add(&processor.zvalptrs, (char *)src->value, sizeof(src->value), (void *) &dst, sizeof(dst), NULL);
+		if (dst_ptr) {
+			zval_ptr_dtor(dst_ptr);
+		}
 	}
 	processor.index_to_ce = index_to_ce;
 
@@ -146,7 +144,12 @@ EXPORTED_FUNCTION(`zval *xc_processor_restore_var(zval *dst, const xc_entry_var_
 		}
 	}
 #endif
-	xc_restore_zval(&processor, dst, src->value TSRMLS_CC);
+	if (dst_ptr) {
+		xc_restore_zval_ptr(&processor, dst_ptr, &src->value TSRMLS_CC);
+	}
+	else {
+		xc_restore_zval(&processor, dst, src->value TSRMLS_CC);
+	}
 	if (processor.handle_reference) {
 		zend_hash_destroy(&processor.zvalptrs);
 	}
@@ -160,8 +163,6 @@ EXPORTED_FUNCTION(`zval *xc_processor_restore_var(zval *dst, const xc_entry_var_
 		efree(processor.object_handles);
 	}
 #endif
-
-	return dst;
 }
 dnl }}}
 define(`DEFINE_RELOCATE_API', `

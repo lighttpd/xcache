@@ -283,8 +283,9 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 					if (zend_hash_find(&processor->zvalptrs, (char *) &SRC()[0], sizeof(SRC()[0]), (void **) &ppzv) == SUCCESS) {
 						IFCOPY(`
 							DST()[0] = *ppzv;
+							IFSTORE(`Z_ADDREF(**DST());')
 							/* *DST() is updated */
-							dnl fprintf(stderr, "*DST() is set to %p, PROCESSOR_TYPE is_shm %d\n", DST()[0], xc_is_shm(DST()[0]));
+							dnl fprintf(stderr, "*DST() is set to %p, PROCESSOR_TYPE is_shm %d\n", (void *) DST()[0], xc_is_shm(DST()[0]));
 						')
 						IFCALCSTORE(`processor->have_references = 1;')
 						IFSTORE(`assert(xc_is_shm(DST()[0]));')
@@ -305,7 +306,8 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 						RELOCATE_EX(zval, pzv)
 					')
 					if (zend_hash_add(&processor->zvalptrs, (char *) &SRC()[0], sizeof(SRC()[0]), (void *) &pzv, sizeof(pzv), NULL) == SUCCESS) { /* first add, go on */
-						dnl fprintf(stderr, "mark[%p] = %p\n", SRC()[0], pzv);
+						IFSTORE(`Z_SET_REFCOUNT(**DST(), 1);')
+						dnl IFSTORE(`fprintf(stderr, "mark[%p] = %p\n", (void *) SRC()[0], (void *) pzv);')
 					}
 					else {
 						assert(0);
@@ -1416,6 +1418,24 @@ DEF_STRUCT_P_FUNC(`xc_entry_var_t', , `dnl {{{
 
 	IFDPRINT(`INDENT()`'fprintf(stderr, "zval:value");')
 	STRUCT_P_EX(zval_ptr, DST(`value'), SRC(`value'), `value', `', `&')
+#if 0
+	IFSTORE(`
+	{
+		HashTable *ht;
+		zval **zv;
+
+		assert(Z_TYPE_P(SRC(`value')) == IS_ARRAY);
+		ht = Z_ARRVAL_P(SRC(`value'));
+		assert(ht->nNumOfElements == 1);
+		fprintf(stderr, "key %s\n", ht->pListHead->arKey);
+
+		zv = (zval **) ht->pListHead->pData;
+		fprintf(stderr, "%d\n", Z_TYPE_PP(zv));
+		assert(Z_TYPE_PP(zv) == IS_ARRAY);
+		assert(Z_ARRVAL_PP(zv) == ht);
+	}
+	')
+#endif
 
 #ifdef ZEND_ENGINE_2
 	IFCALC(`

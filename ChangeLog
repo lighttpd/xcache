@@ -1,8 +1,11 @@
 4.0.0 2014-??-??
 API Changes
 ========
- * new: proto array xcache_get_refcount(mixed &$variable), with +1 side effect removed
- * chg: proto array xcache_get_cowcount(mixed $value)
+ * new: proto int xcache_get_refcount(mixed &$variable), with +1 side effect removed
+ * chg: proto int xcache_get_cowcount(mixed $value)
+ * new: proto mixed &xcache_get_ref(string name): Get cached data by specified name return referenced value. Not supported in PHP_4
+ * new: proto mixed &xcache_get_ref(string name): Get cached data by specified name return referenced value. Not supported in PHP_4
+ * new: proto bool  xcache_set(string name, mixed &value [, int ttl]): Store data to cache by specified name maintaining value referenced
 
 ChangeLog
 ========
@@ -11,6 +14,7 @@ ChangeLog
    * (WIP) cache to disk
    * fixed #348: added class const support for __FILE__ __DIR__
    * closes #342: added support for object caching. handle IS_RESTORCE as interger
+   * able to return reference value by xcache_set_ref/xcache_get_ref
  * disassembler, decompiler:
    * PHP_5_6 support
  * misc:

@@ -68,6 +68,9 @@
 #ifndef Z_SET_REFCOUNT
 #	define Z_SET_REFCOUNT(z, rc) (z).refcount = rc
 #endif
+#ifndef Z_ADDREF
+#	define Z_ADDREF(z) (z).refcount++
+#endif
 #ifndef IS_CONSTANT_TYPE_MASK
 #	define IS_CONSTANT_TYPE_MASK (~IS_CONSTANT_INDEX)
 #endif
