@@ -47,6 +47,7 @@ static void xc_var_collect_object(xc_processor_t *processor, zend_object_handle 
 			xc_var_collect_object_in_hashtable(processor, object->properties TSRMLS_CC);
 		}
 
+#ifdef ZEND_ENGINE_2_4
 		/* TODO: is this necessary? */
 		if (object->properties_table) {
 			int i, count = zend_hash_num_elements(&object->ce->properties_info);
@@ -54,6 +55,7 @@ static void xc_var_collect_object(xc_processor_t *processor, zend_object_handle 
 				xc_var_collect_object_in_zval(processor, object->properties_table[i] TSRMLS_CC);
 			}
 		}
+#endif
 	}
 }
 /* }}} */
