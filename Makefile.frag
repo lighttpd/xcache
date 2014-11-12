@@ -33,6 +33,6 @@ xcachesvnclean: clean
 xcachetest: all
 	$(SED) "s#\\./\\.libs/#$(top_builddir)/\\.libs/#" < $(srcdir)/xcache-test.ini > $(top_builddir)/tmp-php.ini
 	if test -z "$(TESTS)"; then \
-		TEST_PHP_SRCDIR=$(srcdir) $(srcdir)/run-xcachetest $(TEST_ARGS) -c $(top_builddir)/tmp-php.ini; \
+		TEST_INI=$(top_builddir)/tmp-php.ini TEST_PHP_USER=tests TEST_PHP_SRCDIR=$(srcdir) $(srcdir)/run-xcachetest $(TEST_ARGS); \
 	fi
-	$(srcdir)/run-xcachetest $(TESTS) $(TEST_ARGS) -c $(top_builddir)/tmp-php.ini
+	TEST_INI=$(top_builddir)/tmp-php.ini $(srcdir)/run-xcachetest $(TESTS) $(TEST_ARGS)
