@@ -318,7 +318,7 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 			')
 			IFDPRINT(`INDENT()`'fprintf(stderr, "[%p] ", (void *) SRC()[0]);')
 			STRUCT_P_EX(zval, DST()[0], SRC()[0], `[0]', `', ` ')
-			dnl don't set refcount in zval processor
+			dnl set refcount here instead of struct zval?
 			IFSTORE(`Z_SET_REFCOUNT(**DST(), 1);')
 			RELOCATE_EX(zval, DST()[0])
 		} while (0);
