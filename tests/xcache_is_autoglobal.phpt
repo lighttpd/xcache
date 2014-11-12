@@ -9,7 +9,7 @@ xcache.test = 1
 xcache.size = 32M
 --FILE--
 <?php
-var_dump(xcache_is_autoglobal("GLOBALS"));
+var_dump(xcache_is_autoglobal("_GET"));
 ?>
 --EXPECT--
 bool(true)

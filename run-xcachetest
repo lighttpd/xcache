@@ -13,14 +13,24 @@ else
 	php_cli="`which php`"
 fi
 
+test_args="-c \"$TEST_INI\""' -d "open_basedir=" -d "safe_mode=0" -d "output_buffering=0" -d "memory_limit=-1"'
+
 if test -x ./php-cgi ; then
 	php_cgi=`getAbsolutePath ./php-cgi`
 else
 	php_cgi="`which php-cgi`"
 fi
 
-TEST_PHP_EXECUTABLE="$php_cli"
-TEST_PHP_CGI_EXECUTABLE="$php_cgi"
+echo '#!/bin/sh' > ./php-cli-test
+echo 'exec "'$php_cli'" '$test_args' "$@"' >> php-cli-test
+chmod +x ./php-cli-test
+
+echo '#!/bin/sh' > ./php-cgi-test
+echo 'exec "'$php_cgi'" '$test_args' "$@"' >> php-cgi-test
+chmod +x ./php-cgi-test
+
+TEST_PHP_EXECUTABLE=`getAbsolutePath ./php-cli-test`
+TEST_PHP_CGI_EXECUTABLE=`getAbsolutePath ./php-cgi-test`
 real_php_src=`getAbsolutePath ./php-src`;
 test -z "$TEST_PHP_SRCDIR" && TEST_PHP_SRCDIR=$real_php_src
 
@@ -48,5 +58,5 @@ patch_run_tests_report_leaks() {
 	fi
 }
 run_tests_src=$real_php_src/run-tests.php
-patch_run_tests_ext < "$run_tests_src" | patch_run_tests_report_leaks > run-tests.php
-exec "$php_cli" -d "open_basedir=" -d "safe_mode=0" -d "output_buffering=0" -d "memory_limit=-1" `getAbsolutePath ./run-tests.php` "$@"
+patch_run_tests_ext < "$run_tests_src" | sed "s#^\\\$test_dirs = array('.*#\\\$test_dirs = array();#" | patch_run_tests_report_leaks > run-tests.php
+exec "$TEST_PHP_EXECUTABLE" `getAbsolutePath ./run-tests.php` "$@"
