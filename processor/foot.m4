@@ -124,9 +124,6 @@ EXPORTED_FUNCTION(`void xc_processor_restore_var(zval *dst, zval **dst_ptr, cons
 
 	if (processor.handle_reference) {
 		zend_hash_init(&processor.zvalptrs, 0, NULL, NULL, 0);
-		if (dst_ptr) {
-			zval_ptr_dtor(dst_ptr);
-		}
 	}
 	processor.index_to_ce = index_to_ce;
 
@@ -144,11 +141,14 @@ EXPORTED_FUNCTION(`void xc_processor_restore_var(zval *dst, zval **dst_ptr, cons
 		}
 	}
 #endif
+	zval_ptr_dtor(&dst);
 	if (dst_ptr) {
 		xc_restore_zval_ptr(&processor, dst_ptr, &src->value TSRMLS_CC);
+		Z_ADDREF(**dst_ptr);
 	}
 	else {
 		xc_restore_zval(&processor, dst, src->value TSRMLS_CC);
+		Z_ADDREF(*dst);
 	}
 	if (processor.handle_reference) {
 		zend_hash_destroy(&processor.zvalptrs);

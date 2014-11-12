@@ -1,10 +1,10 @@
 --TEST--
-xcache_set/get test for object PHP 5.2+
+xcache_set/get test for object 5.1-
 --SKIPIF--
 <?php
 require("skipif.inc");
-if (!version_compare(phpversion(), '5.2', '>=')) {
-	echo 'skip for PHP 5.2+ only';
+if (!version_compare(phpversion(), '5.2', '<')) {
+	echo 'skip for PHP 5.1- only';
 }
 ?>
 --INI--
@@ -51,11 +51,45 @@ object(b)#7 (4) {
   object(a)#6 (0) {
   }
   ["b"]=>
-  *RECURSION*
+  object(b)#7 (4) {
+    ["a"]=>
+    object(a)#6 (0) {
+    }
+    ["b"]=>
+    *RECURSION*
+    ["array"]=>
+    array(2) {
+      [0]=>
+      *RECURSION*
+      [1]=>
+      object(a)#6 (0) {
+      }
+    }
+    ["stdclass"]=>
+    object(stdClass)#5 (0) {
+    }
+  }
   ["array"]=>
   array(2) {
     [0]=>
-    *RECURSION*
+    object(b)#7 (4) {
+      ["a"]=>
+      object(a)#6 (0) {
+      }
+      ["b"]=>
+      *RECURSION*
+      ["array"]=>
+      array(2) {
+        [0]=>
+        *RECURSION*
+        [1]=>
+        object(a)#6 (0) {
+        }
+      }
+      ["stdclass"]=>
+      object(stdClass)#5 (0) {
+      }
+    }
     [1]=>
     object(a)#6 (0) {
     }

@@ -306,7 +306,6 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 						RELOCATE_EX(zval, pzv)
 					')
 					if (zend_hash_add(&processor->zvalptrs, (char *) &SRC()[0], sizeof(SRC()[0]), (void *) &pzv, sizeof(pzv), NULL) == SUCCESS) { /* first add, go on */
-						IFSTORE(`Z_SET_REFCOUNT(**DST(), 1);')
 						dnl IFSTORE(`fprintf(stderr, "mark[%p] = %p\n", (void *) SRC()[0], (void *) pzv);')
 					}
 					else {
@@ -319,6 +318,8 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 			')
 			IFDPRINT(`INDENT()`'fprintf(stderr, "[%p] ", (void *) SRC()[0]);')
 			STRUCT_P_EX(zval, DST()[0], SRC()[0], `[0]', `', ` ')
+			dnl don't set refcount in zval processor
+			IFSTORE(`Z_SET_REFCOUNT(**DST(), 1);')
 			RELOCATE_EX(zval, DST()[0])
 		} while (0);
 	')
@@ -1418,21 +1419,23 @@ DEF_STRUCT_P_FUNC(`xc_entry_var_t', , `dnl {{{
 
 	IFDPRINT(`INDENT()`'fprintf(stderr, "zval:value");')
 	STRUCT_P_EX(zval_ptr, DST(`value'), SRC(`value'), `value', `', `&')
+	DONE(value)
 #if 0
 	IFSTORE(`
 	{
 		HashTable *ht;
 		zval **zv;
 
-		assert(Z_TYPE_P(SRC(`value')) == IS_ARRAY);
-		ht = Z_ARRVAL_P(SRC(`value'));
+		assert(Z_TYPE_P(DST(`value')) == IS_ARRAY);
+		ht = Z_ARRVAL_P(DST(`value'));
 		assert(ht->nNumOfElements == 1);
 		fprintf(stderr, "key %s\n", ht->pListHead->arKey);
 
 		zv = (zval **) ht->pListHead->pData;
-		fprintf(stderr, "%d\n", Z_TYPE_PP(zv));
 		assert(Z_TYPE_PP(zv) == IS_ARRAY);
 		assert(Z_ARRVAL_PP(zv) == ht);
+		fprintf(stderr, "refcount=%d\n", Z_REFCOUNT(*DST(`value')));
+		fprintf(stderr, "refcount=%d\n", Z_REFCOUNT(**zv));
 	}
 	')
 #endif
@@ -1482,7 +1485,6 @@ DEF_STRUCT_P_FUNC(`xc_entry_var_t', , `dnl {{{
 	')
 
 	PROCESS(zend_bool, have_references)
-	DONE(value)
 ')
 dnl }}}
 dnl ====================================================

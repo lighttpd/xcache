@@ -1,10 +1,10 @@
 --TEST--
-xcache_set/get test for reference for PHP 5.2+
+xcache_set/get test for reference for PHP 5.{0,1}
 --SKIPIF--
 <?php
 require("skipif.inc");
-if (!version_compare(phpversion(), '5.2', '>=')) {
-	echo 'skip for PHP 5.2+ only';
+if (!(version_compare(phpversion(), '5.0', '>=') && version_compare(phpversion(), '5.2', '<'))) {
+	echo 'skip for PHP 5.{0,1} only';
 }
 ?>
 --INI--
@@ -32,11 +32,27 @@ array(1) {
   [0]=>
   &array(2) {
     ["ref"]=>
-    *RECURSION*
+    &array(2) {
+      ["ref"]=>
+      *RECURSION*
+      ["array"]=>
+      array(1) {
+        [0]=>
+        *RECURSION*
+      }
+    }
     ["array"]=>
     array(1) {
       [0]=>
-      *RECURSION*
+      &array(2) {
+        ["ref"]=>
+        *RECURSION*
+        ["array"]=>
+        array(1) {
+          [0]=>
+          *RECURSION*
+        }
+      }
     }
   }
 }
