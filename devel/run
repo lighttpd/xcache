@@ -331,7 +331,7 @@ run() {
 			;;
 		esac
 
-		#"${cmd[@]}" -v || true
+		"${cmd[@]}" -v || true
 	esac
 
 	# hack sample.cpp.php {{{1
