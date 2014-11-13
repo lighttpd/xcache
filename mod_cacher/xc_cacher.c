@@ -1257,13 +1257,13 @@ static int xc_entry_php_init_key(xc_compiler_t *compiler TSRMLS_DC) /* {{{ */
 			/* get back to basename_begin */
 			++basename_begin;
 
-			basename_hash_value = HASH_STR_L(basename_begin, (uint) (filename_end - basename_begin));
+			basename_hash_value = HASH_STR_L(basename_begin, (uint) (filename_end - basename_begin)) ^ compiler->new_entry.file_size;
 		}
 
 		compiler->entry_hash.cacheid = xc_php_hcache.size > 1 ? xc_hash_fold(basename_hash_value, &xc_php_hcache) : 0;
 		compiler->entry_hash.entryslotid = xc_hash_fold(
 				compiler->new_entry.file_inode
-				? (xc_hash_value_t) HASH(compiler->new_entry.file_device + compiler->new_entry.file_inode)
+				? (xc_hash_value_t) HASH(compiler->new_entry.file_device ^ compiler->new_entry.file_inode ^ compiler->new_entry.file_size)
 				: basename_hash_value
 				, &xc_php_hentry);
 	}
