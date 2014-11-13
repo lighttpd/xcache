@@ -141,14 +141,13 @@ EXPORTED_FUNCTION(`void xc_processor_restore_var(zval *dst, zval **dst_ptr, cons
 		}
 	}
 #endif
-	zval_ptr_dtor(&dst);
 	if (dst_ptr) {
+		zval_ptr_dtor(dst_ptr);
 		xc_restore_zval_ptr(&processor, dst_ptr, &src->value TSRMLS_CC);
-		Z_ADDREF(**dst_ptr);
 	}
 	else {
+		zval_dtor(dst);
 		xc_restore_zval(&processor, dst, src->value TSRMLS_CC);
-		Z_ADDREF(*dst);
 	}
 	if (processor.handle_reference) {
 		zend_hash_destroy(&processor.zvalptrs);

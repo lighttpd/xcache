@@ -283,9 +283,12 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 					if (zend_hash_find(&processor->zvalptrs, (char *) &SRC()[0], sizeof(SRC()[0]), (void **) &ppzv) == SUCCESS) {
 						IFCOPY(`
 							DST()[0] = *ppzv;
-							IFSTORE(`Z_ADDREF(**DST());')
+							IFSTORE(`
+								Z_ADDREF(**DST());
+								TRACE("add refcount to %d", Z_REFCOUNT(**DST()));
+							')
 							/* *DST() is updated */
-							dnl fprintf(stderr, "*DST() is set to %p, PROCESSOR_TYPE is_shm %d\n", (void *) DST()[0], xc_is_shm(DST()[0]));
+							TRACE("*DST() is set to %p, PROCESSOR_TYPE is_shm %d", (void *) DST()[0], xc_is_shm(DST()[0]));
 						')
 						IFCALCSTORE(`processor->have_references = 1;')
 						IFSTORE(`assert(xc_is_shm(DST()[0]));')
@@ -314,12 +317,15 @@ DEF_STRUCT_P_FUNC(`zval_ptr', , `dnl {{{
 				}
 			')
 			IFCOPY(`
-				dnl fprintf(stderr, "copy from %p to %p\n", SRC()[0], DST()[0]);
+				TRACE("copy from %p to %p", SRC()[0], DST()[0]);
 			')
 			IFDPRINT(`INDENT()`'fprintf(stderr, "[%p] ", (void *) SRC()[0]);')
 			STRUCT_P_EX(zval, DST()[0], SRC()[0], `[0]', `', ` ')
 			dnl set refcount here instead of struct zval?
-			IFSTORE(`Z_SET_REFCOUNT(**DST(), 1);')
+			IFSTORE(`
+				Z_SET_REFCOUNT(**DST(), 1);
+				TRACE("set refcount to %d", Z_REFCOUNT(**DST()));
+			')
 			RELOCATE_EX(zval, DST()[0])
 		} while (0);
 	')
