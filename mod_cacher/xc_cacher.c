@@ -880,7 +880,7 @@ static inline void xc_entry_unholds_real(xc_vector_t *holds, xc_cache_t *caches,
 
 	for (i = 0; i < cachecount; i ++) {
 		v = &holds[i];
-		TRACE("holded %d items", v->cnt);
+		TRACE("holded %d items", xc_vector_size(v));
 		if (xc_vector_size(v)) {
 			cache = &caches[i];
 			ENTER_LOCK(cache) {
