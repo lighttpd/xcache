@@ -662,10 +662,16 @@ define(`UNION_znode_op', `dnl {{{
 			', `
 				IFDASM(`{
 					zval *zv;
-					zval *srczv = &dasm->active_op_array_src->literals[SRC(`$1.constant')].constant;
+					zval *srczv;
+					srczv = &dasm->active_op_array_src->literals[SRC(`$1.constant')].constant;
+					if (Z_TYPE_P(srczv) == IS_STRING) {
+						size_t index = SRC(`$1.constant');
+						fprintf(stderr, "%p %p %s\n", srczv, Z_STRVAL_P(srczv), Z_STRVAL_P(srczv));
+					}
 					ALLOC_ZVAL(zv);
 					MAKE_COPY_ZVAL(&srczv, zv);
 					add_assoc_zval_ex(DST(), XCACHE_STRS("$1.constant"), zv);
+					add_assoc_long_ex(DST(), XCACHE_STRS("$1.var"), SRC(`$1.constant'));
 				}
 				', `
 					IFCOPY(`

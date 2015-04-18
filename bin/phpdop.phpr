@@ -7,28 +7,28 @@ if (file_exists("$srcdir/phpdc.debug.php")) {
 	include("$srcdir/phpdc.debug.php");
 }
 
-function get_op($op)
+function get_op($op, $which)
 {
-	switch ($op['op_type']) {
+	switch ($op[$which . '_type']) {
 	case 1: // CONST
-		return var_export($op['constant'], true);
+		return $op[$which . '.var'] . var_export($op[$which . '.constant'], true);
 
 	case 2: // IS_TMP_VAR
-		return 't@' . $op['var'];
+		return 't@' . $op[$which . '.var'];
 
 	case 4:
-		return 'v$' . $op['var'];
+		return 'v$' . $op[$which . '.var'];
 
 	case 8: // UNUSED
-		if (isset($op['opline_num'])) {
-			return 'l#' . $op['opline_num'];
+		if (isset($op[$which . '.opline_num'])) {
+			return 'l#' . $op[$which . '.opline_num'];
 		}
 		else {
 			return '-';
 		}
 
 	default:
-		return $op['op_type'] . $op['var'];
+		return $op[$which . '_type'] . '?' . $op[$which . '.var'];
 	}
 }
 
@@ -36,7 +36,7 @@ function dump_opcodes($op_array, $indent = '')
 {
 	global $decompiler;
 
-	$types = array('result' => 5, 'op1' => 20, 'op2' => 20);
+	$types = array('result' => 8, 'op1' => 20, 'op2' => 20);
 	$opcodes = &$op_array['opcodes'];
 	$decompiler->fixOpcode($opcodes);
 	$decompiler->buildJmpInfo($op_array);
@@ -51,8 +51,8 @@ function dump_opcodes($op_array, $indent = '')
 		}
 		echo str_pad($name, 25);
 
-		foreach ($types as $t => $len) {
-			echo str_pad(isset($op[$t]) ? get_op($op[$t]) : "", $len);
+		foreach ($types as $which => $len) {
+			echo str_pad(get_op($op, $which), $len);
 		}
 		printf("%5s", isset($op['extended_value']) ?  $op['extended_value'] : "");
 		if (isset($op['jmpouts']) || isset($op['jmpins'])) {

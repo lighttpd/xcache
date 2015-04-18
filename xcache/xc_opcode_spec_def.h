@@ -83,10 +83,14 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
 	OPSPEC(    UNUSED,        STD,        STD,        TMP) /* 56 ADD_VAR                        */
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,        TMP) /* 57 BEGIN_SILENCE                  */
 	OPSPEC(    UNUSED,        TMP,     UNUSED,     UNUSED) /* 58 END_SILENCE                    */
+#ifdef ZEND_ENGINE_2_4
+	OPSPEC(INIT_FCALL,     UNUSED,        STD,     UNUSED) /* 59 INIT_FCALL_BY_NAME             */
+#else
 	OPSPEC(INIT_FCALL,        STD,        STD,     UNUSED) /* 59 INIT_FCALL_BY_NAME             */
+#endif
 #ifdef ZEND_ENGINE_2
-	OPSPEC(     FCALL,        STD,     OPLINE,        VAR) /* 60 DO_FCALL                       */
-	OPSPEC(     FCALL,        STD,     OPLINE,        VAR) /* 61 DO_FCALL_BY_NAME               */
+	OPSPEC(     FCALL,        STD,     UNUSED,        VAR) /* 60 DO_FCALL                       */
+	OPSPEC(     FCALL,     UNUSED,     UNUSED,        VAR) /* 61 DO_FCALL_BY_NAME               */
 #else
 	OPSPEC(     FCALL,        STD,     UNUSED,        VAR)
 	OPSPEC(     FCALL,        STD,     UNUSED,        VAR)
@@ -208,7 +212,11 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
 	OPSPEC(    OPLINE,      CLASS,        STD,     UNUSED) /* 107 CATCH                          */
 #	endif
 	OPSPEC(    UNUSED,        STD,     OPLINE,     UNUSED) /* 108 THROW                          */
+#	ifdef ZEND_ENGINE_2_4
+	OPSPEC(    FCLASS,     UNUSED,        STD,      CLASS) /* 109 FETCH_CLASS                    */
+#	else
 	OPSPEC(    FCLASS,        STD,        STD,      CLASS) /* 109 FETCH_CLASS                    */
+#	endif
 	OPSPEC(    UNUSED,        STD,     UNUSED,        VAR) /* 110 CLONE                          */
 
 #	ifdef ZEND_ENGINE_2_4

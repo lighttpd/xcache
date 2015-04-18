@@ -1973,7 +1973,8 @@ class Decompiler
 					$EX['object'] = null;
 					$EX['called_scope'] = null;
 				}
-				$EX['fbc'] = isset($op2['constant']) ? $op2['constant'] : $this->getOpVal($op2, $EX);
+				// file_put_contents('/tmp/a', var_export($this->dc['op_array']['literals'], true));
+				$EX['fbc'] = isset($op2['constant']) ? $op2['var'] . ' ' . $op2['constant'] : $this->getOpVal($op2, $EX);
 				break;
 				// }}}
 			case XC_INIT_FCALL_BY_FUNC: // {{{ deprecated even in PHP 4?
@@ -2025,8 +2026,9 @@ class Decompiler
 			case XC_DECLARE_INHERITED_CLASS:
 			case XC_DECLARE_INHERITED_CLASS_DELAYED: // {{{
 				$key = $op1['constant'];
-				// missing tailing \0 (outside of the string)
+				// possible missing tailing \0 (outside of the string)
 				$key = substr($key . ".", 0, strlen($key));
+					break;
 				if (!isset($this->dc['class_table'][$key])) {
 					echo "class not found: ", $key, "\nexisting classes are:\n";
 					var_dump(array_keys($this->dc['class_table']));
@@ -2326,11 +2328,17 @@ class Decompiler
 			case XC_INIT_CTOR_CALL:
 				break;
 			case XC_DECLARE_FUNCTION:
-				$this->dfunction($this->dc['function_table'][$op1['constant']], $EX['indent']);
+				$key = $op1['constant'];
+				// possible missing tailing \0 (outside of the string)
+				$key = substr($key . ".", 0, strlen($key));
+				$this->dfunction($this->dc['function_table'][$key], $EX['indent']);
 				break;
 			case XC_DECLARE_LAMBDA_FUNCTION: // {{{
 				ob_start();
-				$this->dfunction($this->dc['function_table'][$op1['constant']], $EX['indent']);
+				$key = $op1['constant'];
+				// possible missing tailing \0 (outside of the string)
+				$key = substr($key . ".", 0, strlen($key));
+				$this->dfunction($this->dc['function_table'][$key], $EX['indent']);
 				$resvar = ob_get_clean();
 				$istmpres = true;
 				break;

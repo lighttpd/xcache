@@ -301,6 +301,11 @@ static void xc_fix_opcode_ex_znode(int tofix, xc_op_spec_t spec, Z_OP_TYPEOF_TYP
 		}
 	}
 	switch (*op_type) {
+	case IS_CONST:
+		if (spec == OPSPEC_UNUSED || spec == OPSPEC_OPLINE) {
+			*op_type = IS_UNUSED;
+		}
+		break;
 	case IS_TMP_VAR:
 	case IS_VAR:
 		if (tofix) {
