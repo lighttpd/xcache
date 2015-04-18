@@ -1989,8 +1989,7 @@ class Decompiler
 					$EX['object'] = null;
 					$EX['called_scope'] = null;
 				}
-				// file_put_contents('/tmp/a', var_export($this->dc['op_array']['literals'], true));
-				$EX['fbc'] = isset($op2['constant']) ? $op2['var'] . ' ' . $op2['constant'] : $this->getOpVal($op2, $EX);
+				$EX['fbc'] = isset($op2['constant']) ? $op2['constant'] : $this->getOpVal($op2, $EX);
 				break;
 				// }}}
 			case XC_INIT_FCALL_BY_FUNC: // {{{ deprecated even in PHP 4?
