@@ -1395,12 +1395,20 @@ class Decompiler
 
 			case XC_GOTO:
 				$target = $op['op1']['var'];
+				if (!isset($opcodes[$target])) {
+					fprintf(STDERR, "%d: internal error\n", __LINE__);
+					break;
+				}
 				$op['goto'] = $target;
 				$opcodes[$target]['gofrom'][] = $i;
 				break;
 
 			case XC_JMP:
 				$target = $op['op1']['var'];
+				if (!isset($opcodes[$target])) {
+					fprintf(STDERR, "%d: internal error\n", __LINE__);
+					break;
+				}
 				$op['jmpouts'] = array($target);
 				$opcodes[$target]['jmpins'][] = $i;
 				break;
@@ -1408,6 +1416,14 @@ class Decompiler
 			case XC_JMPZNZ:
 				$jmpz = $op['op2']['opline_num'];
 				$jmpnz = $op['extended_value'];
+				if (!isset($opcodes[$jmpz])) {
+					fprintf(STDERR, "%d: internal error\n", __LINE__);
+					break;
+				}
+				if (!isset($opcodes[$jmpnz])) {
+					fprintf(STDERR, "%d: internal error\n", __LINE__);
+					break;
+				}
 				$op['jmpouts'] = array($jmpz, $jmpnz);
 				$opcodes[$jmpz]['jmpins'][] = $i;
 				$opcodes[$jmpnz]['jmpins'][] = $i;
@@ -1423,10 +1439,10 @@ class Decompiler
 			case XC_FE_FETCH:
 			// case XC_JMP_NO_CTOR:
 				$target = $op['op2']['opline_num'];
-				//if (!isset($target)) {
-				//	$this->dumpop($op, $EX);
-				//	var_dump($op); exit;
-				//}
+				if (!isset($opcodes[$target])) {
+					fprintf(STDERR, "%d: internal error\n", __LINE__);
+					break;
+				}
 				$op['jmpouts'] = array($target);
 				$opcodes[$target]['jmpins'][] = $i;
 				break;
