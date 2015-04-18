@@ -2043,7 +2043,6 @@ class Decompiler
 				$key = $op1['constant'];
 				// possible missing tailing \0 (outside of the string)
 				$key = substr($key . ".", 0, strlen($key));
-					break;
 				if (!isset($this->dc['class_table'][$key])) {
 					echo "class not found: ", $key, "\nexisting classes are:\n";
 					var_dump(array_keys($this->dc['class_table']));
