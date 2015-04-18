@@ -671,7 +671,12 @@ class Decompiler
 		}
 
 		if (strpos($name, '\\') !== false) {
-			$this->namespace = strtok($name, '\\');
+			$namespace = strtok($name, '\\');
+			if ($namespace == $this->namespace) {
+				return;
+			}
+
+			$this->namespace = $namespace;
 			echo 'namespace ', $this->namespace, ";\n\n";
 		}
 
@@ -1794,7 +1799,8 @@ class Decompiler
 				}
 				if (is_a($rvalue, 'Decompiler_Fetch')) {
 					$src = str($rvalue->src, $EX);
-					if ('$' . unquoteName($src) == $lvalue) {
+					$name = unquoteName($src);
+					if ('$' . $name == $lvalue) {
 						switch ($rvalue->fetchType) {
 						case ZEND_FETCH_STATIC:
 							$statics = &$EX['op_array']['static_variables'];
@@ -2110,7 +2116,7 @@ class Decompiler
 				// }}}
 			case XC_EXIT: // {{{
 				$op1val = $this->getOpVal($op1, $EX);
-				$resvar = "exit($op1val)";
+				$resvar = "exit(" . str($op1val) . ")";
 				break;
 				// }}}
 			case XC_INIT_ARRAY:

@@ -522,6 +522,8 @@ do {
 } while (0);
 #endif
 
+list($a, $b) = array(1, 2);
+
 if ('if()') {
 	echo 'if';
 
@@ -542,6 +544,10 @@ else {
 	}
 
 	echo 'else';
+}
+
+if (!'if(!)') {
+	echo 'if(!)';
 }
 
 while (false) {
@@ -695,5 +701,6 @@ $callback = function($quantity, $product) use($tax, &$total) {
 };
 #endif
 exit();
+exit(1);
 
 ?>
