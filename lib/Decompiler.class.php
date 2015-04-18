@@ -2004,7 +2004,7 @@ class Decompiler
 				$args = $this->popargs($EX, $ext);
 
 				$prefix = (isset($object) ? str($object) . '->' : '' )
-					. (isset($EX['called_scope']) ? str($EX['called_scope']) . '::' : '' );
+					. (isset($EX['called_scope']) ? str($EX['called_scope']) . '::' : '');
 				$resvar = $prefix
 					. (!$prefix ? $this->stripNamespace($EX['fbc']) : str($EX['fbc']))
 					. "($args)";
