@@ -168,7 +168,7 @@ do_phpize() { # {{{1
 	esac
 	phpize --clean \
 	&& phpize \
-	&& CFLAGS="$CFLAGS -g -O0 $pedantic -Wno-variadic-macros -Wno-long-long -Wall -Wno-unused-parameter -Wno-unused-function -W -Wshadow -Werror=implicit-function-declaration -std=c89 -D_GNU_SOURCE -D_POSIX_SOURCE -Dinline=" ./configure \
+	&& CFLAGS="$CFLAGS -Dinline= -g -O0 $pedantic -Wno-variadic-macros -Wno-long-long -Wall -Wno-unused-parameter -Wno-unused-function -W -Wshadow -Werror=implicit-function-declaration -std=c89 -D_GNU_SOURCE -D_POSIX_SOURCE -Dinline=" ./configure \
 		--enable-xcache-cacher \
 		--enable-xcache-optimizer \
 		--enable-xcache-encoder \
@@ -339,7 +339,7 @@ run() {
 	*.cpp.php)
 		< "$1" \
 		sed -r -e 's#__#____#g' \
-		| cpp -C -P -traditional-cpp -DPHP_VERSION=$phpVersion \
+		| cpp -C -P -traditional-cpp -undef -ffreestanding -DPHP_VERSION=$phpVersion \
 		| sed -r -e 's#^ +##g' -e 's#\t +#\t#g' -e 's#____#__#g' > devel.php || exit $?
 		shift
 		set -- devel.php "$@"
