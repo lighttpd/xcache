@@ -26,7 +26,7 @@ function printBacktrace() // {{{
 						break;
 					}
 				}
-				$args[] = 'array(' . implode(', ', $array) . ')';
+				$args[] = "array(" . implode(', ', $array) . ')';
 			}
 			else {
 				$args[] = gettype($arg);
@@ -438,8 +438,8 @@ class Decompiler_List extends Decompiler_Code // {{{
 			$keys[] = 0;
 		}
 		$max = call_user_func_array('max', $keys);
-		$list = 'list(';
-		for ($i = 0; $i <= $max; $i ++) {
+		$list = "list(";
+		for ($i = 0; $i <= $max; $i++) {
 			if ($i) {
 				$list .= ', ';
 			}
@@ -505,7 +505,7 @@ class Decompiler_Array extends Decompiler_Value // {{{
 				}
 			}
 			if (is_array($value) || is_a($value, 'Decompiler_Array')) {
-				$multiline ++;
+				$multiline++;
 			}
 		}
 
@@ -536,7 +536,7 @@ class Decompiler_Array extends Decompiler_Value // {{{
 
 			$exp .= $value;
 
-			$i ++;
+			$i++;
 		}
 		if ($multiline) {
 			$exp .= "\n$indent)";
@@ -601,7 +601,7 @@ class Decompiler
 
 		if ($this->test) {
 			$content = file_get_contents(__FILE__);
-			for ($i = 0; $opname = xcache_get_opcode($i); $i ++) {
+			for ($i = 0; $opname = xcache_get_opcode($i); $i++) {
 				if (!preg_match("/\\bXC_" . $opname . "\\b(?!')/", $content)) {
 					echo "not recognized opcode ", $opname, "\n";
 				}
@@ -699,7 +699,7 @@ class Decompiler
 		$needBlankline = isset($EX['lastBlock']);
 		$indent = $EX['indent'];
 		$curticks = 0;
-		for ($i = $range[0]; $i <= $range[1]; $i ++) {
+		for ($i = $range[0]; $i <= $range[1]; $i++) {
 			$op = $EX['opcodes'][$i];
 			if (isset($op['gofrom'])) {
 				if ($needBlankline) {
@@ -785,10 +785,10 @@ class Decompiler
 		return $ret;
 	}
 	// }}}
-	function fixOpCode(&$opcodes, $removeTailing = false, $defaultReturnValue = null) // {{{
+	function fixOpCode($opcodes, $removeTailing = false, $defaultReturnValue = null) // {{{
 	{
 		$last = count($opcodes) - 1;
-		for ($i = 0; $i <= $last; $i ++) {
+		for ($i = 0; $i <= $last; $i++) {
 			if (function_exists('xcache_get_fixed_opcode')) {
 				$opcodes[$i]['opcode'] = xcache_get_fixed_opcode($opcodes[$i]['opcode'], $i);
 			}
@@ -836,6 +836,7 @@ class Decompiler
 				}
 			}
 		}
+		return $opcodes;
 	}
 	// }}}
 	function decompileBasicBlock(&$EX, $range, $unhandled = false) // {{{
@@ -1111,7 +1112,7 @@ class Decompiler
 				$catchBodyFirst = $catchOpLine + 1;
 				$this->dasmBasicBlock($EX, array($catchFirst, $catchOpLine));
 				$catchOp = &$opcodes[$catchOpLine];
-				echo $indent, 'catch ('
+				echo $indent, "catch ("
 						, $this->stripNamespace(isset($catchOp['op1']['constant']) ? $catchOp['op1']['constant'] : str($this->getOpVal($catchOp['op1'], $EX)))
 						, ' '
 						, isset($catchOp['op2']['constant']) ? '$' . $catchOp['op2']['constant'] : str($this->getOpVal($catchOp['op2'], $EX))
@@ -1276,7 +1277,7 @@ class Decompiler
 			$this->endScope($EX);
 			$body = ob_get_clean();
 
-			echo $indent, 'while (', str($this->getOpVal($firstJmpOp['op1'], $EX)), ") {", PHP_EOL;
+			echo $indent, "while (", str($this->getOpVal($firstJmpOp['op1'], $EX)), ") {", PHP_EOL;
 			echo $body;
 			echo $indent, '}', PHP_EOL;
 
@@ -1306,7 +1307,7 @@ class Decompiler
 				$as = str($firstJmpOp['fe_key'], $EX) . ' => ' . $as;
 			}
 
-			echo $indent, 'foreach (', str($firstJmpOp['fe_src'], $EX), " as $as) {", PHP_EOL;
+			echo $indent, "foreach (", str($firstJmpOp['fe_src'], $EX), " as $as) {", PHP_EOL;
 			echo $body;
 			echo $indent, '}', PHP_EOL;
 
@@ -1378,7 +1379,7 @@ class Decompiler
 	{
 		$opcodes = &$op_array['opcodes'];
 		$last = count($opcodes) - 1;
-		for ($i = 0; $i <= $last; $i ++) {
+		for ($i = 0; $i <= $last; $i++) {
 			$op = &$opcodes[$i];
 			$op['line'] = $i;
 			switch ($op['opcode']) {
@@ -1478,7 +1479,7 @@ class Decompiler
 	// }}}
 	function &dop_array($op_array, $indent = '') // {{{
 	{
-		$this->fixOpCode($op_array['opcodes'], true, $indent == '' ? 1 : null);
+		$op_array['opcodes'] = $this->fixOpCode($op_array['opcodes'], true, $indent == '' ? 1 : null);
 		$this->buildJmpInfo($op_array);
 
 		$opcodes = &$op_array['opcodes'];
@@ -1486,7 +1487,7 @@ class Decompiler
 		// build semi-basic blocks
 		$nextbbs = array();
 		$starti = 0;
-		for ($i = 1; $i <= $last; $i ++) {
+		for ($i = 1; $i <= $last; $i++) {
 			if (isset($opcodes[$i]['jmpins'])
 			 || isset($opcodes[$i - 1]['jmpouts'])) {
 				$nextbbs[$starti] = $i;
@@ -1549,7 +1550,7 @@ class Decompiler
 		$lastphpop = null;
 		$currentSourceLine = null;
 
-		for ($i = $range[0]; $i <= $range[1]; $i ++, unsetArray($EX['value2constant'], $currentSourceLine)) {
+		for ($i = $range[0]; $i <= $range[1]; $i++, unsetArray($EX['value2constant'], $currentSourceLine)) {
 			// {{{ prepair
 			$op = &$opcodes[$i];
 			$opc = $op['opcode'];
@@ -1568,7 +1569,7 @@ class Decompiler
 			$opname = xcache_get_opcode($opc);
 
 			if ($opname == 'UNDEF' || !isset($opname)) {
-				echo 'UNDEF OP:';
+				echo '// UNDEF OP:';
 				$this->dumpop($op, $EX);
 				continue;
 			}
@@ -1822,6 +1823,7 @@ class Decompiler
 							break 2;
 						case ZEND_FETCH_STATIC:
 							$statics = &$EX['op_array']['static_variables'];
+							$name = unquoteName($src);
 							if ((xcache_get_type($statics[$name]) & IS_LEXICAL_REF)) {
 								$EX['uses'][] = '&' . str($lvalue);
 								unset($statics);
@@ -1829,7 +1831,6 @@ class Decompiler
 							}
 
 							$resvar = 'static ' . $lvalue;
-							$name = unquoteName($src);
 							if (isset($statics[$name])) {
 								$var = $statics[$name];
 								$resvar .= ' = ';
@@ -2014,12 +2015,12 @@ class Decompiler
 				//unset($T[$op1['var']]);
 				break;
 				// }}}
-			case XC_DECLARE_CLASS: 
+			case XC_DECLARE_CLASS:
 			case XC_DECLARE_INHERITED_CLASS:
 			case XC_DECLARE_INHERITED_CLASS_DELAYED: // {{{
 				$key = $op1['constant'];
 				if (!isset($this->dc['class_table'][$key])) {
-					echo 'class not found: ', $key, 'existing classes are:', "\n";
+					echo "class not found: ", $key, "\nexisting classes are:\n";
 					var_dump(array_keys($this->dc['class_table']));
 					exit;
 				}
@@ -2286,11 +2287,11 @@ class Decompiler
 				// }}}
 
 			case XC_BEGIN_SILENCE: // {{{
-				$EX['silence'] ++;
+				$EX['silence']++;
 				break;
 				// }}}
 			case XC_END_SILENCE: // {{{
-				$EX['silence'] --;
+				$EX['silence']--;
 				$lastresvar = '@' . str($lastresvar, $EX);
 				break;
 				// }}}
@@ -2408,7 +2409,7 @@ class Decompiler
 	function popargs(&$EX, $n) // {{{
 	{
 		$args = array();
-		for ($i = 0; $i < $n; $i ++) {
+		for ($i = 0; $i < $n; $i++) {
 			$a = array_pop($EX['argstack']);
 			if (is_array($a)) {
 				array_unshift($args, foldToCode($a, $EX));
@@ -2472,7 +2473,8 @@ class Decompiler
 	function dumpRange(&$EX, $range) // {{{
 	{
 		for ($i = $range[0]; $i <= $range[1]; ++$i) {
-			echo $EX['indent'], $i, "\t"; $this->dumpop($EX['opcodes'][$i], $EX);
+			echo $EX['indent'], $i, "\t";
+			$this->dumpop($EX['opcodes'][$i], $EX);
 		}
 		echo $EX['indent'], "==", PHP_EOL;
 	}
@@ -2493,7 +2495,7 @@ class Decompiler
 		}
 
 		$refrest = false;
-		for ($i = 0; $i < $c; $i ++) {
+		for ($i = 0; $i < $c; $i++) {
 			if ($i) {
 				echo ', ';
 			}
@@ -2548,7 +2550,7 @@ class Decompiler
 	function duses(&$EX) // {{{
 	{
 		if ($EX['uses']) {
-			echo ' use(', implode(', ', $EX['uses']), ')';
+			echo " use(", implode(', ', $EX['uses']), ')';
 		}
 	}
 	// }}}
@@ -2758,18 +2760,18 @@ class Decompiler
 						}
 
 						switch ($opa['fn_flags'] & ZEND_ACC_PPP_MASK) {
-							case ZEND_ACC_PUBLIC:
-								$decorations[] = "public";
-								break;
-							case ZEND_ACC_PRIVATE:
-								$decorations[] = "private";
-								break;
-							case ZEND_ACC_PROTECTED:
-								$decorations[] = "protected";
-								break;
-							default:
-								$decorations[] = "<visibility error>";
-								break;
+						case ZEND_ACC_PUBLIC:
+							$decorations[] = "public";
+							break;
+						case ZEND_ACC_PRIVATE:
+							$decorations[] = "private";
+							break;
+						case ZEND_ACC_PROTECTED:
+							$decorations[] = "protected";
+							break;
+						default:
+							$decorations[] = "<visibility error>";
+							break;
 						}
 					}
 					$this->activeMethod = $this->activeClass . '::' . $opa['function_name'];
@@ -2853,8 +2855,8 @@ class Decompiler
 	// }}}
 	function outputUnusedOp() // {{{
 	{
-		for ($i = 0; $opname = xcache_get_opcode($i); $i ++) {
-			if ($opname == 'UNDEF')  {
+		for ($i = 0; $opname = xcache_get_opcode($i); $i++) {
+			if ($opname == 'UNDEF') {
 				continue;
 			}
 
@@ -3039,7 +3041,7 @@ if (preg_match_all('!XC_[A-Z_]+!', file_get_contents(__FILE__), $ms)) {
 	exit;
 }
 //*/
-foreach (array (
+foreach (array(
 	'XC_ADD_INTERFACE' => -1,
 	'XC_ASSIGN_DIM' => -1,
 	'XC_ASSIGN_OBJ' => -1,
