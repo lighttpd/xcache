@@ -2025,10 +2025,12 @@ class Decompiler
 			case XC_DECLARE_INHERITED_CLASS:
 			case XC_DECLARE_INHERITED_CLASS_DELAYED: // {{{
 				$key = $op1['constant'];
+				// missing tailing \0 (outside of the string)
+				$key = substr($key . ".", 0, strlen($key));
 				if (!isset($this->dc['class_table'][$key])) {
 					echo "class not found: ", $key, "\nexisting classes are:\n";
 					var_dump(array_keys($this->dc['class_table']));
-					exit;
+					break;
 				}
 				$class = &$this->dc['class_table'][$key];
 				if (!isset($class['name'])) {
