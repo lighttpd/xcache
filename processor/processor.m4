@@ -662,7 +662,12 @@ define(`UNION_znode_op', `dnl {{{
 			', `
 				IFDASM(`{
 					zval *zv;
-					zval *srczv = &dasm->active_op_array_src->literals[SRC(`$1.constant')].constant;
+					zval *srczv;
+					if (SRC(`$1.constant') >= dasm->active_op_array_src->last_literal) {
+						fprintf(stderr, "opcode %s $1 want literal %d\n", xc_get_opcode(SRC(`opcode')), SRC(`$1.constant'));
+						break;
+					}
+					srczv = &dasm->active_op_array_src->literals[SRC(`$1.constant')].constant;
 					ALLOC_ZVAL(zv);
 					MAKE_COPY_ZVAL(&srczv, zv);
 					add_assoc_zval_ex(DST(), XCACHE_STRS("$1.constant"), zv);
