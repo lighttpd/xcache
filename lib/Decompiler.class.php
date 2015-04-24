@@ -2190,7 +2190,13 @@ class Decompiler
 			case XC_INCLUDE_OR_EVAL: // {{{
 				$type = ZEND_ENGINE_2_4 ? $ext : $op2['var']; // hack
 				$keyword = $this->includeTypes[$type];
-				$resvar = "$keyword " . str($this->getOpVal($op1, $EX));
+				$rvalue = str($this->getOpVal($op1, $EX));
+				if ($type == ZEND_EVAL) {
+					$resvar = "$keyword($rvalue)";
+				}
+				else {
+					$resvar = "$keyword $rvalue";
+				}
 				break;
 				// }}}
 			case XC_FE_RESET: // {{{
@@ -2233,7 +2239,7 @@ class Decompiler
 				// }}}
 			case XC_FREE: // {{{
 				$free = $T[$op1['var']];
-				if (!is_a($free, 'Decompiler_Array') && !is_a($free, 'Decompiler_Box')) {
+				if (!is_a($free, 'Decompiler_Box')) {
 					$op['php'] = is_object($free) ? $free : $this->unquote($free, '(', ')');
 					$lastphpop = &$op;
 				}

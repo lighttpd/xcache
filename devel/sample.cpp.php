@@ -702,5 +702,7 @@ $callback = function($quantity, $product) use($tax, &$total) {
 #endif
 exit();
 exit(1);
+array(eval('array 1'));
+array();
 
 ?>
