@@ -857,25 +857,25 @@ class Decompiler
 	{
 		$opcodes = &$EX['opcodes'];
 		$firstOp = &$opcodes[$range[0]];
-		return $firstOp['opcode'] == XC_JMPZ && !empty($firstOp['jmpouts']) && $opcodes[$firstOp['jmpouts'][0] - 1]['opcode'] == XC_JMP
-		 && !empty($opcodes[$firstOp['jmpouts'][0] - 1]['jmpouts'])
-		 && $opcodes[$firstOp['jmpouts'][0] - 1]['jmpouts'][0] == $range[1] + 1;
+		return $firstOp['opcode'] == XC_JMPZ && !empty($firstOp['jmptos']) && $opcodes[$firstOp['jmptos'][0] - 1]['opcode'] == XC_JMP
+		 && !empty($opcodes[$firstOp['jmptos'][0] - 1]['jmptos'])
+		 && $opcodes[$firstOp['jmptos'][0] - 1]['jmptos'][0] == $range[1] + 1;
 	}
 	// }}}
 	function removeJmpInfo(&$EX, $line) // {{{
 	{
 		$opcodes = &$EX['opcodes'];
-		if (!isset($opcodes[$line]['jmpouts'])) {
+		if (!isset($opcodes[$line]['jmptos'])) {
 			printBacktrace();
 		}
-		foreach ($opcodes[$line]['jmpouts'] as $jmpTo) {
-			$jmpins = &$opcodes[$jmpTo]['jmpins'];
-			$jmpins = array_flip($jmpins);
-			unset($jmpins[$line]);
-			$jmpins = array_keys($jmpins);
+		foreach ($opcodes[$line]['jmptos'] as $jmpTo) {
+			$jmpfroms = &$opcodes[$jmpTo]['jmpfroms'];
+			$jmpfroms = array_flip($jmpfroms);
+			unset($jmpfroms[$line]);
+			$jmpfroms = array_keys($jmpfroms);
 		}
 		// $opcodes[$line]['opcode'] = XC_NOP;
-		unset($opcodes[$line]['jmpouts']);
+		unset($opcodes[$line]['jmptos']);
 	}
 	// }}}
 	function beginScope(&$EX, $doIndent = true) // {{{
@@ -915,8 +915,8 @@ class Decompiler
 		$lastOp = &$opcodes[$range[1]];
 
 		// {{{ && || and or
-		if (($firstOp['opcode'] == XC_JMPZ_EX || $firstOp['opcode'] == XC_JMPNZ_EX) && !empty($firstOp['jmpouts'])
-		 && $firstOp['jmpouts'][0] == $range[1] + 1
+		if (($firstOp['opcode'] == XC_JMPZ_EX || $firstOp['opcode'] == XC_JMPNZ_EX) && !empty($firstOp['jmptos'])
+		 && $firstOp['jmptos'][0] == $range[1] + 1
 		 && $lastOp['opcode'] == XC_BOOL
 		 && $firstOp['opcode']['result']['var'] == $lastOp['opcode']['result']['var']
 		) {
@@ -933,14 +933,14 @@ class Decompiler
 		}
 		// }}}
 		// {{{ ?: excluding JMP_SET/JMP_SET_VAR
-		if ($firstOp['opcode'] == XC_JMPZ && !empty($firstOp['jmpouts'])
+		if ($firstOp['opcode'] == XC_JMPZ && !empty($firstOp['jmptos'])
 		 && $range[1] >= $range[0] + 3
-		 && ($opcodes[$firstOp['jmpouts'][0] - 2]['opcode'] == XC_QM_ASSIGN || $opcodes[$firstOp['jmpouts'][0] - 2]['opcode'] == XC_QM_ASSIGN_VAR)
-		 && $opcodes[$firstOp['jmpouts'][0] - 1]['opcode'] == XC_JMP && $opcodes[$firstOp['jmpouts'][0] - 1]['jmpouts'][0] == $range[1] + 1
+		 && ($opcodes[$firstOp['jmptos'][0] - 2]['opcode'] == XC_QM_ASSIGN || $opcodes[$firstOp['jmptos'][0] - 2]['opcode'] == XC_QM_ASSIGN_VAR)
+		 && $opcodes[$firstOp['jmptos'][0] - 1]['opcode'] == XC_JMP && $opcodes[$firstOp['jmptos'][0] - 1]['jmptos'][0] == $range[1] + 1
 		 && ($lastOp['opcode'] == XC_QM_ASSIGN || $lastOp['opcode'] == XC_QM_ASSIGN_VAR)
 		) {
-			$trueRange = array($range[0] + 1, $firstOp['jmpouts'][0] - 2);
-			$falseRange = array($firstOp['jmpouts'][0], $range[1]);
+			$trueRange = array($range[0] + 1, $firstOp['jmptos'][0] - 2);
+			$falseRange = array($firstOp['jmptos'][0], $range[1]);
 			$this->removeJmpInfo($EX, $range[0]);
 
 			$condition = $this->getOpVal($firstOp['op1'], $EX);
@@ -953,7 +953,7 @@ class Decompiler
 		}
 		// }}}
 		// {{{ goto (TODO: recognize BRK which is translated to JMP by optimizer)
-		if ($firstOp['opcode'] == XC_JMP && !empty($firstOp['jmpouts']) && $firstOp['jmpouts'][0] == $range[1] + 1) {
+		if ($firstOp['opcode'] == XC_JMP && !empty($firstOp['jmptos']) && $firstOp['jmptos'][0] == $range[1] + 1) {
 			$this->removeJmpInfo($EX, $range[0]);
 			assert(XC_GOTO != -1);
 			$firstOp['opcode'] = XC_GOTO;
@@ -966,11 +966,11 @@ class Decompiler
 		}
 		// }}}
 		// {{{ for
-		if (!empty($firstOp['jmpins']) && $opcodes[$firstOp['jmpins'][0]]['opcode'] == XC_JMP
-		 && $lastOp['opcode'] == XC_JMP && !empty($lastOp['jmpouts']) && $lastOp['jmpouts'][0] <= $firstOp['jmpins'][0]
-		 && !empty($opcodes[$range[1] + 1]['jmpins']) && $opcodes[$opcodes[$range[1] + 1]['jmpins'][0]]['opcode'] == XC_JMPZNZ
+		if (!empty($firstOp['jmpfroms']) && $opcodes[$firstOp['jmpfroms'][0]]['opcode'] == XC_JMP
+		 && $lastOp['opcode'] == XC_JMP && !empty($lastOp['jmptos']) && $lastOp['jmptos'][0] <= $firstOp['jmpfroms'][0]
+		 && !empty($opcodes[$range[1] + 1]['jmpfroms']) && $opcodes[$opcodes[$range[1] + 1]['jmpfroms'][0]]['opcode'] == XC_JMPZNZ
 		) {
-			$nextRange = array($lastOp['jmpouts'][0], $firstOp['jmpins'][0]);
+			$nextRange = array($lastOp['jmptos'][0], $firstOp['jmpfroms'][0]);
 			$conditionRange = array($range[0], $nextRange[0] - 1);
 			$this->removeJmpInfo($EX, $conditionRange[1]);
 			$bodyRange = array($nextRange[1], $range[1]);
@@ -1016,7 +1016,7 @@ class Decompiler
 			$this->beginComplexBlock($EX);
 			$isElseIf = false;
 			do {
-				$ifRange = array($range[0], $opcodes[$range[0]]['jmpouts'][0] - 1);
+				$ifRange = array($range[0], $opcodes[$range[0]]['jmptos'][0] - 1);
 				$this->removeJmpInfo($EX, $ifRange[0]);
 				$this->removeJmpInfo($EX, $ifRange[1]);
 				$condition = $this->getOpVal($opcodes[$ifRange[0]]['op1'], $EX);
@@ -1033,7 +1033,7 @@ class Decompiler
 				$range[0] = $ifRange[1] + 1;
 				for ($i = $ifRange[1] + 1; $i <= $range[1]; ++$i) {
 					// find first jmpout
-					if (!empty($opcodes[$i]['jmpouts'])) {
+					if (!empty($opcodes[$i]['jmptos'])) {
 						if ($this->isIfCondition($EX, array($i, $range[1]))) {
 							$this->dasmBasicBlock($EX, array($range[0], $i));
 							$range[0] = $i;
@@ -1054,9 +1054,9 @@ class Decompiler
 			$this->endComplexBlock($EX);
 			return;
 		}
-		if ($firstOp['opcode'] == XC_JMPZ && !empty($firstOp['jmpouts'])
-		 && $firstOp['jmpouts'][0] - 1 == $range[1]
-		 && ($opcodes[$firstOp['jmpouts'][0] - 1]['opcode'] == XC_RETURN || $opcodes[$firstOp['jmpouts'][0] - 1]['opcode'] == XC_GENERATOR_RETURN)) {
+		if ($firstOp['opcode'] == XC_JMPZ && !empty($firstOp['jmptos'])
+		 && $firstOp['jmptos'][0] - 1 == $range[1]
+		 && ($opcodes[$firstOp['jmptos'][0] - 1]['opcode'] == XC_RETURN || $opcodes[$firstOp['jmptos'][0] - 1]['opcode'] == XC_GENERATOR_RETURN)) {
 			$this->beginComplexBlock($EX);
 			$this->removeJmpInfo($EX, $range[0]);
 			$condition = $this->getOpVal($opcodes[$range[0]]['op1'], $EX);
@@ -1071,9 +1071,9 @@ class Decompiler
 		}
 		// }}}
 		// {{{ try/catch
-		if (!empty($firstOp['jmpins']) && !empty($opcodes[$firstOp['jmpins'][0]]['isCatchBegin'])) {
+		if (!empty($firstOp['jmpfroms']) && !empty($opcodes[$firstOp['jmpfroms'][0]]['isCatchBegin'])) {
 			$catchBlocks = array();
-			$catchFirst = $firstOp['jmpins'][0];
+			$catchFirst = $firstOp['jmpfroms'][0];
 
 			$tryRange = array($range[0], $catchFirst - 1);
 
@@ -1135,11 +1135,8 @@ class Decompiler
 		}
 		// }}}
 		// {{{ switch/case
-		if (
-			($firstOp['opcode'] == XC_CASE
-			|| $firstOp['opcode'] == XC_JMP && !empty($firstOp['jmpouts']) && $opcodes[$firstOp['jmpouts'][0]]['opcode'] == XC_CASE
-			)
-		 	 && !empty($lastOp['jmpouts'])
+		if ($firstOp['opcode'] == XC_CASE && !empty($lastOp['jmptos'])
+		 || $firstOp['opcode'] == XC_JMP && !empty($firstOp['jmptos']) && $opcodes[$firstOp['jmptos'][0]]['opcode'] == XC_CASE && !empty($lastOp['jmptos'])
 		) {
 			$cases = array();
 			$caseDefault = null;
@@ -1152,13 +1149,13 @@ class Decompiler
 					}
 					$jmpz = $opcodes[$i + 1];
 					assert('$jmpz["opcode"] == XC_JMPZ');
-					$caseNext = $jmpz['jmpouts'][0];
+					$caseNext = $jmpz['jmptos'][0];
 					$cases[$i] = $caseNext - 1;
 					$i = $caseNext;
 				}
-				else if ($op['opcode'] == XC_JMP && $op['jmpouts'][0] >= $i) {
+				else if ($op['opcode'] == XC_JMP && $op['jmptos'][0] >= $i) {
 					// default
-					$caseNext = $op['jmpouts'][0];
+					$caseNext = $op['jmptos'][0];
 					$caseDefault = $i;
 					$cases[$i] = $caseNext - 1;
 					$i = $caseNext;
@@ -1227,8 +1224,8 @@ class Decompiler
 		}
 		// }}}
 		// {{{ do/while
-		if ($lastOp['opcode'] == XC_JMPNZ && !empty($lastOp['jmpouts'])
-		 && $lastOp['jmpouts'][0] == $range[0]) {
+		if ($lastOp['opcode'] == XC_JMPNZ && !empty($lastOp['jmptos'])
+		 && $lastOp['jmptos'][0] == $range[0]) {
 			$this->removeJmpInfo($EX, $range[1]);
 			$this->beginComplexBlock($EX);
 
@@ -1247,7 +1244,7 @@ class Decompiler
 		$firstJmp = -1;
 		$firstJmpOp = null;
 		for ($i = $range[0]; $i <= $range[1]; ++$i) {
-			if (!empty($opcodes[$i]['jmpouts'])) {
+			if (!empty($opcodes[$i]['jmptos'])) {
 				$firstJmp = $i;
 				$firstJmpOp = &$opcodes[$firstJmp];
 				break;
@@ -1258,7 +1255,7 @@ class Decompiler
 		$lastJmp = -1;
 		$lastJmpOp = null;
 		for ($i = $range[1]; $i > $firstJmp; --$i) {
-			if (!empty($opcodes[$i]['jmpouts'])) {
+			if (!empty($opcodes[$i]['jmptos'])) {
 				$lastJmp = $i;
 				$lastJmpOp = &$opcodes[$lastJmp];
 				break;
@@ -1269,9 +1266,9 @@ class Decompiler
 		// {{{ while
 		if (isset($firstJmpOp)
 		 && $firstJmpOp['opcode'] == XC_JMPZ
-		 && $firstJmpOp['jmpouts'][0] > $range[1]
+		 && $firstJmpOp['jmptos'][0] > $range[1]
 		 && $lastOp['opcode'] == XC_JMP
-		 && !empty($lastOp['jmpouts']) && $lastOp['jmpouts'][0] == $range[0]) {
+		 && !empty($lastOp['jmptos']) && $lastOp['jmptos'][0] == $range[0]) {
 			$this->removeJmpInfo($EX, $firstJmp);
 			$this->removeJmpInfo($EX, $range[1]);
 			$this->beginComplexBlock($EX);
@@ -1293,10 +1290,10 @@ class Decompiler
 		// {{{ foreach
 		if (isset($firstJmpOp)
 		 && $firstJmpOp['opcode'] == XC_FE_FETCH
-		 && !empty($firstJmpOp['jmpouts']) && $firstJmpOp['jmpouts'][0] > $lastJmp
+		 && !empty($firstJmpOp['jmptos']) && $firstJmpOp['jmptos'][0] > $lastJmp
 		 && isset($lastJmpOp)
 		 && $lastJmpOp['opcode'] == XC_JMP
-		 && !empty($lastJmpOp['jmpouts']) && $lastJmpOp['jmpouts'][0] == $firstJmp) {
+		 && !empty($lastJmpOp['jmptos']) && $lastJmpOp['jmptos'][0] == $firstJmp) {
 			$this->removeJmpInfo($EX, $firstJmp);
 			$this->removeJmpInfo($EX, $lastJmp);
 			$this->beginComplexBlock($EX);
@@ -1330,22 +1327,22 @@ class Decompiler
 
 		$starti = $range[0];
 		for ($i = $starti; $i <= $range[1]; ) {
-			if (!empty($opcodes[$i]['jmpins']) || !empty($opcodes[$i]['jmpouts'])) {
+			if (!empty($opcodes[$i]['jmpfroms']) || !empty($opcodes[$i]['jmptos'])) {
 				$blockFirst = $i;
 				$blockLast = -1;
 				$j = $blockFirst;
 				do {
 					$op = $opcodes[$j];
-					if (!empty($op['jmpins'])) {
+					if (!empty($op['jmpfroms'])) {
 						// care about jumping from blocks behind, not before
-						foreach ($op['jmpins'] as $oplineNumber) {
+						foreach ($op['jmpfroms'] as $oplineNumber) {
 							if ($oplineNumber <= $range[1] && $blockLast < $oplineNumber) {
 								$blockLast = $oplineNumber;
 							}
 						}
 					}
-					if (!empty($op['jmpouts'])) {
-						$blockLast = max($blockLast, max($op['jmpouts']) - 1);
+					if (!empty($op['jmptos'])) {
+						$blockLast = max($blockLast, max($op['jmptos']) - 1);
 					}
 					++$j;
 				} while ($j <= $blockLast);
@@ -1380,7 +1377,7 @@ class Decompiler
 		}
 	}
 	// }}}
-	function buildJmpInfo(&$op_array) // {{{ build jmpins/jmpouts to op_array
+	function buildJmpInfo(&$op_array) // {{{ build jmpfroms/jmptos to op_array
 	{
 		$opcodes = &$op_array['opcodes'];
 		$last = count($opcodes) - 1;
@@ -1390,7 +1387,7 @@ class Decompiler
 			switch ($op['opcode']) {
 			case XC_CONT:
 			case XC_BRK:
-				$op['jmpouts'] = array();
+				$op['jmptos'] = array();
 				break;
 
 			case XC_GOTO:
@@ -1409,8 +1406,8 @@ class Decompiler
 					fprintf(STDERR, "%d: internal error\n", __LINE__);
 					break;
 				}
-				$op['jmpouts'] = array($target);
-				$opcodes[$target]['jmpins'][] = $i;
+				$op['jmptos'] = array($target);
+				$opcodes[$target]['jmpfroms'][] = $i;
 				break;
 
 			case XC_JMPZNZ:
@@ -1424,9 +1421,9 @@ class Decompiler
 					fprintf(STDERR, "%d: internal error\n", __LINE__);
 					break;
 				}
-				$op['jmpouts'] = array($jmpz, $jmpnz);
-				$opcodes[$jmpz]['jmpins'][] = $i;
-				$opcodes[$jmpnz]['jmpins'][] = $i;
+				$op['jmptos'] = array($jmpz, $jmpnz);
+				$opcodes[$jmpz]['jmpfroms'][] = $i;
+				$opcodes[$jmpnz]['jmpfroms'][] = $i;
 				break;
 
 			case XC_JMPZ:
@@ -1443,31 +1440,31 @@ class Decompiler
 					fprintf(STDERR, "%d: internal error\n", __LINE__);
 					break;
 				}
-				$op['jmpouts'] = array($target);
-				$opcodes[$target]['jmpins'][] = $i;
+				$op['jmptos'] = array($target);
+				$opcodes[$target]['jmpfroms'][] = $i;
 				break;
 
 			/*
 			case XC_RETURN:
-				$op['jmpouts'] = array();
+				$op['jmptos'] = array();
 				break;
 			*/
 
 			case XC_CASE:
 				// just to link together
-				$op['jmpouts'] = array($i + 2);
-				$opcodes[$i + 2]['jmpins'][] = $i;
+				$op['jmptos'] = array($i + 2);
+				$opcodes[$i + 2]['jmpfroms'][] = $i;
 				break;
 
 			case XC_CATCH:
 				$catchNext = $op['extended_value'];
 				$catchBegin = $opcodes[$i - 1]['opcode'] == XC_FETCH_CLASS ? $i - 1 : $i;
-				$opcodes[$catchBegin]['jmpouts'] = array($catchNext);
-				$opcodes[$catchNext]['jmpins'][] = $catchBegin;
+				$opcodes[$catchBegin]['jmptos'] = array($catchNext);
+				$opcodes[$catchNext]['jmpfroms'][] = $catchBegin;
 				break;
 			}
 			/*
-			if (!empty($op['jmpouts']) || !empty($op['jmpins'])) {
+			if (!empty($op['jmptos']) || !empty($op['jmpfroms'])) {
 				echo $i, "\t", xcache_get_opcode($op['opcode']), PHP_EOL;
 			}
 			// */
@@ -1482,8 +1479,8 @@ class Decompiler
 				$catch_op = $try_catch_element['catch_op'];
 				$try_op = $try_catch_element['try_op'];
 				do {
-					$opcodes[$try_op]['jmpins'][] = $catch_op;
-					$opcodes[$catch_op]['jmpouts'][] = $try_op;
+					$opcodes[$try_op]['jmpfroms'][] = $catch_op;
+					$opcodes[$catch_op]['jmptos'][] = $try_op;
 					if ($opcodes[$catch_op]['opcode'] == XC_CATCH) {
 						$catch_op = $opcodes[$catch_op]['extended_value'];
 					}
@@ -1504,26 +1501,12 @@ class Decompiler
 		$this->buildJmpInfo($op_array);
 
 		$opcodes = &$op_array['opcodes'];
-		$last = count($opcodes) - 1;
-		// build semi-basic blocks
-		$nextbbs = array();
-		$starti = 0;
-		for ($i = 1; $i <= $last; $i++) {
-			if (isset($opcodes[$i]['jmpins'])
-			 || isset($opcodes[$i - 1]['jmpouts'])) {
-				$nextbbs[$starti] = $i;
-				$starti = $i;
-			}
-		}
-		$nextbbs[$starti] = $last + 1;
 
 		$EX = array();
 		$EX['Ts'] = array();
 		$EX['indent'] = $indent;
-		$EX['nextbbs'] = $nextbbs;
 		$EX['op_array'] = &$op_array;
 		$EX['opcodes'] = &$opcodes;
-		$EX['range'] = array(0, count($opcodes) - 1);
 		// func call
 		$EX['object'] = null;
 		$EX['called_scope'] = null;
@@ -1560,7 +1543,8 @@ class Decompiler
 		}
 		// */
 		// decompile in a tree way
-		$this->recognizeAndDecompileClosedBlocks($EX, $EX['range'], $EX['indent']);
+		$range = array(0, count($opcodes) - 1);
+		$this->recognizeAndDecompileClosedBlocks($EX, $range);
 		return $EX;
 	}
 	// }}}
@@ -2044,8 +2028,9 @@ class Decompiler
 				// possible missing tailing \0 (outside of the string)
 				$key = substr($key . ".", 0, strlen($key));
 				if (!isset($this->dc['class_table'][$key])) {
-					echo "class not found: ", $key, "\nexisting classes are:\n";
+					echo $EX['indent'], "/* class not found: ", $key, ", existing classes are:\n";
 					var_dump(array_keys($this->dc['class_table']));
+					echo "*/\n";
 					break;
 				}
 				$class = &$this->dc['class_table'][$key];
@@ -2493,11 +2478,11 @@ class Decompiler
 			}
 		}
 		$d[';'] = $op['extended_value'];
-		if (!empty($op['jmpouts'])) {
-			$d['>>'] = implode(',', $op['jmpouts']);
+		if (!empty($op['jmptos'])) {
+			$d['>>'] = implode(',', $op['jmptos']);
 		}
-		if (!empty($op['jmpins'])) {
-			$d['<<'] = implode(',', $op['jmpins']);
+		if (!empty($op['jmpfroms'])) {
+			$d['<<'] = implode(',', $op['jmpfroms']);
 		}
 
 		foreach ($d as $k => $v) {
