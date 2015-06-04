@@ -2,6 +2,7 @@
 
 define('INDENT', "\t");
 ini_set('error_reporting', E_ALL);
+assert_options(ASSERT_ACTIVE, 0);
 
 function color($str, $color = 33)
 {
