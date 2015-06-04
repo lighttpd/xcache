@@ -1,6 +1,9 @@
 #! /usr/bin/php -dopen_basedir=
 <?php
 
+// you should write your own phpdc.phpr file if you want to do batch decompile
+// using glob and/or Recursive Directory Iterator
+
 $srcdir = dirname(__FILE__);
 require_once("$srcdir/../lib/Decompiler.class.php");
 if (file_exists("$srcdir/phpdc.debug.php")) {
@@ -9,19 +12,45 @@ if (file_exists("$srcdir/phpdc.debug.php")) {
 
 if (!isset($argv)) {
 	$argv = $_SERVER['argv'];
-	$argc = $_SERVER['argc'];
 }
 
-$dc = new Decompiler();
-if (isset($argv[2])) {
-	eval('$dc->decompileDasm(' . file_get_contents($argv[2]) . ');');
-}
-else if (isset($argv[1])) {
-	if ($dc->decompileFile($argv[1]) === false) {
-		exit(2);
+$inputType = 'php';
+$outputType = 'decompile';
+$files = array();
+
+reset($argv);
+while (($arg = next($argv)) !== false) {
+	switch ($arg) {
+	case '-h':
+		echo "Usage: phpdc.phpr [-dca] [filename]";
+		echo "  -c: decompile into PHP code";
+		echo "  -d: dump into opcode";
+		echo "  -a: input file is dasm opcode return from xcache_dasm_*";
+		echo "  -h: this help page";
+		break;
+
+	case '-c':
+		$outputType = 'php';
+		break;
+
+	case '-d':
+		$outputType = 'opcode';
+		break;
+
+	case '--':
+		break 2;
+
+	case '-a':
+		$inputType = 'opcode';
+		break;
+
+	default:
+		$files[] = $arg;
+		break;
 	}
 }
-else {
+
+if (!$files) {
 	$phpcode = '';
 	if (!defined('stdin')) {
 		define('stdin', fopen('php://stdin', 'rb'));
@@ -29,9 +58,30 @@ else {
 	while (!feof(stdin)) {
 		$phpcode .= fgets(stdin);
 	}
+	$dc = new Decompiler($outputType);
 	if ($dc->decompileString($phpcode) === false) {
 		exit(2);
 	}
+	$dc->output();
 }
-$dc->output();
+else {
+	foreach ($files as $file) {
+		$dc = new Decompiler($outputType);
+		switch ($inputType) {
+		case 'opcode':
+			eval('$opcode = ' . file_get_contents($file) . ';');
+			if ($dc->decompileDasm($opcode) === false) {
+				exit(2);
+			}
+			break;
+
+		case 'php';
+			if ($dc->decompileFile($file) === false) {
+				exit(2);
+			}
+			break;
+		}
+		$dc->output();
+	}
+}
 

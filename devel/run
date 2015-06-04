@@ -313,7 +313,8 @@ run() {
 		dop)
 			shift
 			cmd=(./php-cli -c devel.ini)
-			phpApp=(./bin/phpdop.phpr)
+			phpApp=(./bin/phpdc.phpr)
+			set -- -d "$@"
 			;;
 		fcgi)
 			shift

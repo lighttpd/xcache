@@ -591,9 +591,11 @@ class Decompiler
 	var $activeClass;
 	var $activeMethod;
 	var $activeFunction;
+	var $dumpOnly;
 
-	function Decompiler()
+	function Decompiler($outputType)
 	{
+		$this->dumpOnly = $outputType == 'opcode';
 		$GLOBALS['__xcache_decompiler'] = $this;
 		// {{{ testing
 		// XC_UNDEF XC_OP_DATA
@@ -760,7 +762,10 @@ class Decompiler
 		case XC_IS_TMP_VAR:
 			$T = &$EX['Ts'];
 			if (!isset($T[$op['var']])) {
-				printBacktrace();
+				if (!$this->dumpOnly) {
+					printBacktrace();
+				}
+				return null;
 			}
 			$ret = $T[$op['var']];
 			if ($free && empty($this->keepTs)) {
@@ -1536,16 +1541,30 @@ class Decompiler
 			$EX['value2constant'][$this->activeFunction] = '__FUNCTION__';
 		}
 
-		/* dump whole array
-		$this->keepTs = true;
-		$this->dasmBasicBlock($EX, $range);
-		for ($i = $range[0]; $i <= $range[1]; ++$i) {
-			echo $i, "\t", $this->dumpop($opcodes[$i], $EX);
-		}
-		// */
-		// decompile in a tree way
 		$range = array(0, count($opcodes) - 1);
-		$this->recognizeAndDecompileClosedBlocks($EX, $range);
+		if ($this->dumpOnly) {
+			$this->keepTs = true;
+			$this->dasmBasicBlock($range);
+			$this->dumpRange($range);
+		}
+		else {
+			// decompile in a tree way
+			$this->recognizeAndDecompileClosedBlocks($range);
+		}
+		return $EX;
+	}
+	// }}}
+	function &dump_op_array($op_array, $indent = '') // {{{
+	{
+		$op_array['opcodes'] = $this->fixOpCode($op_array['opcodes']);
+		$this->buildJmpInfo($op_array);
+
+		$EX = array();
+		$EX['op_array'] = &$op_array;
+		$EX['opcodes'] = &$op_array['opcodes'];
+		$EX['indent'] = $indent;
+		$range = array(0, count($EX['opcodes']) - 1);
+		$this->dumpRange($EX, $range);
 		return $EX;
 	}
 	// }}}
@@ -1576,10 +1595,10 @@ class Decompiler
 
 			if ($opname == 'UNDEF' || !isset($opname)) {
 				echo '// UNDEF OP:';
-				$this->dumpop($op, $EX);
+				$this->dumpOp($op, $EX);
 				continue;
 			}
-			// echo $i, ' '; $this->dumpop($op, $EX); //var_dump($op);
+			// echo $i, ' '; $this->dumpOp($op, $EX); //var_dump($op);
 
 			$resvar = null;
 			unset($curResVar);
@@ -1734,7 +1753,7 @@ class Decompiler
 
 						$src = new Decompiler_ListBox($list);
 						if (!isset($op1['var'])) {
-							$this->dumpop($op, $EX);
+							$this->dumpOp($op, $EX);
 							var_dump($op);
 							die('missing var');
 						}
@@ -2443,60 +2462,69 @@ class Decompiler
 		return implode(', ', $args);
 	}
 	// }}}
-	function dumpop($op, &$EX) // {{{
+	function getOp($op, $which, &$EX) // {{{
+	{
+		switch ($op['op_type']) {
+		case XC_IS_UNUSED:
+			return '?' . $op['opline_num'];
+
+		case XC_IS_VAR:
+			$s = '$' . $op['var'];
+			if ($which != 'result' && isset($EX['Ts'])) {
+				$s .= ':' . str($this->getOpVal($op, $EX));
+			}
+			return $s;
+
+		case XC_IS_TMP_VAR:
+			$s = '#' . $op['var'];
+			if ($which != 'result' && isset($EX['Ts'])) {
+				$s .= ':' . str($this->getOpVal($op, $EX));
+			}
+			return $s;
+
+		case XC_IS_CONST:
+			return isset($EX['Ts']) ? str($this->getOpVal($op, $EX)) : $op['var'] . var_export($op['constant'], true);
+
+		default:
+			return isset($EX['Ts']) ? str($this->getOpVal($op, $EX)) : $op['op_type'] . '?' . $op['var'];
+		}
+	}
+	// }}}
+	function dumpOp($op, &$EX) // {{{
 	{
 		assert('isset($op)');
-		$op1 = $op['op1'];
-		$op2 = $op['op2'];
-		$d = array(xcache_get_opcode($op['opcode']), $op['opcode']);
+		echo str_pad($op['lineno'], 4);
 
-		foreach (array('op1' => '1:', 'op2' => '2:', 'result' => '>') as $k => $kk) {
-			switch ($op[$k]['op_type']) {
-			case XC_IS_UNUSED:
-				$d[$kk] = 'U:' . $op[$k]['opline_num'];
-				break;
+		$name = xcache_get_opcode($op['opcode']);
 
-			case XC_IS_VAR:
-				$d[$kk] = '$' . $op[$k]['var'];
-				if ($k != 'result') {
-					$d[$kk] .= ':' . str($this->getOpVal($op[$k], $EX));
-				}
-				break;
-
-			case XC_IS_TMP_VAR:
-				$d[$kk] = '#' . $op[$k]['var'];
-				if ($k != 'result') {
-					$d[$kk] .= ':' . str($this->getOpVal($op[$k], $EX));
-				}
-				break;
-
-			case XC_IS_CV:
-				$d[$kk] = $this->getOpVal($op[$k], $EX);
-				break;
-
-			default:
-				$d[$kk] = $this->getOpVal($op[$k], $EX);
-			}
+		if (substr($name, 0, 5) == 'ZEND_') {
+			$name = substr($name, 5);
 		}
-		$d[';'] = $op['extended_value'];
+		echo str_pad($name, 25);
+
+		$types = array('result' => 9, 'op1' => 20, 'op2' => 20);
+		foreach ($types as $which => $len) {
+			echo str_pad(($which == 'result' ? '>' : '') . $this->getOp($op[$which], $which, $EX), $len);
+		}
+		echo "\t;", $op['extended_value'];
+		if (isset($op['isCatchBegin'])) {
+			echo ' CB';
+		}
 		if (!empty($op['jmptos'])) {
-			$d['>>'] = implode(',', $op['jmptos']);
+			echo "\t>>", implode(',', $op['jmptos']);
 		}
 		if (!empty($op['jmpfroms'])) {
-			$d['<<'] = implode(',', $op['jmpfroms']);
+			echo "\t<<", implode(',', $op['jmpfroms']);
 		}
 
-		foreach ($d as $k => $v) {
-			echo is_int($k) ? '' : $k, str($v), "\t";
-		}
 		echo PHP_EOL;
 	}
 	// }}}
 	function dumpRange(&$EX, $range) // {{{
 	{
 		for ($i = $range[0]; $i <= $range[1]; ++$i) {
-			echo $EX['indent'], $i, "\t";
-			$this->dumpop($EX['opcodes'][$i], $EX);
+			echo $EX['indent'], str_pad($i, 4);
+			$this->dumpOp($EX['opcodes'][$i], $EX);
 		}
 		echo $EX['indent'], "==", PHP_EOL;
 	}
@@ -2847,7 +2875,11 @@ class Decompiler
 	// }}}
 	function output() // {{{
 	{
-		echo "<?". "php\n\n";
+		echo "<?". "php";
+		if ($this->dumpOnly) {
+			echo " // dump opcode only";
+		}
+		echo "\n\n";
 		foreach ($this->dc['class_table'] as $key => $class) {
 			if ($key{0} != "\0") {
 				$this->activeClass = $class['name'];
