@@ -26,9 +26,8 @@ $(XCACHE_PROC_C): $(XCACHE_PROC_OUT) $(XCACHE_PROC_H)
 	cp $(XCACHE_PROC_OUT) $(XCACHE_PROC_C)
 	-$(XCACHE_INDENT) < $(XCACHE_PROC_OUT) > $(XCACHE_PROC_C).tmp && mv $(XCACHE_PROC_C).tmp $(XCACHE_PROC_C)
 
-xcachesvnclean: clean
-	-svn propget svn:ignore . > .svnignore.tmp 2>/dev/null && mv .svnignore.tmp .svnignore
-	cat .svnignore | grep -v devel | grep -v svnignore | grep -v ^Makefile | grep -v ^config.nice | xargs rm -rf
+xcachevcsclean: clean
+	cat .gitignore | grep -v devel | grep -v gitignore | grep -v ^Makefile | grep -v ^config.nice | xargs rm -rf
 
 xcachetest: all
 	$(SED) "s#\\./\\.libs/#$(top_builddir)/\\.libs/#" < $(srcdir)/xcache-test.ini > $(top_builddir)/tmp-php.ini

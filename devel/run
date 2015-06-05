@@ -151,7 +151,6 @@ case "$basename" in
 esac
 
 touch devel.pid
-svn propget svn:ignore . > .svnignore
 
 # ==========================
 
