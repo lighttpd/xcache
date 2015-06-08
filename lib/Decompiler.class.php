@@ -1485,7 +1485,7 @@ class Decompiler
 					if ($opcodes[$catch_op]['opcode'] == XC_CATCH) {
 						$catch_op = $opcodes[$catch_op]['extended_value'];
 					}
-					else if ($opcodes[$catch_op + 1]['opcode'] == XC_CATCH) {
+					else if ($catch_op + 1 <= $last && $opcodes[$catch_op + 1]['opcode'] == XC_CATCH) {
 						$catch_op = $opcodes[$catch_op + 1]['extended_value'];
 					}
 					else {
