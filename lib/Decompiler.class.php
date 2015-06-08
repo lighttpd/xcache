@@ -925,7 +925,6 @@ class Decompiler
 	{
 		$opcodes = &$range['EX']['opcodes'];
 		if ($offset > 0) {
-			$last = $range['EX']['op_array']['last'];
 			for ($i = $offset; $i <= $range[1]; ++$i) {
 				if ($opcodes[$i]['opcode'] != XC_NOP) {
 					return $i;
@@ -1413,11 +1412,11 @@ class Decompiler
 		}
 	}
 	// }}}
-	function buildJmpInfo(&$op_array) // {{{ build jmpfroms/jmptos to op_array
+	function buildJmpInfo($range) // {{{ build jmpfroms/jmptos to op_array
 	{
-		$opcodes = &$op_array['opcodes'];
-		$last = count($opcodes) - 1;
-		for ($i = 0; $i <= $last; $i++) {
+		$op_array = &$range['EX']['op_array'];
+		$opcodes = &$range['EX']['opcodes'];
+		for ($i = $range[0]; $i <= $range[1]; $i++) {
 			$op = &$opcodes[$i];
 			switch ($op['opcode']) {
 			case XC_CONT:
@@ -1519,13 +1518,13 @@ class Decompiler
 					if ($opcodes[$catch_op]['opcode'] == XC_CATCH) {
 						$catch_op = $opcodes[$catch_op]['extended_value'];
 					}
-					else if ($catch_op + 1 <= $last && $opcodes[$catch_op + 1]['opcode'] == XC_CATCH) {
+					else if ($catch_op + 1 <= $range[1] && $opcodes[$catch_op + 1]['opcode'] == XC_CATCH) {
 						$catch_op = $opcodes[$catch_op + 1]['extended_value'];
 					}
 					else {
 						break;
 					}
-				} while ($catch_op <= $last && empty($opcodes[$catch_op]['isCatchBegin']));
+				} while ($catch_op <= $range[1] && empty($opcodes[$catch_op]['isCatchBegin']));
 			}
 		}
 	}
@@ -1533,7 +1532,6 @@ class Decompiler
 	function &dop_array($op_array, $indent = '') // {{{
 	{
 		$op_array['opcodes'] = $this->fixOpCode($op_array['opcodes'], true, $indent == '' ? 1 : null);
-		$this->buildJmpInfo($op_array);
 
 		$opcodes = &$op_array['opcodes'];
 
@@ -1574,6 +1572,8 @@ class Decompiler
 		for ($i = $range[0]; $i <= $range[1]; $i++) {
 			$opcodes[$i]['line'] = $i;
 		}
+		$this->buildJmpInfo($range);
+
 		if ($this->outputOpcode) {
 			$this->keepTs = true;
 			$this->dumpRange($range);
