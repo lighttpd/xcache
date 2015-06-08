@@ -702,8 +702,9 @@ class Decompiler
 		}
 	}
 	// }}}
-	function outputPhp(&$EX, $range) // {{{
+	function outputPhp($range) // {{{
 	{
+		$EX = &$range['EX'];
 		$needBlankline = isset($EX['lastBlock']);
 		$indent = $EX['indent'];
 		$curticks = 0;
@@ -850,18 +851,18 @@ class Decompiler
 		return $opcodes;
 	}
 	// }}}
-	function decompileBasicBlock(&$EX, $range, $unhandled = false) // {{{
+	function decompileBasicBlock($range, $unhandled = false) // {{{
 	{
-		$this->dasmBasicBlock($EX, $range);
+		$this->dasmBasicBlock($range);
 		if ($unhandled) {
-			$this->dumpRange($EX, $range);
+			$this->dumpRange($range);
 		}
-		$this->outputPhp($EX, $range);
+		$this->outputPhp($range);
 	}
 	// }}}
-	function isIfCondition(&$EX, $range) // {{{
+	function isIfCondition($range) // {{{
 	{
-		$opcodes = &$EX['opcodes'];
+		$opcodes = &$range['EX']['opcodes'];
 		$firstOp = &$opcodes[$range[0]];
 		return $firstOp['opcode'] == XC_JMPZ && !empty($firstOp['jmptos']) && $opcodes[$firstOp['jmptos'][0] - 1]['opcode'] == XC_JMP
 		 && !empty($opcodes[$firstOp['jmptos'][0] - 1]['jmptos'])
@@ -932,8 +933,9 @@ class Decompiler
 		return -1;
 	}
 	// }}}
-	function decompileComplexBlock(&$EX, $range) // {{{
+	function decompileComplexBlock($range) // {{{
 	{
+		$EX = &$range['EX'];
 		$T = &$EX['Ts'];
 		$opcodes = &$EX['opcodes'];
 		$indent = $EX['indent'];
@@ -949,10 +951,10 @@ class Decompiler
 		) {
 			$this->removeJmpInfo($EX, $range[0]);
 
-			$this->recognizeAndDecompileClosedBlocks($EX, array($range[0], $range[0]));
+			$this->recognizeAndDecompileClosedBlocks(array($range[0], $range[0], 'EX' => &$EX));
 			$op1 = $this->getOpVal($firstOp['result'], $EX, true);
 
-			$this->recognizeAndDecompileClosedBlocks($EX, array($range[0] + 1, $range[1]));
+			$this->recognizeAndDecompileClosedBlocks(array($range[0] + 1, $range[1], 'EX' => &$EX));
 			$op2 = $this->getOpVal($lastOp['result'], $EX, true);
 
 			$T[$firstOp['result']['var']] = new Decompiler_Binop($this, $op1, $firstOp['opcode'], $op2);
@@ -966,14 +968,14 @@ class Decompiler
 		 && $opcodes[$firstOp['jmptos'][0] - 1]['opcode'] == XC_JMP && $opcodes[$firstOp['jmptos'][0] - 1]['jmptos'][0] == $range[1] + 1
 		 && ($lastOp['opcode'] == XC_QM_ASSIGN || $lastOp['opcode'] == XC_QM_ASSIGN_VAR)
 		) {
-			$trueRange = array($range[0] + 1, $firstOp['jmptos'][0] - 2);
-			$falseRange = array($firstOp['jmptos'][0], $range[1]);
+			$trueRange = array($range[0] + 1, $firstOp['jmptos'][0] - 2, 'EX' => &$EX);
+			$falseRange = array($firstOp['jmptos'][0], $range[1], 'EX' => &$EX);
 			$this->removeJmpInfo($EX, $range[0]);
 
 			$condition = $this->getOpVal($firstOp['op1'], $EX);
-			$this->recognizeAndDecompileClosedBlocks($EX, $trueRange);
+			$this->recognizeAndDecompileClosedBlocks($trueRange);
 			$trueValue = $this->getOpVal($opcodes[$trueRange[1]]['result'], $EX, true);
-			$this->recognizeAndDecompileClosedBlocks($EX, $falseRange);
+			$this->recognizeAndDecompileClosedBlocks($falseRange);
 			$falseValue = $this->getOpVal($opcodes[$falseRange[1]]['result'], $EX, true);
 			$T[$opcodes[$trueRange[1]]['result']['var']] = new Decompiler_TriOp($condition, $trueValue, $falseValue);
 			return false;
@@ -988,7 +990,7 @@ class Decompiler
 			$firstOp['goto'] = $target;
 			$opcodes[$target]['gofrom'][] = $range[0];
 
-			$this->recognizeAndDecompileClosedBlocks($EX, $range);
+			$this->recognizeAndDecompileClosedBlocks($range);
 			return false;
 		}
 		// }}}
@@ -997,15 +999,15 @@ class Decompiler
 		 && $lastOp['opcode'] == XC_JMP && !empty($lastOp['jmptos']) && $lastOp['jmptos'][0] <= $firstOp['jmpfroms'][0]
 		 && !empty($opcodes[$range[1] + 1]['jmpfroms']) && $opcodes[$opcodes[$range[1] + 1]['jmpfroms'][0]]['opcode'] == XC_JMPZNZ
 		) {
-			$nextRange = array($lastOp['jmptos'][0], $firstOp['jmpfroms'][0]);
-			$conditionRange = array($range[0], $nextRange[0] - 1);
+			$nextRange = array($lastOp['jmptos'][0], $firstOp['jmpfroms'][0], 'EX' => &$EX);
+			$conditionRange = array($range[0], $nextRange[0] - 1, 'EX' => &$EX);
 			$this->removeJmpInfo($EX, $conditionRange[1]);
-			$bodyRange = array($nextRange[1], $range[1]);
+			$bodyRange = array($nextRange[1], $range[1], 'EX' => &$EX);
 			$this->removeJmpInfo($EX, $bodyRange[1]);
 
 			$initial = '';
 			$this->beginScope($EX);
-			$this->dasmBasicBlock($EX, $conditionRange);
+			$this->dasmBasicBlock($conditionRange);
 			$conditionCodes = array();
 			for ($i = $conditionRange[0]; $i <= $conditionRange[1]; ++$i) {
 				if (isset($opcodes[$i]['php'])) {
@@ -1019,7 +1021,7 @@ class Decompiler
 			$this->endScope($EX);
 
 			$this->beginScope($EX);
-			$this->dasmBasicBlock($EX, $nextRange);
+			$this->dasmBasicBlock($nextRange);
 			$nextCodes = array();
 			for ($i = $nextRange[0]; $i <= $nextRange[1]; ++$i) {
 				if (isset($opcodes[$i]['php'])) {
@@ -1031,7 +1033,7 @@ class Decompiler
 			$this->beginComplexBlock($EX);
 			echo $indent, 'for (', str($initial, $EX), '; ', implode(', ', $conditionCodes), '; ', implode(', ', $nextCodes), ') ', '{', PHP_EOL;
 			$this->beginScope($EX);
-			$this->recognizeAndDecompileClosedBlocks($EX, $bodyRange);
+			$this->recognizeAndDecompileClosedBlocks($bodyRange);
 			$this->endScope($EX);
 			echo $indent, '}', PHP_EOL;
 			$this->endComplexBlock($EX);
@@ -1039,18 +1041,18 @@ class Decompiler
 		}
 		// }}}
 		// {{{ if/elseif/else
-		if ($this->isIfCondition($EX, $range)) {
+		if ($this->isIfCondition($range)) {
 			$this->beginComplexBlock($EX);
 			$isElseIf = false;
 			do {
-				$ifRange = array($range[0], $opcodes[$range[0]]['jmptos'][0] - 1);
+				$ifRange = array($range[0], $opcodes[$range[0]]['jmptos'][0] - 1, 'EX' => &$EX);
 				$this->removeJmpInfo($EX, $ifRange[0]);
 				$this->removeJmpInfo($EX, $ifRange[1]);
 				$condition = $this->getOpVal($opcodes[$ifRange[0]]['op1'], $EX);
 
 				echo $indent, $isElseIf ? 'else if' : 'if', ' (', str($condition, $EX), ') ', '{', PHP_EOL;
 				$this->beginScope($EX);
-				$this->recognizeAndDecompileClosedBlocks($EX, $ifRange);
+				$this->recognizeAndDecompileClosedBlocks($ifRange);
 				$this->endScope($EX);
 				$EX['lastBlock'] = null;
 				echo $indent, '}', PHP_EOL;
@@ -1061,19 +1063,19 @@ class Decompiler
 				for ($i = $ifRange[1] + 1; $i <= $range[1]; ++$i) {
 					// find first jmpout
 					if (!empty($opcodes[$i]['jmptos'])) {
-						if ($this->isIfCondition($EX, array($i, $range[1]))) {
-							$this->dasmBasicBlock($EX, array($range[0], $i));
+						if ($this->isIfCondition(array($i, $range[1], 'EX' => &$EX))) {
+							$this->dasmBasicBlock(array($range[0], $i, 'EX' => &$EX));
 							$range[0] = $i;
 						}
 						break;
 					}
 				}
-			} while ($this->isIfCondition($EX, $range));
+			} while ($this->isIfCondition($range));
 			if ($ifRange[1] < $range[1]) {
-				$elseRange = array($ifRange[1], $range[1]);
+				$elseRange = array($ifRange[1], $range[1], 'EX' => &$EX);
 				echo $indent, 'else ', '{', PHP_EOL;
 				$this->beginScope($EX);
-				$this->recognizeAndDecompileClosedBlocks($EX, $elseRange);
+				$this->recognizeAndDecompileClosedBlocks($elseRange);
 				$this->endScope($EX);
 				$EX['lastBlock'] = null;
 				echo $indent, '}', PHP_EOL;
@@ -1090,7 +1092,7 @@ class Decompiler
 
 			echo $indent, 'if (', str($condition, $EX), ') ', '{', PHP_EOL;
 			$this->beginScope($EX);
-			$this->recognizeAndDecompileClosedBlocks($EX, $range);
+			$this->recognizeAndDecompileClosedBlocks($range);
 			$this->endScope($EX);
 			echo $indent, '}', PHP_EOL;
 			$this->endComplexBlock($EX);
@@ -1102,7 +1104,7 @@ class Decompiler
 			$catchBlocks = array();
 			$catchFirst = $firstOp['jmpfroms'][0];
 
-			$tryRange = array($range[0], $catchFirst - 1);
+			$tryRange = array($range[0], $catchFirst - 1, 'EX' => &$EX);
 
 			// search for XC_CATCH
 			for ($i = $catchFirst; $i <= $range[1]; ) {
@@ -1132,7 +1134,7 @@ class Decompiler
 			$this->beginComplexBlock($EX);
 			echo $indent, "try {", PHP_EOL;
 			$this->beginScope($EX);
-			$this->recognizeAndDecompileClosedBlocks($EX, $tryRange);
+			$this->recognizeAndDecompileClosedBlocks($tryRange);
 			$this->endScope($EX);
 			echo $indent, '}', PHP_EOL;
 			if (!$catchBlocks) {
@@ -1142,7 +1144,7 @@ class Decompiler
 			foreach ($catchBlocks as $catchFirst => $catchInfo) {
 				list($catchOpLine, $catchBodyLast) = $catchInfo;
 				$catchBodyFirst = $catchOpLine + 1;
-				$this->dasmBasicBlock($EX, array($catchFirst, $catchOpLine));
+				$this->dasmBasicBlock(array($catchFirst, $catchOpLine, 'EX' => &$EX));
 				$catchOp = &$opcodes[$catchOpLine];
 				echo $indent, "catch ("
 						, $this->stripNamespace(isset($catchOp['op1']['constant']) ? $catchOp['op1']['constant'] : str($this->getOpVal($catchOp['op1'], $EX)))
@@ -1153,7 +1155,7 @@ class Decompiler
 
 				$EX['lastBlock'] = null;
 				$this->beginScope($EX);
-				$this->recognizeAndDecompileClosedBlocks($EX, array($catchBodyFirst, $catchBodyLast));
+				$this->recognizeAndDecompileClosedBlocks(array($catchBodyFirst, $catchBodyLast, 'EX' => &$EX));
 				$this->endScope($EX);
 				echo $indent, '}', PHP_EOL;
 			}
@@ -1240,7 +1242,7 @@ class Decompiler
 				}
 
 				$this->beginScope($EX);
-				$this->recognizeAndDecompileClosedBlocks($EX, array($caseFirst, $caseLast));
+				$this->recognizeAndDecompileClosedBlocks(array($caseFirst, $caseLast, 'EX' => &$EX));
 				$this->endScope($EX);
 				$caseIsOut = true;
 			}
@@ -1258,7 +1260,7 @@ class Decompiler
 
 			echo $indent, "do {", PHP_EOL;
 			$this->beginScope($EX);
-			$this->recognizeAndDecompileClosedBlocks($EX, $range);
+			$this->recognizeAndDecompileClosedBlocks($range);
 			$this->endScope($EX);
 			echo $indent, "} while (", str($this->getOpVal($lastOp['op1'], $EX)), ');', PHP_EOL;
 
@@ -1302,7 +1304,7 @@ class Decompiler
 
 			ob_start();
 			$this->beginScope($EX);
-			$this->recognizeAndDecompileClosedBlocks($EX, $range);
+			$this->recognizeAndDecompileClosedBlocks($range);
 			$this->endScope($EX);
 			$body = ob_get_clean();
 
@@ -1327,7 +1329,7 @@ class Decompiler
 
 			ob_start();
 			$this->beginScope($EX);
-			$this->recognizeAndDecompileClosedBlocks($EX, $range);
+			$this->recognizeAndDecompileClosedBlocks($range);
 			$this->endScope($EX);
 			$body = ob_get_clean();
 
@@ -1345,11 +1347,12 @@ class Decompiler
 		}
 		// }}}
 
-		$this->decompileBasicBlock($EX, $range, true);
+		$this->decompileBasicBlock($range, true);
 	}
 	// }}}
-	function recognizeAndDecompileClosedBlocks(&$EX, $range) // {{{ decompile in a tree way
+	function recognizeAndDecompileClosedBlocks($range) // {{{ decompile in a tree way
 	{
+		$EX = &$range['EX'];
 		$opcodes = &$EX['opcodes'];
 
 		$starti = $range[0];
@@ -1380,9 +1383,9 @@ class Decompiler
 
 				if ($blockLast >= $blockFirst) {
 					if ($blockFirst > $starti) {
-						$this->decompileBasicBlock($EX, array($starti, $blockFirst - 1));
+						$this->decompileBasicBlock(array($starti, $blockFirst - 1, 'EX' => &$EX));
 					}
-					if ($this->decompileComplexBlock($EX, array($blockFirst, $blockLast)) === false) {
+					if ($this->decompileComplexBlock(array($blockFirst, $blockLast, 'EX' => &$EX)) === false) {
 						if ($EX['lastBlock'] == 'complex') {
 							echo PHP_EOL;
 						}
@@ -1400,7 +1403,7 @@ class Decompiler
 			}
 		}
 		if ($starti <= $range[1]) {
-			$this->decompileBasicBlock($EX, array($starti, $range[1]));
+			$this->decompileBasicBlock(array($starti, $range[1], 'EX' => &$EX));
 		}
 	}
 	// }}}
@@ -1562,7 +1565,7 @@ class Decompiler
 			$EX['value2constant'][$this->activeFunction] = '__FUNCTION__';
 		}
 
-		$range = array(0, count($opcodes) - 1);
+		$range = array(0, count($opcodes) - 1, 'EX' => &$EX);
 		if ($this->dumpOnly) {
 			$this->keepTs = true;
 			$this->dasmBasicBlock($range);
@@ -1584,13 +1587,14 @@ class Decompiler
 		$EX['op_array'] = &$op_array;
 		$EX['opcodes'] = &$op_array['opcodes'];
 		$EX['indent'] = $indent;
-		$range = array(0, count($EX['opcodes']) - 1);
-		$this->dumpRange($EX, $range);
+		$range = array(0, count($EX['opcodes']) - 1, 'EX' => &$EX);
+		$this->dumpRange($range);
 		return $EX;
 	}
 	// }}}
-	function dasmBasicBlock(&$EX, $range) // {{{
+	function dasmBasicBlock($range) // {{{
 	{
+		$EX = &$range['EX'];
 		$T = &$EX['Ts'];
 		$opcodes = &$EX['opcodes'];
 		$lastphpop = null;
@@ -2483,7 +2487,7 @@ class Decompiler
 		return implode(', ', $args);
 	}
 	// }}}
-	function getOp($op, $which, &$EX) // {{{
+	function opToString($op, $which, &$EX) // {{{
 	{
 		switch ($op['op_type']) {
 		case XC_IS_UNUSED:
@@ -2525,7 +2529,7 @@ class Decompiler
 
 		$types = array('result' => 9, 'op1' => 20, 'op2' => 20);
 		foreach ($types as $which => $len) {
-			echo str_pad(($which == 'result' ? '>' : '') . $this->getOp($op[$which], $which, $EX), $len);
+			echo str_pad(($which == 'result' ? '>' : '') . $this->opToString($op[$which], $which, $EX), $len);
 		}
 		echo "\t;", $op['extended_value'];
 		if (isset($op['isCatchBegin'])) {
@@ -2541,8 +2545,9 @@ class Decompiler
 		echo PHP_EOL;
 	}
 	// }}}
-	function dumpRange(&$EX, $range) // {{{
+	function dumpRange($range) // {{{
 	{
+		$EX = &$range['EX'];
 		for ($i = $range[0]; $i <= $range[1]; ++$i) {
 			echo $EX['indent'], str_pad($i, 4);
 			$this->dumpOp($EX['opcodes'][$i], $EX);
