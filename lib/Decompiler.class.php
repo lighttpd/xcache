@@ -1399,7 +1399,7 @@ class Decompiler
 			case XC_GOTO:
 				$target = $op['op1']['var'];
 				if (!isset($opcodes[$target])) {
-					fprintf(STDERR, "%d: internal error\n", __LINE__);
+					fprintf(STDERR, "%d: missing jump target at #$i\n", __LINE__);
 					break;
 				}
 				$op['goto'] = $target;
@@ -1409,7 +1409,7 @@ class Decompiler
 			case XC_JMP:
 				$target = $op['op1']['var'];
 				if (!isset($opcodes[$target])) {
-					fprintf(STDERR, "%d: internal error\n", __LINE__);
+					fprintf(STDERR, "%d: missing jump target at #$i\n", __LINE__);
 					break;
 				}
 				$op['jmptos'] = array($target);
@@ -1420,11 +1420,11 @@ class Decompiler
 				$jmpz = $op['op2']['opline_num'];
 				$jmpnz = $op['extended_value'];
 				if (!isset($opcodes[$jmpz])) {
-					fprintf(STDERR, "%d: internal error\n", __LINE__);
+					fprintf(STDERR, "%d: missing jump target at #$i\n", __LINE__);
 					break;
 				}
 				if (!isset($opcodes[$jmpnz])) {
-					fprintf(STDERR, "%d: internal error\n", __LINE__);
+					fprintf(STDERR, "%d: missing jump target at #$i\n", __LINE__);
 					break;
 				}
 				$op['jmptos'] = array($jmpz, $jmpnz);
@@ -1443,7 +1443,7 @@ class Decompiler
 			// case XC_JMP_NO_CTOR:
 				$target = $op['op2']['opline_num'];
 				if (!isset($opcodes[$target])) {
-					fprintf(STDERR, "%d: internal error\n", __LINE__);
+					fprintf(STDERR, "%d: missing jump target at #$i\n", __LINE__);
 					break;
 				}
 				$op['jmptos'] = array($target);
