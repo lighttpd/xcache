@@ -1582,20 +1582,6 @@ class Decompiler
 		return $EX;
 	}
 	// }}}
-	function &dump_op_array($op_array, $indent = '') // {{{
-	{
-		$op_array['opcodes'] = $this->fixOpCode($op_array['opcodes']);
-		$this->buildJmpInfo($op_array);
-
-		$EX = array();
-		$EX['op_array'] = &$op_array;
-		$EX['opcodes'] = &$op_array['opcodes'];
-		$EX['indent'] = $indent;
-		$range = array(0, count($EX['opcodes']) - 1, 'EX' => &$EX);
-		$this->dumpRange($range);
-		return $EX;
-	}
-	// }}}
 	function dasmBasicBlock($range) // {{{
 	{
 		$EX = &$range['EX'];
