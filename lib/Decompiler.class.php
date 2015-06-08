@@ -2552,7 +2552,12 @@ class Decompiler
 		echo str_pad($op['line'], 4);
 		echo str_pad($op['lineno'], 4);
 
-		$name = xcache_get_opcode($op['opcode']);
+		if (isset($op['oldopcode'])) {
+			$name = '//' . xcache_get_opcode($op['oldopcode']);
+		}
+		else {
+			$name = xcache_get_opcode($op['opcode']);
+		}
 
 		if (substr($name, 0, 5) == 'ZEND_') {
 			$name = substr($name, 5);
