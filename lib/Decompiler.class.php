@@ -2483,7 +2483,7 @@ class Decompiler
 			return $s;
 
 		case XC_IS_CONST:
-			return isset($EX['Ts']) ? str($this->getOpVal($op, $EX)) : $op['var'] . var_export($op['constant'], true);
+			return isset($EX['Ts']) ? str($this->getOpVal($op, $EX)) : $op['var'] . ':' . var_export($op['constant'], true);
 
 		default:
 			return isset($EX['Ts']) ? str($this->getOpVal($op, $EX)) : $op['op_type'] . '?' . $op['var'];
