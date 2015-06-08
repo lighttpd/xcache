@@ -911,14 +911,35 @@ class Decompiler
 		$EX['lastBlock'] = 'complex';
 	}
 	// }}}
+	function op($range, $offset) // {{{
+	{
+		$opcodes = &$range['EX']['opcodes'];
+		if ($offset > 0) {
+			$last = $range['EX']['op_array']['last'];
+			for ($i = $offset; $i <= $range[1]; ++$i) {
+				if ($opcodes[$i]['opcode'] != XC_NOP) {
+					return $i;
+				}
+			}
+		}
+		else {
+			for ($i = -$offset; $i >= $range[0]; --$i) {
+				if ($opcodes[$i]['opcode'] != XC_NOP) {
+					return $i;
+				}
+			}
+		}
+		return -1;
+	}
+	// }}}
 	function decompileComplexBlock(&$EX, $range) // {{{
 	{
 		$T = &$EX['Ts'];
 		$opcodes = &$EX['opcodes'];
 		$indent = $EX['indent'];
 
-		$firstOp = &$opcodes[$range[0]];
-		$lastOp = &$opcodes[$range[1]];
+		$firstOp = &$opcodes[$this->op($range, $range[0])];
+		$lastOp = &$opcodes[$this->op($range, -$range[1])];
 
 		// {{{ && || and or
 		if (($firstOp['opcode'] == XC_JMPZ_EX || $firstOp['opcode'] == XC_JMPNZ_EX) && !empty($firstOp['jmptos'])
