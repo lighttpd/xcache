@@ -122,7 +122,7 @@ function decompileAst($ast, $EX) // {{{
 	// ZEND_BOOL_OR:  handled in binop
 
 	case ZEND_SELECT:
-		return new Decompiler_TriOp(
+		return new Decompiler_TernaryOp(
 				decompileAst($ast[0], $EX)
 				, decompileAst($ast[1], $EX)
 				, decompileAst($ast[2], $EX)
@@ -136,8 +136,8 @@ function decompileAst($ast, $EX) // {{{
 
 	default:
 		$decompiler = $GLOBALS['__xcache_decompiler'];
-		if (isset($decompiler->binops[$kind])) {
-			return new Decompiler_Binop($decompiler
+		if (isset($decompiler->binaryOp[$kind])) {
+			return new Decompiler_BinaryOp($decompiler
 					, decompileAst($ast[0], $EX)
 					, $kind
 					, decompileAst($ast[1], $EX)
@@ -264,14 +264,41 @@ class Decompiler_Code extends Decompiler_Object // {{{
 	}
 }
 // }}}
-class Decompiler_Binop extends Decompiler_Code // {{{
+class Decompiler_UnaryOp extends Decompiler_Code // {{{
+{
+	var $parent;
+	var $opc;
+	var $op;
+
+	function Decompiler_UnaryOp($parent, $opc, $op)
+	{
+		$this->parent = &$parent;
+		$this->opc = $opc;
+		$this->op = $op;
+	}
+
+	function toCode($indent)
+	{
+		$opstr = $this->parent->unaryOp[$this->opc];
+
+		if (is_a($this->op, 'Decompiler_TernaryOp') || is_a($this->op, 'Decompiler_BinaryOp') && $this->op->opc != $this->opc) {
+			$op = "(" . str($this->op, $indent) . ")";
+		}
+		else {
+			$op = $this->op;
+		}
+		return $opstr . str($op, $indent);
+	}
+}
+// }}}
+class Decompiler_BinaryOp extends Decompiler_Code // {{{
 {
 	var $opc;
 	var $op1;
 	var $op2;
 	var $parent;
 
-	function Decompiler_Binop($parent, $op1, $opc, $op2)
+	function Decompiler_BinaryOp($parent, $op1, $opc, $op2)
 	{
 		$this->parent = &$parent;
 		$this->opc = $opc;
@@ -281,16 +308,16 @@ class Decompiler_Binop extends Decompiler_Code // {{{
 
 	function toCode($indent)
 	{
-		$opstr = $this->parent->binops[$this->opc];
+		$opstr = $this->parent->binaryOp[$this->opc];
 
-		if (is_a($this->op1, 'Decompiler_TriOp') || is_a($this->op1, 'Decompiler_Binop') && $this->op1->opc != $this->opc) {
+		if (is_a($this->op1, 'Decompiler_TernaryOp') || is_a($this->op1, 'Decompiler_BinaryOp') && $this->op1->opc != $this->opc) {
 			$op1 = "(" . str($this->op1, $indent) . ")";
 		}
 		else {
 			$op1 = $this->op1;
 		}
 
-		if (is_a($this->op2, 'Decompiler_TriOp') || is_a($this->op2, 'Decompiler_Binop') && $this->op2->opc != $this->opc && substr($opstr, -1) != '=') {
+		if (is_a($this->op2, 'Decompiler_TernaryOp') || is_a($this->op2, 'Decompiler_BinaryOp') && $this->op2->opc != $this->opc && substr($opstr, -1) != '=') {
 			$op2 = "(" . str($this->op2, $indent) . ")";
 		}
 		else {
@@ -305,13 +332,13 @@ class Decompiler_Binop extends Decompiler_Code // {{{
 	}
 }
 // }}}
-class Decompiler_TriOp extends Decompiler_Code // {{{
+class Decompiler_TernaryOp extends Decompiler_Code // {{{
 {
 	var $condition;
 	var $trueValue;
 	var $falseValue;
 
-	function Decompiler_TriOp($condition, $trueValue, $falseValue)
+	function Decompiler_TernaryOp($condition, $trueValue, $falseValue)
 	{
 		$this->condition = $condition;
 		$this->trueValue = $trueValue;
@@ -321,11 +348,11 @@ class Decompiler_TriOp extends Decompiler_Code // {{{
 	function toCode($indent)
 	{
 		$trueValue = $this->trueValue;
-		if (is_a($this->trueValue, 'Decompiler_TriOp')) {
+		if (is_a($this->trueValue, 'Decompiler_TernaryOp')) {
 			$trueValue = "(" . str($trueValue, $indent) . ")";
 		}
 		$falseValue = $this->falseValue;
-		if (is_a($this->falseValue, 'Decompiler_TriOp')) {
+		if (is_a($this->falseValue, 'Decompiler_TernaryOp')) {
 			$falseValue = "(" . str($falseValue, $indent) . ")";
 		}
 
@@ -630,11 +657,11 @@ class Decompiler
 		}
 		// }}}
 		// {{{ opinfo
-		$this->unaryops = array(
+		$this->unaryOp = array(
 				XC_BW_NOT   => '~',
 				XC_BOOL_NOT => '!',
 				);
-		$this->binops = array(
+		$this->binaryOp = array(
 				XC_ADD                 => "+",
 				XC_ASSIGN_ADD          => "+=",
 				XC_SUB                 => "-",
@@ -672,8 +699,8 @@ class Decompiler
 				XC_JMPNZ_EX            => "||",
 				);
 		if (defined('IS_CONSTANT_AST')) {
-			$this->binops[ZEND_BOOL_AND] = '&&';
-			$this->binops[ZEND_BOOL_OR]  = '||';
+			$this->binaryOp[ZEND_BOOL_AND] = '&&';
+			$this->binaryOp[ZEND_BOOL_OR]  = '||';
 		}
 		// }}}
 		$this->includeTypes = array( // {{{
@@ -974,7 +1001,7 @@ class Decompiler
 			$this->recognizeAndDecompileClosedBlocks(array($range[0] + 1, $range[1], 'EX' => &$EX));
 			$op2 = $this->getOpVal($lastOp['result'], $EX, true);
 
-			$T[$firstOp['result']['var']] = new Decompiler_Binop($this, $op1, $firstOp['opcode'], $op2);
+			$T[$firstOp['result']['var']] = new Decompiler_BinaryOp($this, $op1, $firstOp['opcode'], $op2);
 			return false;
 		}
 		// }}}
@@ -994,7 +1021,7 @@ class Decompiler
 			$trueValue = $this->getOpVal($opcodes[$trueRange[1]]['result'], $EX, true);
 			$this->recognizeAndDecompileClosedBlocks($falseRange);
 			$falseValue = $this->getOpVal($opcodes[$falseRange[1]]['result'], $EX, true);
-			$T[$opcodes[$trueRange[1]]['result']['var']] = new Decompiler_TriOp($condition, $trueValue, $falseValue);
+			$T[$opcodes[$trueRange[1]]['result']['var']] = new Decompiler_TernaryOp($condition, $trueValue, $falseValue);
 			return false;
 		}
 		// }}}
@@ -1863,7 +1890,7 @@ class Decompiler
 						}
 					}
 				}
-				$resvar = new Decompiler_Binop($this, $lvalue, XC_ASSIGN, $rvalue);
+				$resvar = new Decompiler_BinaryOp($this, $lvalue, XC_ASSIGN, $rvalue);
 				break;
 				// }}}
 			case XC_ASSIGN_REF: // {{{
@@ -1899,7 +1926,7 @@ class Decompiler
 					}
 				}
 				// TODO: PHP_6 global
-				$resvar = new Decompiler_Binop($this, $lvalue, XC_ASSIGN_REF, $rvalue);
+				$resvar = new Decompiler_BinaryOp($this, $lvalue, XC_ASSIGN_REF, $rvalue);
 				break;
 				// }}}
 			// {{{ case FETCH_OBJ_*
@@ -2204,7 +2231,7 @@ class Decompiler
 				// }}}
 			case XC_QM_ASSIGN:
 			case XC_QM_ASSIGN_VAR: // {{{
-				if (isset($curResVar) && is_a($curResVar, 'Decompiler_Binop')) {
+				if (isset($curResVar) && is_a($curResVar, 'Decompiler_BinaryOp')) {
 					$curResVar->op2 = $this->getOpVal($op1, $EX);
 				}
 				else {
@@ -2424,20 +2451,18 @@ class Decompiler
 					$this->usedOps[$opc] = true;
 					$this->{$opname}($op, $EX);
 				}
-				else if (isset($this->binops[$opc])) { // {{{
+				else if (isset($this->binaryOp[$opc])) { // {{{
 					$this->usedOps[$opc] = true;
 					$op1val = $this->getOpVal($op1, $EX);
 					$op2val = $this->getOpVal($op2, $EX);
-					$rvalue = new Decompiler_Binop($this, $op1val, $opc, $op2val);
+					$rvalue = new Decompiler_BinaryOp($this, $op1val, $opc, $op2val);
 					$resvar = $rvalue;
 					// }}}
 				}
-				else if (isset($this->unaryops[$opc])) { // {{{
+				else if (isset($this->unaryOp[$opc])) { // {{{
 					$this->usedOps[$opc] = true;
 					$op1val = $this->getOpVal($op1, $EX);
-					$myop = $this->unaryops[$opc];
-					$rvalue = $myop . str($op1val);
-					$resvar = $rvalue;
+					$resvar = new Decompiler_UnaryOp($this, $opc, $op1val);
 					// }}}
 				}
 				else {
