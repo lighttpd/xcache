@@ -11,6 +11,9 @@ function color($str, $color = 33)
 
 function printBacktrace() // {{{
 {
+	if (!$GLOBALS['__xcache_decompiler']->inComment++) {
+		echo '/*', PHP_EOL;
+	}
 	$backtrace = debug_backtrace();
 	foreach ($backtrace as $stack) {
 		$args = array();
@@ -39,6 +42,9 @@ function printBacktrace() // {{{
 				, $stack['function']
 				, implode(', ', $args)
 				);
+	}
+	if (!--$GLOBALS['__xcache_decompiler']->inComment) {
+		echo '*/', PHP_EOL;
 	}
 }
 // }}}
@@ -2542,12 +2548,18 @@ class Decompiler
 	// }}}
 	function dumpRange($range) // {{{
 	{
+		;
 		$EX = &$range['EX'];
+		if (!$this->inComment++) {
+			echo $EX['indent'], "/*", PHP_EOL;
+		}
 		for ($i = $range[0]; $i <= $range[1]; ++$i) {
 			echo $EX['indent'], str_pad($i, 4);
 			$this->dumpOp($EX['opcodes'][$i], $EX);
 		}
-		echo $EX['indent'], "==", PHP_EOL;
+		if (!--$this->inComment) {
+			echo $EX['indent'], "*/", PHP_EOL;
+		}
 	}
 	// }}}
 	function dargs(&$EX) // {{{
