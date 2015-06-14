@@ -2497,22 +2497,22 @@ class Decompiler
 		case XC_IS_VAR:
 			$s = '$' . $op['var'];
 			if ($which != 'result' && isset($EX['Ts'])) {
-				$s .= ':' . str($this->getOpVal($op, $EX));
+				$s .= ':' . str($this->getOpVal($op, $EX, null));
 			}
 			return $s;
 
 		case XC_IS_TMP_VAR:
 			$s = '#' . $op['var'];
 			if ($which != 'result' && isset($EX['Ts'])) {
-				$s .= ':' . str($this->getOpVal($op, $EX));
+				$s .= ':' . str($this->getOpVal($op, $EX, null));
 			}
 			return $s;
 
 		case XC_IS_CONST:
-			return isset($EX['Ts']) ? str($this->getOpVal($op, $EX)) : $op['var'] . ':' . var_export($op['constant'], true);
+			return isset($EX['Ts']) ? str($this->getOpVal($op, $EX, null)) : $op['var'] . ':' . var_export($op['constant'], true);
 
 		default:
-			return isset($EX['Ts']) ? str($this->getOpVal($op, $EX)) : $op['op_type'] . '?' . $op['var'];
+			return isset($EX['Ts']) ? str($this->getOpVal($op, $EX, null)) : $op['op_type'] . '?' . $op['var'];
 		}
 	}
 	// }}}
