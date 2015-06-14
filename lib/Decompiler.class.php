@@ -1608,7 +1608,9 @@ class Decompiler
 			$res = $op['result'];
 			$ext = $op['extended_value'];
 			$currentSourceLine = $op['lineno'];
-			$EX['value2constant'][$currentSourceLine] = '__LINE__';
+			if ($currentSourceLine) {
+				$EX['value2constant'][$currentSourceLine] = '__LINE__';
+			}
 
 			$opname = xcache_get_opcode($opc);
 
