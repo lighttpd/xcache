@@ -1078,6 +1078,7 @@ class Decompiler
 
 			$this->beginComplexBlock($EX);
 			echo $indent, 'for (', str($initial, $EX), '; ', implode(', ', $conditionCodes), '; ', implode(', ', $nextCodes), ') ', '{', PHP_EOL;
+			$this->clearJmpInfo_brk_cont($bodyRange);
 			$this->beginScope($EX);
 			$this->recognizeAndDecompileClosedBlocks($bodyRange);
 			$this->endScope($EX);
@@ -1213,6 +1214,7 @@ class Decompiler
 		if ($firstOp['opcode'] == XC_CASE && !empty($lastOp['jmptos'])
 		 || $firstOp['opcode'] == XC_JMP && !empty($firstOp['jmptos']) && $opcodes[$firstOp['jmptos'][0]]['opcode'] == XC_CASE && !empty($lastOp['jmptos'])
 		) {
+			$this->clearJmpInfo_brk_cont($range);
 			$cases = array();
 			$caseDefault = null;
 			$caseOp = null;
@@ -1302,6 +1304,7 @@ class Decompiler
 		if ($lastOp['opcode'] == XC_JMPNZ && !empty($lastOp['jmptos'])
 		 && $lastOp['jmptos'][0] == $range[0]) {
 			$this->removeJmpInfo($EX, $range[1]);
+			$this->clearJmpInfo_brk_cont($range);
 			$this->beginComplexBlock($EX);
 
 			echo $indent, "do {", PHP_EOL;
@@ -1368,6 +1371,7 @@ class Decompiler
 		 && !empty($lastJmpOp['jmptos']) && $lastJmpOp['jmptos'][0] == $firstJmpOp['line']) {
 			$this->removeJmpInfo($EX, $firstJmpOp['line']);
 			$this->removeJmpInfo($EX, $lastJmpOp['line']);
+			$this->clearJmpInfo_brk_cont($range);
 			$this->beginComplexBlock($EX);
 
 			ob_start();
@@ -1459,7 +1463,31 @@ class Decompiler
 			switch ($op['opcode']) {
 			case XC_CONT:
 			case XC_BRK:
+				$jmpTo = null;
+				if ($op['op2']['op_type'] == XC_IS_CONST && is_int($op['op2']['constant'])) {
+					$nestedLevel = $op['op2']['constant'];
+					$arrayOffset = $op['op1']['opline_num'];
+					// zend_brk_cont
+					while ($nestedLevel-- > 0) {
+						if ($arrayOffset == -1) {
+							$jmpTo = null;
+							break;
+						}
+						if (!isset($op_array['brk_cont_array'][$arrayOffset])) {
+							fprintf(STDERR, "%d: brk/cont not found at #$i\n", __LINE__);
+							break;
+						}
+						$jmpTo = $op_array['brk_cont_array'][$arrayOffset];
+						$arrayOffset = $jmpTo['parent'];
+					}
+				}
+
 				$op['jmptos'] = array();
+				if (isset($jmpTo)) {
+					$jmpTo = $jmpTo[$op['opcode'] == XC_CONT ? 'cont' : 'brk'];
+					$op['jmptos'][] = $jmpTo;
+					$opcodes[$jmpTo]['jmpfroms'][] = $i;
+				}
 				break;
 
 			case XC_GOTO:
@@ -1565,6 +1593,26 @@ class Decompiler
 				} while ($catch_op <= $range[1] && empty($opcodes[$catch_op]['isCatchBegin']));
 			}
 		}
+	}
+	// }}}
+	function clearJmpInfo_brk_cont($range) // {{{ clear jmpfroms/jmptos for BRK/CONT relative to this range only
+	{
+		$opcodes = &$range['EX']['opcodes'];
+		for ($i = $range[0]; $i <= $range[1]; $i++) {
+			$op = &$opcodes[$i];
+			switch ($op['opcode']) {
+			case XC_CONT:
+			case XC_BRK:
+				if (!empty($op['jmptos'])) {
+					if ($op['jmptos'][0] == $range[0]
+					 || $op['jmptos'][0] == $range[1] + 1) {
+						$this->removeJmpInfo($range['EX'], $i);
+					}
+				}
+				break;
+			}
+		}
+		unset($op);
 	}
 	// }}}
 	function &dop_array($op_array, $indent = '') // {{{
