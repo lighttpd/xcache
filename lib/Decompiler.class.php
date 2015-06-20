@@ -1279,35 +1279,33 @@ class Decompiler
 		// }}}
 
 		// {{{ search firstJmpOp
-		$firstJmp = -1;
 		$firstJmpOp = null;
 		for ($i = $range[0]; $i <= $range[1]; ++$i) {
 			if (!empty($opcodes[$i]['jmptos'])) {
-				$firstJmp = $i;
-				$firstJmpOp = &$opcodes[$firstJmp];
+				$firstJmpOp = &$opcodes[$i];
 				break;
 			}
 		}
 		// }}}
+		if (!isset($firstJmpOp)) {
+			return;
+		}
 		// {{{ search lastJmpOp
-		$lastJmp = -1;
 		$lastJmpOp = null;
-		for ($i = $range[1]; $i > $firstJmp; --$i) {
+		for ($i = $range[1]; $i > $firstJmpOp['line']; --$i) {
 			if (!empty($opcodes[$i]['jmptos'])) {
-				$lastJmp = $i;
-				$lastJmpOp = &$opcodes[$lastJmp];
+				$lastJmpOp = &$opcodes[$i];
 				break;
 			}
 		}
 		// }}}
 
 		// {{{ while
-		if (isset($firstJmpOp)
-		 && $firstJmpOp['opcode'] == XC_JMPZ
+		if ($firstJmpOp['opcode'] == XC_JMPZ
 		 && $firstJmpOp['jmptos'][0] > $range[1]
 		 && $lastOp['opcode'] == XC_JMP
 		 && !empty($lastOp['jmptos']) && $lastOp['jmptos'][0] == $range[0]) {
-			$this->removeJmpInfo($EX, $firstJmp);
+			$this->removeJmpInfo($EX, $firstJmpOp['line']);
 			$this->removeJmpInfo($EX, $range[1]);
 			$this->beginComplexBlock($EX);
 
@@ -1326,14 +1324,13 @@ class Decompiler
 		}
 		// }}}
 		// {{{ foreach
-		if (isset($firstJmpOp)
-		 && $firstJmpOp['opcode'] == XC_FE_FETCH
-		 && !empty($firstJmpOp['jmptos']) && $firstJmpOp['jmptos'][0] > $lastJmp
+		if ($firstJmpOp['opcode'] == XC_FE_FETCH
+		 && !empty($firstJmpOp['jmptos']) && $firstJmpOp['jmptos'][0] > $lastJmpOp['line']
 		 && isset($lastJmpOp)
 		 && $lastJmpOp['opcode'] == XC_JMP
-		 && !empty($lastJmpOp['jmptos']) && $lastJmpOp['jmptos'][0] == $firstJmp) {
-			$this->removeJmpInfo($EX, $firstJmp);
-			$this->removeJmpInfo($EX, $lastJmp);
+		 && !empty($lastJmpOp['jmptos']) && $lastJmpOp['jmptos'][0] == $firstJmpOp['line']) {
+			$this->removeJmpInfo($EX, $firstJmpOp['line']);
+			$this->removeJmpInfo($EX, $lastJmpOp['line']);
 			$this->beginComplexBlock($EX);
 
 			ob_start();
