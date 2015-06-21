@@ -2442,7 +2442,8 @@ class Decompiler
 				// }}}
 			}
 			if ($notHandled) {
-				echo "\x1B[31m * TODO ", $opname, "\x1B[0m\n";
+				fprintf(STDERR, "\x1B[31m%s\x1B[0m",  " * TODO " . $opname . PHP_EOL);
+				echo $EX['indent'], "// TODO: ", $opname, PHP_EOL;
 			}
 			else {
 				$this->usedOps[$opc] = true;
