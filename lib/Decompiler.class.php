@@ -2214,6 +2214,7 @@ class Decompiler
 				break;
 				// }}}
 			case XC_GENERATOR_RETURN:
+			case XC_RETURN_BY_REF:
 			case XC_RETURN: // {{{
 				$resvar = "return " . str($this->getOpVal($op1, $EX));
 				break;
@@ -2652,6 +2653,7 @@ class Decompiler
 	{
 		$this->detectNamespace($func['op_array']['function_name']);
 
+		$returnByRef = '';
 		if ($nobody) {
 			$EX = array();
 			$EX['op_array'] = &$func['op_array'];
@@ -2662,6 +2664,25 @@ class Decompiler
 			ob_start();
 			$EX = &$this->dop_array($func['op_array'], $indent . INDENT);
 			$body = ob_get_clean();
+			$hasReturn = false;
+			$hasReturnByRef = false;
+			foreach ($func['op_array']['opcodes'] as $op) {
+				switch ($op['opcode']) {
+				case XC_RETURN:
+					$hasReturn = true;
+					break;
+
+				case XC_RETURN_BY_REF:
+					$hasReturnByRef = true;
+					break;
+				}
+			}
+			if ($hasReturn && $hasReturnByRef) {
+				echo $indent, "// WARN: both return and return-by-ref present", PHP_EOL;
+			}
+			if ($hasReturnByRef) {
+				$returnByRef = '&';
+			}
 		}
 
 		$functionName = $this->stripNamespace($func['op_array']['function_name']);
@@ -2674,7 +2695,7 @@ class Decompiler
 		if ($decorations) {
 			echo implode(' ', $decorations), ' ';
 		}
-		echo 'function', $functionName ? ' ' . $functionName : '', '(';
+		echo 'function', $functionName ? ' ' . $returnByRef . $functionName : '', '(';
 		$this->dargs($EX);
 		echo ")";
 		$this->duses($EX);
@@ -3177,6 +3198,7 @@ foreach (array(
 	'XC_PRE_INC_OBJ' => -1,
 	'XC_QM_ASSIGN_VAR' => -1,
 	'XC_RAISE_ABSTRACT_ERROR' => -1,
+	'XC_RETURN_BY_REF' => -1,
 	'XC_THROW' => -1,
 	'XC_UNSET_DIM' => -1,
 	'XC_UNSET_DIM_OBJ' => -1,
