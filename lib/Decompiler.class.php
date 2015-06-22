@@ -1422,7 +1422,6 @@ class Decompiler
 		$last = count($opcodes) - 1;
 		for ($i = 0; $i <= $last; $i++) {
 			$op = &$opcodes[$i];
-			$op['line'] = $i;
 			switch ($op['opcode']) {
 			case XC_CONT:
 			case XC_BRK:
@@ -1575,6 +1574,9 @@ class Decompiler
 		}
 
 		$range = array(0, count($opcodes) - 1, 'EX' => &$EX);
+		for ($i = $range[0]; $i <= $range[1]; $i++) {
+			$opcodes[$i]['line'] = $i;
+		}
 		if ($this->outputOpcode) {
 			$this->keepTs = true;
 			$this->dumpRange($range);
