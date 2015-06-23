@@ -2525,11 +2525,11 @@ class Decompiler
 		if (substr($name, 0, 5) == 'ZEND_') {
 			$name = substr($name, 5);
 		}
-		echo str_pad($name, 25);
+		echo ' ', str_pad($name, 25);
 
 		$types = array('result' => 9, 'op1' => 20, 'op2' => 20);
 		foreach ($types as $which => $len) {
-			echo str_pad(($which == 'result' ? '>' : '') . $this->opToString($op[$which], $which, $EX), $len);
+			echo ' ', str_pad(($which == 'result' ? '>' : '') . $this->opToString($op[$which], $which, $EX), $len);
 		}
 		echo "\t;", $op['extended_value'];
 		if (isset($op['isCatchBegin'])) {
