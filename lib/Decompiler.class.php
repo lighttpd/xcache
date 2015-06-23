@@ -110,10 +110,10 @@ function decompileAst($ast, $EX) // {{{
 			if (isset($ast[$i + 1])) {
 				$key = decompileAst($ast[$i], $EX);
 				$value = decompileAst($ast[$i + 1], $EX);
-				$array->value[] = array($key, $value);
+				$array->value[] = array($key, $value, '');
 			}
 			else {
-				$array->value[] = array(null, decompileAst($ast[$i], $EX));
+				$array->value[] = array(null, decompileAst($ast[$i], $EX), '');
 			}
 		}
 		return $array;
@@ -470,7 +470,7 @@ class Decompiler_ListBox extends Decompiler_Box // {{{
 // }}}
 class Decompiler_Array extends Decompiler_Value // {{{
 {
-	// emenets
+	// elements
 	function Decompiler_Array()
 	{
 		$this->value = array();
@@ -483,11 +483,11 @@ class Decompiler_Array extends Decompiler_Value // {{{
 		$elementsCode = array();
 		$index = 0;
 		foreach ($this->value as $element) {
-			list($key, $value) = $element;
+			list($key, $value, $ref) = $element;
 			if (!isset($key)) {
 				$key = $index++;
 			}
-			$elementsCode[] = array(str($key, $subindent), str($value, $subindent), $key, $value);
+			$elementsCode[] = array(str($key, $subindent), str($value, $subindent), $key, $value, $ref);
 		}
 
 		$exp = "array(";
@@ -518,7 +518,7 @@ class Decompiler_Array extends Decompiler_Value // {{{
 
 		$i = 0;
 		foreach ($elementsCode as $element) {
-			list($keyCode, $value) = $element;
+			list($keyCode, $value, , , $ref) = $element;
 			if ($multiline) {
 				if ($i) {
 					$exp .= ",";
@@ -541,6 +541,7 @@ class Decompiler_Array extends Decompiler_Value // {{{
 				}
 			}
 
+			$exp .= $ref;
 			$exp .= $value;
 
 			$i++;
@@ -571,7 +572,7 @@ class Decompiler_ConstArray extends Decompiler_Array // {{{
 			else {
 				$keyCode = value($key, $EX);
 			}
-			$elements[] = array($keyCode, value($value, $EX));
+			$elements[] = array($keyCode, value($value, $EX), '');
 		}
 		$this->value = $elements;
 	}
@@ -2173,32 +2174,20 @@ class Decompiler
 			case XC_INIT_ARRAY:
 			case XC_ADD_ARRAY_ELEMENT: // {{{
 				$rvalue = $this->getOpVal($op1, $EX, true);
+				$assoc = $this->getOpVal($op2, $EX);
+				$element = array($assoc, $rvalue, empty($ext) ? '' : '&');
 
-				if ($opc == XC_ADD_ARRAY_ELEMENT) {
-					$assoc = $this->getOpVal($op2, $EX);
-					if (isset($assoc)) {
-						$curResVar->value[] = array($assoc, $rvalue);
-					}
-					else {
-						$curResVar->value[] = array(null, $rvalue);
+				if ($opc == XC_INIT_ARRAY) {
+					$resvar = new Decompiler_Array();
+
+					if (isset($rvalue)) {
+						$resvar->value[] = $element;
 					}
 				}
 				else {
-					if ($opc == XC_INIT_ARRAY) {
-						$resvar = new Decompiler_Array();
-						if (!isset($rvalue)) {
-							continue;
-						}
-					}
-
-					$assoc = $this->getOpVal($op2, $EX);
-					if (isset($assoc)) {
-						$resvar->value[] = array($assoc, $rvalue);
-					}
-					else {
-						$resvar->value[] = array(null, $rvalue);
-					}
+					$curResVar->value[] = $element;
 				}
+				unset($element);
 				break;
 				// }}}
 			case XC_QM_ASSIGN:
