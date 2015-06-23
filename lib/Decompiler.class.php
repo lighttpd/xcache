@@ -1577,7 +1577,6 @@ class Decompiler
 		$range = array(0, count($opcodes) - 1, 'EX' => &$EX);
 		if ($this->outputOpcode) {
 			$this->keepTs = true;
-			$this->dasmBasicBlock($range);
 			$this->dumpRange($range);
 			$this->keepTs = false;
 		}
