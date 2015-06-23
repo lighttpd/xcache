@@ -309,6 +309,7 @@ static void xc_fix_opcode_ex_znode(int tofix, xc_op_spec_t spec, Z_OP_TYPEOF_TYP
 			*op_type = IS_UNUSED;
 		}
 		break;
+#ifndef ZEND_ENGINE_2_5
 	case IS_TMP_VAR:
 	case IS_VAR:
 		if (tofix) {
@@ -317,6 +318,7 @@ static void xc_fix_opcode_ex_znode(int tofix, xc_op_spec_t spec, Z_OP_TYPEOF_TYP
 		else {
 			Z_OP(*op).var *= sizeof(temp_variable);
 		}
+#endif
 	}
 #endif
 }

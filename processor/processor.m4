@@ -691,6 +691,14 @@ define(`UNION_znode_op', `dnl {{{
 		', `
 		case IS_VAR:
 		case IS_TMP_VAR:
+			IFDASM(`
+#ifdef ZEND_ENGINE_2_5
+				add_assoc_long_ex(DST(), XCACHE_STRS("$1.var"), (temp_variable *)0 - (temp_variable *)((int) SRC($1.var)) - 1);
+				break;
+#endif
+			', `
+				/* no break */
+			')
 		case IS_CV:
 			PROCESS(zend_uint, $1.var)
 			break;

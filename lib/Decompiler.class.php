@@ -2087,7 +2087,12 @@ class Decompiler
 					$class['name'] = unquoteName($this->getOpVal($op2, $EX), $EX);
 				}
 				if ($opc == XC_DECLARE_INHERITED_CLASS || $opc == XC_DECLARE_INHERITED_CLASS_DELAYED) {
-					$ext /= XC_SIZEOF_TEMP_VARIABLE;
+					if (ZEND_ENGINE_2_5) {
+						$ext = (0xffffffff - $ext + 1) / XC_SIZEOF_TEMP_VARIABLE - 1;
+					}
+					else {
+						$ext /= XC_SIZEOF_TEMP_VARIABLE;
+					}
 					$class['parent'] = $T[$ext];
 					unset($T[$ext]);
 				}
