@@ -1080,7 +1080,7 @@ class Decompiler
 					}
 				}
 			} while ($this->isIfCondition($range));
-			if ($ifRange[1] < $range[1]) {
+			if ($ifRange[1] <= $range[1]) {
 				$elseRange = array($ifRange[1], $range[1], 'EX' => &$EX);
 				echo $indent, 'else ', '{', PHP_EOL;
 				$this->beginScope($EX);
