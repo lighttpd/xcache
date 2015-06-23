@@ -591,11 +591,14 @@ class Decompiler
 	var $activeClass;
 	var $activeMethod;
 	var $activeFunction;
-	var $dumpOnly;
+	var $outputPhp;
+	var $outputOpcode;
+	var $inComment = 0;
 
-	function Decompiler($outputType)
+	function Decompiler($outputTypes)
 	{
-		$this->dumpOnly = $outputType == 'opcode';
+		$this->outputPhp = in_array('php', $outputTypes);
+		$this->outputOpcode = in_array('opcode', $outputTypes);
 		$GLOBALS['__xcache_decompiler'] = $this;
 		// {{{ testing
 		// XC_UNDEF XC_OP_DATA
@@ -763,7 +766,7 @@ class Decompiler
 		case XC_IS_TMP_VAR:
 			$T = &$EX['Ts'];
 			if (!isset($T[$op['var']])) {
-				if (!$this->dumpOnly) {
+				if ($this->outputPhp && isset($free)) {
 					printBacktrace();
 				}
 				return null;
@@ -1566,12 +1569,13 @@ class Decompiler
 		}
 
 		$range = array(0, count($opcodes) - 1, 'EX' => &$EX);
-		if ($this->dumpOnly) {
+		if ($this->outputOpcode) {
 			$this->keepTs = true;
 			$this->dasmBasicBlock($range);
 			$this->dumpRange($range);
+			$this->keepTs = false;
 		}
-		else {
+		if ($this->outputPhp) {
 			// decompile in a tree way
 			$this->recognizeAndDecompileClosedBlocks($range);
 		}
@@ -2902,9 +2906,6 @@ class Decompiler
 	function output() // {{{
 	{
 		echo "<?". "php";
-		if ($this->dumpOnly) {
-			echo " // dump opcode only";
-		}
 		echo PHP_EOL, PHP_EOL;
 		foreach ($this->dc['class_table'] as $key => $class) {
 			if ($key{0} != "\0") {

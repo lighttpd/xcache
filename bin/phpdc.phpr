@@ -15,7 +15,7 @@ if (!isset($argv)) {
 }
 
 $inputType = 'php';
-$outputType = 'decompile';
+$outputTypes = array();
 $files = array();
 
 reset($argv);
@@ -30,11 +30,11 @@ while (($arg = next($argv)) !== false) {
 		break;
 
 	case '-c':
-		$outputType = 'php';
+		$outputTypes[] = 'php';
 		break;
 
 	case '-d':
-		$outputType = 'opcode';
+		$outputTypes[] = 'opcode';
 		break;
 
 	case '--':
@@ -50,6 +50,13 @@ while (($arg = next($argv)) !== false) {
 	}
 }
 
+if ($outputTypes) {
+	$outputTypes = array_unique($outputTypes);
+}
+else {
+	$outputTypes[] = 'php';
+}
+
 if (!$files) {
 	$phpcode = '';
 	if (!defined('stdin')) {
@@ -58,7 +65,7 @@ if (!$files) {
 	while (!feof(stdin)) {
 		$phpcode .= fgets(stdin);
 	}
-	$dc = new Decompiler($outputType);
+	$dc = new Decompiler($outputTypes);
 	if ($dc->decompileString($phpcode) === false) {
 		exit(2);
 	}
@@ -66,7 +73,7 @@ if (!$files) {
 }
 else {
 	foreach ($files as $file) {
-		$dc = new Decompiler($outputType);
+		$dc = new Decompiler($outputTypes);
 		switch ($inputType) {
 		case 'opcode':
 			eval('$opcode = ' . file_get_contents($file) . ';');

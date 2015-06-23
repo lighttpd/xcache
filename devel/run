@@ -310,11 +310,17 @@ run() {
 			cmd=(./php-cli -c devel.ini)
 			phpApp=(./bin/phpdc.phpr)
 			;;
+		dboth)
+			shift
+			cmd=(./php-cli -c devel.ini)
+			phpApp=(./bin/phpdc.phpr)
+			set -- -c -d "$@"
+			;;
 		dop)
 			shift
 			cmd=(./php-cli -c devel.ini)
 			phpApp=(./bin/phpdc.phpr)
-			set -- -d "$@"
+			set -- -c -d "$@"
 			;;
 		fcgi)
 			shift
