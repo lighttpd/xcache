@@ -703,7 +703,7 @@ class Decompiler
 
 		$name = str($name);
 		$len = strlen($this->namespace) + 1;
-		if (substr($name, 0, $len) == $this->namespace . '\\') {
+		if (strncasecmp($name, $this->namespace . '\\', $len) == 0) {
 			return substr($name, $len);
 		}
 		else {
