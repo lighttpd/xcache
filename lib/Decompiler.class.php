@@ -2528,8 +2528,10 @@ class Decompiler
 		echo ' ', str_pad($name, 25);
 
 		$types = array('result' => 9, 'op1' => 20, 'op2' => 20);
+		$res = $op['result'];
+		$resUsed = ((ZEND_ENGINE_2_4 ? ($res['op_type'] & EXT_TYPE_UNUSED) : ($res['EA.type'] & EXT_TYPE_UNUSED)) || $res['op_type'] == XC_IS_UNUSED) ? '' : '=';
 		foreach ($types as $which => $len) {
-			echo ' ', str_pad(($which == 'result' ? '>' : '') . $this->opToString($op[$which], $which, $EX), $len);
+			echo ' ', str_pad($this->opToString($op[$which], $which, $EX) . ($which == 'result' ? $resUsed : ''), $len);
 		}
 		echo "\t;", $op['extended_value'];
 		if (isset($op['isCatchBegin'])) {
