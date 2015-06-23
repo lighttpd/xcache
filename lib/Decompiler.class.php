@@ -2075,6 +2075,8 @@ class Decompiler
 					break;
 				}
 				$class = &$this->dc['class_table'][$key];
+				$this->detectNamespace($class['name']);
+
 				if (!isset($class['name'])) {
 					$class['name'] = unquoteName($this->getOpVal($op2, $EX), $EX);
 				}
