@@ -222,19 +222,15 @@ class Decompiler_Value extends Decompiler_Object // {{{
 	{
 		$code = var_export($this->value, true);
 		if (gettype($this->value) == 'string') {
-			switch ($this->value) {
-			case "\r":
-				return '"\\r"';
-			case "\n":
-				return '"\\n"';
-			case "\r\n":
-				return '"\\r\\n"';
-			}
-			$code = str_replace("\r\n", '\' . "\\r\\n" . \'', $code);
-			$code = str_replace("\r", '\' . "\\r" . \'', $code);
-			$code = str_replace("\n", '\' . "\\n" . \'', $code);
+			$code = preg_replace_callback("![\r\n]+!", array(&$this, 'convertNewline'), $code);
+			$code = preg_replace("!^'' \\. \"|\" \\. ''\$!", '"', $code);
 		}
 		return $code;
+	}
+
+	function convertNewline($m)
+	{
+		return "' . \"". strtr($m[0], array("\r" => "\\r", "\n" => "\\n")) . "\" . '";
 	}
 }
 // }}}
