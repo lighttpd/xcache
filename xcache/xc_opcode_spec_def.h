@@ -298,7 +298,7 @@ static const xc_opcode_spec_t xc_opcode_spec[] = {
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 154 ADD_TRAIT                      */
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 155 BIND_TRAITS                    */
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 156 SEPARATE                       */
-	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 157 QM_ASSIGN_VAR                  */
+	OPSPEC(    UNUSED,        STD,     UNUSED,     UNUSED) /* 157 QM_ASSIGN_VAR                  */
 	OPSPEC(    UNUSED,     UNUSED,     UNUSED,     UNUSED) /* 158 JMP_SET_VAR                    */
 #endif
 #ifdef ZEND_ENGINE_2_5
