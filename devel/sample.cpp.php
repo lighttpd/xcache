@@ -17,9 +17,6 @@
 #if PHP_VERSION >= 530
 
 namespace ns;
-#define _Exception \Exception
-#else
-#define _Exception Exception
 #endif
 
 abstract class ClassName
@@ -181,10 +178,10 @@ abstract class ClassName
 
 #if PHP_VERSION >= 500
 		try {
-			throw new _Exception();
-			new _Exception();
+			throw new Exception();
+			new Exception();
 		}
-		catch (_Exception $e) {
+		catch (Exception $e) {
 		}
 #endif
 
