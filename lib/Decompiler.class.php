@@ -174,6 +174,9 @@ function value($value, &$EX) // {{{
 		if (isset($EX['value2constant'][$value])) {
 			$value = new Decompiler_Code($EX['value2constant'][$value]);
 		}
+		else if (isset($GLOBALS['__xcache_decompiler']->value2constant[$value])) {
+			$value = new Decompiler_Code($GLOBALS['__xcache_decompiler']->value2constant[$value]);
+		}
 		else {
 			$value = new Decompiler_Value($value);
 		}
@@ -636,6 +639,7 @@ class Decompiler
 	var $outputPhp;
 	var $outputOpcode;
 	var $inComment = 0;
+	var $value2constant = array();
 
 	function Decompiler($outputTypes)
 	{
@@ -1671,15 +1675,6 @@ class Decompiler
 		$EX['uses'] = array();
 		$EX['lastBlock'] = null;
 		$EX['value2constant'] = array();
-		if (isset($this->activeFile)) {
-			$EX['value2constant'][$this->activeFile] = '__FILE__';
-		}
-		if (isset($this->activeDir)) {
-			$EX['value2constant'][$this->activeDir] = '__DIR__';
-		}
-		if (isset($this->activeClass)) {
-			$EX['value2constant'][$this->activeClass] = '__CLASS__';
-		}
 		if (isset($this->activeMethod)) {
 			$EX['value2constant'][$this->activeMethod] = '__METHOD__';
 		}
@@ -2837,6 +2832,7 @@ class Decompiler
 	// }}}
 	function dclass($class, $indent = '') // {{{
 	{
+		$this->value2constant[$this->activeClass] = '__CLASS__';
 		$this->detectNamespace($class['name']);
 
 		// {{{ class decl
@@ -3018,6 +3014,7 @@ class Decompiler
 		}
 		// }}}
 		echo $indent, "}", PHP_EOL;
+		unset($this->value2constant[$this->activeClass]);
 	}
 	// }}}
 	function decompileString($string) // {{{
@@ -3043,6 +3040,8 @@ class Decompiler
 		if (ZEND_ENGINE_2_3) {
 			$this->activeDir = dirname($this->activeFile);
 		}
+		$this->value2constant[$this->activeFile] = '__FILE__';
+		$this->value2constant[$this->activeDir] = '__DIR__';
 		return true;
 	}
 	// }}}

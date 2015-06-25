@@ -22,11 +22,12 @@ namespace ns;
 abstract class ClassName
 {
 #if PHP_VERSION >= 500
-	const CONST_VALUE = 'A constant value';
-	const file = __FILE__;
+	const File = __FILE__;
+	const ClassName = __CLASS__;
 #if PHP_VERSION >= 530
-	const dir = __DIR__;
+	const Dir = __DIR__;
 #endif
+	const CONST_VALUE = 'A constant value';
 
 	/** doc */
 	static public $static = array(
@@ -455,6 +456,11 @@ final class Child extends ClassName implements IInterface
 #endif
 
 define('CONST_VALUE', 'const value');
+#if PHP_VERSION > 530
+const CONST_VALUE1 = __FILE__;
+const CONST_VALUE2 = __DIR__;
+const CONST_VALUE3 = 'a';
+#endif
 $late = isset($_ENV['LATE']);
 
 if ($late) {
