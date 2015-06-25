@@ -292,9 +292,9 @@ abstract class ClassName
 		$a = $b && $c;
 		$a = $b || $c;
 #if PHP_VERSION >= 530
-		echo $this::CONST_VALUE, PHP_EOL;
-		echo $object::CONST_VALUE, PHP_EOL;
-		echo CONST_VALUE, PHP_EOL;
+		echo $this::CONST_VALUE;
+		echo $object::CONST_VALUE;
+		echo CONST_VALUE;
 		$this::method();
 		$object::method();
 		$a = $b ?: $d;
