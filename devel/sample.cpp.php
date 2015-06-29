@@ -154,6 +154,7 @@ abstract class ClassName
 		unset($array['index']->indexProp);
 #endif
 		$array['index'] = $object;
+		$array['index'] .= $object;
 		$array['index']->indexProp = 1;
 		echo $array['index']->indexProp;
 		$GLOBALS['var'] = $object;
