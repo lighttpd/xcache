@@ -7,6 +7,7 @@ define(`PROCESS_SCALAR', `dnl {{{ (1:elm, 2:format=%d, 3:type=)
 	IFDASM(`
 		ifelse(
 			`$3', `zend_bool', `add_assoc_bool_ex(dst, XCACHE_STRS("$1"), SRC(`$1') ? 1 : 0);'
+		, `$3', `double', `add_assoc_double_ex(dst, XCACHE_STRS("$1"), SRC(`$1'));'
 		, `', `', `add_assoc_long_ex(dst, XCACHE_STRS("$1"), SRC(`$1'));'
 		)
 	')
