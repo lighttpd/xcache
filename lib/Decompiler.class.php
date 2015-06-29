@@ -222,7 +222,8 @@ class Decompiler_Value extends Decompiler_Object // {{{
 	{
 		$code = var_export($this->value, true);
 		if (gettype($this->value) == 'string') {
-			$code = preg_replace_callback("![\r\n]+!", array(&$this, 'convertNewline'), $code);
+			$code = preg_replace_callback("![\t\r\n]+!", array(&$this, 'convertNewline'), $code);
+			$code = preg_replace_callback("![\\x01-\\x1f\\x7f-\\xff]+!", array(&$this, 'escape8BitString'), $code);
 			$code = preg_replace("!^'' \\. \"|\" \\. ''\$!", '"', $code);
 		}
 		return $code;
@@ -230,7 +231,18 @@ class Decompiler_Value extends Decompiler_Object // {{{
 
 	function convertNewline($m)
 	{
-		return "' . \"". strtr($m[0], array("\r" => "\\r", "\n" => "\\n")) . "\" . '";
+		return "' . \"" . strtr($m[0], array("\t" => "\\t", "\r" => "\\r", "\n" => "\\n")) . "\" . '";
+	}
+
+	function escape8BitString($m)
+	{
+		// TODO: recognize $encoding
+		$s = $m[0];
+		$escaped = '';
+		for ($i = 0, $c = strlen($s); $i < $c; ++$i) {
+			$escaped .= "\\x" . dechex(ord($s[$i]));
+		}
+		return "' . \"" . $escaped . "\" . '";
 	}
 }
 // }}}
