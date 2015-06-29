@@ -1542,7 +1542,7 @@ class Decompiler
 		$opcodes = &$op_array['opcodes'];
 
 		$EX = array();
-		$EX['Ts'] = array();
+		$EX['Ts'] = $this->outputPhp ? array() : null;
 		$EX['indent'] = $indent;
 		$EX['op_array'] = &$op_array;
 		$EX['opcodes'] = &$opcodes;
@@ -2547,16 +2547,23 @@ class Decompiler
 		echo PHP_EOL;
 	}
 	// }}}
-	function dumpRange($range) // {{{
+	function dumpRange($range, $ts = true) // {{{
 	{
 		;
 		$EX = &$range['EX'];
 		if (!$this->inComment++) {
 			echo $EX['indent'], "/*", PHP_EOL;
 		}
+		if (!$ts) {
+			$Ts = $EX['Ts'];
+			$EX['Ts'] = null;
+		}
 		for ($i = $range[0]; $i <= $range[1]; ++$i) {
 			echo $EX['indent'], str_pad($i, 4);
 			$this->dumpOp($EX['opcodes'][$i], $EX);
+		}
+		if (!$ts) {
+			$EX['Ts'] = $Ts;
 		}
 		if (!--$this->inComment) {
 			echo $EX['indent'], "*/", PHP_EOL;
