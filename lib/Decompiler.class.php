@@ -1962,7 +1962,7 @@ class Decompiler
 			case XC_SEND_VAL:
 			case XC_SEND_REF:
 			case XC_SEND_VAR: // {{{
-				$ref = ($opc == XC_SEND_REF ? '&' : '');
+				$ref = (!ZEND_ENGINE_2_4 && $opc == XC_SEND_REF ? '&' : '');
 				$EX['argstack'][] = $ref . str($this->getOpVal($op1, $EX));
 				break;
 				// }}}
