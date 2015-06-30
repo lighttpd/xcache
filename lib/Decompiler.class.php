@@ -2127,6 +2127,10 @@ class Decompiler
 					unset($fetchop, $addop);
 					$i += 2;
 				}
+				if ($EX['lastBlock'] == 'complex') {
+					echo PHP_EOL;
+				}
+				$EX['lastBlock'] = null;
 				$this->activeClass = $class['name'];
 				$this->dclass($class, $EX['indent']);
 				$this->activeClass = null;
