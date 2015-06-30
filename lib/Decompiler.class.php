@@ -2518,6 +2518,7 @@ class Decompiler
 	function dumpOp($op, &$EX) // {{{
 	{
 		assert('isset($op)');
+		echo str_pad($op['line'], 4);
 		echo str_pad($op['lineno'], 4);
 
 		$name = xcache_get_opcode($op['opcode']);
@@ -2559,7 +2560,7 @@ class Decompiler
 			$EX['Ts'] = null;
 		}
 		for ($i = $range[0]; $i <= $range[1]; ++$i) {
-			echo $EX['indent'], str_pad($i, 4);
+			echo $EX['indent'];
 			$this->dumpOp($EX['opcodes'][$i], $EX);
 		}
 		if (!$ts) {
