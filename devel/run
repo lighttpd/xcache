@@ -368,7 +368,9 @@ run() {
 			;;
 		*)
 			"$@" | tee output.php
-			return ${PIPESTATUS[0]}
+			ret=${PIPESTATUS[0]}
+			echo exit = $ret >&2
+			return $ret
 			;;
 		esac
 		;;
