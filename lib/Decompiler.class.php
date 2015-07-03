@@ -517,7 +517,7 @@ class Decompiler_Array extends Decompiler_Value // {{{
 				if ($i) {
 					$exp .= ",";
 				}
-				$exp .= "\n";
+				$exp .= PHP_EOL;
 				$exp .= $indent;
 			}
 			else {
@@ -540,7 +540,7 @@ class Decompiler_Array extends Decompiler_Value // {{{
 			$i++;
 		}
 		if ($multiline) {
-			$exp .= "\n$indent)";
+			$exp .= PHP_EOL . "$indent)";
 		}
 		else {
 			$exp .= ")";
@@ -606,7 +606,7 @@ class Decompiler
 			$content = file_get_contents(__FILE__);
 			for ($i = 0; $opname = xcache_get_opcode($i); $i++) {
 				if (!preg_match("/\\bXC_" . $opname . "\\b(?!')/", $content)) {
-					echo "not recognized opcode ", $opname, "\n";
+					echo "not recognized opcode ", $opname, PHP_EOL;
 				}
 			}
 		}
@@ -680,7 +680,7 @@ class Decompiler
 			}
 
 			$this->namespace = $namespace;
-			echo 'namespace ', $this->namespace, ";\n\n";
+			echo 'namespace ', $this->namespace, ";", PHP_EOL, PHP_EOL;
 		}
 
 		$this->namespaceDecided = true;
@@ -715,7 +715,7 @@ class Decompiler
 					$needBlankline = false;
 					echo PHP_EOL;
 				}
-				echo 'label' . $i, ":\n";
+				echo 'label' . $i, ":", PHP_EOL;
 			}
 			if (isset($op['php'])) {
 				$toticks = isset($op['ticks']) ? (int) str($op['ticks']) : 0;
@@ -723,12 +723,12 @@ class Decompiler
 					$oldticks = $curticks;
 					$curticks = $toticks;
 					if (!$curticks) {
-						echo $EX['indent'], "}\n\n";
+						echo $EX['indent'], "}", PHP_EOL, PHP_EOL;
 						$indent = $EX['indent'];
 					}
 					else {
 						if ($oldticks) {
-							echo $EX['indent'], "}\n\n";
+							echo $EX['indent'], "}", PHP_EOL, PHP_EOL;
 						}
 						else if (!$oldticks) {
 							$indent .= INDENT;
@@ -737,19 +737,19 @@ class Decompiler
 							$needBlankline = false;
 							echo PHP_EOL;
 						}
-						echo $EX['indent'], "declare (ticks=$curticks) {\n";
+						echo $EX['indent'], "declare (ticks=$curticks) {", PHP_EOL;
 					}
 				}
 				if ($needBlankline) {
 					$needBlankline = false;
 					echo PHP_EOL;
 				}
-				echo $indent, str($op['php'], $indent), ";\n";
+				echo $indent, str($op['php'], $indent), ";", PHP_EOL;
 				$EX['lastBlock'] = 'basic';
 			}
 		}
 		if ($curticks) {
-			echo $EX['indent'], "}\n";
+			echo $EX['indent'], "}", PHP_EOL;
 		}
 	}
 	// }}}
@@ -1423,7 +1423,7 @@ class Decompiler
 			case XC_GOTO:
 				$target = $op['op1']['var'];
 				if (!isset($opcodes[$target])) {
-					fprintf(STDERR, "%d: missing jump target at #$i\n", __LINE__);
+					fprintf(STDERR, "%d: missing jump target at #$i" . PHP_EOL, __LINE__);
 					break;
 				}
 				$op['goto'] = $target;
@@ -1433,7 +1433,7 @@ class Decompiler
 			case XC_JMP:
 				$target = $op['op1']['var'];
 				if (!isset($opcodes[$target])) {
-					fprintf(STDERR, "%d: missing jump target at #$i\n", __LINE__);
+					fprintf(STDERR, "%d: missing jump target at #$i" . PHP_EOL, __LINE__);
 					break;
 				}
 				$op['jmptos'] = array($target);
@@ -1444,11 +1444,11 @@ class Decompiler
 				$jmpz = $op['op2']['opline_num'];
 				$jmpnz = $op['extended_value'];
 				if (!isset($opcodes[$jmpz])) {
-					fprintf(STDERR, "%d: missing jump target at #$i\n", __LINE__);
+					fprintf(STDERR, "%d: missing jump target at #$i" . PHP_EOL, __LINE__);
 					break;
 				}
 				if (!isset($opcodes[$jmpnz])) {
-					fprintf(STDERR, "%d: missing jump target at #$i\n", __LINE__);
+					fprintf(STDERR, "%d: missing jump target at #$i" . PHP_EOL, __LINE__);
 					break;
 				}
 				$op['jmptos'] = array($jmpz, $jmpnz);
@@ -1467,7 +1467,7 @@ class Decompiler
 			// case XC_JMP_NO_CTOR:
 				$target = $op['op2']['opline_num'];
 				if (!isset($opcodes[$target])) {
-					fprintf(STDERR, "%d: missing jump target at #$i\n", __LINE__);
+					fprintf(STDERR, "%d: missing jump target at #$i" . PHP_EOL, __LINE__);
 					break;
 				}
 				$op['jmptos'] = array($target);
@@ -1637,7 +1637,7 @@ class Decompiler
 				$istmpres = true;
 			}
 			// }}}
-			// echo $opname, "\n";
+			// echo $opname, PHP_EOL;
 
 			$notHandled = false;
 			switch ($opc) {
@@ -2073,9 +2073,9 @@ class Decompiler
 				// possible missing tailing \0 (outside of the string)
 				$key = substr($key . ".", 0, strlen($key));
 				if (!isset($this->dc['class_table'][$key])) {
-					echo $EX['indent'], "/* class not found: ", $key, ", existing classes are:\n";
+					echo $EX['indent'], "/* class not found: ", $key, ", existing classes are:", PHP_EOL;
 					var_dump(array_keys($this->dc['class_table']));
-					echo "*/\n";
+					echo "*/", PHP_EOL;
 					break;
 				}
 				$class = &$this->dc['class_table'][$key];
@@ -2118,7 +2118,7 @@ class Decompiler
 				$this->activeClass = $class['name'];
 				$this->dclass($class, $EX['indent']);
 				$this->activeClass = null;
-				echo "\n";
+				echo PHP_EOL;
 				unset($class);
 				break;
 				// }}}
@@ -2661,21 +2661,21 @@ class Decompiler
 		echo ")";
 		$this->duses($EX);
 		if ($nobody) {
-			echo ";\n";
+			echo ";", PHP_EOL;
 		}
 		else {
 			if (!$isExpression) {
-				echo "\n";
-				echo $indent, "{\n";
+				echo PHP_EOL;
+				echo $indent, "{", PHP_EOL;
 			}
 			else {
-				echo " {\n";
+				echo " {", PHP_EOL;
 			}
 
 			echo $body;
 			echo "$indent}";
 			if (!$isExpression) {
-				echo "\n";
+				echo PHP_EOL;
 			}
 		}
 	}
@@ -2688,7 +2688,7 @@ class Decompiler
 		if (!empty($class['doc_comment'])) {
 			echo $indent;
 			echo $class['doc_comment'];
-			echo "\n";
+			echo PHP_EOL;
 		}
 		$isInterface = false;
 		$decorations = array();
@@ -2719,18 +2719,18 @@ class Decompiler
 			echo ' implements ';
 			echo implode(', ', $class['interfaces']);
 		}
-		echo "\n";
+		echo PHP_EOL;
 		echo $indent, "{";
 		// }}}
 		$newindent = INDENT . $indent;
 		// {{{ const
 		if (!empty($class['constants_table'])) {
-			echo "\n";
+			echo PHP_EOL;
 			foreach ($class['constants_table'] as $name => $v) {
 				echo $newindent;
 				echo 'const ', $name, ' = ';
 				echo str(value($v, $EX), $newindent);
-				echo ";\n";
+				echo ";", PHP_EOL;
 			}
 		}
 		// }}}
@@ -2740,13 +2740,13 @@ class Decompiler
 		}
 		$member_variables = $class[ZEND_ENGINE_2 ? 'properties_info' : 'default_properties'];
 		if ($member_variables) {
-			echo "\n";
+			echo PHP_EOL;
 			foreach ($member_variables as $name => $dummy) {
 				$info = isset($class['properties_info']) ? $class['properties_info'][$name] : null;
 				if (isset($info) && !empty($info['doc_comment'])) {
 					echo $newindent;
 					echo $info['doc_comment'];
-					echo "\n";
+					echo PHP_EOL;
 				}
 
 				echo $newindent;
@@ -2805,7 +2805,7 @@ class Decompiler
 					echo ' = ';
 					echo str(value($value, $EX), $newindent);
 				}
-				echo ";\n";
+				echo ";", PHP_EOL;
 			}
 		}
 		// }}}
@@ -2814,12 +2814,12 @@ class Decompiler
 			foreach ($class['function_table'] as $func) {
 				if (!isset($func['scope']) || $func['scope'] == $class['name']) {
 					// TODO: skip shadow here
-					echo "\n";
+					echo PHP_EOL;
 					$opa = $func['op_array'];
 					if (!empty($opa['doc_comment'])) {
 						echo $newindent;
 						echo $opa['doc_comment'];
-						echo "\n";
+						echo PHP_EOL;
 					}
 					$isAbstractMethod = false;
 					$decorations = array();
@@ -2862,14 +2862,14 @@ class Decompiler
 			}
 		}
 		// }}}
-		echo $indent, "}\n";
+		echo $indent, "}", PHP_EOL;
 	}
 	// }}}
 	function decompileString($string) // {{{
 	{
 		$this->dc = xcache_dasm_string($string);
 		if ($this->dc === false) {
-			echo "error compling string\n";
+			echo "error compling string", PHP_EOL;
 			return false;
 		}
 		$this->activeFile = null;
@@ -2881,7 +2881,7 @@ class Decompiler
 	{
 		$this->dc = xcache_dasm_file($file);
 		if ($this->dc === false) {
-			echo "error compling $file\n";
+			echo "error compling $file", PHP_EOL;
 			return false;
 		}
 		$this->activeFile = realpath($file);
@@ -2905,13 +2905,13 @@ class Decompiler
 		if ($this->dumpOnly) {
 			echo " // dump opcode only";
 		}
-		echo "\n\n";
+		echo PHP_EOL, PHP_EOL;
 		foreach ($this->dc['class_table'] as $key => $class) {
 			if ($key{0} != "\0") {
 				$this->activeClass = $class['name'];
 				$this->dclass($class);
 				$this->activeClass = null;
-				echo "\n";
+				echo PHP_EOL;
 			}
 		}
 
@@ -2920,12 +2920,12 @@ class Decompiler
 				$this->activeFunction = $key;
 				$this->dfunction($func);
 				$this->activeFunction = null;
-				echo "\n";
+				echo PHP_EOL;
 			}
 		}
 
 		$this->dop_array($this->dc['op_array']);
-		echo "\n?" . ">\n";
+		echo PHP_EO, "?" . ">", PHP_EOL;
 
 		if (!empty($this->test)) {
 			$this->outputUnusedOp();
@@ -2941,7 +2941,7 @@ class Decompiler
 			}
 
 			if (!isset($this->usedOps[$i])) {
-				echo "not covered opcode ", $opname, "\n";
+				echo "not covered opcode ", $opname, PHP_EOL;
 			}
 		}
 	}
@@ -3107,6 +3107,9 @@ if (ZEND_ENGINE_2_6) {
 }
 
 @define('XC_IS_CV', 16);
+if (!defined("PHP_EOL")) {
+	define("PHP_EOL", "\n");
+}
 
 /*
 if (preg_match_all('!XC_[A-Z_]+!', file_get_contents(__FILE__), $ms)) {
