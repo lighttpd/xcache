@@ -206,7 +206,7 @@ define(`STRUCT_ARRAY', `
 
 			for (LOOPCOUNTER = 0;
 					ifelse(`$2', `', `SRC(`$4[LOOPCOUNTER]')',
-					`', `', `LOOPCOUNTER < SRC(`$2')');
+					`', `', `LOOPCOUNTER < $2');
 					++LOOPCOUNTER) {
 				zval *zv;
 
@@ -226,13 +226,13 @@ define(`STRUCT_ARRAY', `
 				++count;
 				pushdef(`ARRAY_ELEMENT_COUNT', `count')
 			',
-			`', `', `pushdef(`ARRAY_ELEMENT_COUNT', `SRC(`$2')')')
+			`', `', `pushdef(`ARRAY_ELEMENT_COUNT', `$2')')
 			ALLOC(`DST(`$4')', `$3', `ARRAY_ELEMENT_COUNT')
 			popdef(`ARRAY_ELEMENT_COUNT')
 
 			for (LOOPCOUNTER = 0;
 					ifelse(`$2', `', `SRC(`$4[LOOPCOUNTER]')',
-					`', `', `LOOPCOUNTER < SRC(`$2')');
+					`', `', `LOOPCOUNTER < $2');
 					++LOOPCOUNTER) {
 				DISABLECHECK(`
 					pushdef(`ALLOC')
