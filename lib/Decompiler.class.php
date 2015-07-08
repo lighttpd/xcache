@@ -3,6 +3,10 @@
 define('INDENT', "\t");
 ini_set('error_reporting', E_ALL);
 assert_options(ASSERT_ACTIVE, 0);
+if (function_exists("gc_disable")) {
+	gc_collect_cycles();
+	gc_disable();
+}
 
 function color($str, $color = 33)
 {
@@ -818,6 +822,7 @@ class Decompiler
 					echo PHP_EOL;
 				}
 				echo $indent, str($op['php'], $indent), ";", PHP_EOL;
+				unset($op['php']);
 				$this->EX['lastBlock'] = 'basic';
 			}
 		}
@@ -2830,6 +2835,9 @@ class Decompiler
 	// }}}
 	function dfunction($func, $indent = '', $decorations = array(), $nobody = false) // {{{
 	{
+		static $opcode_count = 0;
+		$opcode_count += count($func['op_array']['opcodes']);
+
 		$this->detectNamespace($func['op_array']['function_name']);
 
 		$returnByRef = '';
@@ -2875,6 +2883,7 @@ class Decompiler
 			echo implode(' ', $decorations), ' ';
 		}
 		$this->EX = &$EX;
+		unset($EX);
 		echo 'function', $functionName ? ' ' . $returnByRef . $functionName : '', '(';
 		$this->dargs();
 		echo ")";
@@ -2896,6 +2905,13 @@ class Decompiler
 			echo "$indent}";
 			if (!$isExpression) {
 				echo PHP_EOL;
+			}
+		}
+
+		if ($opcode_count > 10000) {
+			$opcode_count = 0;
+			if (function_exists("gc_collect_cycles")) {
+				gc_collect_cycles();
 			}
 		}
 	}
