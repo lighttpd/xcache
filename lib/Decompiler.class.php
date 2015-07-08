@@ -3076,7 +3076,7 @@ class Decompiler
 		}
 
 		$this->dop_array($this->dc['op_array']);
-		echo PHP_EO, "?" . ">", PHP_EOL;
+		echo PHP_EOL, "?" . ">", PHP_EOL;
 
 		if (!empty($this->test)) {
 			$this->outputUnusedOp();
