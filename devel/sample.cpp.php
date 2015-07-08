@@ -324,7 +324,7 @@ abstract class ClassName
 	}
 
 	/** doc */
-	abstract public function abstractMethod();
+	abstract public function abstractMethod($arg);
 #endif
 
 #if PHP_VERSION >= 500
@@ -409,10 +409,6 @@ final class Child extends ClassName implements IInterface
 	static public function __callStatic($name, $args)
 	{
 		parent::__callStatic($name, $args);
-	}
-
-	public function abstractMethod()
-	{
 	}
 
 	public function nothing()

@@ -2733,7 +2733,7 @@ class Decompiler
 			if ($i) {
 				echo ', ';
 			}
-			$arg = $this->EX['recvs'][$i + 1];
+			$recv = isset($this->EX['recvs'][$i + 1]) ? $this->EX['recvs'][$i + 1] : null;
 			if (isset($op_array['arg_info'])) {
 				$ai = $op_array['arg_info'][$i];
 				if (isset($ai['type_hint']) ? ($ai['type_hint'] == IS_CALLABLE || $ai['type_hint'] == IS_OBJECT) : !empty($ai['class_name'])) {
@@ -2773,10 +2773,10 @@ class Decompiler
 						assert(0);
 					}
 				}
-				echo str($arg[0], $this->EX);
+				echo str($recv[0], $this->EX);
 			}
-			if (isset($arg[1])) {
-				echo ' = ', str($arg[1], $this->EX);
+			if (isset($recv) && isset($recv[1])) {
+				echo ' = ', str($recv[1], $this->EX);
 			}
 		}
 	}
