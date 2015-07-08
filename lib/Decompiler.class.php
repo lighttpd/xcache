@@ -1457,7 +1457,38 @@ class Decompiler
 	function recognizeAndDecompileClosedBlocks($range) // {{{ decompile in a tree way
 	{
 		$opcodes = &$this->EX['opcodes'];
+		if (count($opcodes) > 1000) {
+			$total = 70;
 
+			static $spinChars = array(
+				'-', '\\', '|', '/'
+				);
+			if (!isset($this->EX['bar'])) {
+				$this->EX['bar'] = str_repeat(' ', $total);
+				$this->EX['barX'] = 0;
+			}
+
+			$left = $total;
+			$bar = '';
+
+			$width = floor($total * $range[0] / count($opcodes));
+			$left -= $width;
+			$bar .= str_repeat('>', $width);
+
+			$width = ceil($total * ($range[1] - $range[0]) / count($opcodes));
+			if ($left && !$width) {
+				$width = 1;
+			}
+			$left -= $width;
+			$bar .= str_repeat($spinChars[$this->EX['barX']++ % count($spinChars)], $width);
+
+			$bar .= substr($this->EX['bar'], strlen($bar));
+			$this->EX['bar'] = $bar;
+
+			fwrite(STDERR, "\r[$bar]");
+		}
+
+		$ranges = array();
 		$starti = $range[0];
 		for ($i = $starti; $i <= $range[1]; ) {
 			if (!empty($opcodes[$i]['jmpfroms']) || !empty($opcodes[$i]['jmptos'])) {
