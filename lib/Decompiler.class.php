@@ -1708,9 +1708,8 @@ class Decompiler
 		$T = &$EX['Ts'];
 		$opcodes = &$EX['opcodes'];
 		$lastphpop = null;
-		$currentSourceLine = null;
 
-		for ($i = $range[0]; $i <= $range[1]; $i++, unsetArray($EX['value2constant'], $currentSourceLine)) {
+		for ($i = $range[0]; $i <= $range[1]; $i++) {
 			// {{{ prepair
 			$op = &$opcodes[$i];
 			$opc = $op['opcode'];
@@ -1723,10 +1722,6 @@ class Decompiler
 			$op2 = $op['op2'];
 			$res = $op['result'];
 			$ext = $op['extended_value'];
-			$currentSourceLine = $op['lineno'];
-			if ($currentSourceLine) {
-				$EX['value2constant'][$currentSourceLine] = '__LINE__';
-			}
 
 			$opname = xcache_get_opcode($opc);
 
