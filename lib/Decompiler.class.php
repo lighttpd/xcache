@@ -1460,8 +1460,10 @@ class Decompiler
 					}
 					++$j;
 				} while ($j <= $blockLast);
-				if (!assert('$blockLast <= $range[1]')) {
-					var_dump($blockLast, $range[1]);
+
+				if ($blockLast > $range[1]) {
+					fprintf(STDERR, "%d: \$blockLast(%d) > \$range[1](%d)\n", __LINE__, $blockLast, $range[1]);
+					assert('$blockLast <= $range[1]');
 					printBacktrace();
 				}
 
