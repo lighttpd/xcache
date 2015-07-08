@@ -2662,11 +2662,11 @@ class Decompiler
 		}
 	}
 	// }}}
-	function dumpOp($op) // {{{
+	function dumpOp($op, $padding = 4) // {{{
 	{
 		assert('isset($op)');
-		echo str_pad($op['line'], 4);
-		echo str_pad($op['lineno'], 4);
+		echo str_pad($op['line'], $padding);
+		echo str_pad($op['lineno'], $padding);
 
 		if (isset($op['oldopcode'])) {
 			$name = '//' . xcache_get_opcode($op['oldopcode']);
@@ -2709,9 +2709,10 @@ class Decompiler
 			$Ts = $this->EX['Ts'];
 			$this->EX['Ts'] = null;
 		}
+		$padding = max(strlen($range[1]), strlen($this->EX['opcodes'][$range[1]]['lineno'])) + 1;
 		for ($i = $range[0]; $i <= $range[1]; ++$i) {
 			echo $this->EX['indent'];
-			$this->dumpOp($this->EX['opcodes'][$i]);
+			$this->dumpOp($this->EX['opcodes'][$i], $padding);
 		}
 		if (!$ts) {
 			$this->EX['Ts'] = $Ts;
