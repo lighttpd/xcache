@@ -1328,7 +1328,13 @@ class Decompiler
 
 			echo $this->EX['indent'], 'switch (', str($this->getOpVal($caseOp['op1'], true), $this->EX), ") {", PHP_EOL;
 			$caseIsOut = false;
+			$caseExpressionBegin = $range[0];
 			foreach ($cases as $caseFirst => $caseLast) {
+				if ($caseExpressionBegin < $caseFirst) {
+					$this->recognizeAndDecompileClosedBlocks(array($caseExpressionBegin, $caseFirst - 1));
+				}
+				$caseExpressionBegin = $caseLast + 1;
+
 				if ($caseIsOut && empty($lastCaseFall)) {
 					echo PHP_EOL;
 				}

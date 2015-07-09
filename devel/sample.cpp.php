@@ -605,6 +605,18 @@ function codeSwitch()
 		break;
 	}
 
+	switch (functionCall()) {
+	case func1():
+		echo 'case1';
+		break;
+
+	case func2():
+	case func3():
+	case 1 + 1:
+		echo 'case2';
+		break;
+	}
+
 	switch ('emptySwitch()') {
 	}
 
