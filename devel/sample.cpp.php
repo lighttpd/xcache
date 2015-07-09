@@ -96,6 +96,13 @@ abstract class ClassName
 
 	PublicMethod function __construct($arg1, $arg2)
 	{
+		if (0) {
+			ClassName::__construct();
+		}
+	}
+
+	PublicMethod function codeStatic()
+	{
 		static $array = array(
 			0           => array('array'),
 			1           => 'str',
@@ -111,6 +118,17 @@ abstract class ClassName
 		ClassName::$classProp = 1;
 		echo ClassName::$classProp;
 #endif
+#if PHP_VERSION >= 530
+		echo $this::CONST_VALUE;
+		echo $object::CONST_VALUE;
+		echo CONST_VALUE;
+		$this::method();
+		$object::method();
+#endif
+	}
+
+	PublicMethod function codePropertyIndex()
+	{
 		$object = $this;
 		$object->a = 1;
 		$object->b = 2;
@@ -166,27 +184,24 @@ abstract class ClassName
 #endif
 		$GLOBALS['var']->indexProp = 1;
 		echo $GLOBALS['var']->indexProp;
+	}
 
-		if (0) {
-			ClassName::__construct();
-		}
-
+	PublicMethod function code1()
+	{
 		$method = 'method';
 		ClassName::$method();
+		$this->method();
+	}
+
+	PublicMethod function codeConstant()
+	{
 		echo __CLASS__;
 		echo __METHOD__;
 		echo __FUNCTION__;
-		$this->method();
+	}
 
-#if PHP_VERSION >= 500
-		try {
-			throw new Exception();
-			new Exception();
-		}
-		catch (Exception $e) {
-		}
-#endif
-
+	PublicMethod function codeExpression()
+	{
 		$a = 1;
 		$b = $c = 2;
 		$a = $b + $c;
@@ -274,6 +289,10 @@ abstract class ClassName
 		$a = isset(ClassName::$prop);
 		$a = empty(ClassName::$prop);
 #endif
+	}
+
+	PublicMethod function codeCast()
+	{
 		$a = (int) $b;
 		$a = (double) $b;
 		$a = (string) $b;
@@ -283,6 +302,10 @@ abstract class ClassName
 		$a = (unset) $b;
 		$a = (array) $b;
 		$a = (object) $b;
+	}
+
+	PublicMethod function codeQmBool()
+	{
 		$a = ($b ? $c : $d);
 		$a = (f1() ? f2() : f3());
 		($a = $b) xor $c;
@@ -290,12 +313,11 @@ abstract class ClassName
 		($a = $b) or $c;
 		$a = $b && $c;
 		$a = $b || $c;
+	}
 #if PHP_VERSION >= 530
-		echo $this::CONST_VALUE;
-		echo $object::CONST_VALUE;
-		echo CONST_VALUE;
-		$this::method();
-		$object::method();
+
+	PublicMethod function codeQmDefault()
+	{
 		$a = $b ?: $d;
 		$a = ($b ?: $d) + $c;
 		$a = f1() ?: f2();
@@ -315,8 +337,8 @@ abstract class ClassName
 		if (f1() ?: f2()) {
 			echo 'if (f1() ?: f2())';
 		}
-#endif
 	}
+#endif
 #if PHP_VERSION >= 500
 
 	public function __destruct()
@@ -392,6 +414,276 @@ function generator($f)
 	yield f1($b);
 #endif
 }
+
+function simpleCode1()
+{
+	echo "\r\n";
+	echo "\r";
+	echo "\n";
+	var_dump(array('a' => 'a', 'b' => 'c'), 'b');
+	$object = new Child();
+	$className = 'ns\\Child';
+	$object = new $className();
+#if PHP_VERSION >= 500
+	$result = $object instanceof Child;
+	$cloned = clone $object;
+#endif
+}
+#if PHP_VERSION >= 500
+
+function doTryCatch()
+{
+	do {
+		try {
+			echo 'outer try 1';
+
+			try {
+				echo 'inner try';
+			}
+			catch (InnerException $e) {
+				echo $e;
+			}
+			catch (InnerException2 $e2) {
+				echo $e2;
+			}
+#if PHP_VERSION >= 550
+			finally {
+				echo 'inner finally';
+			}
+#endif
+
+			echo 'outer try 2';
+		}
+		catch (OuterException $e) {
+			echo $e;
+		}
+		catch (OuterException2 $e2) {
+			echo $e2;
+		}
+#if PHP_VERSION >= 550
+		finally {
+			echo 'outer finally';
+		}
+#endif
+	} while (0);
+}
+#endif
+
+function codeList()
+{
+	list($a, $b) = array(1, 2);
+}
+
+function codeIf()
+{
+	if ('if()') {
+		echo 'if';
+
+		if ('innerIf()') {
+			echo 'if innerIf';
+		}
+	}
+	else if ('elseif_()') {
+		echo 'else if';
+
+		if ('innerIf_()') {
+			echo 'if innerIf';
+		}
+	}
+	else {
+		if ('innerIf_()') {
+			echo 'if innerIf';
+		}
+
+		echo 'else';
+	}
+
+	if (!'if(!)') {
+		echo 'if(!)';
+	}
+}
+
+function codeWhile()
+{
+	while (false) {
+		echo 'while';
+	}
+}
+
+function codeDoWhile()
+{
+	do {
+		echo 'do/while';
+	} while (false);
+}
+
+function codeFor()
+{
+	$i = 1;
+
+	for (; $i < 10; ++$i) {
+		echo $i;
+		break;
+	}
+}
+
+function codeForeach()
+{
+	$array = array(
+		array('a' => 'b')
+		);
+
+	foreach ($array as $value) {
+		foreach ($value as $key => $value) {
+			echo $key . ' = ' . $value . "\n";
+			break 2;
+			continue;
+		}
+	}
+}
+
+function codeSwitch()
+{
+	switch ('$normalSwitch') {
+	case 'case1':
+		echo 'case1';
+
+		switch ('$nestedSwitch') {
+		case 1:
+		}
+
+		break;
+
+	case 'case2':
+		echo 'case2';
+		break;
+
+	default:
+		switch ('$nestedSwitch') {
+		case 1:
+		}
+
+		echo 'default';
+		break;
+	}
+
+	switch ('$switchWithoutDefault') {
+	case 'case1':
+		echo 'case1';
+		break;
+
+	case 'case2':
+		echo 'case2';
+		break;
+	}
+
+	switch ('$switchWithMiddleDefault') {
+	case 'case1':
+		echo 'case1';
+		break;
+
+	default:
+		echo 'default';
+		break;
+
+	case 'case2':
+		echo 'case2';
+		break;
+	}
+
+	switch ('$switchWithInitialDefault') {
+	default:
+		echo 'default';
+		break;
+
+	case 'case1':
+		echo 'case1';
+		break;
+
+	case 'case2':
+		echo 'case2';
+		break;
+	}
+
+	switch ('emptySwitch()') {
+	}
+
+	switch ('defaultSwitch()') {
+	default:
+	}
+}
+
+function codeDeclare()
+{
+	declare (ticks=1) {
+		echo 1;
+	}
+
+	$a = true;
+
+	while ($a) {
+		declare (ticks=1) {
+			echo 2;
+		}
+
+		$a = false;
+	}
+}
+
+function codeKeyword()
+{
+	require 'devel/require.php';
+	require_once 'devel/require_once.php';
+	include 'devel/include.php';
+	include_once 'devel/include_once.php';
+	echo __FILE__;
+#if PHP_VERSION >= 530
+	echo __DIR__;
+#endif
+	echo __LINE__;
+#if PHP_VERSION >= 530
+	echo 'goto a';
+
+	goto a;
+	$i = 1;
+
+	for (; $i <= 2; ++$i) {
+		goto a;
+	}
+
+a:
+	echo 'label a';
+#endif
+	exit();
+	exit(1);
+	array(eval('array 1'));
+	array();
+}
+#if PHP_VERSION >= 530
+
+function codeLambda()
+{
+	echo preg_replace_callback('~-([a-z])~', function($match) {
+		return strtoupper($match[1]);
+	}, 'hello-world');
+	$greet = function($name) {
+		printf('Hello %s' . "\r\n" . '', $name);
+	};
+	$greet('World');
+	$greet('PHP');
+	$total = 0;
+	$tax = 1;
+	$callback = function($quantity, $product) use($tax, &$total) {
+		$tax = 'tax';
+		static $static1 = array(1);
+		static $static2;
+		$tax = 'tax';
+		$tax = --$tax;
+		$pricePerItem = constant('PRICE_' . strtoupper($product));
+		$total += $pricePerItem * $quantity * ($tax + 1);
+	};
+}
+#endif
 #if PHP_VERSION >= 500
 
 final class Child extends ClassName implements IInterface
@@ -473,236 +765,5 @@ if ($late) {
 		return new lateBindingFunction();
 	}
 }
-
-echo "\r\n";
-echo "\r";
-echo "\n";
-var_dump(array('a' => 'a', 'b' => 'c'), 'b');
-$object = new Child();
-$className = 'ns\\Child';
-$object = new $className();
-#if PHP_VERSION >= 500
-$result = $object instanceof Child;
-$cloned = clone $object;
-#endif
-#if PHP_VERSION >= 500
-
-do {
-	try {
-		echo 'outer try 1';
-
-		try {
-			echo 'inner try';
-		}
-		catch (InnerException $e) {
-			echo $e;
-		}
-		catch (InnerException2 $e2) {
-			echo $e2;
-		}
-#if PHP_VERSION >= 550
-		finally {
-			echo 'inner finally';
-		}
-#endif
-
-		echo 'outer try 2';
-	}
-	catch (OuterException $e) {
-		echo $e;
-	}
-	catch (OuterException2 $e2) {
-		echo $e2;
-	}
-#if PHP_VERSION >= 550
-	finally {
-		echo 'outer finally';
-	}
-#endif
-} while (0);
-#endif
-
-list($a, $b) = array(1, 2);
-
-if ('if()') {
-	echo 'if';
-
-	if ('innerIf()') {
-		echo 'if innerIf';
-	}
-}
-else if ('elseif_()') {
-	echo 'else if';
-
-	if ('innerIf_()') {
-		echo 'if innerIf';
-	}
-}
-else {
-	if ('innerIf_()') {
-		echo 'if innerIf';
-	}
-
-	echo 'else';
-}
-
-if (!'if(!)') {
-	echo 'if(!)';
-}
-
-while (false) {
-	echo 'while';
-}
-
-do {
-	echo 'do/while';
-} while (false);
-
-$i = 1;
-
-for (; $i < 10; ++$i) {
-	echo $i;
-	break;
-}
-
-$array = array(
-	array('a' => 'b')
-	);
-
-foreach ($array as $value) {
-	foreach ($value as $key => $value) {
-		echo $key . ' = ' . $value . "\n";
-		break 2;
-		continue;
-	}
-}
-
-switch ('$normalSwitch') {
-case 'case1':
-	echo 'case1';
-
-	switch ('$nestedSwitch') {
-	case 1:
-	}
-
-	break;
-
-case 'case2':
-	echo 'case2';
-	break;
-
-default:
-	switch ('$nestedSwitch') {
-	case 1:
-	}
-
-	echo 'default';
-	break;
-}
-
-switch ('$switchWithoutDefault') {
-case 'case1':
-	echo 'case1';
-	break;
-
-case 'case2':
-	echo 'case2';
-	break;
-}
-
-switch ('$switchWithMiddleDefault') {
-case 'case1':
-	echo 'case1';
-	break;
-
-default:
-	echo 'default';
-	break;
-
-case 'case2':
-	echo 'case2';
-	break;
-}
-
-switch ('$switchWithInitialDefault') {
-default:
-	echo 'default';
-	break;
-
-case 'case1':
-	echo 'case1';
-	break;
-
-case 'case2':
-	echo 'case2';
-	break;
-}
-
-switch ('emptySwitch()') {
-}
-
-switch ('defaultSwitch()') {
-default:
-}
-
-declare (ticks=1) {
-	echo 1;
-}
-
-$a = true;
-
-while ($a) {
-	declare (ticks=1) {
-		echo 2;
-	}
-
-	$a = false;
-}
-
-require 'devel/require.php';
-require_once 'devel/require_once.php';
-include 'devel/include.php';
-include_once 'devel/include_once.php';
-echo __FILE__;
-#if PHP_VERSION >= 530
-echo __DIR__;
-#endif
-echo __LINE__;
-#if PHP_VERSION >= 530
-echo 'goto a';
-goto a;
-
-$i = 1;
-
-for (; $i <= 2; ++$i) {
-	goto a;
-}
-
-a:
-echo 'label a';
-echo preg_replace_callback('~-([a-z])~', function($match) {
-	return strtoupper($match[1]);
-}, 'hello-world');
-$greet = function($name) {
-	printf('Hello %s' . "\r\n" . '', $name);
-};
-$greet('World');
-$greet('PHP');
-$total = 0;
-$tax = 1;
-$callback = function($quantity, $product) use($tax, &$total) {
-	$tax = 'tax';
-	static $static1 = array(1);
-	static $static2;
-	$tax = 'tax';
-	$tax = --$tax;
-	$pricePerItem = constant('PRICE_' . strtoupper($product));
-	$total += $pricePerItem * $quantity * ($tax + 1);
-};
-#endif
-exit();
-exit(1);
-array(eval('array 1'));
-array();
 
 ?>
