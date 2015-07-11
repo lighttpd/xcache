@@ -848,9 +848,9 @@ class Decompiler
 			return $ret;
 
 		case XC_IS_CV:
+			$vars = &$this->EX['op_array']['vars'];
 			$var = $op['var'];
-			$var = $this->EX['op_array']['vars'][$var];
-			return '$' . $var['name'];
+			return isset($vars[$var]) ? '$' . $vars[$var]['name'] : '$?';
 
 		case XC_IS_UNUSED:
 			return null;
