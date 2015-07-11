@@ -652,7 +652,6 @@ function codeKeyword()
 #if PHP_VERSION >= 530
 	echo __DIR__;
 #endif
-	echo __LINE__;
 #if PHP_VERSION >= 530
 	echo 'goto a';
 
