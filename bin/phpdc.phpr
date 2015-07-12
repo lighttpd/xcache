@@ -22,11 +22,12 @@ reset($argv);
 while (($arg = next($argv)) !== false) {
 	switch ($arg) {
 	case '-h':
-		echo "Usage: phpdc.phpr [-dca] [filename]";
-		echo "  -c: decompile into PHP code";
-		echo "  -d: dump into opcode";
-		echo "  -a: input file is dasm opcode return from xcache_dasm_*";
-		echo "  -h: this help page";
+		echo "Usage: phpdc.phpr [-dca] [filename]", PHP_EOL;
+		echo "  -c: decompile into PHP code", PHP_EOL;
+		echo "  -d: dump into opcode", PHP_EOL;
+		echo "  -a: input file is dasm opcode return from xcache_dasm_*", PHP_EOL;
+		echo "  -h: this help page", PHP_EOL;
+		exit();
 		break;
 
 	case '-c':
