@@ -1521,6 +1521,7 @@ class Decompiler
 					fprintf(STDERR, "%d: \$blockLast(%d) > \$range[1](%d)\n", __LINE__, $blockLast, $range[1]);
 					assert('$blockLast <= $range[1]');
 					printBacktrace();
+					$this->dumpRange($range);
 				}
 
 				if ($blockLast >= $blockFirst) {
