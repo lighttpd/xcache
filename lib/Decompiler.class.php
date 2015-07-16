@@ -70,11 +70,6 @@ function str($code, $indent = '') // {{{
 	return (string) $code;
 }
 // }}}
-function unsetArray(&$array, $name) // {{{
-{
-	unset($array[$name]);
-}
-// }}}
 
 function foldToCode($src, $indent = '') // {{{ wrap or rewrap anything to Decompiler_Code
 {
