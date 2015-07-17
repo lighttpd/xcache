@@ -13,87 +13,220 @@ function color($str, $color = 33)
 	return "\x1B[{$color}m$str\x1B[0m";
 }
 
-function printBacktrace() // {{{
+class Decompiler_Output
 {
-	if (!$GLOBALS['__xcache_decompiler']->inComment++) {
-		echo '/*', PHP_EOL;
+	// {{{
+	var $errorToOutput = true;
+	var $target;
+
+	function Decompiler_Output($target)
+	{
+		$this->target = $target;
 	}
-	$backtrace = debug_backtrace();
-	foreach ($backtrace as $stack) {
-		$args = array();
-		foreach ($stack['args'] as $arg) {
-			if (is_scalar($arg)) {
-				$args[] = var_export($arg, true);
+	// }}}
+
+	var $indent = "";
+	function indent() // {{{
+	{
+		$this->indent .= INDENT;
+	}
+	// }}}
+	function outdent() // {{{
+	{
+		$this->indent = substr($this->indent, 0, -strlen(INDENT));
+	}
+	// }}}
+
+	function writeOne_($code) // {{{
+	{
+		if ($this->target == STDOUT) {
+			echo $code;
+		}
+		else {
+			fwrite($this->target, $code);
+		}
+	}
+	// }}}
+	var $writes = 0;
+	function write() // {{{
+	{
+		++$this->writes;
+		foreach (func_get_args() as $code) {
+			if (is_object($code)) {
+				$s = $code;
+				$code = $code->toCode($this->indent);
 			}
-			else if (is_array($arg)) {
-				$array = array();
-				foreach ($arg as $key => $value) {
-					$array[] = var_export($key, true) . " => " . (is_scalar($value) ? var_export($value, true) : gettype($value));
-					if (count($array) >= 5) {
-						$array[] = '...';
-						break;
-					}
-				}
-				$args[] = "array(" . implode(', ', $array) . ')';
+			if (is_array($code)) {
+				call_user_func_array(array(&$this, 'write'), $code);
 			}
 			else {
-				$args[] = gettype($arg);
+				$this->writeOne_((string) $code);
 			}
 		}
-		printf("%d: %s::%s(%s)" . PHP_EOL
-				, $stack['line']
-				, isset($stack['class']) ? $stack['class'] : ''
-				, $stack['function']
-				, implode(', ', $args)
-				);
 	}
-	if (!--$GLOBALS['__xcache_decompiler']->inComment) {
-		echo '*/', PHP_EOL;
-	}
-}
-// }}}
-
-function str($code, $indent = '') // {{{
-{
-	if (is_array($code)) {
-		$array = array();
-		foreach ($code as $key => $value) {
-			$array[$key] = str($value, $indent);
+	// }}}
+	function writeln() // {{{
+	{
+		if ($this->codeTypeCurrent != $this->codeTypeNext) {
+			if ($this->codeTypeCurrent && $this->codeTypeNext == 'line') {
+				$this->writeOne_(PHP_EOL);
+			}
+			$this->codeTypeCurrent = $this->codeTypeNext;
 		}
-		return $array;
-	}
-	if (is_object($code)) {
-		$code = foldToCode($code, $indent);
-		return $code->toCode($indent);
-	}
+		$this->writeOne_($this->indent);
 
-	return (string) $code;
+		$args = func_get_args();
+		call_user_func_array(array(&$this, 'write'), $args);
+
+		$this->writeOne_(PHP_EOL);
+	}
+	// }}}
+	function printfError($format) // {{{
+	{
+		$args = func_get_args();
+		unset($args[0]);
+
+		foreach ($args as $i => $arg) {
+			unset($arg);
+
+			if (is_object($args[$i])) {
+				$args[$i] = $args[$i]->toCode($this->indent);
+			}
+		}
+
+		$error = implode("", $args);
+		trigger_error($error);
+		if ($this->errorToOutput) {
+			$this->beginComment();
+			fwrite($this->target, $error);
+			$this->endComment();
+		}
+	}
+	// }}}
+
+	var $inComment = 0;
+	function beginComment() // {{{
+	{
+		if (!$this->inComment++) {
+			$this->writeln("/*");
+		}
+	}
+	// }}}
+	function endComment() // {{{
+	{
+		if (!--$this->inComment) {
+			$this->writeln("*/");
+		}
+	}
+	// }}}
+
+	var $scopeStack = array();
+	var $codeTypeCurrent = null;
+	var $codeTypeNext = 'line';
+	/*
+	line  <- line
+
+	something { <- complexblock
+		line <- line
+	} <- complexblock
+
+	sdf <- line
+	*/
+	function beginBlock_($isComplex) // {{{
+	{
+		// array_push($this->scopeStack, array($this->codeTypeCurrent, $this->codeTypeNext));
+		array_push($this->scopeStack, $this->codeTypeNext);
+		$this->codeTypeCurrent = null;
+		$this->codeTypeNext = $isComplex ? 'complexblock' : 'line';
+	}
+	// }}}
+	function endBlock_() // {{{
+	{
+		// list($this->codeTypeCurrent, $this->codeTypeNext) = array_pop($this->scopeStack);
+		$this->codeTypeNext = array_pop($this->scopeStack);
+	}
+	// }}}
+	function beginScope() // {{{
+	{
+		$this->beginBlock_(false);
+		$this->indent();
+	}
+	// }}}
+	function endScope() // {{{
+	{
+		$this->outdent();
+		$this->endBlock_();
+	}
+	// }}}
+	function beginComplexBlock() // {{{
+	{
+		if (isset($this->codeTypeCurrent)) {
+			$this->writeOne_(PHP_EOL);
+		}
+
+		$this->beginBlock_(true);
+	}
+	// }}}
+	function endComplexBlock() // {{{
+	{
+		$this->endBlock_();
+	}
+	// }}}
 }
-// }}}
 
-function foldToCode($src, $indent = '') // {{{ wrap or rewrap anything to Decompiler_Code
+class Decompiler_Backtrace // {{{
 {
-	if (is_array($indent)) {
-		$indent = $indent['indent'];
+	function Decompiler_Backtrace()
+	{
+		$this->backtrace = debug_backtrace();
+		array_shift($this->backtrace);
 	}
 
-	$decompiler = &$GLOBALS['__xcache_decompiler'];
-	if (!is_object($src)) {
-		return new Decompiler_Code($decompiler, $src);
+	function toCode($indent)
+	{
+		$code = array();
+		foreach ($this->backtrace as $stack) {
+			$args = array();
+			foreach ($stack['args'] as $arg) {
+				if (is_scalar($arg)) {
+					$args[] = var_export($arg, true);
+				}
+				else if (is_array($arg)) {
+					$array = array();
+					foreach ($arg as $key => $value) {
+						$array[] = var_export($key, true) . " => " . (is_scalar($value) ? var_export($value, true) : gettype($value));
+						if (count($array) >= 5) {
+							$array[] = '...';
+							break;
+						}
+					}
+					$args[] = "array(" . implode(', ', $array) . ')';
+				}
+				else {
+					$args[] = gettype($arg);
+				}
+			}
+			$code[] = sprintf("%s%d: %s::%s(%s)" . PHP_EOL
+					, $indent
+					, $stack['line']
+					, isset($stack['class']) ? $stack['class'] : ''
+					, $stack['function']
+					, implode(', ', $args)
+					);
+		}
+		return implode("", $code);
 	}
-
-	if (!method_exists($src, 'toCode')) {
-		var_dump($src);
-		exit('no toCode');
-	}
-	if (get_class($src) != 'Decompiler_Code') {
-		// rewrap it
-		$src = new Decompiler_Code($decompiler, $src->toCode($indent));
-	}
-
-	return $src;
 }
 // }}}
+function printBacktrace() // {{{
+{
+	$decompiler = &$GLOBALS['__xcache_decompiler'];
+	$decompiler->output->beginComment();
+	$decompiler->output->write(new Decompiler_Backtrace());
+	$decompiler->output->endComment();
+}
+// }}}
+
 function decompileAst($ast) // {{{
 {
 	$kind = $ast['kind'];
@@ -131,10 +264,10 @@ function decompileAst($ast) // {{{
 				);
 
 	case ZEND_UNARY_PLUS:
-		return new Decompiler_Code($decompiler, '+' . str(decompileAst($ast[0])));
+		return new Decompiler_UnaryOp($decompiler, XC_ADD, decompileAst($ast[0]));
 
 	case ZEND_UNARY_MINUS:
-		return new Decompiler_Code($decompiler, '-' . str(decompileAst($ast[0])));
+		return new Decompiler_UnaryOp($decompiler, XC_SUB, decompileAst($ast[0]));
 
 	default:
 		if (isset($decompiler->binaryOp[$kind])) {
@@ -161,7 +294,7 @@ function value($value) // {{{
 	if (isset($originalValue)) {
 		if ((xcache_get_type($value) & IS_CONSTANT_TYPE_MASK) == IS_CONSTANT) {
 			// constant
-			return $decompiler->stripNamespace($originalValue);
+			return new Decompiler_Code($decompiler, $decompiler->stripNamespace($originalValue));
 		}
 
 		$value = $originalValue;
@@ -186,7 +319,7 @@ function value($value) // {{{
 // }}}
 function unquoteName_($str, $asVariableName, $indent = '') // {{{
 {
-	$str = str($str, $indent);
+	$str = is_object($str) ? $str->toCode($indent) : $str;
 	if (preg_match("!^'[\\w_][\\w\\d_\\\\]*'\$!", $str)) {
 		return str_replace('\\\\', '\\', substr($str, 1, -1));
 	}
@@ -210,6 +343,10 @@ function unquoteName($str, $indent = '') // {{{
 // }}}
 class Decompiler_Object // {{{
 {
+	function toCode($indent)
+	{
+		return "";
+	}
 }
 // }}}
 class Decompiler_Value extends Decompiler_Object // {{{
@@ -277,6 +414,23 @@ class Decompiler_Code extends Decompiler_Object // {{{
 	}
 }
 // }}}
+class Decompiler_Statements extends Decompiler_Code // {{{
+{
+	var $src;
+
+	function toCode($indent)
+	{
+		$code = array();
+		foreach ($this->src as $i => $src) {
+			if ($i) {
+				$code[] = ', ';
+			}
+			$code[] = $src;
+		}
+		return $code;
+	}
+}
+// }}}
 class Decompiler_UnaryOp extends Decompiler_Code // {{{
 {
 	var $opc;
@@ -294,12 +448,12 @@ class Decompiler_UnaryOp extends Decompiler_Code // {{{
 		$opstr = $this->decompiler->unaryOp[$this->opc];
 
 		if (is_a($this->op, 'Decompiler_TernaryOp') || is_a($this->op, 'Decompiler_BinaryOp') && $this->op->opc != $this->opc) {
-			$op = "(" . str($this->op, $indent) . ")";
+			$op = array("(", $this->op, ")");
 		}
 		else {
 			$op = $this->op;
 		}
-		return $opstr . str($op, $indent);
+		return array($opstr, $op);
 	}
 }
 // }}}
@@ -322,24 +476,25 @@ class Decompiler_BinaryOp extends Decompiler_Code // {{{
 		$opstr = $this->decompiler->binaryOp[$this->opc];
 
 		if (is_a($this->op1, 'Decompiler_TernaryOp') || is_a($this->op1, 'Decompiler_BinaryOp') && $this->op1->opc != $this->opc) {
-			$op1 = "(" . str($this->op1, $indent) . ")";
+			$op1 = array("(", $this->op1, ")");
 		}
 		else {
 			$op1 = $this->op1;
 		}
 
 		if (is_a($this->op2, 'Decompiler_TernaryOp') || is_a($this->op2, 'Decompiler_BinaryOp') && $this->op2->opc != $this->opc && substr($opstr, -1) != '=') {
-			$op2 = "(" . str($this->op2, $indent) . ")";
+			$op2 = array("(", $this->op2, ")");
 		}
 		else {
 			$op2 = $this->op2;
 		}
 
-		if (str($op1) == '0' && ($this->opc == XC_ADD || $this->opc == XC_SUB)) {
-			return $opstr . str($op2, $indent);
+		if (is_a($op1, 'Decompiler_Value') && $op1->value == '0' && ($this->opc == XC_ADD || $this->opc == XC_SUB)) {
+			$unaryOp = new Decompiler_UnaryOp($this->decompiler, $this->opc, $op2);
+			return $unaryOp->toCode($indent);
 		}
 
-		return str($op1, $indent) . ' ' . $opstr . ($this->opc == XC_ASSIGN_REF ? '' : ' ') . str($op2, $indent);
+		return array($op1, ' ', $opstr, ($this->opc == XC_ASSIGN_REF ? '' : ' '), $op2);
 	}
 }
 // }}}
@@ -361,47 +516,58 @@ class Decompiler_TernaryOp extends Decompiler_Code // {{{
 	{
 		$trueValue = $this->trueValue;
 		if (is_a($this->trueValue, 'Decompiler_TernaryOp')) {
-			$trueValue = "(" . str($trueValue, $indent) . ")";
+			$trueValue = array("(", $trueValue, ")");
 		}
 		$falseValue = $this->falseValue;
 		if (is_a($this->falseValue, 'Decompiler_TernaryOp')) {
-			$falseValue = "(" . str($falseValue, $indent) . ")";
+			$falseValue = array("(", $falseValue, ")");
 		}
 
-		return str($this->condition) . ' ? ' . str($trueValue) . ' : ' . str($falseValue);
+		return array($this->condition, ' ? ', $trueValue, ' : ', $falseValue);
 	}
 }
 // }}}
 class Decompiler_Fetch extends Decompiler_Code // {{{
 {
-	var $src;
 	var $fetchType;
+	var $name;
+	var $scope;
 
-	function Decompiler_Fetch(&$decompiler, $src, $type, $globalSrc)
+	function Decompiler_Fetch(&$decompiler, $scope, $name, $type)
 	{
 		$this->decompiler = &$decompiler;
-		$this->src = $src;
+		$this->scope = $scope;
+		$this->name = $name;
+		unset($this->src);
 		$this->fetchType = $type;
-		$this->globalSrc = $globalSrc;
 	}
 
 	function toCode($indent)
 	{
 		switch ($this->fetchType) {
+		case XC_FETCH_PROPERTY:
+			return array($this->scope, '->', $this->name);
+
+		case ZEND_FETCH_STATIC_MEMBER:
+			return array($this->scope, '::$', $this->name);
+
 		case ZEND_FETCH_LOCAL:
-			return '$' . $this->src;
+			return array('$', $this->name);
+
 		case ZEND_FETCH_STATIC:
 			if (ZEND_ENGINE_2_3) {
 				// closure local variable?
-				return 'STR' . str($this->src);
+				return 'STR' . $this->name;
 			}
 			else {
-				return str(value($this->src));
+				return value($this->name);
 			}
 			die('static fetch cant to string');
+
 		case ZEND_FETCH_GLOBAL:
 		case ZEND_FETCH_GLOBAL_LOCK:
-			return $this->globalSrc;
+			return xcache_is_autoglobal($this->name) ? array('$', $this->name) : array("\$GLOBALS[", value($this->name), "]");
+
 		default:
 			var_dump($this->fetchType);
 			assert(0);
@@ -409,7 +575,7 @@ class Decompiler_Fetch extends Decompiler_Code // {{{
 	}
 }
 // }}}
-class Decompiler_Box // {{{
+class Decompiler_Box extends Decompiler_Object // {{{
 {
 	var $obj;
 
@@ -435,18 +601,21 @@ class Decompiler_Dim extends Decompiler_Value // {{{
 	function toCode($indent)
 	{
 		if (is_a($this->value, 'Decompiler_ListBox')) {
-			$exp = str($this->value->obj->src, $indent);
+			$exp = array($this->value->obj->src);
 		}
 		else {
-			$exp = str($this->value, $indent);
+			$exp = array($this->value);
 		}
 		$last = count($this->offsets) - 1;
 		foreach ($this->offsets as $i => $dim) {
 			if ($this->isObject && $i == $last) {
-				$exp .= '->' . unquoteVariableName($dim, $indent);
+				$exp[] = '->';
+				$exp[] = unquoteVariableName($dim, $indent);
 			}
 			else {
-				$exp .= '[' . str($dim, $indent) . ']';
+				$exp[] = '[';
+				$exp[] = $dim;
+				$exp[] = ']';
 			}
 		}
 		return $exp;
@@ -470,9 +639,9 @@ class Decompiler_List extends Decompiler_Code // {{{
 			unset($dim->value);
 			$dim->value = $this->src;
 			if (!isset($dim->assign)) {
-				return str($dim, $indent);
+				return $dim;
 			}
-			return str($this->dims[0]->assign, $indent) . ' = ' . str($dim, $indent);
+			return array($this->dims[0]->assign, ' = ', $dim);
 		}
 		/* flatten dims */
 		$assigns = array();
@@ -481,9 +650,9 @@ class Decompiler_List extends Decompiler_Code // {{{
 			foreach ($dim->offsets as $offset) {
 				$assign = &$assign[$offset];
 			}
-			$assign = foldToCode($dim->assign, $indent);
+			$assign = $dim->assign;
 		}
-		return str($this->toList($assigns)) . ' = ' . str($this->src, $indent);
+		return array($this->toList($assigns), ' = ', $this->src);
 	}
 
 	function toList($assigns)
@@ -493,22 +662,23 @@ class Decompiler_List extends Decompiler_Code // {{{
 			$keys[] = 0;
 		}
 		$max = call_user_func_array('max', $keys);
-		$list = "list(";
+		$code = array("list(");
 		for ($i = 0; $i <= $max; $i++) {
 			if ($i) {
-				$list .= ', ';
+				$code[] = ', ';
 			}
 			if (!isset($assigns[$i])) {
 				continue;
 			}
 			if (is_array($assigns[$i])) {
-				$list .= $this->toList($assigns[$i]);
+				$code[] = $this->toList($assigns[$i]);
 			}
 			else {
-				$list .= $assigns[$i];
+				$code[] = $assigns[$i];
 			}
 		}
-		return $list . ')';
+		$code[] = ')';
+		return $code;
 	}
 }
 // }}}
@@ -532,29 +702,34 @@ class Decompiler_Array extends Decompiler_Value // {{{
 		$elementsCode = array();
 		$index = 0;
 		foreach ($this->value as $element) {
-			list($key, $value, $ref) = $element;
-			if (!isset($key)) {
-				$key = $index++;
+			$key = $element[0];
+			if (isset($key)) {
+				$key = value($key);
+				$keyCode = $key->toCode($subindent);
 			}
-			$elementsCode[] = array(str($key, $subindent), str($value, $subindent), $key, $value, $ref);
+			else {
+				$keyCode = $index++;
+			}
+			$element[0] = $keyCode;
+			$elementsCode[] = $element;
 		}
 
-		$exp = "array(";
+		$code = array("array(");
 		$indent = $indent . INDENT;
 		$assocWidth = 0;
 		$multiline = 0;
 		$i = 0;
 		foreach ($elementsCode as $element) {
-			list($keyCode, $valueCode) = $element;
-			if ((string) $i !== $keyCode) {
+			$keyCode = $element[0];
+			if (is_array($keyCode) || (string) $i !== (string) $keyCode) {
 				$assocWidth = 1;
 				break;
 			}
 			++$i;
 		}
 		foreach ($elementsCode as $element) {
-			list($keyCode, $valueCode, $key, $value) = $element;
-			if ($assocWidth) {
+			list($keyCode, $value) = $element;
+			if ($assocWidth && !is_array($keyCode)) {
 				$len = strlen($keyCode);
 				if ($assocWidth < $len) {
 					$assocWidth = $len;
@@ -567,41 +742,43 @@ class Decompiler_Array extends Decompiler_Value // {{{
 
 		$i = 0;
 		foreach ($elementsCode as $element) {
-			list($keyCode, $value, , , $ref) = $element;
+			list($keyCode, $value, $ref) = $element;
 			if ($multiline) {
 				if ($i) {
-					$exp .= ",";
+					$code[] = ",";
 				}
-				$exp .= PHP_EOL;
-				$exp .= $indent;
+				$code[] = PHP_EOL;
+				$code[] = $indent;
 			}
 			else {
 				if ($i) {
-					$exp .= ", ";
+					$code[] = ", ";
 				}
 			}
 
 			if ($assocWidth) {
-				if ($multiline) {
-					$exp .= sprintf("%-{$assocWidth}s => ", $keyCode);
+				if ($multiline && !is_array($keyCode)) {
+					$code[] = sprintf("%-{$assocWidth}s => ", $keyCode);
 				}
 				else {
-					$exp .= $keyCode . ' => ';
+					$code[] = $keyCode;
+					$code[] = ' => ';
 				}
 			}
 
-			$exp .= $ref;
-			$exp .= $value;
+			$code[] = $ref;
+			$value = value($value);
+			$code[] = $value->toCode($subindent);
 
 			$i++;
 		}
 		if ($multiline) {
-			$exp .= PHP_EOL . "$indent)";
+			$code[] = PHP_EOL . "$indent)";
 		}
 		else {
-			$exp .= ")";
+			$code[] = ")";
 		}
-		return $exp;
+		return $code;
 	}
 }
 // }}}
@@ -613,14 +790,14 @@ class Decompiler_ConstArray extends Decompiler_Array // {{{
 		$elements = array();
 		foreach ($array as $key => $value) {
 			if ((xcache_get_type($value) & IS_CONSTANT_INDEX)) {
-				$keyCode = $GLOBALS['__xcache_decompiler']->stripNamespace(
+				$keyCode = new Decompiler_Code($this, $GLOBALS['__xcache_decompiler']->stripNamespace(
 						ZEND_ENGINE_2_3
 						? substr($key, 0, -2)
 						: $key
-						);
+						));
 			}
 			else {
-				$keyCode = value($key);
+				$keyCode = $key;
 			}
 			$elements[] = array($keyCode, value($value), '');
 		}
@@ -650,13 +827,14 @@ class Decompiler
 	var $activeFunction;
 	var $outputPhp;
 	var $outputOpcode;
-	var $inComment = 0;
 	var $value2constant = array();
+	var $output;
 
 	function Decompiler($outputTypes)
 	{
 		$this->outputPhp = in_array('php', $outputTypes);
 		$this->outputOpcode = in_array('opcode', $outputTypes);
+		$this->output = new Decompiler_Output(STDOUT);
 		$GLOBALS['__xcache_decompiler'] = $this;
 		// {{{ testing
 		// XC_UNDEF XC_OP_DATA
@@ -676,6 +854,11 @@ class Decompiler
 		$this->unaryOp = array(
 				XC_BW_NOT   => '~',
 				XC_BOOL_NOT => '!',
+				XC_ADD      => "+",
+				XC_SUB      => "-",
+				XC_NEW      => "new ",
+				XC_THROW    => "throw ",
+				XC_CLONE    => "clone ",
 				);
 		$this->binaryOp = array(
 				XC_ADD                 => "+",
@@ -710,11 +893,14 @@ class Decompiler
 				XC_ASSIGN_BW_XOR       => "^=",
 				XC_BOOL_XOR            => "xor",
 				XC_ASSIGN              => "=",
+				XC_ASSIGN_DIM          => "=",
+				XC_ASSIGN_OBJ          => "=",
 				XC_ASSIGN_REF          => "= &",
 				XC_JMP_SET             => "?:",
 				XC_JMP_SET_VAR         => "?:",
 				XC_JMPZ_EX             => "&&",
 				XC_JMPNZ_EX            => "||",
+				XC_INSTANCEOF          => "instanceof",
 				);
 		if (defined('IS_CONSTANT_AST')) {
 			$this->binaryOp[ZEND_BOOL_AND] = '&&';
@@ -743,7 +929,9 @@ class Decompiler
 			}
 
 			$this->namespace = $namespace;
-			echo 'namespace ', $this->namespace, ";", PHP_EOL, PHP_EOL;
+			$this->output->beginComplexBlock();
+			$this->output->writeln('namespace ', $this->namespace, ";");
+			$this->output->endComplexBlock();
 		}
 
 		$this->namespaceDecided = true;
@@ -755,8 +943,11 @@ class Decompiler
 			return $name;
 		}
 
-		$name = str($name);
 		$len = strlen($this->namespace) + 1;
+		if (!is_string($name)) {
+			printBacktrace();
+			exit;
+		}
 		if (strncasecmp($name, $this->namespace . '\\', $len) == 0) {
 			return substr($name, $len);
 		}
@@ -777,59 +968,47 @@ class Decompiler
 	// }}}
 	function outputPhp($range) // {{{
 	{
-		$needBlankline = isset($this->EX['lastBlock']);
-		$indent = $this->EX['indent'];
 		$curticks = 0;
 		for ($i = $range[0]; $i <= $range[1]; $i++) {
 			$op = $this->EX['opcodes'][$i];
 			if (isset($op['gofrom'])) {
-				if ($needBlankline) {
-					$needBlankline = false;
-					echo PHP_EOL;
-				}
+				$this->output->beginComplexBlock();
 				echo 'label' . $i, ":", PHP_EOL;
+				$this->output->endComplexBlock();
 			}
 			if (isset($op['php'])) {
-				$toticks = isset($op['ticks']) ? (int) str($op['ticks']) : 0;
+				$toticks = isset($op['ticks']) ? (int) $op['ticks'] : 0;
 				if ($curticks != $toticks) {
-					$oldticks = $curticks;
+					if ($curticks) {
+						$this->output->endScope();
+						$this->output->writeln("}");
+						$this->output->endComplexBlock();
+					}
 					$curticks = $toticks;
-					if (!$curticks) {
-						echo $this->EX['indent'], "}", PHP_EOL, PHP_EOL;
-						$indent = $this->EX['indent'];
-					}
-					else {
-						if ($oldticks) {
-							echo $this->EX['indent'], "}", PHP_EOL, PHP_EOL;
-						}
-						else if (!$oldticks) {
-							$indent .= INDENT;
-						}
-						if ($needBlankline) {
-							$needBlankline = false;
-							echo PHP_EOL;
-						}
-						echo $this->EX['indent'], "declare (ticks=$curticks) {", PHP_EOL;
+					if ($curticks) {
+						$this->output->beginComplexBlock();
+						$this->output->writeln("declare (ticks=$curticks) {");
+						$this->output->beginScope();
 					}
 				}
-				if ($needBlankline) {
-					$needBlankline = false;
-					echo PHP_EOL;
-				}
-				echo $indent, str($op['php'], $indent), ";", PHP_EOL;
+				$this->output->writeln($op['php'], ';');
 				unset($op['php']);
-				$this->EX['lastBlock'] = 'basic';
 			}
 		}
 		if ($curticks) {
-			echo $this->EX['indent'], "}", PHP_EOL;
+			$this->output->endScope();
+			$this->output->writeln("}");
+			$this->output->endComplexBlock();
 		}
 	}
 	// }}}
-	function getOpVal($op, $free = false) // {{{
+	function getOpVal($op, $free = false, $namespaced = false) // {{{
 	{
 		switch ($op['op_type']) {
 		case XC_IS_CONST:
+			if ($namespaced && isset($op['constant'])) {
+				return $this->stripNamespace($op['constant']);
+			}
 			return value($op['constant']);
 
 		case XC_IS_VAR:
@@ -850,7 +1029,7 @@ class Decompiler
 		case XC_IS_CV:
 			$vars = &$this->EX['op_array']['vars'];
 			$var = $op['var'];
-			return isset($vars[$var]) ? '$' . $vars[$var]['name'] : '$?';
+			return new Decompiler_Fetch($this, null, isset($vars[$var]) ? $vars[$var]['name'] : '?', ZEND_FETCH_LOCAL);
 
 		case XC_IS_UNUSED:
 			return null;
@@ -955,33 +1134,6 @@ class Decompiler
 		}
 		// $opcodes[$line]['opcode'] = XC_NOP;
 		unset($opcodes[$line]['jmptos']);
-	}
-	// }}}
-	function beginScope($doIndent = true) // {{{
-	{
-		array_push($this->EX['scopeStack'], array($this->EX['lastBlock'], $this->EX['indent']));
-		if ($doIndent) {
-			$this->EX['indent'] .= INDENT;
-		}
-		$this->EX['lastBlock'] = null;
-	}
-	// }}}
-	function endScope() // {{{
-	{
-		list($this->EX['lastBlock'], $this->EX['indent']) = array_pop($this->EX['scopeStack']);
-	}
-	// }}}
-	function beginComplexBlock() // {{{
-	{
-		if (isset($this->EX['lastBlock'])) {
-			echo PHP_EOL;
-			$this->EX['lastBlock'] = null;
-		}
-	}
-	// }}}
-	function endComplexBlock() // {{{
-	{
-		$this->EX['lastBlock'] = 'complex';
 	}
 	// }}}
 	function op($range, $offset) // {{{
@@ -1121,39 +1273,39 @@ class Decompiler
 			$bodyRange = array($nextRange[1], $range[1]);
 			$this->removeJmpInfo($bodyRange[1]);
 
+			$this->output->beginComplexBlock();
 			$initial = '';
-			$this->beginScope();
+			$this->output->beginScope();
 			$this->dasmBasicBlock($conditionRange);
 			$conditionCodes = array();
 			for ($i = $conditionRange[0]; $i <= $conditionRange[1]; ++$i) {
 				if (isset($opcodes[$i]['php'])) {
-					$conditionCodes[] = str($opcodes[$i]['php'], $this->EX);
+					$conditionCodes[] = $opcodes[$i]['php'];
 				}
 			}
-			$conditionCodes[] = str($this->getOpVal($opcodes[$conditionRange[1]]['op1']), $this->EX);
-			if (implode(',', $conditionCodes) == 'true') {
+			$conditionCodes[] = $this->getOpVal($opcodes[$conditionRange[1]]['op1']);
+			if (count($conditionCodes) == 1 && $conditionCodes[0] == 'true') {
 				$conditionCodes = array();
 			}
-			$this->endScope();
+			$this->output->endScope();
 
-			$this->beginScope();
+			$this->output->beginScope();
 			$this->dasmBasicBlock($nextRange);
 			$nextCodes = array();
 			for ($i = $nextRange[0]; $i <= $nextRange[1]; ++$i) {
 				if (isset($opcodes[$i]['php'])) {
-					$nextCodes[] = str($opcodes[$i]['php'], $this->EX);
+					$nextCodes[] = $opcodes[$i]['php'];
 				}
 			}
-			$this->endScope();
+			$this->output->endScope();
 
-			$this->beginComplexBlock();
-			echo $this->EX['indent'], 'for (', str($initial, $this->EX), '; ', implode(', ', $conditionCodes), '; ', implode(', ', $nextCodes), ') ', '{', PHP_EOL;
+			$this->output->writeln('for (', $initial, '; ', new Decompiler_Statements($this, $conditionCodes), '; ', new Decompiler_Statements($this, $nextCodes), ') ', '{');
 			$this->clearJmpInfo_brk_cont($bodyRange);
-			$this->beginScope();
+			$this->output->beginScope();
 			$this->recognizeAndDecompileClosedBlocks($bodyRange);
-			$this->endScope();
-			echo $this->EX['indent'], '}', PHP_EOL;
-			$this->endComplexBlock();
+			$this->output->endScope();
+			$this->output->writeln('}');
+			$this->output->endComplexBlock();
 			return true;
 		}
 	}
@@ -1161,7 +1313,7 @@ class Decompiler
 	function decompile_if($range, &$opcodes, &$firstOp, &$lastOp) // {{{
 	{
 		if ($this->isIfCondition($range)) {
-			$this->beginComplexBlock();
+			$this->output->beginComplexBlock();
 			$isElseIf = false;
 			do {
 				$ifRange = array($range[0], $opcodes[$range[0]]['jmptos'][0] - 1);
@@ -1169,12 +1321,11 @@ class Decompiler
 				$this->removeJmpInfo($ifRange[1]);
 				$condition = $this->getOpVal($opcodes[$ifRange[0]]['op1']);
 
-				echo $this->EX['indent'], $isElseIf ? 'else if' : 'if', ' (', str($condition, $this->EX), ') ', '{', PHP_EOL;
-				$this->beginScope();
+				$this->output->writeln($isElseIf ? 'else if' : 'if', ' (', $condition, ') ', '{');
+				$this->output->beginScope();
 				$this->recognizeAndDecompileClosedBlocks($ifRange);
-				$this->endScope();
-				$this->EX['lastBlock'] = null;
-				echo $this->EX['indent'], '}', PHP_EOL;
+				$this->output->endScope();
+				$this->output->writeln("}");
 
 				$isElseIf = true;
 				// search for else if
@@ -1192,30 +1343,29 @@ class Decompiler
 			} while ($this->isIfCondition($range));
 			if ($ifRange[1] <= $range[1]) {
 				$elseRange = array($ifRange[1], $range[1]);
-				echo $this->EX['indent'], 'else ', '{', PHP_EOL;
-				$this->beginScope();
+				$this->output->writeln('else ', '{');
+				$this->output->beginScope();
 				$this->recognizeAndDecompileClosedBlocks($elseRange);
-				$this->endScope();
-				$this->EX['lastBlock'] = null;
-				echo $this->EX['indent'], '}', PHP_EOL;
+				$this->output->endScope();
+				$this->output->writeln("}");
 			}
-			$this->endComplexBlock();
+			$this->output->endComplexBlock();
 			return true;
 		}
 
 		if ($firstOp['opcode'] == XC_JMPZ && !empty($firstOp['jmptos'])
 		 && $firstOp['jmptos'][0] - 1 == $range[1]
 		 && ($opcodes[$firstOp['jmptos'][0] - 1]['opcode'] == XC_RETURN || $opcodes[$firstOp['jmptos'][0] - 1]['opcode'] == XC_GENERATOR_RETURN)) {
-			$this->beginComplexBlock();
+			$this->output->beginComplexBlock();
 			$this->removeJmpInfo($range[0]);
 			$condition = $this->getOpVal($opcodes[$range[0]]['op1']);
 
-			echo $this->EX['indent'], 'if (', str($condition, $this->EX), ') ', '{', PHP_EOL;
-			$this->beginScope();
+			$this->output->writeln('if (', $condition, ') ', '{');
+			$this->output->beginScope();
 			$this->recognizeAndDecompileClosedBlocks($range);
-			$this->endScope();
-			echo $this->EX['indent'], '}', PHP_EOL;
-			$this->endComplexBlock();
+			$this->output->endScope();
+			$this->output->writeln('}');
+			$this->output->endComplexBlock();
 			return true;
 		}
 	}
@@ -1253,12 +1403,12 @@ class Decompiler
 				--$tryRange[1];
 			}
 
-			$this->beginComplexBlock();
-			echo $this->EX['indent'], "try {", PHP_EOL;
-			$this->beginScope();
+			$this->output->beginComplexBlock();
+			$this->output->writeln("try {");
+			$this->output->beginScope();
 			$this->recognizeAndDecompileClosedBlocks($tryRange);
-			$this->endScope();
-			echo $this->EX['indent'], '}', PHP_EOL;
+			$this->output->endScope();
+			$this->output->writeln("}");
 			if (!$catchBlocks) {
 				printBacktrace();
 				assert($catchBlocks);
@@ -1268,20 +1418,20 @@ class Decompiler
 				$catchBodyFirst = $catchOpLine + 1;
 				$this->dasmBasicBlock(array($catchFirst, $catchOpLine));
 				$catchOp = &$opcodes[$catchOpLine];
-				echo $this->EX['indent'], "catch ("
-						, $this->stripNamespace(isset($catchOp['op1']['constant']) ? $catchOp['op1']['constant'] : str($this->getOpVal($catchOp['op1'])))
+				$this->output->writeln("catch ("
+						, $this->stripNamespace(isset($catchOp['op1']['constant']) ? $catchOp['op1']['constant'] : $this->getOpVal($catchOp['op1']))
 						, ' '
-						, isset($catchOp['op2']['constant']) ? '$' . $catchOp['op2']['constant'] : str($this->getOpVal($catchOp['op2']))
-						, ") {", PHP_EOL;
+						, isset($catchOp['op2']['constant']) ? '$' . $catchOp['op2']['constant'] : $this->getOpVal($catchOp['op2'])
+						, ") {"
+						);
 				unset($catchOp);
 
-				$this->EX['lastBlock'] = null;
-				$this->beginScope();
+				$this->output->beginScope();
 				$this->recognizeAndDecompileClosedBlocks(array($catchBodyFirst, $catchBodyLast));
-				$this->endScope();
-				echo $this->EX['indent'], '}', PHP_EOL;
+				$this->output->endScope();
+				$this->output->writeln("}");
 			}
-			$this->endComplexBlock();
+			$this->output->endComplexBlock();
 			return true;
 		}
 	}
@@ -1319,9 +1469,9 @@ class Decompiler
 				}
 			}
 
-			$this->beginComplexBlock();
+			$this->output->beginComplexBlock();
 
-			echo $this->EX['indent'], 'switch (', str($this->getOpVal($caseOp['op1'], true), $this->EX), ") {", PHP_EOL;
+			$this->output->writeln('switch (', $this->getOpVal($caseOp['op1'], true), ") {");
 			$caseIsOut = false;
 			$caseExpressionBegin = $range[0];
 			foreach ($cases as $caseFirst => $caseLast) {
@@ -1336,11 +1486,8 @@ class Decompiler
 
 				$caseOp = $opcodes[$caseFirst];
 
-				echo $this->EX['indent'];
 				if ($caseOp['opcode'] == XC_CASE) {
-					echo 'case ';
-					echo str($this->getOpVal($caseOp['op2']), $this->EX);
-					echo ':', PHP_EOL;
+					$this->output->writeln('case ', $this->getOpVal($caseOp['op2']), ':');
 
 					$this->removeJmpInfo($caseFirst);
 					++$caseFirst;
@@ -1350,8 +1497,7 @@ class Decompiler
 					++$caseFirst;
 				}
 				else {
-					echo 'default';
-					echo ':', PHP_EOL;
+					$this->output->writeln('default:');
 
 					assert('$opcodes[$caseFirst]["opcode"] == XC_JMP');
 					$this->removeJmpInfo($caseFirst);
@@ -1372,14 +1518,14 @@ class Decompiler
 					$lastCaseFall = true;
 				}
 
-				$this->beginScope();
+				$this->output->beginScope();
 				$this->recognizeAndDecompileClosedBlocks(array($caseFirst, $caseLast));
-				$this->endScope();
+				$this->output->endScope();
 				$caseIsOut = true;
 			}
-			echo $this->EX['indent'], '}', PHP_EOL;
+			$this->output->writeln('}');
 
-			$this->endComplexBlock();
+			$this->output->endComplexBlock();
 			return true;
 		}
 	}
@@ -1390,15 +1536,15 @@ class Decompiler
 		 && $lastOp['jmptos'][0] == $range[0]) {
 			$this->removeJmpInfo($range[1]);
 			$this->clearJmpInfo_brk_cont($range);
-			$this->beginComplexBlock();
+			$this->output->beginComplexBlock();
 
-			echo $this->EX['indent'], "do {", PHP_EOL;
-			$this->beginScope();
+			$this->output->writeln("do {");
+			$this->output->beginScope();
 			$this->recognizeAndDecompileClosedBlocks($range);
-			$this->endScope();
-			echo $this->EX['indent'], "} while (", str($this->getOpVal($lastOp['op1']), $this->EX), ');', PHP_EOL;
+			$this->output->endScope();
+			$this->output->writeln("} while (", $this->getOpVal($lastOp['op1']), ');');
 
-			$this->endComplexBlock();
+			$this->output->endComplexBlock();
 			return true;
 		}
 	}
@@ -1411,19 +1557,19 @@ class Decompiler
 		 && !empty($lastOp['jmptos']) && $lastOp['jmptos'][0] == $range[0]) {
 			$this->removeJmpInfo($firstJmpOp['line']);
 			$this->removeJmpInfo($range[1]);
-			$this->beginComplexBlock();
+			$this->output->beginComplexBlock();
 
 			ob_start();
-			$this->beginScope();
+			$this->output->beginScope();
 			$this->recognizeAndDecompileClosedBlocks($range);
-			$this->endScope();
+			$this->output->endScope();
 			$body = ob_get_clean();
 
-			echo $this->EX['indent'], "while (", str($this->getOpVal($firstJmpOp['op1'])), ") {", PHP_EOL;
+			$this->output->writeln("while (", $this->getOpVal($firstJmpOp['op1']), ") {");
 			echo $body;
-			echo $this->EX['indent'], '}', PHP_EOL;
+			$this->output->writeln('}');
 
-			$this->endComplexBlock();
+			$this->output->endComplexBlock();
 			return true;
 		}
 	}
@@ -1438,24 +1584,24 @@ class Decompiler
 			$this->removeJmpInfo($firstJmpOp['line']);
 			$this->removeJmpInfo($lastJmpOp['line']);
 			$this->clearJmpInfo_brk_cont($range);
-			$this->beginComplexBlock();
+			$this->output->beginComplexBlock();
 
 			ob_start();
-			$this->beginScope();
+			$this->output->beginScope();
 			$this->recognizeAndDecompileClosedBlocks($range);
-			$this->endScope();
+			$this->output->endScope();
 			$body = ob_get_clean();
 
-			$as = str(foldToCode($firstJmpOp['fe_as'], $this->EX), $this->EX);
+			$as = $firstJmpOp['fe_as'];
 			if (isset($firstJmpOp['fe_key'])) {
-				$as = str($firstJmpOp['fe_key'], $this->EX) . ' => ' . $as;
+				$as = array($firstJmpOp['fe_key'], ' => ', $as);
 			}
 
-			echo $this->EX['indent'], "foreach (", str($firstJmpOp['fe_src'], $this->EX), " as $as) {", PHP_EOL;
+			$this->output->writeln("foreach (", $firstJmpOp['fe_src'], " as ", $as, ") {");
 			echo $body;
-			echo $this->EX['indent'], '}', PHP_EOL;
+			$this->output->writeln('}');
 
-			$this->endComplexBlock();
+			$this->output->endComplexBlock();
 			return true;
 		}
 	}
@@ -1528,12 +1674,7 @@ class Decompiler
 					if ($blockFirst > $starti) {
 						$this->decompileBasicBlock(array($starti, $blockFirst - 1));
 					}
-					if ($this->decompileComplexBlock(array($blockFirst, $blockLast)) === false) {
-						if ($this->EX['lastBlock'] == 'complex') {
-							echo PHP_EOL;
-						}
-						$this->EX['lastBlock'] = null;
-					}
+					$this->decompileComplexBlock(array($blockFirst, $blockLast));
 					$starti = $blockLast + 1;
 					$i = $starti;
 				}
@@ -1711,16 +1852,15 @@ class Decompiler
 		unset($op);
 	}
 	// }}}
-	function &dop_array($op_array, $indent = '') // {{{
+	function &dop_array($op_array, $isFunction = false) // {{{
 	{
-		$this->fixOpCode($op_array['opcodes'], true, $indent == '' ? 1 : null);
+		$this->fixOpCode($op_array['opcodes'], true, $isFunction ? null : 1);
 
 		$opcodes = &$op_array['opcodes'];
 
 		$EX = array();
 		$this->EX = &$EX;
 		$EX['Ts'] = $this->outputPhp ? array() : null;
-		$EX['indent'] = $indent;
 		$EX['op_array'] = &$op_array;
 		$EX['opcodes'] = &$opcodes;
 		// func call
@@ -1729,11 +1869,9 @@ class Decompiler
 		$EX['fbc'] = null;
 		$EX['argstack'] = array();
 		$EX['arg_types_stack'] = array();
-		$EX['scopeStack'] = array();
 		$EX['silence'] = 0;
 		$EX['recvs'] = array();
 		$EX['uses'] = array();
-		$EX['lastBlock'] = null;
 		$EX['value2constant'] = array();
 		if (isset($this->activeMethod)) {
 			$EX['value2constant'][$this->activeMethod] = '__METHOD__';
@@ -1810,22 +1948,14 @@ class Decompiler
 				array_push($this->EX['arg_types_stack'], array($this->EX['fbc'], $this->EX['object'], $this->EX['called_scope']));
 				$this->EX['object'] = $istmpres ? (int) $res['var'] : null;
 				$this->EX['called_scope'] = null;
-				$this->EX['fbc'] = 'new ' . $this->stripNamespace(isset($op1['constant']) ? $op1['constant'] : $this->getOpVal($op1));
-				break;
-				// }}}
-			case XC_THROW: // {{{
-				$resvar = 'throw ' . str($this->getOpVal($op1), $this->EX);
-				break;
-				// }}}
-			case XC_CLONE: // {{{
-				$resvar = 'clone ' . str($this->getOpVal($op1), $this->EX);
+				$this->EX['fbc'] = new Decompiler_UnaryOp($this, $opc, $this->getOpVal($op1, false, true));
 				break;
 				// }}}
 			case XC_CATCH: // {{{
 				break;
 				// }}}
 			case XC_INSTANCEOF: // {{{
-				$resvar = str($this->getOpVal($op1), $this->EX) . ' instanceof ' . $this->stripNamespace($this->getOpVal($op2));
+				$resvar = new Decompiler_BinaryOp($this, $this->getOpVal($op1), $opc, $this->stripNamespace($this->getOpVal($op2)));
 				break;
 				// }}}
 			case XC_FETCH_CLASS: // {{{
@@ -1844,7 +1974,7 @@ class Decompiler
 					$istmpres = true;
 				}
 				else {
-					$class = isset($op2['constant']) ? $op2['constant'] : $this->getOpVal($op2);
+					$class = $this->getOpVal($op2, true, true);
 				}
 				$resvar = $class;
 				break;
@@ -1866,7 +1996,7 @@ class Decompiler
 					$resvar = $this->getOpVal($op1);
 				}
 
-				$resvar = str($resvar) . '::' . unquoteName($this->getOpVal($op2));
+				$resvar = new Decompiler_Code($this, array($resvar, '::', unquoteName($this->getOpVal($op2))));
 				break;
 				// }}}
 				// {{{ case FETCH_*
@@ -1877,16 +2007,14 @@ class Decompiler
 			case XC_FETCH_UNSET:
 			case XC_FETCH_IS:
 				$fetchType = defined('ZEND_FETCH_TYPE_MASK') ? ($ext & ZEND_FETCH_TYPE_MASK) : $op2[!ZEND_ENGINE_2 ? 'fetch_type' : 'EA.type'];
-				$name = isset($op1['constant']) ? $op1['constant'] : unquoteName($this->getOpVal($op1));
+				$name = isset($op1['constant']) ? $op1['constant'] : $this->getOpVal($op1);
 				if ($fetchType == ZEND_FETCH_STATIC_MEMBER) {
-					$class = isset($op2['constant']) ? $op2['constant'] : $this->getOpVal($op2);
-					$rvalue = $this->stripNamespace($class) . '::$' . $name;
+					$class = $this->getOpVal($op2, false, true);
 				}
 				else {
-					$rvalue = isset($op1['constant']) ? $op1['constant'] : $this->getOpVal($op1);
-					$globalName = xcache_is_autoglobal($name) ? "\$$name" : "\$GLOBALS[" . str($this->getOpVal($op1), $this->EX) . "]";
-					$rvalue = new Decompiler_Fetch($this, $rvalue, $fetchType, $globalName);
+					$class = null;
 				}
+				$rvalue = new Decompiler_Fetch($this, $class, $name, $fetchType);
 
 				if ($res['op_type'] != XC_IS_UNUSED) {
 					$resvar = $rvalue;
@@ -1903,7 +2031,7 @@ class Decompiler
 					$rvalue = isset($op1['constant']) ? '$' . $op1['constant'] /* PHP5.1- */ : $this->getOpVal($op1);
 				}
 
-				$op['php'] = "unset(" . str($rvalue, $this->EX) . ")";
+				$op['php'] = array("unset(", $rvalue, ")");
 				$lastphpop = &$op;
 				break;
 				// }}}
@@ -1978,10 +2106,10 @@ class Decompiler
 					$lvalue = $rvalue;
 					++ $i;
 					$rvalue = $this->getOpVal($opcodes[$i]['op1']);
-					$resvar = str($lvalue, $this->EX) . ' = ' . str($rvalue);
+					$resvar = new Decompiler_BinaryOp($this, $lvalue, $opc, $rvalue);
 				}
 				else if ($opc == XC_UNSET_DIM || $opc == XC_UNSET_OBJ || $opc == XC_UNSET_DIM_OBJ) {
-					$op['php'] = "unset(" . str($rvalue, $this->EX) . ")";
+					$op['php'] = array("unset(", $rvalue, ")");
 					$lastphpop = &$op;
 				}
 				else if ($res['op_type'] != XC_IS_UNUSED) {
@@ -2002,20 +2130,18 @@ class Decompiler
 					$dim = &$rvalue->obj;
 					$dim->assign = $lvalue;
 					if ($dim->isLast) {
-						$resvar = foldToCode($dim->value, $this->EX);
+						$resvar = $dim->value;
 					}
 					unset($dim);
 					break;
 				}
-				if (is_a($rvalue, 'Decompiler_Fetch')) {
-					$src = str($rvalue->src, $this->EX);
-					$name = unquoteName($src);
-					if ('$' . $name == $lvalue) {
+				if (is_a($lvalue, 'Decompiler_Fetch') && is_a($rvalue, 'Decompiler_Fetch')) {
+					if ($lvalue->name == $rvalue->name) {
 						switch ($rvalue->fetchType) {
 						case ZEND_FETCH_STATIC:
 							$statics = &$this->EX['op_array']['static_variables'];
-							if ((xcache_get_type($statics[$name]) & IS_LEXICAL_VAR)) {
-								$this->EX['uses'][] = str($lvalue);
+							if ((xcache_get_type($statics[$rvalue->name]) & IS_LEXICAL_VAR)) {
+								$this->EX['uses'][] = $lvalue;
 								unset($statics);
 								break 2;
 							}
@@ -2029,29 +2155,30 @@ class Decompiler
 			case XC_ASSIGN_REF: // {{{
 				$lvalue = $this->getOpVal($op1);
 				$rvalue = $this->getOpVal($op2);
-				if (is_a($rvalue, 'Decompiler_Fetch')) {
-					$src = str($rvalue->src, $this->EX);
-					if ('$' . unquoteName($src) == $lvalue) {
+				if (is_a($lvalue, 'Decompiler_Fetch') && is_a($rvalue, 'Decompiler_Fetch')) {
+					if ($lvalue->name == $rvalue->name) {
 						switch ($rvalue->fetchType) {
 						case ZEND_FETCH_GLOBAL:
 						case ZEND_FETCH_GLOBAL_LOCK:
-							$resvar = 'global ' . $lvalue;
+							$resvar = new Decompiler_Code($this, array('global ', $lvalue));
 							break 2;
 						case ZEND_FETCH_STATIC:
 							$statics = &$this->EX['op_array']['static_variables'];
-							$name = unquoteName($src);
-							if ((xcache_get_type($statics[$name]) & IS_LEXICAL_REF)) {
-								$this->EX['uses'][] = '&' . str($lvalue);
+							if ((xcache_get_type($statics[$rvalue->name]) & IS_LEXICAL_REF)) {
+								$this->EX['uses'][] = array('&', $lvalue);
 								unset($statics);
 								break 2;
 							}
 
-							$resvar = 'static ' . $lvalue;
-							if (isset($statics[$name])) {
-								$var = $statics[$name];
-								$resvar .= ' = ';
-								$resvar .= str(value($var), $this->EX);
+							$resvar = array();
+							$resvar[] = 'static ';
+							$resvar[] = $lvalue;
+							if (isset($statics[$rvalue->name])) {
+								$var = $statics[$rvalue->name];
+								$resvar[] = ' = ';
+								$resvar[] = value($var);
 							}
+							$resvar = new Decompiler_Code($this, $resvar);
 							unset($statics);
 							break 2;
 						default:
@@ -2074,15 +2201,15 @@ class Decompiler
 				if (!isset($obj)) {
 					$obj = '$this';
 				}
-				$rvalue = str($obj) . "->" . unquoteVariableName($this->getOpVal($op2));
+				$name = isset($op2['constant']) ? new Decompiler_Value($this, $op2['constant']) : $this->getOpVal($op2);
 				if ($res['op_type'] != XC_IS_UNUSED) {
-					$resvar = $rvalue;
+					$resvar = new Decompiler_Fetch($this, $obj, $name->value, XC_FETCH_PROPERTY);
 				}
 				if ($opc == XC_ASSIGN_OBJ) {
 					++ $i;
 					$lvalue = $rvalue;
 					$rvalue = $this->getOpVal($opcodes[$i]['op1']);
-					$resvar = "$lvalue = " . str($rvalue);
+					$resvar = new Decompiler_BinaryOp($this, $lvalue, $opc, $rvalue);
 				}
 				break;
 				// }}}
@@ -2112,22 +2239,22 @@ class Decompiler
 						if (!isset($container)) {
 							$container = '$this';
 						}
-						$rvalue = str($container, $this->EX) . "->" . unquoteVariableName($dim);
+						$rvalue = array($container, "->", unquoteVariableName($dim));
 					}
 					else {
-						$rvalue = str($container, $this->EX) . '[' . str($dim) .']';
+						$rvalue = array($container, '[', $dim, ']');
 					}
 				}
 
 				switch (((!ZEND_ENGINE_2 ? $op['op2']['var'] /* constant */ : $ext) & ZEND_ISSET_ISEMPTY_MASK)) {
 				case ZEND_ISSET:
-					$rvalue = "isset(" . str($rvalue) . ")";
+					$rvalue = array("isset(", $rvalue, ")");
 					break;
 				case ZEND_ISEMPTY:
-					$rvalue = "empty(" . str($rvalue) . ")";
+					$rvalue = array("empty(", $rvalue, ")");
 					break;
 				}
-				$resvar = $rvalue;
+				$resvar = new Decompiler_Code($this, $rvalue);
 				break;
 				// }}}
 			case XC_SEND_VAR_NO_REF:
@@ -2135,7 +2262,7 @@ class Decompiler
 			case XC_SEND_REF:
 			case XC_SEND_VAR: // {{{
 				$ref = (!ZEND_ENGINE_2_4 && $opc == XC_SEND_REF ? '&' : '');
-				$this->EX['argstack'][] = $ref . str($this->getOpVal($op1));
+				$this->EX['argstack'][] = array($ref, $this->getOpVal($op1));
 				break;
 				// }}}
 			case XC_INIT_STATIC_METHOD_CALL:
@@ -2143,7 +2270,7 @@ class Decompiler
 				array_push($this->EX['arg_types_stack'], array($this->EX['fbc'], $this->EX['object'], $this->EX['called_scope']));
 				if ($opc == XC_INIT_STATIC_METHOD_CALL) {
 					$this->EX['object'] = null;
-					$this->EX['called_scope'] = $this->stripNamespace(isset($op1['constant']) ? $op1['constant'] : $this->getOpVal($op1));
+					$this->EX['called_scope'] = $this->getOpVal($op1, false, true);
 				}
 				else {
 					$obj = $this->getOpVal($op1);
@@ -2183,7 +2310,7 @@ class Decompiler
 					$this->EX['object'] = null;
 					$this->EX['called_scope'] = null;
 				}
-				$this->EX['fbc'] = isset($op2['constant']) ? $op2['constant'] : $this->getOpVal($op2);
+				$this->EX['fbc'] = $this->getOpVal($op2, true, true);
 				break;
 				// }}}
 			case XC_INIT_FCALL_BY_FUNC: // {{{ deprecated even in PHP 4?
@@ -2197,12 +2324,12 @@ class Decompiler
 				$which = $op1['var'];
 				$fname = $this->EX['op_array']['funcs'][$which]['name'];
 				$args = $this->popargs($ext);
-				$resvar = $fname . "($args)";
+				$resvar = new Decompiler_Code($this, array($fname, "(", $args, ")"));
 				break;
 			case XC_DO_FCALL:
 				$fname = unquoteName($this->getOpVal($op1), $this->EX);
 				$args = $this->popargs($ext);
-				$resvar = $fname . "($args)";
+				$resvar = new Decompiler_Code($this, array($fname, "(", $args, ")"));
 				break;
 			case XC_DO_FCALL_BY_NAME: // {{{
 				$object = null;
@@ -2211,14 +2338,23 @@ class Decompiler
 					$object = $this->EX['object'];
 				}
 
-				$args = $this->popargs($ext);
-
-				$prefix = (isset($object) ? str($object) . '->' : '' )
-					. (isset($this->EX['called_scope']) ? str($this->EX['called_scope']) . '::' : '');
-				$resvar = $prefix
-					. (!$prefix ? $this->stripNamespace($this->EX['fbc']) : str($this->EX['fbc']))
-					. "($args)";
-				unset($args);
+				$code = array();
+				if (isset($object)) {
+					$code[] = $object;
+					$code[] = '->';
+				}
+				if (isset($this->EX['called_scope'])) {
+					$code[] = $this->EX['called_scope'];
+					$code[] = '::';
+				}
+				if (isset($this->EX['fbc'])) {
+					$code[] = $this->EX['fbc'];
+				}
+				$code[] = '(';
+				$code[] = $this->popargs($ext);
+				$code[] = ')';
+				$resvar = new Decompiler_Code($this, $code);
+				unset($code);
 
 				if (is_int($this->EX['object'])) {
 					$T[$this->EX['object']] = $resvar;
@@ -2287,21 +2423,15 @@ class Decompiler
 					unset($fetchop, $addop);
 					$i += 2;
 				}
-				if ($this->EX['lastBlock'] == 'complex') {
-					echo PHP_EOL;
-				}
-				$this->EX['lastBlock'] = null;
 				$this->activeClass = $class['name'];
 
-				$indent = $this->EX['indent'];
 				$oldEX = &$this->EX;
 				unset($this->EX);
-				$this->dclass($class, $indent);
+				$this->dclass($class);
 				$this->EX = &$oldEX;
 				unset($oldEX);
 
 				$this->activeClass = null;
-				echo PHP_EOL;
 				unset($class);
 				break;
 				// }}}
@@ -2316,38 +2446,38 @@ class Decompiler
 				$op2val = $this->getOpVal($op2);
 				switch ($opc) {
 				case XC_ADD_CHAR:
-					$op2val = value(chr(str($op2val)));
+					$op2val = value(chr($op2val->value));
 					break;
 				case XC_ADD_STRING:
 					break;
 				case XC_ADD_VAR:
 					break;
 				}
-				if (str($op1val) == "''") {
+				if (!isset($op1val) == "''") {
 					$rvalue = $op2val;
 				}
-				else if (str($op2val) == "''") {
+				else if (!isset($op2val) == "''") {
 					$rvalue = $op1val;
 				}
 				else {
-					$rvalue = str($op1val) . ' . ' . str($op2val);
+					$rvalue = new Decompiler_BinaryOp($this, $op1val, XC_CONCAT, $op2val);
 				}
 				$resvar = $rvalue;
 				// }}}
 				break;
 			case XC_PRINT: // {{{
 				$op1val = $this->getOpVal($op1);
-				$resvar = "print(" . str($op1val) . ")";
+				$resvar = new Decompiler_Code($this, array("print(", $op1val, ")"));
 				break;
 				// }}}
 			case XC_ECHO: // {{{
 				$op1val = $this->getOpVal($op1);
-				$resvar = "echo " . str($op1val);
+				$resvar = new Decompiler_Code($this, array("echo ", $op1val));
 				break;
 				// }}}
 			case XC_EXIT: // {{{
 				$op1val = $this->getOpVal($op1);
-				$resvar = "exit(" . str($op1val) . ")";
+				$resvar = new Decompiler_Code($this, array("exit(", $op1val, ")"));
 				break;
 				// }}}
 			case XC_INIT_ARRAY:
@@ -2386,18 +2516,18 @@ class Decompiler
 			case XC_GENERATOR_RETURN:
 			case XC_RETURN_BY_REF:
 			case XC_RETURN: // {{{
-				$resvar = "return " . str($this->getOpVal($op1, $this->EX));
+				$resvar = new Decompiler_Code($this, array("return ", $this->getOpVal($op1)));
 				break;
 				// }}}
 			case XC_INCLUDE_OR_EVAL: // {{{
 				$type = ZEND_ENGINE_2_4 ? $ext : $op2['var']; // hack
 				$keyword = $this->includeTypes[$type];
-				$rvalue = str($this->getOpVal($op1));
+				$rvalue = $this->getOpVal($op1);
 				if ($type == ZEND_EVAL) {
-					$resvar = "$keyword($rvalue)";
+					$resvar = new Decompiler_Code($this, array($keyword, "(", $rvalue, ")"));
 				}
 				else {
-					$resvar = "$keyword $rvalue";
+					$resvar = new Decompiler_Code($this, array($keyword, " ", $rvalue));
 				}
 				break;
 				// }}}
@@ -2427,22 +2557,22 @@ class Decompiler
 				break;
 				// }}}
 			case XC_YIELD: // {{{
-				$resvar = 'yield ' . str($this->getOpVal($op1));
+				$resvar = new Decompiler_Code($this, array('yield ', $this->getOpVal($op1)));
 				break;
 				// }}}
 			case XC_SWITCH_FREE: // {{{
 				if (isset($T[$op1['var']])) {
-					$this->beginComplexBlock();
-					echo $this->EX['indent'], 'switch (', str($this->getOpVal($op1)), ") {", PHP_EOL;
-					echo $this->EX['indent'], '}', PHP_EOL;
-					$this->endComplexBlock();
+					$this->output->beginComplexBlock();
+					$this->output->writeln('switch (', $this->getOpVal($op1), ") {");
+					$this->output->writeln('}');
+					$this->output->endComplexBlock();
 				}
 				break;
 				// }}}
 			case XC_FREE: // {{{
 				$free = $T[$op1['var']];
 				if (!is_a($free, 'Decompiler_Box')) {
-					$op['php'] = is_object($free) ? $free : $this->unquote($free, '(', ')');
+					$op['php'] = is_object($free) || is_array($free) ? $free : $this->unquote($free, '(', ')');
 					$lastphpop = &$op;
 				}
 				unset($T[$op1['var']], $free);
@@ -2463,9 +2593,9 @@ class Decompiler
 			case XC_CONT:
 			case XC_BRK:
 				$resvar = $opc == XC_CONT ? 'continue' : 'break';
-				$count = str($this->getOpVal($op2));
-				if ($count != '1') {
-					$resvar .= ' ' . $count;
+				$count = $this->getOpVal($op2);
+				if ($count->value != 1) {
+					$resvar .= ' ' . $count->value;
 				}
 				break;
 			case XC_GOTO:
@@ -2503,18 +2633,19 @@ class Decompiler
 			case XC_PRE_INC_OBJ: // {{{
 				$flags = array_flip(explode('_', $opname));
 				if (isset($flags['OBJ'])) {
-					$resvar = str($this->getOpVal($op1)) . '->' . $op2['constant'];
+					$code = array($this->getOpVal($op1), '->', $op2['constant']);
 				}
 				else {
-					$resvar = str($this->getOpVal($op1));
+					$code = array($this->getOpVal($op1));
 				}
 				$opstr = isset($flags['DEC']) ? '--' : '++';
 				if (isset($flags['POST'])) {
-					$resvar .= $opstr;
+					$code[] = $opstr;
 				}
 				else {
-					$resvar = "$opstr$resvar";
+					array_unshift($code, $opstr);
 				}
+				$resvar = new Decompiler_Code($this, $code);
 				break;
 				// }}}
 
@@ -2524,7 +2655,7 @@ class Decompiler
 				// }}}
 			case XC_END_SILENCE: // {{{
 				$this->EX['silence']--;
-				$lastresvar = '@' . str($lastresvar, $this->EX);
+				$lastresvar = new Decompiler_Code($this, array('@', $lastresvar));
 				break;
 				// }}}
 			case XC_CAST: // {{{
@@ -2540,7 +2671,7 @@ class Decompiler
 						);
 				assert(isset($type2cast[$type]));
 				$cast = $type2cast[$type];
-				$resvar = $cast . ' ' . str($this->getOpVal($op1));
+				$resvar = new Decompiler_Code($this, array($cast, ' ', $this->getOpVal($op1)));
 				break;
 				// }}}
 			case XC_EXT_STMT:
@@ -2554,10 +2685,9 @@ class Decompiler
 				// possible missing tailing \0 (outside of the string)
 				$key = substr($key . ".", 0, strlen($key));
 
-				$indent = $this->EX['indent'];
 				$oldEX = &$this->EX;
 				unset($this->EX);
-				$this->dfunction($this->dc['function_table'][$key], $indent);
+				$this->dfunction($this->dc['function_table'][$key]);
 				$this->EX = $oldEX;
 
 				unset($oldEX);
@@ -2568,10 +2698,9 @@ class Decompiler
 				// possible missing tailing \0 (outside of the string)
 				$key = substr($key . ".", 0, strlen($key));
 
-				$indent = $this->EX['indent'];
 				$oldEX = &$this->EX;
 				unset($this->EX);
-				$this->dfunction($this->dc['function_table'][$key], $indent);
+				$this->dfunction($this->dc['function_table'][$key]);
 				$this->EX = &$oldEX;
 				unset($oldEX);
 
@@ -2581,14 +2710,14 @@ class Decompiler
 				// }}}
 			case XC_DECLARE_CONST:
 				$name = $this->stripNamespace(unquoteName($this->getOpVal($op1), $this->EX));
-				$value = str($this->getOpVal($op2));
-				$resvar = 'const ' . $name . ' = ' . $value;
+				$value = $this->getOpVal($op2);
+				$resvar = new Decompiler_Code($this, array('const ', $name, ' = ', $value));
 				break;
 			case XC_DECLARE_FUNCTION_OR_CLASS:
 				/* always removed by compiler */
 				break;
 			case XC_TICKS:
-				$lastphpop['ticks'] = ZEND_ENGINE_2_4 ? $ext : $this->getOpVal($op1);
+				$lastphpop['ticks'] = ZEND_ENGINE_2_4 ? $ext : ($op1 = $this->getOpVal($op1) ? $op1->value : 0);
 				// $this->EX['tickschanged'] = true;
 				break;
 			case XC_RAISE_ABSTRACT_ERROR:
@@ -2662,14 +2791,32 @@ class Decompiler
 		$args = array();
 		for ($i = 0; $i < $n; $i++) {
 			$a = array_pop($this->EX['argstack']);
-			if (is_array($a)) {
-				array_unshift($args, foldToCode($a, $this->EX));
-			}
-			else {
-				array_unshift($args, $a);
+			array_unshift($args, $a);
+		}
+		return new Decompiler_Statements($this, $args);
+	}
+	// }}}
+	function opValToString__($code) // {{{
+	{
+		while (is_object($code)) {
+			$code = $code->toCode('');
+		}
+
+		if (is_array($code)) {
+			foreach ($code as $c) {
+				$this->opValToString__($c);
 			}
 		}
-		return implode(', ', $args);
+		else {
+			echo $code;
+		}
+	}
+	// }}}
+	function opValToString_($op) // {{{
+	{
+		ob_start();
+		$this->opValToString__($this->getOpVal($op, null));
+		return ob_get_clean();
 	}
 	// }}}
 	function opToString($op, $which) // {{{
@@ -2681,30 +2828,30 @@ class Decompiler
 		case XC_IS_VAR:
 			$s = '$' . $op['var'];
 			if ($which != 'result' && isset($this->EX['Ts'])) {
-				$s .= ':' . str($this->getOpVal($op, null));
+				$s .= ':' . $this->opValToString_($op);
 			}
 			return $s;
 
 		case XC_IS_TMP_VAR:
 			$s = '#' . $op['var'];
 			if ($which != 'result' && isset($this->EX['Ts'])) {
-				$s .= ':' . str($this->getOpVal($op, null));
+				$s .= ':' . $this->opValToString_($op);
 			}
 			return $s;
 
 		case XC_IS_CONST:
-			return isset($this->EX['Ts']) ? str($this->getOpVal($op, null)) : $op['var'] . ':' . var_export($op['constant'], true);
+			return isset($this->EX['Ts']) ? $this->opValToString_($op) : $op['var'] . ':' . var_export($op['constant'], true);
 
 		default:
-			return isset($this->EX['Ts']) ? str($this->getOpVal($op, null)) : $op['op_type'] . '?' . $op['var'];
+			return isset($this->EX['Ts']) ? $this->opValToString_($op) : $op['op_type'] . '?' . $op['var'];
 		}
 	}
 	// }}}
 	function dumpOp($op, $padding = 4) // {{{
 	{
 		assert('isset($op)');
-		echo str_pad($op['line'], $padding);
-		echo str_pad($op['lineno'], $padding);
+		$this->output->write(str_pad($op['line'], $padding));
+		$this->output->write(str_pad($op['lineno'], $padding));
 
 		if (isset($op['oldopcode'])) {
 			$name = '//' . xcache_get_opcode($op['oldopcode']);
@@ -2716,48 +2863,44 @@ class Decompiler
 		if (substr($name, 0, 5) == 'ZEND_') {
 			$name = substr($name, 5);
 		}
-		echo ' ', str_pad($name, 25);
+		$this->output->write(' ', str_pad($name, 25));
 
 		$types = array('result' => 9, 'op1' => 20, 'op2' => 20);
 		$res = $op['result'];
 		$resUsed = ((ZEND_ENGINE_2_4 ? ($res['op_type'] & EXT_TYPE_UNUSED) : ($res['EA.type'] & EXT_TYPE_UNUSED)) || $res['op_type'] == XC_IS_UNUSED) ? '' : '=';
 		foreach ($types as $which => $len) {
-			echo ' ', str_pad($this->opToString($op[$which], $which) . ($which == 'result' ? $resUsed : ''), $len);
+			$this->output->write(' ', str_pad($this->opToString($op[$which], $which) . ($which == 'result' ? $resUsed : ''), $len));
 		}
-		echo "\t;", $op['extended_value'];
+		$this->output->write("\t;", $op['extended_value']);
 		if (isset($op['isCatchBegin'])) {
-			echo ' CB';
+			$this->output->write(' CB');
 		}
 		if (!empty($op['jmptos'])) {
-			echo "\t>>", implode(',', $op['jmptos']);
+			$this->output->write("\t>>", implode(',', $op['jmptos']));
 		}
 		if (!empty($op['jmpfroms'])) {
-			echo "\t<<", implode(',', $op['jmpfroms']);
+			$this->output->write("\t<<", implode(',', $op['jmpfroms']));
 		}
 
-		echo PHP_EOL;
+		$this->output->write(PHP_EOL);
 	}
 	// }}}
 	function dumpRange($range, $ts = true) // {{{
 	{
-		if (!$this->inComment++) {
-			echo $this->EX['indent'], "/*", PHP_EOL;
-		}
+		$this->output->beginComment();
 		if (!$ts) {
 			$Ts = $this->EX['Ts'];
 			$this->EX['Ts'] = null;
 		}
 		$padding = max(strlen($range[1]), strlen($this->EX['opcodes'][$range[1]]['lineno'])) + 1;
 		for ($i = $range[0]; $i <= $range[1]; ++$i) {
-			echo $this->EX['indent'];
+			$this->output->write($this->output->indent);
 			$this->dumpOp($this->EX['opcodes'][$i], $padding);
 		}
 		if (!$ts) {
 			$this->EX['Ts'] = $Ts;
 		}
-		if (!--$this->inComment) {
-			echo $this->EX['indent'], "*/", PHP_EOL;
-		}
+		$this->output->endComment();
 	}
 	// }}}
 	function dargs() // {{{
@@ -2776,33 +2919,34 @@ class Decompiler
 		}
 
 		$refrest = false;
+		$args = array();
 		for ($i = 0; $i < $c; $i++) {
-			if ($i) {
-				echo ', ';
-			}
+			$arg = array();
 			$recv = isset($this->EX['recvs'][$i + 1]) ? $this->EX['recvs'][$i + 1] : null;
 			if (isset($op_array['arg_info'])) {
 				$ai = $op_array['arg_info'][$i];
 				if (isset($ai['type_hint']) ? ($ai['type_hint'] == IS_CALLABLE || $ai['type_hint'] == IS_OBJECT) : !empty($ai['class_name'])) {
-					echo $this->stripNamespace($ai['class_name']), ' ';
+					$arg[] = $this->stripNamespace($ai['class_name']);
+					$arg[] = ' ';
 					if (!ZEND_ENGINE_2_2 && $ai['allow_null']) {
-						echo 'or NULL ';
+						$arg[] = 'or NULL ';
 					}
 				}
 				else if (isset($ai['type_hint']) ? $ai['type_hint'] == IS_ARRAY : !empty($ai['array_type_hint'])) {
-					echo 'array ';
+					$arg[] = 'array ';
 					if (!ZEND_ENGINE_2_2 && $ai['allow_null']) {
-						echo 'or NULL ';
+						$arg[] = 'or NULL ';
 					}
 				}
 				if ($ai['pass_by_reference']) {
-					echo '&';
+					$arg[] = '&';
 				}
-				printf("\$%s", $ai['name']);
+				$arg[] = '$';
+				$arg[] = $ai['name'];
 			}
 			else {
 				if ($refrest) {
-					echo '&';
+					$arg[] = '&';
 				}
 				else if (!empty($op_array['arg_types']) && isset($op_array['arg_types'][$i])) {
 					switch ($op_array['arg_types'][$i]) {
@@ -2810,7 +2954,7 @@ class Decompiler
 						$refrest = true;
 						/* fall */
 					case BYREF_FORCE:
-						echo '&';
+						$arg[] = '&';
 						break;
 
 					case BYREF_NONE:
@@ -2820,27 +2964,45 @@ class Decompiler
 						assert(0);
 					}
 				}
-				echo str($recv[0], $this->EX);
+				$arg[] = $recv[0];
 			}
 			if (isset($recv) && isset($recv[1])) {
-				echo ' = ', str($recv[1], $this->EX);
+				$arg[] = ' = ';
+				$arg[] = $recv[1];
 			}
+			$args[] = $arg;
 		}
+		return new Decompiler_Statements($this, $args);
 	}
 	// }}}
 	function duses() // {{{
 	{
+		$code = array();
 		if ($this->EX['uses']) {
-			echo " use(", implode(', ', $this->EX['uses']), ')';
+			$code[] = " use(";
+			$code[] = new Decompiler_Statements($this, $this->EX['uses']);
+			$code[] = ')';
 		}
+		return $code;
 	}
 	// }}}
-	function dfunction($func, $indent = '', $decorations = array(), $nobody = false) // {{{
+	function dfunction($func, $decorations = array(), $nobody = false) // {{{
 	{
 		static $opcode_count = 0;
 		$opcode_count += count($func['op_array']['opcodes']);
 
-		$this->detectNamespace($func['op_array']['function_name']);
+		$functionName = $this->stripNamespace($func['op_array']['function_name']);
+		$this->detectNamespace($functionName);
+
+		$isExpression = false;
+		if ($functionName == '{closure}') {
+			$functionName = '';
+			$isExpression = true;
+		}
+
+		if (!$nobody && !$isExpression) {
+			$this->output->beginComplexBlock();
+		}
 
 		$returnByRef = '';
 		if ($nobody) {
@@ -2851,7 +3013,9 @@ class Decompiler
 		}
 		else {
 			ob_start();
-			$EX = &$this->dop_array($func['op_array'], $indent . INDENT);
+			$this->output->beginScope();
+			$EX = &$this->dop_array($func['op_array'], true);
+			$this->output->endScope();
 			$body = ob_get_clean();
 			$hasReturn = false;
 			$hasReturnByRef = false;
@@ -2867,46 +3031,55 @@ class Decompiler
 				}
 			}
 			if ($hasReturn && $hasReturnByRef) {
-				echo $indent, "// WARN: both return and return-by-ref present", PHP_EOL;
+				$this->output->printfError("WARN: both return and return-by-ref present" . PHP_EOL);
 			}
 			if ($hasReturnByRef) {
 				$returnByRef = '&';
 			}
 		}
 
-		$functionName = $this->stripNamespace($func['op_array']['function_name']);
-		$isExpression = false;
-		if ($functionName == '{closure}') {
-			$functionName = '';
-			$isExpression = true;
+		if (!empty($func['op_array']['doc_comment'])) {
+			$this->output->writeln($func['op_array']['doc_comment']);
 		}
-		echo $isExpression ? '' : $indent;
+
+		$functionDeclare = array();
 		if ($decorations) {
-			echo implode(' ', $decorations), ' ';
+			$functionDeclare[] = implode(' ', $decorations);
+			$functionDeclare[] = ' ';
 		}
 		$this->EX = &$EX;
 		unset($EX);
-		echo 'function', $functionName ? ' ' . $returnByRef . $functionName : '', '(';
-		$this->dargs();
-		echo ")";
-		$this->duses();
+		$functionDeclare[] = 'function';
+		$functionDeclare[] = $functionName ? ' ' . $returnByRef . $functionName : '';
+		$functionDeclare[] = '(';
+		$functionDeclare[] = $this->dargs();
+		$functionDeclare[] = ")";
+		$functionDeclare[] = $this->duses();
 		unset($this->EX);
 		if ($nobody) {
-			echo ";", PHP_EOL;
+			$functionDeclare[] = ";";
+			$this->output->writeln($functionDeclare);
 		}
 		else {
 			if (!$isExpression) {
-				echo PHP_EOL;
-				echo $indent, "{", PHP_EOL;
+				$this->output->writeln($functionDeclare);
+				$this->output->writeln("{");
 			}
 			else {
-				echo " {", PHP_EOL;
+				$this->output->write($functionDeclare);
+				$this->output->write(" {");
+				$this->output->write(PHP_EOL);
 			}
-
 			echo $body;
-			echo "$indent}";
 			if (!$isExpression) {
-				echo PHP_EOL;
+				$this->output->writeln("}");
+			}
+			else {
+				$this->output->write($this->output->indent);
+				$this->output->write("}");
+			}
+			if (!$isExpression) {
+				$this->output->endComplexBlock();
 			}
 		}
 
@@ -2918,17 +3091,12 @@ class Decompiler
 		}
 	}
 	// }}}
-	function dclass($class, $indent = '') // {{{
+	function dclass($class) // {{{
 	{
 		$this->value2constant[$this->activeClass] = '__CLASS__';
 		$this->detectNamespace($class['name']);
 
 		// {{{ class decl
-		if (!empty($class['doc_comment'])) {
-			echo $indent;
-			echo $class['doc_comment'];
-			echo PHP_EOL;
-		}
 		$isInterface = false;
 		$decorations = array();
 		if (!empty($class['ce_flags'])) {
@@ -2945,32 +3113,36 @@ class Decompiler
 			}
 		}
 
-		echo $indent;
-		if ($decorations) {
-			echo implode(' ', $decorations), ' ';
+		$this->output->beginComplexBlock();
+		if (!empty($class['doc_comment'])) {
+			$this->output->writeln($class['doc_comment']);
 		}
-		echo $isInterface ? 'interface ' : 'class ', $this->stripNamespace($class['name']);
+		$classDeclare = array();
+		if ($decorations) {
+			$classDeclare[] = implode(' ', $decorations) . ' ';
+		}
+		$classDeclare[] = $isInterface ? 'interface ' : 'class ';
+		$classDeclare[] = $this->stripNamespace($class['name']);
 		if ($class['parent']) {
-			echo ' extends ', $this->stripNamespace($class['parent']);
+			$classDeclare[] = ' extends ';
+			$classDeclare[] = $this->stripNamespace($class['parent']);
 		}
 		/* TODO */
 		if (!empty($class['interfaces'])) {
-			echo ' implements ';
-			echo implode(', ', $class['interfaces']);
+			$classDeclare[] = ' implements ';
+			$classDeclare[] = implode(', ', $class['interfaces']);
 		}
-		echo PHP_EOL;
-		echo $indent, "{";
+		$this->output->writeln($classDeclare);
+		$this->output->writeln("{");
+		$this->output->beginScope();
 		// }}}
-		$newindent = INDENT . $indent;
 		// {{{ const
 		if (!empty($class['constants_table'])) {
-			echo PHP_EOL;
+			$this->output->beginComplexBlock();
 			foreach ($class['constants_table'] as $name => $v) {
-				echo $newindent;
-				echo 'const ', $name, ' = ';
-				echo str(value($v), $newindent);
-				echo ";", PHP_EOL;
+				$this->output->writeln('const ', $name, ' = ', value($v), ";");
 			}
+			$this->output->endComplexBlock();
 		}
 		// }}}
 		// {{{ properties
@@ -2979,30 +3151,28 @@ class Decompiler
 		}
 		$member_variables = $class[ZEND_ENGINE_2 ? 'properties_info' : 'default_properties'];
 		if ($member_variables) {
-			echo PHP_EOL;
+			$this->output->beginComplexBlock();
 			foreach ($member_variables as $name => $dummy) {
 				$info = isset($class['properties_info']) ? $class['properties_info'][$name] : null;
 				if (isset($info) && !empty($info['doc_comment'])) {
-					echo $newindent;
-					echo $info['doc_comment'];
-					echo PHP_EOL;
+					$this->output->writeln($info['doc_comment']);
 				}
 
-				echo $newindent;
+				$variableDeclare = array();
 				if (ZEND_ENGINE_2) {
 					$static = ($info['flags'] & ZEND_ACC_STATIC);
 
 					if ($static) {
-						echo "static ";
+						$variableDeclare[] = "static ";
 					}
 				}
 
 				$mangleSuffix = '';
 				if (!ZEND_ENGINE_2) {
-					echo 'var ';
+					$variableDeclare[] = 'var ';
 				}
 				else if (!isset($info)) {
-					echo 'public ';
+					$variableDeclare[] = 'public ';
 				}
 				else {
 					if ($info['flags'] & ZEND_ACC_SHADOW) {
@@ -3010,20 +3180,21 @@ class Decompiler
 					}
 					switch ($info['flags'] & ZEND_ACC_PPP_MASK) {
 					case ZEND_ACC_PUBLIC:
-						echo "public ";
+						$variableDeclare[] = "public ";
 						break;
 					case ZEND_ACC_PRIVATE:
-						echo "private ";
+						$variableDeclare[] = "private ";
 						$mangleSuffix = "\000";
 						break;
 					case ZEND_ACC_PROTECTED:
-						echo "protected ";
+						$variableDeclare[] = "protected ";
 						$mangleSuffix = "\000";
 						break;
 					}
 				}
 
-				echo '$', $name;
+				$variableDeclare[] = '$';
+				$variableDeclare[] = $name;
 
 				if (ZEND_ENGINE_2_4) {
 					$value = $class[$static ? 'default_static_members_table' : 'default_properties_table'][$info['offset']];
@@ -3040,12 +3211,18 @@ class Decompiler
 						$value = $class['default_properties'][$key];
 					}
 				}
-				if (isset($value)) {
-					echo ' = ';
-					echo str(value($value), $newindent);
+				$value = value($value);
+				if (is_a($value, 'Decompiler_Value') && !isset($value->value)) {
+					// skip value;
 				}
-				echo ";", PHP_EOL;
+				else {
+					$variableDeclare[] = ' = ';
+					$variableDeclare[] = $value;
+				}
+				$variableDeclare[] = ";";
+				$this->output->writeln($variableDeclare);
 			}
+			$this->output->endComplexBlock();
 		}
 		// }}}
 		// {{{ function_table
@@ -3053,13 +3230,7 @@ class Decompiler
 			foreach ($class['function_table'] as $func) {
 				if (!isset($func['scope']) || $func['scope'] == $class['name']) {
 					// TODO: skip shadow here
-					echo PHP_EOL;
-					$opa = $func['op_array'];
-					if (!empty($opa['doc_comment'])) {
-						echo $newindent;
-						echo $opa['doc_comment'];
-						echo PHP_EOL;
-					}
+					$opa = &$func['op_array'];
 					$isAbstractMethod = false;
 					$decorations = array();
 					if (isset($opa['fn_flags'])) {
@@ -3091,7 +3262,7 @@ class Decompiler
 					}
 					$this->activeMethod = $this->activeClass . '::' . $opa['function_name'];
 					$this->activeFunction = $opa['function_name'];
-					$this->dfunction($func, $newindent, $decorations, $isInterface || $isAbstractMethod);
+					$this->dfunction($func, $decorations, $isInterface || $isAbstractMethod);
 					$this->activeFunction = null;
 					$this->activeMethod = null;
 					if ($opa['function_name'] == 'Decompiler') {
@@ -3101,7 +3272,9 @@ class Decompiler
 			}
 		}
 		// }}}
-		echo $indent, "}", PHP_EOL;
+		$this->output->endScope();
+		$this->output->writeln("}");
+		$this->output->endComplexBlock();
 		unset($this->value2constant[$this->activeClass]);
 	}
 	// }}}
@@ -3143,14 +3316,15 @@ class Decompiler
 	// }}}
 	function output() // {{{
 	{
-		echo "<?". "php";
-		echo PHP_EOL, PHP_EOL;
+		$this->output->beginComplexBlock();
+		$this->output->writeln("<" . "?php");
+		$this->output->endComplexBlock();
+
 		foreach ($this->dc['class_table'] as $key => $class) {
 			if ($key{0} != "\0") {
 				$this->activeClass = $class['name'];
 				$this->dclass($class);
 				$this->activeClass = null;
-				echo PHP_EOL;
 			}
 		}
 
@@ -3159,12 +3333,13 @@ class Decompiler
 				$this->activeFunction = $key;
 				$this->dfunction($func);
 				$this->activeFunction = null;
-				echo PHP_EOL;
 			}
 		}
 
 		$this->dop_array($this->dc['op_array']);
-		echo PHP_EOL, "?" . ">", PHP_EOL;
+		$this->output->beginComplexBlock();
+		$this->output->writeln("?" . ">");
+		$this->output->endComplexBlock();
 
 		if (!empty($this->test)) {
 			$this->outputUnusedOp();
@@ -3248,6 +3423,7 @@ else {
 	define('ZEND_FETCH_STANDARD',         0);
 	define('ZEND_FETCH_ADD_LOCK',         1);
 }
+define('XC_FETCH_PROPERTY', 10);
 
 if (ZEND_ENGINE_2_4) {
 	define('ZEND_ISSET',                  0x02000000);

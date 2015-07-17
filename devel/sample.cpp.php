@@ -253,6 +253,7 @@ abstract class ClassName
 		$a ^= $b;
 		$a = 'a' . 'b';
 		$a = 'a' . 'abc';
+		$a = "a$abc d"; // RESULT: 'a' . $abc . ' d';
 		$a = __FILE__;
 #if PHP_VERSION >= 530
 		$a = __DIR__;
@@ -308,9 +309,11 @@ abstract class ClassName
 	{
 		$a = ($b ? $c : $d);
 		$a = (f1() ? f2() : f3());
+		$a = ($b ? $c : ($a ? 1 : 2));
+		$a = (f1() ? f2() : ($a ? 1 : 2));
 		($a = $b) xor $c;
-		($a = $b) and $c;
-		($a = $b) or $c;
+		($a = $b) and $c; // RESULT: ($a = $b) && $c;
+		($a = $b) or $c; // RESULT: ($a = $b) || $c;
 		$a = $b && $c;
 		$a = $b || $c;
 	}
@@ -359,8 +362,8 @@ abstract class ClassName
 
 	/** doc */
 	protected function protectedMethod(ClassName $a, $b = array(
-			array('array')
-			))
+		array('array')
+		))
 	{
 		$runtimeArray = array('1');
 		$runtimeArray2 = array(
@@ -617,6 +620,9 @@ function codeSwitch()
 		break;
 	}
 
+	switch (emptySwitch()) {
+	}
+
 	switch ('emptySwitch()') {
 	}
 
@@ -654,7 +660,6 @@ function codeKeyword()
 #endif
 #if PHP_VERSION >= 530
 	echo 'goto a';
-
 	goto a;
 	$i = 1;
 
