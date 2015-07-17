@@ -179,7 +179,7 @@ function value($value) // {{{
 		$value = new Decompiler_ConstArray($decompiler, $value);
 	}
 	else {
-		if (($constant = $decompiler->value2constant($value)) && isset($constant)) {
+		if (is_scalar($value) && ($constant = $decompiler->value2constant($value)) && isset($constant)) {
 			$value = new Decompiler_Code($decompiler, $constant);
 		}
 		else {
